@@ -59,6 +59,39 @@ describe('catalogue sources', () => {
       targets: { bronzeMs: 22800, silverMs: 21400, goldMs: 20800 }
     });
     expect(catalogue.entries.filter(entry => 'support' in entry)).toEqual([]);
+    const brandCentral = catalogue.entries.filter(entry => entry.family === 'Brand Central');
+    expect(brandCentral.map(entry => entry.id)).toEqual([
+      'brand-hyundai-exp-1',
+      'brand-hyundai-exp-2',
+      'brand-hyundai-exp-3',
+      'brand-hyundai-exp-4',
+      'brand-yangwang-racing-lines'
+    ]);
+    expect(catalogue.entries.filter(entry => entry.family === 'Brand Experience')).toEqual([]);
+    expect(brandCentral[0]).toEqual({
+      id: 'brand-hyundai-exp-1',
+      family: 'Brand Central',
+      collection: 'Hyundai',
+      code: 'EXP-1',
+      name: 'Cornering: Intermediate',
+      track: 'Suzuka Circuit',
+      circuitId: 10,
+      car: "Hyundai IONIQ 5 N '24",
+      targets: { bronzeMs: 20400, silverMs: 18900, goldMs: 18400 },
+      sections: null,
+      source: 'Game screen and Gran Turismo Wiki: Suzuka Circuit'
+    });
+    expect(brandCentral[3]).toMatchObject({
+      code: 'EXP-4',
+      name: 'Cornering: Expert',
+      track: 'SUGO International Racing Course',
+      car: "Hyundai IONIQ 6N '25",
+      targets: { bronzeMs: 37000, silverMs: 34400, goldMs: 33400 }
+    });
+    const carNames = new Set(catalogue.cars.map(car => car.name));
+    expect(brandCentral.filter(entry => entry.car === null || !carNames.has(entry.car))).toEqual([]);
+    const circuitIds = new Set(catalogue.circuits.map(circuit => circuit.id));
+    expect(brandCentral.filter(entry => entry.circuitId !== null && !circuitIds.has(entry.circuitId))).toEqual([]);
     expect(seen.every(request => [...request.headers.keys()].join() === 'user-agent')).toBe(true);
     expect(seen.every(request => request.headers.get('user-agent') === CLIENT_HEADERS['User-Agent'])).toBe(true);
   });

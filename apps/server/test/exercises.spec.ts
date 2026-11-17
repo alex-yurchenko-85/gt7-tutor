@@ -106,7 +106,7 @@ describe('exercises, captures and references', () => {
 
   it('exercise_from_catalogue_copies_targets_and_car', async () => {
     const yangwang = await http().get(`/api/exercises/${await exercise()}`).set('Cookie', cookie).expect(200);
-    expect(yangwang.body).toMatchObject({ family: 'Brand Experience', carId: 3602, status: 'new', step: 1, mutedCues: [], activeReferenceId: null });
+    expect(yangwang.body).toMatchObject({ family: 'Brand Central', carId: 3602, status: 'new', step: 1, mutedCues: [], activeReferenceId: null });
     const licence = await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'licence-b-1' }).expect(201);
     expect(licence.body.targets).toEqual({ bronzeMs: 22800, silverMs: 21400, goldMs: 20800 });
     const own = await http()

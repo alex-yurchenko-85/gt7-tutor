@@ -8,7 +8,7 @@ export function exercise(overrides: Partial<Exercise> = {}): Exercise {
   return {
     id: EXERCISE_ID,
     catalogueId: 'brand-yangwang-racing-lines',
-    family: 'Brand Experience',
+    family: 'Brand Central',
     name: 'Yangwang Experience / Racing Lines',
     carId: 3602,
     conditions: {},

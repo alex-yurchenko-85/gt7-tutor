@@ -25,5 +25,10 @@ This licence applies to that data only. The application code uses GPL-3.0 (`LICE
 
 ## Manual entries
 
-`brand-yangwang-racing-lines` is a manual entry. Its car label comes from the gt7info car table (car ID 3602).
+The `Brand Central` entries are manual entries. `packages/catalogue/src/manual.ts` holds them.
+`brand-yangwang-racing-lines` has a car label from the gt7info car table (car ID 3602).
+The `brand-hyundai-exp-1` to `brand-hyundai-exp-4` entries are the Hyundai Experience exercises `EXP-1` to `EXP-4`.
+Their track, car and target times come from the game screen. Their car labels use the gt7info car table.
+Their English names come from the section `Experience` of these Gran Turismo Wiki pages: `Suzuka Circuit`, `Mount Panorama`, `Nürburgring GP` and `SUGO International Racing Course`.
+The names are an adaptation of that content under CC BY-SA.
 `aliases.json` maps wiki track names to gt7info layout IDs where the names differ. The project maintainer wrote it.

@@ -3710,8 +3710,76 @@
   ],
   "entries": [
     {
+      "id": "brand-hyundai-exp-1",
+      "family": "Brand Central",
+      "collection": "Hyundai",
+      "code": "EXP-1",
+      "name": "Cornering: Intermediate",
+      "track": "Suzuka Circuit",
+      "circuitId": 10,
+      "car": "Hyundai IONIQ 5 N '24",
+      "targets": {
+        "bronzeMs": 20400,
+        "silverMs": 18900,
+        "goldMs": 18400
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Suzuka Circuit"
+    },
+    {
+      "id": "brand-hyundai-exp-2",
+      "family": "Brand Central",
+      "collection": "Hyundai",
+      "code": "EXP-2",
+      "name": "Racing Line: Intermediate",
+      "track": "Mount Panorama Motor Racing Circuit",
+      "circuitId": 116,
+      "car": "Hyundai IONIQ 5 N '24",
+      "targets": {
+        "bronzeMs": 46700,
+        "silverMs": 43400,
+        "goldMs": 42000
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Mount Panorama"
+    },
+    {
+      "id": "brand-hyundai-exp-3",
+      "family": "Brand Central",
+      "collection": "Hyundai",
+      "code": "EXP-3",
+      "name": "Consecutive Corners: Intermediate",
+      "track": "Nürburgring GP",
+      "circuitId": 349,
+      "car": "Hyundai IONIQ 6N '25",
+      "targets": {
+        "bronzeMs": 51100,
+        "silverMs": 47500,
+        "goldMs": 46200
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Nürburgring GP"
+    },
+    {
+      "id": "brand-hyundai-exp-4",
+      "family": "Brand Central",
+      "collection": "Hyundai",
+      "code": "EXP-4",
+      "name": "Cornering: Expert",
+      "track": "SUGO International Racing Course",
+      "circuitId": null,
+      "car": "Hyundai IONIQ 6N '25",
+      "targets": {
+        "bronzeMs": 37000,
+        "silverMs": 34400,
+        "goldMs": 33400
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: SUGO International Racing Course"
+    },
+    {
       "id": "brand-yangwang-racing-lines",
-      "family": "Brand Experience",
+      "family": "Brand Central",
       "collection": "Yangwang",
       "code": null,
       "name": "Racing Lines",

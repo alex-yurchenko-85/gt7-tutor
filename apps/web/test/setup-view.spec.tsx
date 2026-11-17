@@ -9,7 +9,7 @@ import { ApiStub, liveState, playerRig, renderApp, setViewportWidth, signedIn } 
 const INFO = {
   retrieved: '2026-11-16T10:00:00.000Z',
   gameVersionNote: '',
-  counts: { entries: { Licence: 100, 'Circuit Experience': 56, 'Brand Experience': 1 }, circuits: 120, cars: 500 },
+  counts: { entries: { Licence: 100, 'Circuit Experience': 56, 'Brand Central': 1 }, circuits: 120, cars: 500 },
   sources: [
     { name: 'Gran Turismo Wiki', licence: 'CC BY-SA', url: 'https://gran-turismo.fandom.com' },
     { name: 'ddm999/gt7info', licence: 'MIT-0', url: 'https://github.com/ddm999/gt7info' }

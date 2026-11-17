@@ -32,6 +32,29 @@ describe('database schema', () => {
     }
   });
 
+  it('brand_experience_exercises_move_to_brand_central', async () => {
+    const database = await createDisposableDatabase();
+    const db = knex({ client: 'pg', connection: database.url });
+    try {
+      await db.migrate.latest(migrationConfig());
+      await db.migrate.down(migrationConfig());
+      const [user] = await db('users').insert({ name: 'driver', password_hash: 'x' }).returning('id');
+      await db('catalogue_entries').insert({ id: 'brand-yangwang-racing-lines', family: 'Brand Experience', collection: 'Yangwang', name: 'Racing Lines', source: 'Manual entry' });
+      await db('exercises').insert([
+        { user_id: user.id, catalogue_id: 'brand-yangwang-racing-lines', family: 'Brand Experience', name: 'Racing Lines' },
+        { user_id: user.id, family: 'Time Trial', name: 'Own' }
+      ]);
+      await db.migrate.up(migrationConfig());
+      expect((await db('exercises').orderBy('name').select('family')).map(row => row.family)).toEqual(['Time Trial', 'Brand Central']);
+      expect((await db('catalogue_entries').first()).family).toBe('Brand Central');
+      await db.migrate.down(migrationConfig());
+      expect((await db('exercises').orderBy('name').select('family')).map(row => row.family)).toEqual(['Time Trial', 'Brand Experience']);
+    } finally {
+      await db.destroy();
+      await database.drop();
+    }
+  });
+
   describe('constraints', () => {
     let database: DisposableDatabase;
     let db: Knex;
@@ -52,7 +75,7 @@ describe('database schema', () => {
 
     it('references_restrict_delete', async () => {
       const [user] = await db('users').insert({ name: 'driver', password_hash: 'x' }).returning('id');
-      const [exercise] = await db('exercises').insert({ user_id: user.id, family: 'Brand Experience', name: 'Yangwang' }).returning('id');
+      const [exercise] = await db('exercises').insert({ user_id: user.id, family: 'Brand Central', name: 'Yangwang' }).returning('id');
       const [capture] = await db('captures')
         .insert({ user_id: user.id, exercise_id: exercise.id, purpose: 'demo', raw_path: 'raw/a.ndjson', started_at: db.fn.now() })
         .returning('id');

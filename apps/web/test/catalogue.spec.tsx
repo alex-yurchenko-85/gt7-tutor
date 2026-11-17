@@ -8,7 +8,7 @@ const ENTRIES = [
   catalogueEntry({ id: 'licence-b-1', code: 'B-1', name: 'Start & Stop', track: 'Tsukuba Circuit', collection: 'National B' }),
   catalogueEntry({ id: 'licence-b-2', code: 'B-2', name: 'Braking', track: 'Fuji Speedway', collection: 'National B' }),
   catalogueEntry({ id: 'ce-tsukuba-1', family: 'Circuit Experience', collection: 'Japan', name: 'Tsukuba Circuit Sector 1', track: 'Tsukuba Circuit' }),
-  catalogueEntry({ id: 'brand-yangwang-racing-lines', family: 'Brand Experience', collection: 'Yangwang', name: 'Racing Lines', exerciseId: 'ex-1', status: 'ready' })
+  catalogueEntry({ id: 'brand-yangwang-racing-lines', family: 'Brand Central', collection: 'Yangwang', name: 'Racing Lines', exerciseId: 'ex-1', status: 'ready' })
 ];
 
 function catalogueApi(): ApiStub {

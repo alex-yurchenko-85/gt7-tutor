@@ -195,7 +195,7 @@ describe('attempts, review and statistics', () => {
     const progress = await http().get('/api/progress').set('Cookie', cookie).expect(200);
     const counts = (family: string, collection: string) =>
       progress.body.collections.find((item: { family: string; collection: string }) => item.family === family && item.collection === collection)?.counts;
-    expect(counts('Brand Experience', 'Yangwang')).toEqual({ new: 0, ready: 1, practising: 1, bronze: 0, silver: 0, gold: 1 });
+    expect(counts('Brand Central', 'Yangwang')).toEqual({ new: 0, ready: 1, practising: 1, bronze: 0, silver: 0, gold: 1 });
     expect(counts('Licence', 'National B')).toEqual({ new: 1, ready: 0, practising: 0, bronze: 0, silver: 0, gold: 0 });
     expect(counts('Time Trial', 'Own exercises')).toEqual({ new: 1, ready: 0, practising: 0, bronze: 0, silver: 0, gold: 0 });
     expect(progress.body.exercises.find((item: { id: string }) => item.id === exerciseId)).toMatchObject({ status: 'practising', bestMs: 27100 });
