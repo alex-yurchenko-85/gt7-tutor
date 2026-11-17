@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/alex-yurchenko-85/gt7-tutor/actions/workflows/ci.yml"><img src="https://github.com/alex-yurchenko-85/gt7-tutor/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://codecov.io/gh/alex-yurchenko-85/gt7-tutor"><img src="https://codecov.io/gh/alex-yurchenko-85/gt7-tutor/graph/badge.svg" alt="Test coverage"></a>
   <a href="https://github.com/alex-yurchenko-85/gt7-tutor/releases"><img src="https://img.shields.io/github/v/release/alex-yurchenko-85/gt7-tutor" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-GPL--3.0-blue" alt="Licence: GPL-3.0"></a>
   <a href="https://gt7tutor.app"><img src="https://img.shields.io/badge/website-gt7tutor.app-d90000" alt="Website: gt7tutor.app"></a>
@@ -215,6 +216,7 @@ Do not make GT7 Tutor reachable from the internet.
 pnpm typecheck
 pnpm test                  # unit and interface tests, no database
 pnpm test:integration      # server tests against PostgreSQL
+pnpm test:coverage         # unit tests with a coverage report in coverage/
 pnpm capture --ip <PS5 address> --seconds 60 --purpose demo --start-after 5
 pnpm replay --file <raw capture .ndjson>
 pnpm evaluate-coach --attempt player-run --reference demo-wait05 --first 352 --last 1897
