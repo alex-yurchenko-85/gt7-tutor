@@ -143,7 +143,7 @@ Then the command prints:
 - the address for a phone on the same network, and a QR code of it
 - the demo profile `demo` and its password `demodemo`.
 
-The demo has the exercise `Yangwang Experience / Racing Lines`, its reference, and three recorded attempts.
+The demo has the exercise `Yangwang EXP-1 Racing Line: Intermediate`, its reference, and three recorded attempts.
 Open **Drive** and select **Play a demo attempt** to hear a guided attempt with voice.
 The attempt replays in real time and takes about one minute.
 After it, the attempt summary, the review and **Progress** show the results.

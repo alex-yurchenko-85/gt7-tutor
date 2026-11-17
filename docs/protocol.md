@@ -172,7 +172,7 @@ These facts come from captures of one exercise. The code depends on them.
 - **The packet does not name the exercise.** It gives a car ID only. Car ID 3602 is the Yangwang U9 '24 in the community car table.
 - **The packet has no track edges.** Format `C` gives the surface letter under each wheel. The application does not use it.
 
-The captures behind these facts come from one exercise: `Yangwang Experience / Racing Lines` (Brand Central, Experience).
+The captures behind these facts come from one exercise: `Yangwang EXP-1 Racing Line: Intermediate` (Brand Central, Experience).
 
 ## Coordinates and units
 
