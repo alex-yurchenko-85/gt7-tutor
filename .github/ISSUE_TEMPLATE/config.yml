@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/alex-yurchenko-85/gt7-tutor/discussions
+    about: Ask a question or describe an idea in Discussions.
+  - name: Security vulnerability
+    url: https://github.com/alex-yurchenko-85/gt7-tutor/security/advisories/new
+    about: Report a vulnerability privately. Do not open a public issue.

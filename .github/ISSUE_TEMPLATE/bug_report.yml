@@ -1,0 +1,92 @@
+name: Bug report
+description: GT7 Tutor does not work as the documentation says.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not attach raw captures from your own network or write your console address. Remove private data from logs.
+  - type: input
+    id: version
+    attributes:
+      label: GT7 Tutor version
+      description: The release, for example v1.0.0, or the output of `git rev-parse --short HEAD`.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system of the computer
+      options:
+        - macOS
+        - Windows
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      description: The output of `node --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Setup and installation
+        - Telemetry from the console
+        - Voice cues
+        - Exercises and references
+        - Attempts and review
+        - Interface
+        - Demo
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      description: For example Safari on an iPhone, or Chrome on the computer.
+  - type: dropdown
+    id: telemetry
+    attributes:
+      label: Does Setup show telemetry packets?
+      options:
+        - "Yes"
+        - "No"
+        - I use the demo
+        - I do not know
+    validations:
+      required: true
+  - type: input
+    id: exercise
+    attributes:
+      label: Exercise
+      description: The exercise name as GT7 Tutor shows it, if the problem occurs in an exercise.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      description: The steps that cause the problem.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: What occurred. Add the server log lines or the browser console messages if you have them.
+    validations:
+      required: true
