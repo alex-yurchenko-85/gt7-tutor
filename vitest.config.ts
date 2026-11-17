@@ -15,7 +15,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text-summary', 'lcov'],
       include: ['packages/*/src/**/*.ts', 'apps/web/src/**/*.{ts,tsx}', 'tools/site/**/*.ts', 'tools/demo/**/*.ts', 'tools/setup/**/*.ts'],
-      exclude: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.d.ts']
+      exclude: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.d.ts', 'apps/web/src/main.tsx', 'tools/demo/demo.ts', 'tools/setup/setup-local.ts']
     },
     projects: [
       {

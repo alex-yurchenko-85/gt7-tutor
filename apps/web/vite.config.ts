@@ -18,6 +18,7 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['test/**/*.spec.tsx', 'test/**/*.spec.ts'],
     setupFiles: ['test/setup.ts'],
-    css: false
+    css: false,
+    pool: 'vmThreads'
   }
 });
