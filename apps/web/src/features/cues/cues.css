@@ -1,0 +1,383 @@
+@media (min-width: 900px) {
+  .cues-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+}
+
+.cues-intro {
+  margin-bottom: 10px;
+}
+
+.roadbook {
+  list-style: none;
+  padding: 0;
+}
+
+.note {
+  display: grid;
+  grid-template-columns: 38px 70px 54px minmax(0, 1fr) 96px;
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  font-size: 14px;
+  background: var(--paper);
+}
+
+.note:last-child {
+  border-bottom: 2px solid var(--ink);
+}
+
+.note > * {
+  padding: 9px;
+  border-right: 2px solid var(--ink);
+  min-width: 0;
+}
+
+.note > *:last-child {
+  border-right: 0;
+}
+
+.note .n {
+  font: 700 17px var(--font-display);
+  color: var(--mute);
+}
+
+.note .distance {
+  white-space: nowrap;
+}
+
+.note .distance b,
+.note .phrase b {
+  font: 700 19px/1.15 var(--font-display);
+}
+
+.note .phrase small {
+  display: block;
+  color: var(--mute);
+}
+
+.note em {
+  display: block;
+  font-style: normal;
+  color: var(--red);
+  font-weight: 600;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.glyph {
+  width: 32px;
+  height: 30px;
+  stroke: var(--ink);
+  stroke-width: 3;
+  fill: none;
+}
+
+.note.warn {
+  background: var(--soft);
+}
+
+.note.off {
+  color: var(--mute);
+}
+
+.note.off .glyph {
+  stroke: var(--mute);
+}
+
+.note.off .phrase b {
+  text-decoration: line-through;
+}
+
+.note .target {
+  white-space: nowrap;
+  color: var(--mute);
+}
+
+.note .target b {
+  font: 700 19px/1.15 var(--font-display);
+  color: var(--ink);
+}
+
+.note .n,
+.note .distance,
+.note .kind {
+  grid-row: span 2;
+}
+
+.note .target {
+  border-right: 0;
+}
+
+.note .act {
+  grid-column: 4 / span 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding-top: 0;
+  border-right: 0;
+}
+
+.note .act .pair {
+  display: flex;
+  gap: 6px;
+}
+
+.note.turn .n,
+.note.turn .distance,
+.note.turn .kind {
+  grid-row: auto;
+}
+
+.note .phrase small.reaction {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.offset {
+  display: grid;
+  gap: 2px;
+  flex: 1 1 220px;
+  min-width: 0;
+  max-width: 320px;
+}
+
+.offset-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.offset-label {
+  font-size: 13px;
+  color: var(--mute);
+}
+
+.offset output {
+  font: 700 16px var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.offset output.zero {
+  color: var(--mute);
+  font-weight: 600;
+}
+
+.offset-track {
+  position: relative;
+  display: block;
+}
+
+.offset-track::before {
+  content: '';
+  position: absolute;
+  left: calc(8px + (100% - 16px) * var(--zero-share));
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+  pointer-events: none;
+}
+
+.offset input[type='range'] {
+  --stop-from: calc(8px + (100% - 16px) * var(--from));
+  --stop-to: calc(8px + (100% - 16px) * var(--to));
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.offset input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  background: linear-gradient(
+    to right,
+    var(--line) var(--stop-from),
+    var(--ink) var(--stop-from),
+    var(--ink) var(--stop-to),
+    var(--line) var(--stop-to)
+  );
+}
+
+.offset input[type='range']::-moz-range-track {
+  height: 6px;
+  background: linear-gradient(
+    to right,
+    var(--line) var(--stop-from),
+    var(--ink) var(--stop-from),
+    var(--ink) var(--stop-to),
+    var(--line) var(--stop-to)
+  );
+}
+
+.offset input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 22px;
+  margin-top: -8px;
+  background: var(--ink);
+  border: 2px solid var(--paper);
+  border-radius: 3px;
+}
+
+.offset input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 22px;
+  background: var(--ink);
+  border: 2px solid var(--paper);
+  border-radius: 3px;
+}
+
+.offset input[type='range']:focus-visible {
+  outline: 3px solid var(--ref);
+  outline-offset: 2px;
+}
+
+.offset-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--mute);
+}
+
+.note.turn {
+  background: var(--bg);
+  border-top-style: dashed;
+}
+
+.note.turn > * {
+  border-right-style: dashed;
+}
+
+.note.turn .n {
+  color: var(--ink);
+  box-shadow: inset 6px 0 0 var(--yellow);
+}
+
+.voice-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 4px 28px;
+  margin-bottom: 14px;
+}
+
+.side-distance label {
+  display: block;
+  font: 700 17px var(--font-display);
+  margin-bottom: 4px;
+}
+
+.side-distance select {
+  width: auto;
+  min-width: 110px;
+}
+
+.side-distance .sub {
+  margin-top: 6px;
+}
+
+.speak-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font: 700 17px var(--font-display);
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.speak-switch .track {
+  width: 46px;
+  height: 26px;
+  border: 2px solid var(--ink);
+  border-radius: 13px;
+  position: relative;
+  background: var(--paper);
+}
+
+.speak-switch .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--mute);
+  transition: left 0.15s;
+}
+
+.speak-switch [aria-checked='true'] .track {
+  background: var(--yellow);
+}
+
+.speak-switch [aria-checked='true'] .knob {
+  left: 22px;
+  background: #14181f;
+}
+
+.speak-switch .sub {
+  margin-top: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .speak-switch .knob {
+    transition: none;
+  }
+}
+
+.note .act button {
+  border: 1.5px solid var(--ink);
+  padding: 4px 10px;
+  min-height: 44px;
+  min-width: 64px;
+  font-size: 14px;
+}
+
+.note .act button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--onink);
+}
+
+.note .act button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 899px) {
+  .note {
+    grid-template-columns: 30px 62px 44px minmax(0, 1fr);
+  }
+
+  .note .n,
+  .note .distance,
+  .note .kind {
+    grid-row: span 3;
+  }
+
+  .note .phrase {
+    border-right: 0;
+  }
+
+  .note .target,
+  .note .act {
+    grid-column: 4;
+    padding-top: 0;
+  }
+
+  .offset {
+    max-width: none;
+    flex-basis: 100%;
+  }
+}
+
+.note.turn .target {
+  white-space: normal;
+}

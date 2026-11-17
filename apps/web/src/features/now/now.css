@@ -1,0 +1,89 @@
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 4px;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.step i {
+  font: 700 20px var(--font-display);
+  font-style: normal;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--ink);
+  display: grid;
+  place-items: center;
+}
+
+.step.done i {
+  background: var(--ink);
+  color: var(--onink);
+}
+
+.step.now {
+  background: var(--soft);
+  margin: 0 -18px;
+  padding: 11px 18px;
+  font-weight: 600;
+}
+
+.step small {
+  display: block;
+  color: var(--mute);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.step-state {
+  font-size: 13px;
+  color: var(--mute);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+
+.stats div {
+  background: var(--paper);
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--mute);
+}
+
+.stats b {
+  display: block;
+  font: 700 28px/1.1 var(--font-display);
+  color: var(--ink);
+}
+
+.best {
+  margin-bottom: 10px;
+}
+
+.best b {
+  font: 700 24px var(--font-display);
+}
+
+.now-empty {
+  max-width: 640px;
+}
+
+@media (max-width: 899px) {
+  .stats b {
+    font-size: 22px;
+  }
+}

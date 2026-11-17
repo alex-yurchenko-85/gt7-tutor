@@ -1,0 +1,92 @@
+import { randomBytes } from 'node:crypto';
+import { ConflictException, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { CatalogueSourceError, CatalogueValidationError, diffCatalogue, fetchCatalogue } from '@gt7/catalogue';
+import type { Catalogue, CatalogueCheckResponse, CatalogueDiff } from '@gt7/contracts';
+import { CatalogueService } from './catalogue.service.js';
+import { CATALOGUE_FETCH } from './catalogue.tokens.js';
+
+export const CHECK_LIFETIME_MS = 10 * 60 * 1000;
+
+type PendingUpdate = { next: Catalogue; diff: CatalogueDiff; base: Catalogue; expiresAt: number };
+
+function updateFailed(reason: string): HttpException {
+  return new HttpException({ code: 'update-failed', reason }, HttpStatus.BAD_GATEWAY);
+}
+
+function conflict(code: string, reason: string): ConflictException {
+  return new ConflictException({ code, reason });
+}
+
+@Injectable()
+export class CatalogueUpdateService {
+  private readonly pending = new Map<string, PendingUpdate>();
+  private busy = false;
+
+  constructor(
+    private readonly catalogue: CatalogueService,
+    @Inject(CATALOGUE_FETCH) private readonly fetchFunction: typeof fetch,
+    private readonly config: ConfigService
+  ) {}
+
+  async check(): Promise<CatalogueCheckResponse> {
+    this.forgetExpired();
+    const base = this.catalogue.active;
+    const next = await this.fetchSources();
+    const diff = diffCatalogue(base, next);
+    const token = randomBytes(24).toString('base64url');
+    this.pending.set(token, { next, diff, base, expiresAt: Date.now() + CHECK_LIFETIME_MS });
+    return { token, diff };
+  }
+
+  async apply(token: string): Promise<void> {
+    this.forgetExpired();
+    const update = this.pending.get(token);
+    if (!update) throw conflict('unknown-token', 'The check is unknown or expired. Check for updates again.');
+    if (update.diff.rejected) throw conflict('rejected', update.diff.rejected);
+    if (update.base !== this.catalogue.active) throw conflict('stale-check', 'The active catalogue changed after the check. Check for updates again.');
+    await this.exclusively(async () => {
+      await this.catalogue.files.save(update.next, update.base);
+      await this.catalogue.activate(update.next);
+      this.pending.delete(token);
+    });
+  }
+
+  async restore(): Promise<void> {
+    if (!this.catalogue.files.hasPrevious()) throw conflict('no-previous', 'There is no previous catalogue to restore.');
+    await this.exclusively(async () => {
+      const previous = await this.catalogue.files.previous();
+      await this.catalogue.files.restore(previous);
+      await this.catalogue.activate(previous);
+      this.pending.clear();
+    });
+  }
+
+  private async fetchSources(): Promise<Catalogue> {
+    try {
+      return await fetchCatalogue({
+        fetch: this.fetchFunction,
+        aliases: await this.catalogue.files.aliases(),
+        timeoutMs: this.config.getOrThrow<number>('CATALOGUE_TIMEOUT_MS')
+      });
+    } catch (error) {
+      if (error instanceof CatalogueSourceError || error instanceof CatalogueValidationError) throw updateFailed(error.message);
+      throw error;
+    }
+  }
+
+  private async exclusively(work: () => Promise<void>): Promise<void> {
+    if (this.busy) throw conflict('busy', 'Another catalogue change is in progress.');
+    this.busy = true;
+    try {
+      await work();
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  private forgetExpired(): void {
+    const now = Date.now();
+    for (const [token, update] of this.pending) if (update.expiresAt <= now) this.pending.delete(token);
+  }
+}

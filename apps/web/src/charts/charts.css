@@ -1,0 +1,226 @@
+.plot {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  min-width: 0;
+}
+
+.track-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 60vh;
+}
+
+.track-reference {
+  fill: none;
+  stroke: var(--ref);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.track-attempt {
+  fill: none;
+  stroke: var(--you);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.track-label {
+  font-size: 15px;
+  fill: var(--mute);
+}
+
+.track-mark circle {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 2.5;
+}
+
+.track-mark.on-attempt circle {
+  stroke: var(--you);
+}
+
+.track-mark text {
+  font: 700 14px var(--font-display);
+  fill: var(--ink);
+}
+
+.track-mark.muted circle {
+  fill: transparent;
+  stroke: var(--mute);
+}
+
+.track-mark.muted text {
+  fill: var(--mute);
+}
+
+.track-mark.selected circle {
+  fill: var(--yellow);
+  stroke: #14181f;
+}
+
+.track-mark.selected text {
+  fill: #14181f;
+}
+
+.track-mark[role='button'] {
+  cursor: pointer;
+}
+
+.track-mark[role='button']:focus-visible circle {
+  stroke: var(--ref);
+  stroke-width: 4;
+}
+
+.track-cursor {
+  fill: var(--ink);
+}
+
+.track-mark.turn-in line {
+  stroke: var(--red);
+  stroke-width: 4;
+  stroke-linecap: butt;
+}
+
+.track-mark.apex circle {
+  fill: var(--yellow);
+  stroke: #14181f;
+}
+
+.track-mark.apex text {
+  fill: #14181f;
+  font-size: 12px;
+}
+
+.track-mark.apex .leader {
+  stroke: #14181f;
+  stroke-width: 1.5;
+}
+
+.track-mark.apex circle.dot {
+  stroke-width: 1.5;
+}
+
+.track-map.dark .track-reference {
+  stroke: #5b6472;
+  stroke-width: 5;
+}
+
+.track-map.dark .track-label {
+  fill: #8d95a1;
+}
+
+.track-map.dark .track-mark circle {
+  fill: #14181f;
+  stroke: #ffffff;
+}
+
+.track-map.dark .track-mark text {
+  fill: #ffffff;
+}
+
+.track-map.dark .track-cursor {
+  fill: #ffd60a;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--mute);
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.legend i {
+  display: inline-block;
+  width: 16px;
+  height: 3px;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+
+.legend .ref {
+  background: var(--ref);
+}
+
+.legend .you {
+  background: var(--you);
+}
+
+.legend .apex {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--yellow);
+  border: 1.5px solid #14181f;
+}
+
+.legend .turn-in {
+  width: 4px;
+  height: 12px;
+  background: var(--red);
+}
+
+.channel-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--mute);
+  margin-top: 12px;
+}
+
+.channel-plot {
+  margin-top: 4px;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.channel-plot svg {
+  display: block;
+  width: 100%;
+}
+
+.chart-line {
+  fill: none;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-line.ref {
+  stroke: var(--ref);
+}
+
+.chart-line.you {
+  stroke: var(--you);
+}
+
+.chart-line.ink {
+  stroke: var(--ink);
+}
+
+.chart-zero {
+  stroke: var(--line);
+  vector-effect: non-scaling-stroke;
+}
+
+.chart-cursor {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.track-map.dark .track-mark.apex circle {
+  fill: #ffd60a;
+  stroke: #14181f;
+}
+
+.track-map.dark .track-mark.apex .leader {
+  stroke: #ffd60a;
+}
+
+.track-map.dark .track-mark.apex text {
+  fill: #14181f;
+}

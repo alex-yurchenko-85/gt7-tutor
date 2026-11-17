@@ -1,0 +1,18 @@
+{
+  "https://raw.githubusercontent.com/ddm999/gt7info/web-new/_data/db/course.csv": "course-csv.txt",
+  "https://raw.githubusercontent.com/ddm999/gt7info/web-new/_data/db/maker.csv": "maker-csv.txt",
+  "https://raw.githubusercontent.com/ddm999/gt7info/web-new/_data/db/crsbase.csv": "crsbase-csv.txt",
+  "https://raw.githubusercontent.com/ddm999/gt7info/web-new/_data/db/country.csv": "country-csv.txt",
+  "https://raw.githubusercontent.com/ddm999/gt7info/web-new/_data/db/cars.csv": "cars-csv.txt",
+  "https://gran-turismo.fandom.com/api.php?action=parse&prop=wikitext&format=json&page=GT7%20A-License": "gt7-a-license.txt",
+  "https://gran-turismo.fandom.com/api.php?action=parse&prop=wikitext&format=json&page=GT7%20Master%20B-License": "gt7-master-b-license.txt",
+  "https://gran-turismo.fandom.com/api.php?action=parse&prop=wikitext&format=json&page=GT7%20Master%20S-License": "gt7-master-s-license.txt",
+  "https://gran-turismo.fandom.com/api.php?action=parse&prop=wikitext&format=json&page=GT7%20International%20B-License": "gt7-international-b-license.txt",
+  "https://gran-turismo.fandom.com/api.php?action=parse&prop=wikitext&format=json&page=GT7%20Master%20International%20A-License": "gt7-master-international-a-license.txt",
+  "https://gran-turismo.fandom.com/api.php?action=parse&prop=wikitext&format=json&page=GT7%20Master%20International%20B-License": "gt7-master-international-b-license.txt",
+  "https://gran-turismo.fandom.com/api.php?action=parse&prop=wikitext&format=json&page=GT7%20B-License": "gt7-b-license.txt",
+  "https://gran-turismo.fandom.com/api.php?action=parse&prop=wikitext&format=json&page=GT7%20International%20A-License": "gt7-international-a-license.txt",
+  "https://gran-turismo.fandom.com/api.php?action=parse&prop=wikitext&format=json&page=GT7%20Master%20A-License": "gt7-master-a-license.txt",
+  "https://gran-turismo.fandom.com/api.php?action=parse&prop=wikitext&format=json&page=Circuit%20Experience": "circuit-experience.txt",
+  "https://gran-turismo.fandom.com/api.php?action=parse&prop=wikitext&format=json&page=GT7%20S-License": "gt7-s-license.txt"
+}

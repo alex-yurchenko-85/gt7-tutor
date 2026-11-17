@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "fixtures": [
+    {
+      "name": "demo-wait05",
+      "file": "demo-wait05.ndjson",
+      "source": "2026-11-16T11-04-13-282Z-unseen-sector-wait05",
+      "range": {
+        "first": 0,
+        "last": 2570
+      },
+      "rows": 2571,
+      "startCueMonoMs": 5003.2083330000005,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed."
+    },
+    {
+      "name": "demo-wait10",
+      "file": "demo-wait10.ndjson",
+      "source": "2026-11-16T11-02-25-163Z-unseen-sector-wait10",
+      "range": {
+        "first": 0,
+        "last": 2678
+      },
+      "rows": 2679,
+      "startCueMonoMs": 10004.126916,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed."
+    },
+    {
+      "name": "demo-wait15",
+      "file": "demo-wait15.ndjson",
+      "source": "2026-11-16T11-03-19-520Z-unseen-sector-wait15",
+      "range": {
+        "first": 0,
+        "last": 3059
+      },
+      "rows": 3060,
+      "startCueMonoMs": 15004.064084,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed."
+    },
+    {
+      "name": "h3-wide-apex",
+      "file": "h3-wide-apex.ndjson",
+      "source": "2026-11-16T23-00-54-881Z-player-91020b84",
+      "range": {
+        "first": 6300,
+        "last": 8000
+      },
+      "rows": 1701,
+      "startCueMonoMs": null,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed."
+    },
+    {
+      "name": "h3-wide-finish",
+      "file": "h3-wide-finish.ndjson",
+      "source": "2026-11-16T22-38-57-684Z-player-381d8b7a",
+      "range": {
+        "first": 5150,
+        "last": 7200
+      },
+      "rows": 2051,
+      "startCueMonoMs": null,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed."
+    },
+    {
+      "name": "player-pause",
+      "file": "player-pause.ndjson",
+      "source": "2026-11-16T11-09-54-185Z-unseen-player-pause",
+      "range": {
+        "first": 0,
+        "last": 2447
+      },
+      "rows": 2448,
+      "startCueMonoMs": 5003.4875409999995,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed."
+    },
+    {
+      "name": "player-run",
+      "file": "player-run.ndjson",
+      "source": "2026-11-16T11-23-01-055Z-yangwang-racing-lines-player",
+      "range": {
+        "first": 0,
+        "last": 3783
+      },
+      "rows": 3784,
+      "startCueMonoMs": 5004.284500000001,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed."
+    }
+  ]
+}

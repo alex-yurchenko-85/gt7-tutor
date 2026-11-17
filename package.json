@@ -1,0 +1,52 @@
+{
+  "name": "gt7-tutor",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "packageManager": "pnpm@12.21.0",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "build:packages": "pnpm --filter \"./packages/**\" run build",
+    "build": "pnpm -r run build",
+    "start": "node apps/server/dist/main.js",
+    "typecheck": "pnpm build:packages && pnpm -r run typecheck && tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:integration": "pnpm build && pnpm --filter @gt7/server run test:integration",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:migrate": "knex --knexfile knexfile.cjs migrate:latest",
+    "capture": "node --conditions=source tools/capture.ts",
+    "replay": "node --conditions=source tools/replay.ts",
+    "fixture": "node tools/make-fixture.ts",
+    "evaluate-coach": "node --conditions=source tools/evaluate-coach.ts",
+    "catalogue:build": "node --conditions=source tools/build-catalogue.ts",
+    "audio:generate": "pnpm --dir tools/audio install --frozen-lockfile && node --conditions=source tools/generate-audio.ts",
+    "site:check": "node tools/site-check.ts",
+    "demo": "node tools/demo/demo.ts",
+    "setup:local": "node tools/setup/setup-local.ts",
+    "prepare": "husky",
+    "commitlint": "commitlint",
+    "release": "semantic-release"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
+    "@semantic-release/changelog": "7.0.0",
+    "@semantic-release/git": "11.0.1",
+    "@types/node": "24.19.2",
+    "husky": "9.1.7",
+    "knex": "3.3.0",
+    "pg": "8.23.1",
+    "semantic-release": "26.0.1",
+    "typescript": "6.0.3",
+    "vitest": "5.1.0"
+  },
+  "dependencies": {
+    "@gt7/capture": "workspace:*",
+    "@gt7/catalogue": "workspace:*",
+    "@gt7/contracts": "workspace:*",
+    "@gt7/core": "workspace:*",
+    "uqr": "0.1.3"
+  }
+}

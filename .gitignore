@@ -1,0 +1,12 @@
+node_modules/
+data/
+.env
+.DS_Store
+.claude/settings.local.json
+dist/
+coverage/
+*.tsbuildinfo
+.superpowers/
+.demo/
+CLAUDE.md
+AGENTS.md

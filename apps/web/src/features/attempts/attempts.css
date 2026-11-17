@@ -1,0 +1,29 @@
+.attempt-day h2 .sub {
+  font: 400 13px var(--font-body);
+  margin-left: 6px;
+}
+
+.attempt-number {
+  font: 700 17px var(--font-display);
+  color: var(--mute);
+}
+
+.attempt-time {
+  font: 700 20px var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.best-tag {
+  margin-left: 10px;
+  vertical-align: 3px;
+}
+
+tr.best td {
+  background: var(--soft);
+}
+
+@media (max-width: 899px) {
+  .hide-narrow {
+    display: none;
+  }
+}

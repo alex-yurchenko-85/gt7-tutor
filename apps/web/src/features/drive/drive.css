@@ -1,0 +1,147 @@
+.drive-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.arm-panel {
+  max-width: 560px;
+}
+
+.arm-panel .label {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.voice-line {
+  margin: 14px 0 6px;
+  font-weight: 600;
+}
+
+.drive-stage {
+  --stage-ink: #ffffff;
+  --stage-mute: #b9bfc7;
+  --stage-dim: #6b7380;
+  --stage-line: #454b54;
+  background: #14181f;
+  color: var(--stage-ink);
+  color-scheme: dark;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(0, 1.3fr);
+  gap: 28px;
+  min-height: 560px;
+  margin-top: 16px;
+}
+
+.stage-left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stage-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--stage-mute);
+}
+
+.drive-stage .cue {
+  font: 700 clamp(54px, 6vw, 92px) / 0.95 var(--font-display);
+  margin-top: 30px;
+  min-height: 240px;
+  overflow-wrap: anywhere;
+}
+
+.drive-stage .cue-words {
+  display: block;
+}
+
+.drive-stage .cue-number {
+  display: block;
+  color: #ffd60a;
+  font-size: clamp(120px, 14vw, 210px);
+  font-variant-numeric: tabular-nums;
+}
+
+.drive-stage .cue.idle {
+  color: var(--stage-dim);
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.stage-alert {
+  background: #ffd60a;
+  color: #14181f;
+  padding: 8px 10px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.live-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--stage-mute);
+}
+
+.live-numbers b {
+  display: block;
+  font: 700 30px var(--font-display);
+  color: var(--stage-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.drive-stage .next {
+  margin-top: auto;
+  border-top: 1px solid var(--stage-line);
+  padding-top: 12px;
+  font-size: 16px;
+  color: var(--stage-mute);
+  min-height: 2.6em;
+}
+
+.stage-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.stage-controls button {
+  border: 1.5px solid var(--stage-dim);
+  color: var(--stage-ink);
+  padding: 8px 14px;
+  min-height: 44px;
+}
+
+.stage-map {
+  align-self: center;
+  min-width: 0;
+}
+
+.drive-stage :focus-visible {
+  outline-color: #ffd60a;
+}
+
+@media (max-width: 899px) {
+  .drive-stage {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 18px;
+    min-height: 0;
+    margin-left: calc(-1 * var(--gutter));
+    margin-right: calc(-1 * var(--gutter));
+  }
+
+  .drive-stage .cue {
+    min-height: 190px;
+  }
+}

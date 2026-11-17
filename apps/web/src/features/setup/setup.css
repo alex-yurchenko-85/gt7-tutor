@@ -1,0 +1,27 @@
+.voice-state {
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.correction-value {
+  font: 700 17px var(--font-display);
+  margin-left: 6px;
+}
+
+.field input[type='range'] {
+  border: 0;
+  padding: 0;
+  accent-color: var(--ink);
+}
+
+fieldset.plain {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.catalogue-diff {
+  margin-top: 12px;
+  border-top: 2px solid var(--ink);
+  padding-top: 6px;
+}

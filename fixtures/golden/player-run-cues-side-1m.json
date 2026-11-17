@@ -1,0 +1,263 @@
+{
+  "reference": {
+    "fixture": "demo-wait05",
+    "first": 352,
+    "last": 1897,
+    "lengthM": 1092.649970037593
+  },
+  "attempt": "player-run",
+  "deviceDelayMs": 60,
+  "phraseDurations": "estimatedPhraseMs",
+  "speakTargets": true,
+  "sideCueDistanceM": 1,
+  "events": [
+    {
+      "key": "brake@332",
+      "kind": "brake",
+      "sM": 332,
+      "endSM": 478,
+      "targetSpeedKph": 85,
+      "voice": "hard-brake",
+      "bigStop": true,
+      "text": "Hard brake"
+    },
+    {
+      "key": "throttle@491",
+      "kind": "throttle",
+      "sM": 491,
+      "endSM": null,
+      "targetSpeedKph": 95,
+      "voice": "full-throttle",
+      "bigStop": false,
+      "text": "Full throttle"
+    },
+    {
+      "key": "brake@677",
+      "kind": "brake",
+      "sM": 677,
+      "endSM": 712,
+      "targetSpeedKph": 110,
+      "voice": "brake",
+      "bigStop": false,
+      "text": "Brake"
+    },
+    {
+      "key": "throttle@737",
+      "kind": "throttle",
+      "sM": 737,
+      "endSM": null,
+      "targetSpeedKph": 140,
+      "voice": "full-throttle",
+      "bigStop": false,
+      "text": "Full throttle"
+    },
+    {
+      "key": "brake@832",
+      "kind": "brake",
+      "sM": 832,
+      "endSM": 846,
+      "targetSpeedKph": 120,
+      "voice": "light-brake",
+      "bigStop": false,
+      "text": "Light brake"
+    },
+    {
+      "key": "throttle@859",
+      "kind": "throttle",
+      "sM": 859,
+      "endSM": null,
+      "targetSpeedKph": 135,
+      "voice": "full-throttle",
+      "bigStop": false,
+      "text": "Full throttle"
+    },
+    {
+      "key": "brake@1044",
+      "kind": "brake",
+      "sM": 1044,
+      "endSM": 1061,
+      "targetSpeedKph": 145,
+      "voice": "light-brake",
+      "bigStop": false,
+      "text": "Light brake"
+    }
+  ],
+  "trace": {
+    "attemptEvents": [
+      {
+        "generation": 1,
+        "type": "started",
+        "rawIndex": 1163,
+        "reason": "start-gate"
+      },
+      {
+        "generation": 1,
+        "type": "finished",
+        "rawIndex": 2786,
+        "reason": "end-gate"
+      }
+    ],
+    "cues": [
+      {
+        "id": "1:big-stop@332",
+        "kind": "big-stop",
+        "targetSpeedKph": null,
+        "clip": "big-stop",
+        "followClip": null,
+        "priority": 95,
+        "rawIndex": 1343,
+        "sM": 187.10383153215298,
+        "decidedMonoMs": 22542.782459,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:brake@332",
+        "kind": "hard-brake",
+        "targetSpeedKph": 85,
+        "clip": "hard-brake",
+        "followClip": "speed-85",
+        "priority": 100,
+        "rawIndex": 1435,
+        "sM": 292.1230154525494,
+        "decidedMonoMs": 24077.711709,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:tighter@1",
+        "kind": "tighter",
+        "targetSpeedKph": null,
+        "clip": "tighter",
+        "followClip": null,
+        "priority": 50,
+        "rawIndex": 1713,
+        "sM": 487,
+        "decidedMonoMs": 28715.711959,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:brake@677",
+        "kind": "brake",
+        "targetSpeedKph": 110,
+        "clip": "brake",
+        "followClip": "speed-110",
+        "priority": 100,
+        "rawIndex": 2054,
+        "sM": 654.4788403129319,
+        "decidedMonoMs": 34404.984917,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:throttle@737",
+        "kind": "full-throttle",
+        "targetSpeedKph": 140,
+        "clip": "full-throttle",
+        "followClip": null,
+        "priority": 20,
+        "rawIndex": 2177,
+        "sM": 719.1244411761851,
+        "decidedMonoMs": 36456.988042,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:keep-right@779",
+        "kind": "keep-right",
+        "targetSpeedKph": null,
+        "clip": "keep-right",
+        "followClip": null,
+        "priority": 50,
+        "rawIndex": 2294,
+        "sM": 779,
+        "decidedMonoMs": 38408.844208999995,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:brake@832",
+        "kind": "light-brake",
+        "targetSpeedKph": 120,
+        "clip": "light-brake",
+        "followClip": "speed-120",
+        "priority": 100,
+        "rawIndex": 2345,
+        "sM": 809.0236205260871,
+        "decidedMonoMs": 39260.508625,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:keep-left@889",
+        "kind": "keep-left",
+        "targetSpeedKph": null,
+        "clip": "keep-left",
+        "followClip": null,
+        "priority": 50,
+        "rawIndex": 2481,
+        "sM": 888.9350282264518,
+        "decidedMonoMs": 41528.784125,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:keep-right@946",
+        "kind": "keep-right",
+        "targetSpeedKph": null,
+        "clip": "keep-right",
+        "followClip": null,
+        "priority": 50,
+        "rawIndex": 2581,
+        "sM": 945.6617519874326,
+        "decidedMonoMs": 43197.301999999996,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:brake@1044",
+        "kind": "light-brake",
+        "targetSpeedKph": 145,
+        "clip": "light-brake",
+        "followClip": "speed-145",
+        "priority": 100,
+        "rawIndex": 2680,
+        "sM": 1016.0580494969533,
+        "decidedMonoMs": 44849.188834,
+        "ttlMs": 210
+      }
+    ],
+    "suppressed": [
+      {
+        "generation": 1,
+        "eventKey": "throttle@491",
+        "why": "acceleration-unsafe",
+        "rawIndex": 1720
+      },
+      {
+        "generation": 1,
+        "eventKey": "keep-right@519",
+        "why": "cooldown",
+        "rawIndex": 1801
+      },
+      {
+        "generation": 1,
+        "eventKey": "throttle@859",
+        "why": "acceleration-unsafe",
+        "rawIndex": 2421
+      },
+      {
+        "generation": 1,
+        "eventKey": "keep-left@1031",
+        "why": "cooldown",
+        "rawIndex": 2699
+      }
+    ],
+    "guidance": [
+      {
+        "generation": 1,
+        "rawIndex": 1163,
+        "mode": "active",
+        "reason": null
+      },
+      {
+        "generation": 1,
+        "rawIndex": 2785,
+        "mode": "waiting-for-restart",
+        "reason": "awaiting-restart"
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+.exercise-header {
+  margin-bottom: 16px;
+}
+
+.exercise-tabs {
+  display: flex;
+  gap: 0;
+  margin-top: 20px;
+  border-bottom: 2px solid var(--ink);
+  overflow-x: auto;
+}
+
+.exercise-tabs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.exercise-tabs a[aria-current='page'] {
+  background: var(--ink);
+  color: var(--onink);
+  font-weight: 600;
+}
+
+.section-title {
+  margin: 0 0 12px;
+}

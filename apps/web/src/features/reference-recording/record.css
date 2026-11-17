@@ -1,0 +1,93 @@
+.recordings {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 12px;
+}
+
+.recordings li {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.recordings li.done {
+  color: var(--mute);
+}
+
+.recordings li.done::before {
+  content: '✓ ';
+  color: var(--ok);
+}
+
+.recordings li.now {
+  background: var(--soft);
+  margin: 0 -18px;
+  padding: 9px 18px;
+  font-weight: 600;
+}
+
+.recording-live {
+  border-top: 2px solid var(--ink);
+  padding-top: 12px;
+}
+
+.countdown {
+  font: 700 clamp(96px, 16vw, 180px) / 1 var(--font-display);
+  margin: 10px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown.go {
+  background: var(--yellow);
+  color: #14181f;
+  padding: 0 12px;
+  display: inline-block;
+}
+
+.choice {
+  border: 0;
+  padding: 0;
+  margin-top: 14px;
+  min-width: 0;
+}
+
+.choice legend {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.choice label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.choice input {
+  margin-top: 4px;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--ink);
+  flex: none;
+}
+
+.choice small {
+  display: block;
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+
+.proposal h2,
+.manual h2 {
+  margin-top: 0;
+}
+
+.manual {
+  margin-top: 16px;
+}
+
+.reference-name {
+  font: 700 17px var(--font-display);
+}

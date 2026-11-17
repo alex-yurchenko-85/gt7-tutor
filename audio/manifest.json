@@ -1,0 +1,562 @@
+{
+  "schemaVersion": 1,
+  "voice": {
+    "model": "onnx-community/Kokoro-82M-v1.0-ONNX",
+    "voice": "af_heart",
+    "speed": 1.1
+  },
+  "clips": {
+    "hard-brake": {
+      "file": "clips/hard-brake.wav",
+      "durationMs": 766
+    },
+    "brake": {
+      "file": "clips/brake.wav",
+      "durationMs": 490
+    },
+    "light-brake": {
+      "file": "clips/light-brake.wav",
+      "durationMs": 720
+    },
+    "ease-off": {
+      "file": "clips/ease-off.wav",
+      "durationMs": 614
+    },
+    "throttle": {
+      "file": "clips/throttle.wav",
+      "durationMs": 544
+    },
+    "full-throttle": {
+      "file": "clips/full-throttle.wav",
+      "durationMs": 757
+    },
+    "keep-left": {
+      "file": "clips/keep-left.wav",
+      "durationMs": 696
+    },
+    "keep-right": {
+      "file": "clips/keep-right.wav",
+      "durationMs": 701
+    },
+    "tighter": {
+      "file": "clips/tighter.wav",
+      "durationMs": 556
+    },
+    "big-stop": {
+      "file": "clips/big-stop.wav",
+      "durationMs": 698
+    },
+    "guidance-paused": {
+      "file": "clips/guidance-paused.wav",
+      "durationMs": 926
+    },
+    "guidance-resumed": {
+      "file": "clips/guidance-resumed.wav",
+      "durationMs": 981
+    },
+    "voice-check": {
+      "file": "clips/voice-check.wav",
+      "durationMs": 729
+    },
+    "focus-brake-early-1": {
+      "file": "clips/focus-brake-early-1.wav",
+      "durationMs": 1280
+    },
+    "focus-brake-early-2": {
+      "file": "clips/focus-brake-early-2.wav",
+      "durationMs": 1341
+    },
+    "focus-brake-early-3": {
+      "file": "clips/focus-brake-early-3.wav",
+      "durationMs": 1431
+    },
+    "focus-brake-early-4": {
+      "file": "clips/focus-brake-early-4.wav",
+      "durationMs": 1451
+    },
+    "focus-brake-early-5": {
+      "file": "clips/focus-brake-early-5.wav",
+      "durationMs": 1442
+    },
+    "focus-brake-early-6": {
+      "file": "clips/focus-brake-early-6.wav",
+      "durationMs": 1500
+    },
+    "focus-brake-early-7": {
+      "file": "clips/focus-brake-early-7.wav",
+      "durationMs": 1552
+    },
+    "focus-brake-early-8": {
+      "file": "clips/focus-brake-early-8.wav",
+      "durationMs": 1381
+    },
+    "focus-brake-early-9": {
+      "file": "clips/focus-brake-early-9.wav",
+      "durationMs": 1524
+    },
+    "focus-brake-early-10": {
+      "file": "clips/focus-brake-early-10.wav",
+      "durationMs": 1411
+    },
+    "focus-brake-late-1": {
+      "file": "clips/focus-brake-late-1.wav",
+      "durationMs": 1346
+    },
+    "focus-brake-late-2": {
+      "file": "clips/focus-brake-late-2.wav",
+      "durationMs": 1403
+    },
+    "focus-brake-late-3": {
+      "file": "clips/focus-brake-late-3.wav",
+      "durationMs": 1486
+    },
+    "focus-brake-late-4": {
+      "file": "clips/focus-brake-late-4.wav",
+      "durationMs": 1486
+    },
+    "focus-brake-late-5": {
+      "file": "clips/focus-brake-late-5.wav",
+      "durationMs": 1479
+    },
+    "focus-brake-late-6": {
+      "file": "clips/focus-brake-late-6.wav",
+      "durationMs": 1537
+    },
+    "focus-brake-late-7": {
+      "file": "clips/focus-brake-late-7.wav",
+      "durationMs": 1608
+    },
+    "focus-brake-late-8": {
+      "file": "clips/focus-brake-late-8.wav",
+      "durationMs": 1436
+    },
+    "focus-brake-late-9": {
+      "file": "clips/focus-brake-late-9.wav",
+      "durationMs": 1545
+    },
+    "focus-brake-late-10": {
+      "file": "clips/focus-brake-late-10.wav",
+      "durationMs": 1529
+    },
+    "focus-slow-corner-1": {
+      "file": "clips/focus-slow-corner-1.wav",
+      "durationMs": 1552
+    },
+    "focus-slow-corner-2": {
+      "file": "clips/focus-slow-corner-2.wav",
+      "durationMs": 1597
+    },
+    "focus-slow-corner-3": {
+      "file": "clips/focus-slow-corner-3.wav",
+      "durationMs": 1675
+    },
+    "focus-slow-corner-4": {
+      "file": "clips/focus-slow-corner-4.wav",
+      "durationMs": 1675
+    },
+    "focus-slow-corner-5": {
+      "file": "clips/focus-slow-corner-5.wav",
+      "durationMs": 1659
+    },
+    "focus-slow-corner-6": {
+      "file": "clips/focus-slow-corner-6.wav",
+      "durationMs": 1695
+    },
+    "focus-slow-corner-7": {
+      "file": "clips/focus-slow-corner-7.wav",
+      "durationMs": 1724
+    },
+    "focus-slow-corner-8": {
+      "file": "clips/focus-slow-corner-8.wav",
+      "durationMs": 1553
+    },
+    "focus-slow-corner-9": {
+      "file": "clips/focus-slow-corner-9.wav",
+      "durationMs": 1704
+    },
+    "focus-slow-corner-10": {
+      "file": "clips/focus-slow-corner-10.wav",
+      "durationMs": 1649
+    },
+    "focus-throttle-late-1": {
+      "file": "clips/focus-throttle-late-1.wav",
+      "durationMs": 1600
+    },
+    "focus-throttle-late-2": {
+      "file": "clips/focus-throttle-late-2.wav",
+      "durationMs": 1634
+    },
+    "focus-throttle-late-3": {
+      "file": "clips/focus-throttle-late-3.wav",
+      "durationMs": 1688
+    },
+    "focus-throttle-late-4": {
+      "file": "clips/focus-throttle-late-4.wav",
+      "durationMs": 1694
+    },
+    "focus-throttle-late-5": {
+      "file": "clips/focus-throttle-late-5.wav",
+      "durationMs": 1664
+    },
+    "focus-throttle-late-6": {
+      "file": "clips/focus-throttle-late-6.wav",
+      "durationMs": 1720
+    },
+    "focus-throttle-late-7": {
+      "file": "clips/focus-throttle-late-7.wav",
+      "durationMs": 1786
+    },
+    "focus-throttle-late-8": {
+      "file": "clips/focus-throttle-late-8.wav",
+      "durationMs": 1625
+    },
+    "focus-throttle-late-9": {
+      "file": "clips/focus-throttle-late-9.wav",
+      "durationMs": 1711
+    },
+    "focus-throttle-late-10": {
+      "file": "clips/focus-throttle-late-10.wav",
+      "durationMs": 1687
+    },
+    "focus-off-line-1": {
+      "file": "clips/focus-off-line-1.wav",
+      "durationMs": 1564
+    },
+    "focus-off-line-2": {
+      "file": "clips/focus-off-line-2.wav",
+      "durationMs": 1628
+    },
+    "focus-off-line-3": {
+      "file": "clips/focus-off-line-3.wav",
+      "durationMs": 1681
+    },
+    "focus-off-line-4": {
+      "file": "clips/focus-off-line-4.wav",
+      "durationMs": 1704
+    },
+    "focus-off-line-5": {
+      "file": "clips/focus-off-line-5.wav",
+      "durationMs": 1698
+    },
+    "focus-off-line-6": {
+      "file": "clips/focus-off-line-6.wav",
+      "durationMs": 1677
+    },
+    "focus-off-line-7": {
+      "file": "clips/focus-off-line-7.wav",
+      "durationMs": 1829
+    },
+    "focus-off-line-8": {
+      "file": "clips/focus-off-line-8.wav",
+      "durationMs": 1591
+    },
+    "focus-off-line-9": {
+      "file": "clips/focus-off-line-9.wav",
+      "durationMs": 1732
+    },
+    "focus-off-line-10": {
+      "file": "clips/focus-off-line-10.wav",
+      "durationMs": 1705
+    },
+    "focus-wide-apex-1": {
+      "file": "clips/focus-wide-apex-1.wav",
+      "durationMs": 1787
+    },
+    "focus-wide-apex-2": {
+      "file": "clips/focus-wide-apex-2.wav",
+      "durationMs": 1851
+    },
+    "focus-wide-apex-3": {
+      "file": "clips/focus-wide-apex-3.wav",
+      "durationMs": 1915
+    },
+    "focus-wide-apex-4": {
+      "file": "clips/focus-wide-apex-4.wav",
+      "durationMs": 1908
+    },
+    "focus-wide-apex-5": {
+      "file": "clips/focus-wide-apex-5.wav",
+      "durationMs": 1933
+    },
+    "focus-wide-apex-6": {
+      "file": "clips/focus-wide-apex-6.wav",
+      "durationMs": 1939
+    },
+    "focus-wide-apex-7": {
+      "file": "clips/focus-wide-apex-7.wav",
+      "durationMs": 2010
+    },
+    "focus-wide-apex-8": {
+      "file": "clips/focus-wide-apex-8.wav",
+      "durationMs": 1834
+    },
+    "focus-wide-apex-9": {
+      "file": "clips/focus-wide-apex-9.wav",
+      "durationMs": 1969
+    },
+    "focus-wide-apex-10": {
+      "file": "clips/focus-wide-apex-10.wav",
+      "durationMs": 1889
+    },
+    "speed-30": {
+      "file": "clips/speed-30.wav",
+      "durationMs": 548
+    },
+    "speed-35": {
+      "file": "clips/speed-35.wav",
+      "durationMs": 748
+    },
+    "speed-40": {
+      "file": "clips/speed-40.wav",
+      "durationMs": 567
+    },
+    "speed-45": {
+      "file": "clips/speed-45.wav",
+      "durationMs": 750
+    },
+    "speed-50": {
+      "file": "clips/speed-50.wav",
+      "durationMs": 597
+    },
+    "speed-55": {
+      "file": "clips/speed-55.wav",
+      "durationMs": 784
+    },
+    "speed-60": {
+      "file": "clips/speed-60.wav",
+      "durationMs": 605
+    },
+    "speed-65": {
+      "file": "clips/speed-65.wav",
+      "durationMs": 838
+    },
+    "speed-70": {
+      "file": "clips/speed-70.wav",
+      "durationMs": 655
+    },
+    "speed-75": {
+      "file": "clips/speed-75.wav",
+      "durationMs": 821
+    },
+    "speed-80": {
+      "file": "clips/speed-80.wav",
+      "durationMs": 494
+    },
+    "speed-85": {
+      "file": "clips/speed-85.wav",
+      "durationMs": 728
+    },
+    "speed-90": {
+      "file": "clips/speed-90.wav",
+      "durationMs": 595
+    },
+    "speed-95": {
+      "file": "clips/speed-95.wav",
+      "durationMs": 817
+    },
+    "speed-100": {
+      "file": "clips/speed-100.wav",
+      "durationMs": 771
+    },
+    "speed-105": {
+      "file": "clips/speed-105.wav",
+      "durationMs": 819
+    },
+    "speed-110": {
+      "file": "clips/speed-110.wav",
+      "durationMs": 652
+    },
+    "speed-115": {
+      "file": "clips/speed-115.wav",
+      "durationMs": 784
+    },
+    "speed-120": {
+      "file": "clips/speed-120.wav",
+      "durationMs": 744
+    },
+    "speed-125": {
+      "file": "clips/speed-125.wav",
+      "durationMs": 997
+    },
+    "speed-130": {
+      "file": "clips/speed-130.wav",
+      "durationMs": 737
+    },
+    "speed-135": {
+      "file": "clips/speed-135.wav",
+      "durationMs": 948
+    },
+    "speed-140": {
+      "file": "clips/speed-140.wav",
+      "durationMs": 740
+    },
+    "speed-145": {
+      "file": "clips/speed-145.wav",
+      "durationMs": 975
+    },
+    "speed-150": {
+      "file": "clips/speed-150.wav",
+      "durationMs": 757
+    },
+    "speed-155": {
+      "file": "clips/speed-155.wav",
+      "durationMs": 988
+    },
+    "speed-160": {
+      "file": "clips/speed-160.wav",
+      "durationMs": 790
+    },
+    "speed-165": {
+      "file": "clips/speed-165.wav",
+      "durationMs": 1045
+    },
+    "speed-170": {
+      "file": "clips/speed-170.wav",
+      "durationMs": 803
+    },
+    "speed-175": {
+      "file": "clips/speed-175.wav",
+      "durationMs": 997
+    },
+    "speed-180": {
+      "file": "clips/speed-180.wav",
+      "durationMs": 686
+    },
+    "speed-185": {
+      "file": "clips/speed-185.wav",
+      "durationMs": 882
+    },
+    "speed-190": {
+      "file": "clips/speed-190.wav",
+      "durationMs": 765
+    },
+    "speed-195": {
+      "file": "clips/speed-195.wav",
+      "durationMs": 1000
+    },
+    "speed-200": {
+      "file": "clips/speed-200.wav",
+      "durationMs": 668
+    },
+    "speed-205": {
+      "file": "clips/speed-205.wav",
+      "durationMs": 754
+    },
+    "speed-210": {
+      "file": "clips/speed-210.wav",
+      "durationMs": 581
+    },
+    "speed-215": {
+      "file": "clips/speed-215.wav",
+      "durationMs": 743
+    },
+    "speed-220": {
+      "file": "clips/speed-220.wav",
+      "durationMs": 693
+    },
+    "speed-225": {
+      "file": "clips/speed-225.wav",
+      "durationMs": 941
+    },
+    "speed-230": {
+      "file": "clips/speed-230.wav",
+      "durationMs": 667
+    },
+    "speed-235": {
+      "file": "clips/speed-235.wav",
+      "durationMs": 879
+    },
+    "speed-240": {
+      "file": "clips/speed-240.wav",
+      "durationMs": 678
+    },
+    "speed-245": {
+      "file": "clips/speed-245.wav",
+      "durationMs": 923
+    },
+    "speed-250": {
+      "file": "clips/speed-250.wav",
+      "durationMs": 710
+    },
+    "speed-255": {
+      "file": "clips/speed-255.wav",
+      "durationMs": 910
+    },
+    "speed-260": {
+      "file": "clips/speed-260.wav",
+      "durationMs": 768
+    },
+    "speed-265": {
+      "file": "clips/speed-265.wav",
+      "durationMs": 961
+    },
+    "speed-270": {
+      "file": "clips/speed-270.wav",
+      "durationMs": 773
+    },
+    "speed-275": {
+      "file": "clips/speed-275.wav",
+      "durationMs": 1020
+    },
+    "speed-280": {
+      "file": "clips/speed-280.wav",
+      "durationMs": 647
+    },
+    "speed-285": {
+      "file": "clips/speed-285.wav",
+      "durationMs": 833
+    },
+    "speed-290": {
+      "file": "clips/speed-290.wav",
+      "durationMs": 703
+    },
+    "speed-295": {
+      "file": "clips/speed-295.wav",
+      "durationMs": 948
+    },
+    "speed-300": {
+      "file": "clips/speed-300.wav",
+      "durationMs": 708
+    },
+    "speed-305": {
+      "file": "clips/speed-305.wav",
+      "durationMs": 774
+    },
+    "speed-310": {
+      "file": "clips/speed-310.wav",
+      "durationMs": 616
+    },
+    "speed-315": {
+      "file": "clips/speed-315.wav",
+      "durationMs": 762
+    },
+    "speed-320": {
+      "file": "clips/speed-320.wav",
+      "durationMs": 748
+    },
+    "speed-325": {
+      "file": "clips/speed-325.wav",
+      "durationMs": 943
+    },
+    "speed-330": {
+      "file": "clips/speed-330.wav",
+      "durationMs": 692
+    },
+    "speed-335": {
+      "file": "clips/speed-335.wav",
+      "durationMs": 919
+    },
+    "speed-340": {
+      "file": "clips/speed-340.wav",
+      "durationMs": 708
+    },
+    "speed-345": {
+      "file": "clips/speed-345.wav",
+      "durationMs": 941
+    },
+    "speed-350": {
+      "file": "clips/speed-350.wav",
+      "durationMs": 741
+    }
+  }
+}

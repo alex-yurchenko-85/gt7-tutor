@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GT7 Tutor: voice cues for Gran Turismo 7 exercises</title>
+<meta name="description" content="A self-hosted tutor for Gran Turismo 7 on PS5. It reads the live telemetry of the console and calls the next action in your browser: hard brake, full throttle, tighter.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="GT7 Tutor">
+<meta property="og:description" content="Voice cues for Gran Turismo 7 exercises, timed from the live telemetry of your PS5.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/screenshots/social.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-text">
+      <p class="brand">GT7 Tutor</p>
+      <h1><span>Brake hard.</span> <span>Full throttle.</span> <span>Tighter at the apex.</span></h1>
+      <p class="lede">GT7 Tutor reads the live telemetry of your PS5 during a Gran Turismo 7 exercise and calls the next action in your browser, about half a second before the point where the reference does it. It runs on your own computer. It has no account, no cloud service and no game footage.</p>
+      <div class="actions">
+        <a class="button" data-link="github" href="https://github.com/alex-yurchenko-85/gt7-tutor">Source code on GitHub</a>
+        <a class="button quiet" data-link="github" href="https://github.com/alex-yurchenko-85/gt7-tutor">Read the setup guide</a>
+      </div>
+      <p class="try-demo"><a data-link="github-demo" href="https://github.com/alex-yurchenko-85/gt7-tutor#try-the-demo-without-a-console">Try it without a console</a>: the demo replays recorded attempts on your computer, with the voice.</p>
+    </div>
+    <figure class="phone">
+      <img src="assets/screenshots/drive-phone.png" alt="The Drive view on a phone during a guided attempt. The current cue is Hard brake 85." width="390" height="844">
+    </figure>
+  </div>
+  <section class="roadbook wrap" aria-labelledby="roadbook-title">
+    <h2 id="roadbook-title" class="roadbook-title">The seven cues and three turns of one reference: Yangwang Experience, Racing Lines, 1093 m</h2>
+    <ol class="strip">
+      <li class="brake" style="--at: 30.4%"><b>332 m</b><span>Hard brake <em>85</em></span></li>
+      <li class="throttle" style="--at: 44.9%"><b>491 m</b><span>Full throttle</span></li>
+      <li class="apex" style="--at: 47.5%"><b>519 m</b><span>T1</span></li>
+      <li class="brake" style="--at: 62%; --anchor: 100%"><b>677 m</b><span>Brake <em>110</em></span></li>
+      <li class="throttle" style="--at: 67.5%; --anchor: 100%"><b>737 m</b><span>Full throttle</span></li>
+      <li class="apex" style="--at: 67.4%"><b>737 m</b><span>T2</span></li>
+      <li class="brake" style="--at: 76.1%; --anchor: 100%"><b>832 m</b><span>Light brake <em>120</em></span></li>
+      <li class="throttle" style="--at: 78.6%; --anchor: 0%"><b>859 m</b><span>Full throttle</span></li>
+      <li class="apex" style="--at: 79.6%"><b>870 m</b><span>T3</span></li>
+      <li class="brake" style="--at: 95.5%; --anchor: 100%"><b>1044 m</b><span>Light brake <em>145</em></span></li>
+    </ol>
+    <p class="strip-note">Distances from the start of the recorded demonstration. Target speeds in km/h, rounded down to 5; the voice says the number only after a brake phrase. T1 to T3 mark the apexes of the turns.</p>
+  </section>
+</header>
+
+<main>
+  <section class="wrap block" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <p class="intro">For each exercise the application leads you through four steps. It always shows the current step and the next action.</p>
+    <ol class="steps">
+      <li>
+        <div class="step-text">
+          <h3><span class="step-number">1</span>Record the reference</h3>
+          <p>Open the exercise in the game and record its demonstration three times. The demonstration is the same on every run and the background is not, so GT7 Tutor finds the part that repeats. That recorded drive becomes the target for the cues.</p>
+        </div>
+        <img src="assets/screenshots/cues-desktop.png" alt="The cue list of the reference: each cue with its distance, the phrase that the voice says and the target speed, with a row for each turn and a timing slider for each cue." width="1440" height="900" loading="lazy">
+      </li>
+      <li>
+        <div class="step-text">
+          <h3><span class="step-number">2</span>Drive without voice</h3>
+          <p>Drive two or three baseline attempts. GT7 Tutor finds the start and the finish by itself, measures the time from the telemetry and finds the differences from the reference.</p>
+        </div>
+        <img src="assets/screenshots/summary-desktop.png" alt="The summary after an attempt: the measured time, the focus for the next attempt, the gap to the best attempt and the largest difference from the reference." width="1440" height="900" loading="lazy">
+      </li>
+      <li>
+        <div class="step-text">
+          <h3><span class="step-number">3</span>Drive with voice</h3>
+          <p>Arm a guided attempt and drive. The voice names the action: “Hard brake. Eighty five”, “Full throttle”, or “Tighter” when you run wide before an apex. The first word comes about half a second before the point, after the delay of your device. After the finish the voice says one focus for the next attempt, such as “Turn one. Brake later.”</p>
+        </div>
+        <img src="assets/screenshots/drive-desktop.png" alt="The Drive view on a computer: the current cue Hard brake 85, the speed and the position on the reference line with the apexes of the turns." width="1440" height="900" loading="lazy">
+      </li>
+      <li>
+        <div class="step-text">
+          <h3><span class="step-number">4</span>Review</h3>
+          <p>Compare each attempt with the reference on a map and in linked speed and pedal charts. Differences that repeat across attempts show as counts, for example “Braked early at 332 m in 4 of 6 attempts”. A difference is not always a mistake: the reference is one recorded drive.</p>
+        </div>
+        <img src="assets/screenshots/review-desktop.png" alt="The review of an attempt: the map with the reference line in blue, the attempt in orange and the apexes of the turns, the list of differences and the speed and pedal charts." width="1440" height="900" loading="lazy">
+      </li>
+    </ol>
+  </section>
+
+  <section class="wrap block split" aria-labelledby="need-title">
+    <div>
+      <h2 id="need-title">What you need</h2>
+      <ul class="plain">
+        <li>A PS5 with Gran Turismo 7.</li>
+        <li>A computer with macOS, Windows or Linux on the same home network as the console.</li>
+        <li>Docker for the database, and Node.js 26 or later with pnpm. On macOS and Linux, a setup script checks these and prepares the rest.</li>
+        <li>A current browser on that computer or on a phone. On a phone, turn off auto-lock during a session.</li>
+      </ul>
+    </div>
+    <div>
+      <h2 id="checked-title">Exercises</h2>
+      <p>You record a reference from a demonstration of the game. GT7 Tutor then guides you through that exercise.</p>
+      <p class="small">The catalogue lists 100 licence tests and 58 Circuit Experience sections from public sources. A listed exercise is not a supported exercise.</p>
+    </div>
+  </section>
+
+  <section class="wrap block" aria-labelledby="catalogue-title">
+    <h2 id="catalogue-title">Find an exercise</h2>
+    <p class="intro">Select an exercise in the catalogue, or create your own. Each entry shows whether anybody checked it on a console.</p>
+    <img class="wide-shot" src="assets/screenshots/catalogue-desktop.png" alt="The catalogue with filters for activity, collection, track and support state. Yangwang Racing Lines is marked as checked on the console." width="1440" height="900" loading="lazy">
+  </section>
+
+  <template data-section="donate">
+    <section class="wrap block support" aria-labelledby="support-title">
+      <h2 id="support-title">Support the project</h2>
+      <p>GT7 Tutor is free and stays free. If it helps you, you can buy the author a coffee. A donation is voluntary and unlocks nothing.</p>
+      <a class="button" data-link="donate" href="#">Buy me a coffee</a>
+    </section>
+  </template>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <p>The code is under the GNU General Public License, version 3. Catalogue data comes from the Gran Turismo Wiki (CC BY-SA) and from the gt7info tables (MIT-0). The voice is Kokoro-82M, voice af_heart (Apache-2.0). The fonts are Sofia Sans and Sofia Sans Condensed (<a href="assets/fonts/OFL.txt">SIL Open Font License 1.1</a>).</p>
+    <p>GT7 Tutor is an unofficial fan project. It is not affiliated with or endorsed by Sony Interactive Entertainment or Polyphony Digital. Gran Turismo is a trademark of its owner.</p>
+  </div>
+</footer>
+</body>
+</html>

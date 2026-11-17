@@ -1,0 +1,33 @@
+.summary-time {
+  font: 700 68px/1 var(--font-display);
+  margin: 4px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.official {
+  margin-top: 6px;
+}
+
+.summary-actions {
+  margin-top: 14px;
+}
+
+.summary-focus {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border-left: 8px solid var(--yellow);
+  background: var(--soft);
+}
+
+.summary-focus span,
+.summary-focus small {
+  display: block;
+  color: var(--mute);
+  font-size: 14px;
+}
+
+.summary-focus b {
+  display: block;
+  font: 700 30px/1.1 var(--font-display);
+  margin: 2px 0 4px;
+}

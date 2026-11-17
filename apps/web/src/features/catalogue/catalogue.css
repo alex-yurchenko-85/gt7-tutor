@@ -1,0 +1,113 @@
+.filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.filters .input {
+  width: auto;
+  flex: 0 1 220px;
+}
+
+.filters .search {
+  flex: 1 1 260px;
+}
+
+.chip {
+  border: 1.5px solid var(--ink);
+  padding: 6px 12px;
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.chip .count {
+  color: var(--mute);
+  margin-left: 4px;
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--onink);
+}
+
+.chip[aria-pressed='true'] .count {
+  color: inherit;
+}
+
+.catalogue-list {
+  max-height: 68vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+}
+
+.catalogue-list th {
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  z-index: 1;
+}
+
+.catalogue-list tr.selected td {
+  background: var(--soft);
+}
+
+.row-button {
+  font: 700 16px/1.2 var(--font-display);
+  text-align: left;
+  padding: 4px 0;
+  min-height: 32px;
+}
+
+.row-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.catalogue-list td:first-child {
+  position: relative;
+}
+
+.row-family {
+  display: block;
+}
+
+.detail-column {
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: 76px;
+}
+
+.detail-title {
+  font-size: 26px;
+  margin: 2px 0 6px;
+}
+
+.detail-support {
+  margin-bottom: 8px;
+}
+
+.own-exercise h2 {
+  margin-top: 0;
+}
+
+.empty {
+  margin-top: 6px;
+}
+
+@media (max-width: 899px) {
+  .hide-narrow {
+    display: none;
+  }
+
+  .catalogue-list {
+    max-height: none;
+  }
+
+  .detail-column {
+    position: static;
+  }
+}
