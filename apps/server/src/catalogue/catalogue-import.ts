@@ -23,8 +23,7 @@ function entryRow(entry: CatalogueEntry) {
     car: entry.car,
     targets: entry.targets === null ? null : JSON.stringify(entry.targets),
     sections: entry.sections === null ? null : JSON.stringify(entry.sections),
-    source: entry.source,
-    support: entry.support
+    source: entry.source
   };
 }
 

@@ -58,8 +58,7 @@ describe('catalogue sources', () => {
       circuitId: 11,
       targets: { bronzeMs: 22800, silverMs: 21400, goldMs: 20800 }
     });
-    const verified = catalogue.entries.filter(entry => entry.support === 'verified').map(entry => entry.id);
-    expect(verified).toEqual(['brand-yangwang-racing-lines']);
+    expect(catalogue.entries.filter(entry => 'support' in entry)).toEqual([]);
     expect(seen.every(request => [...request.headers.keys()].join() === 'user-agent')).toBe(true);
     expect(seen.every(request => request.headers.get('user-agent') === CLIENT_HEADERS['User-Agent'])).toBe(true);
   });

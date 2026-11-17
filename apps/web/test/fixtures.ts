@@ -83,7 +83,6 @@ export function catalogueEntry(overrides: Partial<CatalogueListEntry>): Catalogu
     targets: null,
     sections: null,
     source: 'Gran Turismo Wiki',
-    support: 'unverified',
     exerciseId: null,
     status: null,
     ...overrides

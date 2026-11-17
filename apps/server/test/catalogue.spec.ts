@@ -137,13 +137,11 @@ describe('catalogue', () => {
     const cookie = await signIn();
     const response = await http().get('/api/catalogue?family=Licence&collection=National B').set('Cookie', cookie).expect(200);
     expect(response.body).toHaveLength(10);
-    expect(response.body[0]).toMatchObject({ id: 'licence-b-1', code: 'B-1', exerciseId: null, status: null, support: 'unverified' });
-    const verified = await http().get('/api/catalogue?support=verified').set('Cookie', cookie).expect(200);
-    expect(verified.body.map((entry: { id: string }) => entry.id)).toEqual(['brand-yangwang-racing-lines']);
+    expect(response.body[0]).toMatchObject({ id: 'licence-b-1', code: 'B-1', exerciseId: null, status: null });
+    expect(response.body[0]).not.toHaveProperty('support');
     const byTrack = await http().get('/api/catalogue?family=Licence&track=High Speed Ring&q=stopping').set('Cookie', cookie).expect(200);
     expect(byTrack.body.length).toBeGreaterThan(0);
     expect(byTrack.body.every((entry: { track: string }) => entry.track === 'High Speed Ring')).toBe(true);
-    await http().get('/api/catalogue?support=maybe').set('Cookie', cookie).expect(400);
   });
 
   it('status_is_per_profile', async () => {

@@ -173,8 +173,7 @@ export function parseLicencePage(wikitext: string, licence: LicencePage, findCir
         car: listField(body, 'Car'),
         targets: medalTargets(body),
         sections: null,
-        source: `Gran Turismo Wiki: ${licence.page}`,
-        support: 'unverified' as const
+        source: `Gran Turismo Wiki: ${licence.page}`
       };
     });
 }
@@ -210,8 +209,7 @@ export function parseCircuitExperience(wikitext: string, findCircuit: CircuitLoo
       car: nonEmpty(plainWikiText(row[3]!)),
       targets: null,
       sections: Number(row[2]),
-      source: `Gran Turismo Wiki: ${CIRCUIT_EXPERIENCE_PAGE}`,
-      support: 'unverified'
+      source: `Gran Turismo Wiki: ${CIRCUIT_EXPERIENCE_PAGE}`
     });
   }
   return entries;

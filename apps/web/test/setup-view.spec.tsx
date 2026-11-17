@@ -18,7 +18,7 @@ const INFO = {
 };
 
 function entry(id: string, name: string): CatalogueEntry {
-  return { id, family: 'Licence', collection: 'B', code: null, name, track: null, circuitId: null, car: null, targets: null, sections: null, source: 'wiki', support: 'unverified' };
+  return { id, family: 'Licence', collection: 'B', code: null, name, track: null, circuitId: null, car: null, targets: null, sections: null, source: 'wiki' };
 }
 
 function setupApi(diff?: CatalogueDiff): ApiStub {

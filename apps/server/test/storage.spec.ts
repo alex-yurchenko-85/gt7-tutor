@@ -46,6 +46,10 @@ describe('database schema', () => {
       await database.drop();
     });
 
+    it('catalogue_entries_have_no_support_column', async () => {
+      expect(await db.schema.hasColumn('catalogue_entries', 'support')).toBe(false);
+    });
+
     it('references_restrict_delete', async () => {
       const [user] = await db('users').insert({ name: 'driver', password_hash: 'x' }).returning('id');
       const [exercise] = await db('exercises').insert({ user_id: user.id, family: 'Brand Experience', name: 'Yangwang' }).returning('id');

@@ -9,8 +9,7 @@ import type {
   CatalogueListEntry,
   CatalogueQuery,
   Circuit,
-  MedalTargetTimes,
-  SupportState
+  MedalTargetTimes
 } from '@gt7/contracts';
 import type { Knex } from 'knex';
 import { exerciseStatuses, type ExerciseStatusSummary } from '../exercises/exercise-status.js';
@@ -30,7 +29,6 @@ type EntryRow = {
   targets: MedalTargetTimes | null;
   sections: number | null;
   source: string;
-  support: SupportState;
 };
 
 function entryFromRow(row: EntryRow): CatalogueEntry {
@@ -45,8 +43,7 @@ function entryFromRow(row: EntryRow): CatalogueEntry {
     car: row.car,
     targets: row.targets,
     sections: row.sections,
-    source: row.source,
-    support: row.support
+    source: row.source
   };
 }
 
@@ -123,7 +120,6 @@ export class CatalogueService implements OnModuleInit {
         if (query.family) builder.where('family', query.family);
         if (query.collection) builder.where('collection', query.collection);
         if (query.track) builder.where('track', query.track);
-        if (query.support) builder.where('support', query.support);
         if (query.q) {
           const pattern = likePattern(query.q);
           builder.where(inner =>

@@ -3,7 +3,6 @@
 `catalogue.json` is built by `pnpm catalogue:build` from two public sources.
 The data is community content. It is not checked against the game screen.
 A catalogue entry does not state that the application supports that exercise.
-Only entries with `support: "verified"` have hardware evidence.
 
 ## Gran Turismo Wiki
 

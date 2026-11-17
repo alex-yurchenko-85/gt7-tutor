@@ -12,7 +12,6 @@ export const MANUAL_ENTRIES: CatalogueEntry[] = [
     car: "Yangwang U9 '24",
     targets: null,
     sections: null,
-    source: 'Manual entry',
-    support: 'verified'
+    source: 'Manual entry'
   }
 ];

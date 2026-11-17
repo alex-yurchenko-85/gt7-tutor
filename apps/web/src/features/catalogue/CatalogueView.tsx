@@ -8,9 +8,9 @@ import { paths, useRouter } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
 import './catalogue.css';
 
-type Filters = { family: string; q: string; collection: string; track: string; support: '' | 'verified' | 'unverified' };
+type Filters = { family: string; q: string; collection: string; track: string };
 
-const NO_FILTERS: Filters = { family: 'All', q: '', collection: '', track: '', support: '' };
+const NO_FILTERS: Filters = { family: 'All', q: '', collection: '', track: '' };
 
 const STATUS_TEXT: Record<ExerciseStatusName, string> = {
   new: 'no reference',
@@ -32,17 +32,12 @@ function matches(entry: CatalogueListEntry, filters: Filters): boolean {
     (filters.family === 'All' || entry.family === filters.family) &&
     (!filters.collection || entry.collection === filters.collection) &&
     (!filters.track || entry.track === filters.track) &&
-    (!filters.support || entry.support === filters.support) &&
     (!q || text.includes(q))
   );
 }
 
 function unique(values: (string | null)[]): string[] {
   return [...new Set(values.filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b));
-}
-
-function SupportTag({ entry }: { entry: CatalogueListEntry }) {
-  return entry.support === 'verified' ? <span className="tag y">Checked on the console</span> : <span className="tag n">Not checked on the console</span>;
 }
 
 function Detail({ entry }: { entry: CatalogueListEntry }) {
@@ -74,9 +69,6 @@ function Detail({ entry }: { entry: CatalogueListEntry }) {
         {entry.family}, {entry.collection}
       </p>
       <h2 className="detail-title">{entryTitle(entry)}</h2>
-      <p className="detail-support">
-        <SupportTag entry={entry} />
-      </p>
       {row('Car', entry.car)}
       {row('Track', entry.track)}
       {row('Sections', entry.sections ? String(entry.sections) : null)}
@@ -99,9 +91,6 @@ function Detail({ entry }: { entry: CatalogueListEntry }) {
         </p>
       ) : null}
       <p className="sub" style={{ marginTop: 12 }}>
-        {entry.support === 'verified'
-          ? 'GT7 Tutor was checked with this exercise on a PS5.'
-          : 'Nobody has checked GT7 Tutor with this exercise on a PS5. You can still record a reference and try it.'}{' '}
         Medal times are default targets from the source. Source: {entry.source}.
       </p>
     </>
@@ -169,8 +158,7 @@ export function CatalogueView() {
     <section aria-labelledby="catalogue-title">
       <h1 id="catalogue-title">Catalogue</h1>
       <p className="lede">
-        {all.length} exercises from community sources. An entry in this list is not a promise of support: only entries marked Checked on the console
-        were tested with a PS5.
+        {all.length} exercises from community sources. An entry in this list does not mean that GT7 Tutor supports the exercise.
       </p>
       <div className="filters" role="group" aria-label="Activity">
         {['All', ...families].map(family => (
@@ -206,16 +194,6 @@ export function CatalogueView() {
             <option key={value}>{value}</option>
           ))}
         </select>
-        <select
-          className="input"
-          aria-label="Support"
-          value={filters.support}
-          onChange={event => set({ support: event.target.value as Filters['support'] })}
-        >
-          <option value="">Any support state</option>
-          <option value="verified">Checked on the console</option>
-          <option value="unverified">Not checked</option>
-        </select>
       </div>
       <div className="wide">
         <div>
@@ -245,13 +223,7 @@ export function CatalogueView() {
                       <td className="hide-narrow">{entry.collection}</td>
                       <td>{entry.track ?? 'not tagged'}</td>
                       <td>
-                        {entry.status ? (
-                          <span className="tag y">{STATUS_TEXT[entry.status]}</span>
-                        ) : entry.support === 'verified' ? (
-                          <span className="tag">checked</span>
-                        ) : (
-                          <span className="tag n">not added</span>
-                        )}
+                        {entry.status ? <span className="tag y">{STATUS_TEXT[entry.status]}</span> : <span className="tag n">not added</span>}
                       </td>
                     </tr>
                   ))}

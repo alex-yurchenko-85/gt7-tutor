@@ -2,10 +2,6 @@ import { z } from 'zod';
 
 const entryIdPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-export const supportStateSchema = z.enum(['verified', 'unverified']);
-
-export type SupportState = z.infer<typeof supportStateSchema>;
-
 export const medalTargetsSchema = z.object({
   bronzeMs: z.number().int().positive(),
   silverMs: z.number().int().positive(),
@@ -25,8 +21,7 @@ export const catalogueEntrySchema = z.object({
   car: z.string().min(1).nullable(),
   targets: medalTargetsSchema.nullable(),
   sections: z.number().int().positive().nullable(),
-  source: z.string().min(1),
-  support: supportStateSchema
+  source: z.string().min(1)
 });
 
 export type CatalogueEntry = z.infer<typeof catalogueEntrySchema>;
@@ -96,7 +91,6 @@ export const catalogueQuerySchema = z.object({
   family: optionalFilter,
   collection: optionalFilter,
   track: optionalFilter,
-  support: supportStateSchema.optional(),
   q: optionalFilter
 });
 
