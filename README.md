@@ -1,9 +1,55 @@
-# GT7 Tutor
+<h1 align="center">
+  <a href="https://gt7tutor.app">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="site/assets/brand/gt-tutor-logo-on-dark.png">
+      <img src="site/assets/brand/gt-tutor-logo-transparent.png" alt="GT7 Tutor" width="460">
+    </picture>
+  </a>
+</h1>
+
+<p align="center"><b>Voice cues for Gran Turismo 7 exercises, timed from the live telemetry of your PS5.</b></p>
+
+<p align="center">
+  <a href="https://github.com/alex-yurchenko-85/gt7-tutor/actions/workflows/ci.yml"><img src="https://github.com/alex-yurchenko-85/gt7-tutor/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/alex-yurchenko-85/gt7-tutor/releases"><img src="https://img.shields.io/github/v/release/alex-yurchenko-85/gt7-tutor" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-GPL--3.0-blue" alt="Licence: GPL-3.0"></a>
+  <a href="https://gt7tutor.app"><img src="https://img.shields.io/badge/website-gt7tutor.app-d90000" alt="Website: gt7tutor.app"></a>
+</p>
+
+<p align="center">
+  <a href="https://gt7tutor.app">Website</a> ·
+  <a href="#quick-setup-macos-and-linux">Setup</a> ·
+  <a href="#try-the-demo-without-a-console">Demo</a> ·
+  <a href="#connect-the-ps5">Connect the PS5</a> ·
+  <a href="#common-problems">Common problems</a>
+</p>
 
 GT7 Tutor is a self-hosted voice tutor for Gran Turismo 7 on PS5.
 The player uses a DualSense controller and watches the game on a TV.
 A computer on the home network records telemetry and runs the application.
 A browser on that computer or on a phone shows the interface and plays short English voice cues.
+GT7 Tutor has no account, no cloud service and no game footage.
+It is an unofficial fan project (see [Licences](#licences)).
+
+## How it works
+
+GT7 Tutor leads you through four steps for each exercise:
+
+1. **Reference.** Record a drive of the exercise and select the range that GT7 Tutor follows.
+2. **Baseline.** Drive a few attempts without voice. GT7 Tutor measures them.
+3. **Guided attempts.** Drive with voice. GT7 Tutor calls the next action, for example `Hard brake 85`, about half a second before the point where the reference does it.
+4. **Review.** Compare each attempt with the reference: the line, the speed, the pedals and the differences.
+
+<table>
+  <tr>
+    <td width="50%"><img src="site/assets/screenshots/drive-desktop.png" alt="The Drive view during a guided attempt. The current cue is Hard brake 85, and the map shows the position on the track."></td>
+    <td width="50%"><img src="site/assets/screenshots/review-desktop.png" alt="The review of one attempt. The map shows the reference line and the attempt line, with speed and throttle charts and a list of differences."></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Drive</b>: the current cue and the position on the track</td>
+    <td align="center"><b>Review</b>: the attempt against the reference</td>
+  </tr>
+</table>
 
 ## What you need
 
