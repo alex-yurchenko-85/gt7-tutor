@@ -149,20 +149,13 @@ code {
 }
 
 .brand {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 22px;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
 }
 
-.brand::before {
-  content: '';
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  margin-right: 10px;
-  background: var(--yellow);
-  vertical-align: -1px;
+.brand img {
+  display: block;
+  width: min(300px, 70vw);
+  height: auto;
 }
 
 h1 {
