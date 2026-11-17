@@ -6,9 +6,11 @@
 <title>GT7 Tutor: voice cues for Gran Turismo 7 exercises</title>
 <meta name="description" content="A self-hosted tutor for Gran Turismo 7 on PS5. It reads your console's live telemetry and calls the next action in your browser: hard brake, full throttle, tighter.">
 <meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://gt7tutor.app/">
 <meta property="og:title" content="GT7 Tutor">
 <meta property="og:description" content="Voice cues for Gran Turismo 7 exercises, timed from the live telemetry of your PS5.">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="GT7 Tutor">
 <meta property="og:url" content="https://gt7tutor.app/">
 <meta property="og:image" content="https://gt7tutor.app/assets/screenshots/social.png">
 <meta property="og:image:width" content="1280">
@@ -37,7 +39,7 @@
       <p class="try-demo"><a data-link="github-demo" href="https://github.com/alex-yurchenko-85/gt7-tutor#try-the-demo-without-a-console">Try it without a console</a>: the demo replays recorded attempts on your computer, with the voice.</p>
     </div>
     <figure class="phone">
-      <img src="assets/screenshots/drive-phone.png" alt="The Drive view on a phone during a guided attempt. The current cue is Hard brake 85." width="390" height="844">
+      <img src="assets/screenshots/drive-phone.webp" fetchpriority="high" alt="The Drive view on a phone during a guided attempt. The current cue is Hard brake 85." width="390" height="844">
     </figure>
   </div>
   <section class="roadbook wrap" aria-labelledby="roadbook-title">
@@ -68,28 +70,28 @@
           <h3><span class="step-number">1</span>Record the reference</h3>
           <p>Open the exercise in the game and record its demonstration three times. The demonstration is the same on every run, but the menus before and after it are not, so GT7 Tutor finds the part that repeats. That drive becomes the reference for the cues.</p>
         </div>
-        <img src="assets/screenshots/cues-desktop.png" alt="The cue list of the reference: each cue with its distance, the phrase that the voice says and the target speed, with a row for each turn and a timing slider for each cue." width="1440" height="900" loading="lazy">
+        <img src="assets/screenshots/cues-desktop.webp" alt="The cue list of the reference: each cue with its distance, the phrase that the voice says and the target speed, with a row for each turn and a timing slider for each cue." width="1440" height="900" loading="lazy">
       </li>
       <li>
         <div class="step-text">
           <h3><span class="step-number">2</span>Drive without voice</h3>
           <p>Drive two or three baseline attempts. GT7 Tutor detects the start and the finish, measures the time from the telemetry and lists the differences from the reference. These attempts show your pace before the voice helps.</p>
         </div>
-        <img src="assets/screenshots/summary-desktop.png" alt="The summary after an attempt: the measured time, the focus for the next attempt, the gap to the best attempt and the largest difference from the reference." width="1440" height="900" loading="lazy">
+        <img src="assets/screenshots/summary-desktop.webp" alt="The summary after an attempt: the measured time, the focus for the next attempt, the gap to the best attempt and the largest difference from the reference." width="1440" height="900" loading="lazy">
       </li>
       <li>
         <div class="step-text">
           <h3><span class="step-number">3</span>Drive with voice</h3>
           <p>Arm a guided attempt and drive. The voice names the action: “Hard brake. Eighty-five”, “Full throttle”, “Keep left” or “Keep right” when you leave the line, or “Tighter” when you run wide before an apex. The first word starts about half a second before the point, plus the measured delay of your device. After the finish the voice says one focus for the next attempt, such as “Turn one. Brake later.”</p>
         </div>
-        <img src="assets/screenshots/drive-desktop.png" alt="The Drive view on a computer: the current cue Hard brake 85, the speed and the position on the reference line with the apexes of the turns." width="1440" height="900" loading="lazy">
+        <img src="assets/screenshots/drive-desktop.webp" alt="The Drive view on a computer: the current cue Hard brake 85, the speed and the position on the reference line with the apexes of the turns." width="1440" height="900" loading="lazy">
       </li>
       <li>
         <div class="step-text">
           <h3><span class="step-number">4</span>Review</h3>
           <p>Compare each attempt with the reference on a map and in linked speed and pedal charts. Differences that repeat across attempts show as counts, for example “Braked early at 332 m in 4 of 6 attempts”. A difference is not always a mistake: the reference is one recorded drive.</p>
         </div>
-        <img src="assets/screenshots/review-desktop.png" alt="The review of an attempt: the map with the reference line in blue, the attempt in orange and the apexes of the turns, the list of differences and the speed and pedal charts." width="1440" height="900" loading="lazy">
+        <img src="assets/screenshots/review-desktop.webp" alt="The review of an attempt: the map with the reference line in blue, the attempt in orange and the apexes of the turns, the list of differences and the speed and pedal charts." width="1440" height="900" loading="lazy">
       </li>
     </ol>
   </section>
@@ -108,7 +110,7 @@
     <h2 id="exercises-title">Exercises</h2>
     <p class="intro">Select an exercise in the catalogue, or create your own. You record a reference from a demonstration of the game, and GT7 Tutor then guides you through that exercise.</p>
     <p class="small">The catalogue lists 100 licence tests, 58 Circuit Experience sections and 20 Brand Central exercises, taken from public sources. Guided attempts are checked on a PS5 for one exercise so far: Yangwang EXP-1 Racing Line: Intermediate.</p>
-    <img class="wide-shot" src="assets/screenshots/catalogue-desktop.png" alt="The catalogue filtered to Brand Central and the Yangwang collection. EXP-1 Racing Line: Intermediate is selected." width="1440" height="900" loading="lazy">
+    <img class="wide-shot" src="assets/screenshots/catalogue-desktop.webp" alt="The catalogue filtered to Brand Central and the Yangwang collection. EXP-1 Racing Line: Intermediate is selected." width="1440" height="900" loading="lazy">
   </section>
 
   <template data-section="donate">

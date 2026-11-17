@@ -1,8 +1,8 @@
 <h1 align="center">
   <a href="https://gt7tutor.app">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="site/assets/brand/gt-tutor-logo-on-dark.png">
-      <img src="site/assets/brand/gt-tutor-logo-transparent.png" alt="GT7 Tutor" width="460">
+      <source media="(prefers-color-scheme: dark)" srcset="assets/gt-tutor-logo-on-dark.png">
+      <img src="assets/gt-tutor-logo-transparent.png" alt="GT7 Tutor" width="460">
     </picture>
   </a>
 </h1>
@@ -44,8 +44,8 @@ GT7 Tutor leads you through four steps for each exercise:
 
 <table>
   <tr>
-    <td width="50%"><img src="site/assets/screenshots/drive-desktop.png" alt="The Drive view during a guided attempt. The current cue is Hard brake 85, and the map shows the position on the track."></td>
-    <td width="50%"><img src="site/assets/screenshots/review-desktop.png" alt="The review of one attempt. The map shows the reference line and the attempt line, with speed and throttle charts and a list of differences."></td>
+    <td width="50%"><img src="site/assets/screenshots/drive-desktop.webp" alt="The Drive view during a guided attempt. The current cue is Hard brake 85, and the map shows the position on the track."></td>
+    <td width="50%"><img src="site/assets/screenshots/review-desktop.webp" alt="The review of one attempt. The map shows the reference line and the attempt line, with speed and throttle charts and a list of differences."></td>
   </tr>
   <tr>
     <td align="center"><b>Drive</b>: the current cue and the position on the track</td>
@@ -255,6 +255,7 @@ Stop a running server before `pnpm test`: only one program can receive telemetry
 `scripts/setup.sh` and `tools/setup/` hold the guided setup. `tools/demo/` holds the demo command.
 `fixtures/` holds short recorded captures for tests and for the demo. They do not contain the console address.
 `tools/` holds the capture, replay and evaluation commands.
+`site/` holds the landing page at gt7tutor.app. `assets/` holds the logo files of this README; they are not part of the site.
 PostgreSQL stores metadata, attempts and statistics. Raw capture files remain the source of truth for telemetry.
 
 The production stack is TypeScript, NestJS, React, PostgreSQL and Knex with `pg`.

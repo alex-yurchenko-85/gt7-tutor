@@ -1,6 +1,8 @@
 export const DISCLAIMER =
   'GT7 Tutor is an unofficial fan project. It is not affiliated with or endorsed by Sony Interactive Entertainment or Polyphony Digital. Gran Turismo is a trademark or registered trademark of Sony Interactive Entertainment Inc.';
 
+export const CRAWLER_FILES = ['robots.txt', 'sitemap.xml', '404.html'];
+
 export type SiteConfig = { githubUrl: string; donateUrl: string | null };
 
 export type SiteFiles = { html: string; css: string; exists(path: string): boolean };
@@ -78,7 +80,8 @@ function externalResources(files: SiteFiles, page: Tag[]): string[] {
   const problems: string[] = [];
   if (page.some(tag => tag.name === 'script')) problems.push('The page has a script. It must have none.');
   if (page.some(tag => tag.name === 'iframe' || tag.name === 'embed' || tag.name === 'object')) problems.push('The page embeds another document.');
-  for (const tag of page.filter(candidate => candidate.name === 'link' && isExternal(candidate.attributes.get('href') ?? ''))) {
+  const loadsResource = (tag: Tag) => tag.name === 'link' && tag.attributes.get('rel') !== 'canonical';
+  for (const tag of page.filter(candidate => loadsResource(candidate) && isExternal(candidate.attributes.get('href') ?? ''))) {
     problems.push(`The page loads an external resource: ${tag.attributes.get('href')}`);
   }
   for (const tag of page.filter(candidate => ['img', 'source', 'video', 'audio'].includes(candidate.name) && isExternal(candidate.attributes.get('src') ?? ''))) {
@@ -112,7 +115,12 @@ function metadata(page: Tag[]): string[] {
   if (!page.some(tag => tag.name === 'title')) problems.push('The page has no title.');
   if (!meta('name', 'description')) problems.push('The page has no description.');
   if (!meta('property', 'og:image')) problems.push('The page has no social image (og:image).');
+  if (!page.some(tag => tag.name === 'link' && tag.attributes.get('rel') === 'canonical' && tag.attributes.get('href'))) problems.push('The page has no canonical link.');
   return problems;
+}
+
+function crawlerFiles(files: SiteFiles): string[] {
+  return CRAWLER_FILES.filter(path => !files.exists(path)).map(path => `Site file is missing: ${path}`);
 }
 
 function images(page: Tag[]): string[] {
@@ -138,6 +146,7 @@ export function checkSite(files: SiteFiles, config: SiteConfig): string[] {
     ...configuredLinks(visible, page, config),
     ...(files.html.includes(DISCLAIMER) ? [] : ['The disclaimer line is missing or changed.']),
     ...metadata(page),
+    ...crawlerFiles(files),
     ...images(page)
   ];
 }

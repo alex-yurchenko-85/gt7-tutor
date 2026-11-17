@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { applyConfig, checkSite, DISCLAIMER, type SiteFiles } from './check.ts';
+import { applyConfig, checkSite, CRAWLER_FILES, DISCLAIMER, type SiteFiles } from './check.ts';
 
-const head = `<head><title>GT7 Tutor</title><meta name="description" content="Voice cues for GT7 exercises."><meta property="og:image" content="assets/screenshots/drive.png"><link rel="stylesheet" href="styles.css"></head>`;
+const head = `<head><title>GT7 Tutor</title><meta name="description" content="Voice cues for GT7 exercises."><meta property="og:image" content="assets/screenshots/drive.png"><link rel="canonical" href="https://example.org/"><link rel="stylesheet" href="styles.css"></head>`;
 const donate = `<a data-link="donate" href="https://example.org/donate">Buy a coffee</a>`;
 
 function page(body: string, extraHead = ''): string {
@@ -13,7 +13,7 @@ const goodBody = `<a data-link="github" href="https://github.com/owner/gt7-tutor
 <section data-section="donate"><p>Optional.</p>${donate}</section>`;
 
 function files(html: string, css = 'body { font-family: "Sofia Sans"; } @font-face { src: url(assets/fonts/sofia.woff2); }'): SiteFiles {
-  const existing = new Set(['styles.css', 'assets/screenshots/drive.png', 'assets/fonts/sofia.woff2']);
+  const existing = new Set(['styles.css', 'assets/screenshots/drive.png', 'assets/fonts/sofia.woff2', ...CRAWLER_FILES]);
   return { html, css, exists: path => existing.has(path) };
 }
 
@@ -99,8 +99,17 @@ describe('site check', () => {
   });
 
   it('page_has_title_description_and_social_image', () => {
-    for (const missing of ['<title>GT7 Tutor</title>', '<meta name="description" content="Voice cues for GT7 exercises.">', '<meta property="og:image" content="assets/screenshots/drive.png">']) {
+    for (const missing of ['<title>GT7 Tutor</title>', '<meta name="description" content="Voice cues for GT7 exercises.">', '<meta property="og:image" content="assets/screenshots/drive.png">', '<link rel="canonical" href="https://example.org/">']) {
       expect(checkSite(files(page(goodBody).replace(missing, '')), config).length, missing).toBeGreaterThan(0);
+    }
+  });
+
+  it('site_has_robots_sitemap_and_not_found_page', () => {
+    expect(CRAWLER_FILES).toEqual(['robots.txt', 'sitemap.xml', '404.html']);
+    for (const missing of CRAWLER_FILES) {
+      const html = page(goodBody);
+      const withoutFile: SiteFiles = { ...files(html), exists: path => path !== missing && files(html).exists(path) };
+      expect(checkSite(withoutFile, config), missing).toEqual([expect.stringContaining(missing)]);
     }
   });
 
