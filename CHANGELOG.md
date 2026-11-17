@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.2.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.1.0...v1.2.0) (2026-11-17)
+
+### Features
+
+* **catalogue:** add all Experience exercises of Brand Central ([73c6ef9](https://github.com/alex-yurchenko-85/gt7-tutor/commit/73c6ef97c06f6f1bf10f7e560eed4307e35de579))
+* **catalogue:** add the Brand Central group with Hyundai EXP-1 to EXP-4 ([c28ef23](https://github.com/alex-yurchenko-85/gt7-tutor/commit/c28ef23098265aa5ca9978a0d0af15cfc522bee1))
+
 # [1.1.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.0.0...v1.1.0) (2026-11-17)
 
 ### Features
