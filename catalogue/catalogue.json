@@ -3778,17 +3778,260 @@
       "source": "Game screen and Gran Turismo Wiki: SUGO International Racing Course"
     },
     {
+      "id": "brand-hyundai-exp-5",
+      "family": "Brand Central",
+      "collection": "Hyundai",
+      "code": "EXP-5",
+      "name": "Final Exam",
+      "track": "Alsace - Village Reverse",
+      "circuitId": 439,
+      "car": "Hyundai IONIQ 6N '25",
+      "targets": null,
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Alsace - Village"
+    },
+    {
+      "id": "brand-polestar-exp-1",
+      "family": "Brand Central",
+      "collection": "Polestar",
+      "code": "EXP-1",
+      "name": "Cornering: Intermediate",
+      "track": "Dragon Trail - Gardens",
+      "circuitId": 847,
+      "car": "Polestar Polestar 5 Performance",
+      "targets": {
+        "bronzeMs": 17200,
+        "silverMs": 15800,
+        "goldMs": 15300
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Dragon Trail - Gardens"
+    },
+    {
+      "id": "brand-polestar-exp-2",
+      "family": "Brand Central",
+      "collection": "Polestar",
+      "code": "EXP-2",
+      "name": "Racing Line: Intermediate",
+      "track": "Brands Hatch Grand Prix Circuit",
+      "circuitId": 119,
+      "car": "Polestar Polestar 5 Performance",
+      "targets": {
+        "bronzeMs": 42300,
+        "silverMs": 39000,
+        "goldMs": 38000
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Brands Hatch GP"
+    },
+    {
+      "id": "brand-polestar-exp-3",
+      "family": "Brand Central",
+      "collection": "Polestar",
+      "code": "EXP-3",
+      "name": "Consecutive Corners: Intermediate",
+      "track": "Autódromo de Interlagos",
+      "circuitId": 152,
+      "car": "Polestar Polestar 5 Performance",
+      "targets": {
+        "bronzeMs": 38000,
+        "silverMs": 34800,
+        "goldMs": 33700
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Autódromo de Interlagos"
+    },
+    {
+      "id": "brand-polestar-exp-4",
+      "family": "Brand Central",
+      "collection": "Polestar",
+      "code": "EXP-4",
+      "name": "Cornering: Expert",
+      "track": "Fuji International Speedway",
+      "circuitId": 16,
+      "car": "Polestar Polestar 5 Performance",
+      "targets": {
+        "bronzeMs": 37300,
+        "silverMs": 34700,
+        "goldMs": 33700
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Fuji International Speedway"
+    },
+    {
+      "id": "brand-polestar-exp-5",
+      "family": "Brand Central",
+      "collection": "Polestar",
+      "code": "EXP-5",
+      "name": "Final Exam",
+      "track": "Deep Forest Raceway",
+      "circuitId": 51,
+      "car": "Polestar Polestar 5 Performance",
+      "targets": null,
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Deep Forest Raceway"
+    },
+    {
+      "id": "brand-xiaomi-exp-1",
+      "family": "Brand Central",
+      "collection": "Xiaomi",
+      "code": "EXP-1",
+      "name": "Cornering: Intermediate",
+      "track": "Deep Forest Raceway",
+      "circuitId": 51,
+      "car": "Xiaomi SU7 Ultra '25",
+      "targets": {
+        "bronzeMs": 21000,
+        "silverMs": 19300,
+        "goldMs": 18700
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Deep Forest Raceway"
+    },
+    {
+      "id": "brand-xiaomi-exp-2",
+      "family": "Brand Central",
+      "collection": "Xiaomi",
+      "code": "EXP-2",
+      "name": "High Speed Corners",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "Xiaomi SU7 Ultra '25",
+      "targets": {
+        "bronzeMs": 28000,
+        "silverMs": 26300,
+        "goldMs": 25500
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Nürburgring Nordschleife"
+    },
+    {
+      "id": "brand-xiaomi-exp-3",
+      "family": "Brand Central",
+      "collection": "Xiaomi",
+      "code": "EXP-3",
+      "name": "Tricky Consecutive Corners",
+      "track": "24 Heures du Mans race track",
+      "circuitId": 454,
+      "car": "Xiaomi SU7 Ultra '25",
+      "targets": {
+        "bronzeMs": 37000,
+        "silverMs": 34200,
+        "goldMs": 32800
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Circuit de la Sarthe"
+    },
+    {
+      "id": "brand-xiaomi-exp-4",
+      "family": "Brand Central",
+      "collection": "Xiaomi",
+      "code": "EXP-4",
+      "name": "Cornering: Expert",
+      "track": "Alsace - Village",
+      "circuitId": 358,
+      "car": "Xiaomi Xiaomi VGT",
+      "targets": {
+        "bronzeMs": 39700,
+        "silverMs": 36600,
+        "goldMs": 35600
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Alsace - Village"
+    },
+    {
+      "id": "brand-xiaomi-exp-5",
+      "family": "Brand Central",
+      "collection": "Xiaomi",
+      "code": "EXP-5",
+      "name": "Final Exam",
+      "track": "Autodrome Lago Maggiore - Full Course",
+      "circuitId": 365,
+      "car": "Xiaomi Xiaomi VGT",
+      "targets": null,
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Autodrome Lago Maggiore - Full Course"
+    },
+    {
       "id": "brand-yangwang-racing-lines",
       "family": "Brand Central",
       "collection": "Yangwang",
-      "code": null,
-      "name": "Racing Lines",
-      "track": null,
+      "code": "EXP-1",
+      "name": "Racing Line: Intermediate",
+      "track": "SUGO International Racing Course",
       "circuitId": null,
+      "car": "Yangwang U9 '24",
+      "targets": {
+        "bronzeMs": 26000,
+        "silverMs": 24200,
+        "goldMs": 23500
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: SUGO International Racing Course"
+    },
+    {
+      "id": "brand-yangwang-exp-2",
+      "family": "Brand Central",
+      "collection": "Yangwang",
+      "code": "EXP-2",
+      "name": "High Speed Corners",
+      "track": "Suzuka Circuit",
+      "circuitId": 10,
+      "car": "Yangwang U9 '24",
+      "targets": {
+        "bronzeMs": 31800,
+        "silverMs": 29300,
+        "goldMs": 28000
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Suzuka Circuit"
+    },
+    {
+      "id": "brand-yangwang-exp-3",
+      "family": "Brand Central",
+      "collection": "Yangwang",
+      "code": "EXP-3",
+      "name": "Urban Tracks",
+      "track": "Tokyo Expressway - East Clockwise",
+      "circuitId": 361,
+      "car": "Yangwang U9 '24",
+      "targets": {
+        "bronzeMs": 26800,
+        "silverMs": 24600,
+        "goldMs": 23900
+      },
+      "sections": null,
+      "source": "Game screen and Gran Turismo Wiki: Tokyo Expressway - East Clockwise"
+    },
+    {
+      "id": "brand-yangwang-exp-4",
+      "family": "Brand Central",
+      "collection": "Yangwang",
+      "code": "EXP-4",
+      "name": "Cornering: Expert",
+      "track": "Trial Mountain Circuit",
+      "circuitId": 1024,
+      "car": "Yangwang U9 '24",
+      "targets": {
+        "bronzeMs": 44400,
+        "silverMs": 41300,
+        "goldMs": 40000
+      },
+      "sections": null,
+      "source": "Game screen"
+    },
+    {
+      "id": "brand-yangwang-exp-5",
+      "family": "Brand Central",
+      "collection": "Yangwang",
+      "code": "EXP-5",
+      "name": "Final Exam",
+      "track": "Yas Marina Circuit",
+      "circuitId": 2003,
       "car": "Yangwang U9 '24",
       "targets": null,
       "sections": null,
-      "source": "Manual entry"
+      "source": "Game screen and Gran Turismo Wiki: Yas Marina Circuit"
     },
     {
       "id": "licence-b-1",

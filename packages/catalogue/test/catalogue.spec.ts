@@ -60,13 +60,45 @@ describe('catalogue sources', () => {
     });
     expect(catalogue.entries.filter(entry => 'support' in entry)).toEqual([]);
     const brandCentral = catalogue.entries.filter(entry => entry.family === 'Brand Central');
-    expect(brandCentral.map(entry => entry.id)).toEqual([
-      'brand-hyundai-exp-1',
-      'brand-hyundai-exp-2',
-      'brand-hyundai-exp-3',
-      'brand-hyundai-exp-4',
-      'brand-yangwang-racing-lines'
-    ]);
+    expect(brandCentral.map(entry => `${entry.collection} ${entry.code}`)).toEqual(
+      ['Hyundai', 'Polestar', 'Xiaomi', 'Yangwang'].flatMap(brand => [1, 2, 3, 4, 5].map(number => `${brand} EXP-${number}`))
+    );
+    expect(brandCentral.map(entry => entry.id).filter(id => !/^brand-[a-z]+-exp-[1-5]$/.test(id))).toEqual(['brand-yangwang-racing-lines']);
+    expect(brandCentral.find(entry => entry.id === 'brand-yangwang-racing-lines')).toEqual({
+      id: 'brand-yangwang-racing-lines',
+      family: 'Brand Central',
+      collection: 'Yangwang',
+      code: 'EXP-1',
+      name: 'Racing Line: Intermediate',
+      track: 'SUGO International Racing Course',
+      circuitId: null,
+      car: "Yangwang U9 '24",
+      targets: { bronzeMs: 26000, silverMs: 24200, goldMs: 23500 },
+      sections: null,
+      source: 'Game screen and Gran Turismo Wiki: SUGO International Racing Course'
+    });
+    expect(brandCentral.find(entry => entry.id === 'brand-xiaomi-exp-4')).toMatchObject({
+      name: 'Cornering: Expert',
+      track: 'Alsace - Village',
+      circuitId: 358,
+      car: 'Xiaomi Xiaomi VGT',
+      targets: { bronzeMs: 39700, silverMs: 36600, goldMs: 35600 }
+    });
+    expect(brandCentral.find(entry => entry.id === 'brand-yangwang-exp-4')).toMatchObject({
+      name: 'Cornering: Expert',
+      track: 'Trial Mountain Circuit',
+      targets: { bronzeMs: 44400, silverMs: 41300, goldMs: 40000 },
+      source: 'Game screen'
+    });
+    expect(brandCentral.find(entry => entry.id === 'brand-hyundai-exp-5')).toMatchObject({
+      name: 'Final Exam',
+      track: 'Alsace - Village Reverse',
+      circuitId: 439,
+      car: "Hyundai IONIQ 6N '25",
+      targets: null
+    });
+    expect(brandCentral.filter(entry => entry.code === 'EXP-5' && entry.targets !== null)).toEqual([]);
+    expect(brandCentral.filter(entry => entry.code !== 'EXP-5' && entry.targets === null)).toEqual([]);
     expect(catalogue.entries.filter(entry => entry.family === 'Brand Experience')).toEqual([]);
     expect(brandCentral[0]).toEqual({
       id: 'brand-hyundai-exp-1',

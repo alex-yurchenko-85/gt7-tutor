@@ -430,7 +430,7 @@ describe('exercises, captures and references', () => {
     await as(http().get(`/api/exercises/${exerciseId}/reactions`));
     expect((await http().get('/api/exercises').set('Cookie', other)).body.map((item: { id: string }) => item.id)).toEqual([otherExercise]);
     expect((await http().get('/api/captures').set('Cookie', other)).body).toEqual([]);
-    expect((await db('exercises').where({ id: exerciseId }).first()).name).toBe('Racing Lines');
+    expect((await db('exercises').where({ id: exerciseId }).first()).name).toBe('Racing Line: Intermediate');
   });
 
   it('cleanup_keeps_referenced_ranges_and_indices', async () => {

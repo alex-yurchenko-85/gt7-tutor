@@ -26,9 +26,14 @@ This licence applies to that data only. The application code uses GPL-3.0 (`LICE
 ## Manual entries
 
 The `Brand Central` entries are manual entries. `packages/catalogue/src/manual.ts` holds them.
-`brand-yangwang-racing-lines` has a car label from the gt7info car table (car ID 3602).
-The `brand-hyundai-exp-1` to `brand-hyundai-exp-4` entries are the Hyundai Experience exercises `EXP-1` to `EXP-4`.
-Their track, car and target times come from the game screen. Their car labels use the gt7info car table.
-Their English names come from the section `Experience` of these Gran Turismo Wiki pages: `Suzuka Circuit`, `Mount Panorama`, `Nürburgring GP` and `SUGO International Racing Course`.
-The names are an adaptation of that content under CC BY-SA.
+They are the Experience exercises `EXP-1` to `EXP-5` of Hyundai, Polestar, Xiaomi and Yangwang.
+`brand-yangwang-racing-lines` is Yangwang `EXP-1`. It keeps its earlier identifier.
+
+- Track, car and target times come from the game screen (17 November 2026).
+- Track names and car labels use the spelling of the gt7info tables.
+- The English exercise names come from the section `Experience` of the Gran Turismo Wiki page of each track. The entry field `source` names the page. The names are an adaptation of that content under CC BY-SA.
+- Yangwang `EXP-4` is not in the wiki. Its name follows the other exercises that have the same label on the game screen.
+- The `EXP-5` entries have no target times. The game screen shows the times only after the exercise is unlocked.
+- The wiki lists other target times for Xiaomi `EXP-4`. The catalogue uses the times from the game screen.
+
 `aliases.json` maps wiki track names to gt7info layout IDs where the names differ. The project maintainer wrote it.
