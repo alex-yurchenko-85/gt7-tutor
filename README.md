@@ -291,4 +291,4 @@ See `catalogue/NOTICE.md` for the attribution.
 
 GT7 Tutor is an unofficial fan project.
 It is not affiliated with or endorsed by Sony Interactive Entertainment or Polyphony Digital.
-Gran Turismo is a trademark of its owner.
+Gran Turismo is a trademark or registered trademark of Sony Interactive Entertainment Inc.

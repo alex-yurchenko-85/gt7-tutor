@@ -126,6 +126,7 @@ p {
 
 code {
   font-size: 0.9em;
+  white-space: nowrap;
 }
 
 .wrap {
@@ -409,19 +410,10 @@ h1 {
   vertical-align: 3px;
 }
 
-.split {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 56px;
-}
-
-.split > div {
-  min-width: 0;
-}
-
 .plain {
   margin: 0;
   padding-left: 1.2em;
+  max-width: 68ch;
 }
 
 .plain li + li {
@@ -460,8 +452,7 @@ h1 {
   }
 
   .hero-grid,
-  .steps li,
-  .split {
+  .steps li {
     grid-template-columns: minmax(0, 1fr);
     gap: 32px;
   }

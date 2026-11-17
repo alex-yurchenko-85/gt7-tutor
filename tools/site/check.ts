@@ -1,5 +1,5 @@
 export const DISCLAIMER =
-  'GT7 Tutor is an unofficial fan project. It is not affiliated with or endorsed by Sony Interactive Entertainment or Polyphony Digital. Gran Turismo is a trademark of its owner.';
+  'GT7 Tutor is an unofficial fan project. It is not affiliated with or endorsed by Sony Interactive Entertainment or Polyphony Digital. Gran Turismo is a trademark or registered trademark of Sony Interactive Entertainment Inc.';
 
 export type SiteConfig = { githubUrl: string; donateUrl: string | null };
 
@@ -8,21 +8,25 @@ export type SiteFiles = { html: string; css: string; exists(path: string): boole
 const DONATE_SECTION = /<(section|template) data-section="donate">([\s\S]*?)<\/\1>/;
 const PLACEHOLDER_HREF = '#';
 export const README_DEMO_ANCHOR = 'try-the-demo-without-a-console';
+export const README_SETUP_ANCHOR = 'what-you-need';
 
 function linkHref(url: string | null): string {
   return url ? url : PLACEHOLDER_HREF;
 }
 
-function demoHref(githubUrl: string): string {
-  return githubUrl ? `${githubUrl}#${README_DEMO_ANCHOR}` : PLACEHOLDER_HREF;
+function readmeHref(githubUrl: string, anchor: string): string {
+  return githubUrl ? `${githubUrl}#${anchor}` : PLACEHOLDER_HREF;
 }
 
-function setLink(html: string, name: 'github' | 'github-demo' | 'donate', url: string | null): string {
+function setLink(html: string, name: 'github' | 'github-demo' | 'github-setup' | 'donate', url: string | null): string {
   return html.replace(new RegExp(`(<a\\b[^>]*\\sdata-link="${name}" href=")[^"]*"`, 'g'), `$1${linkHref(url)}"`);
 }
 
 export function applyConfig(html: string, config: SiteConfig): string {
-  const linked = setLink(setLink(setLink(html, 'github', config.githubUrl), 'github-demo', demoHref(config.githubUrl)), 'donate', config.donateUrl);
+  const withGithub = setLink(html, 'github', config.githubUrl);
+  const withDemo = setLink(withGithub, 'github-demo', readmeHref(config.githubUrl, README_DEMO_ANCHOR));
+  const withSetup = setLink(withDemo, 'github-setup', readmeHref(config.githubUrl, README_SETUP_ANCHOR));
+  const linked = setLink(withSetup, 'donate', config.donateUrl);
   const element = config.donateUrl ? 'section' : 'template';
   return linked.replace(DONATE_SECTION, (_, _element: string, content: string) => `<${element} data-section="donate">${content}</${element}>`);
 }
@@ -90,7 +94,8 @@ function configuredLinks(html: string, page: Tag[], config: SiteConfig): string[
   const github = hrefs('github');
   if (github.length === 0) problems.push('The page has no github link.');
   if (github.some(href => href !== linkHref(config.githubUrl))) problems.push('A github link does not match site.config.json.');
-  if (hrefs('github-demo').some(href => href !== demoHref(config.githubUrl))) problems.push('A demo link does not point to the demo section of the README.');
+  if (hrefs('github-demo').some(href => href !== readmeHref(config.githubUrl, README_DEMO_ANCHOR))) problems.push('A demo link does not point to the demo section of the README.');
+  if (hrefs('github-setup').some(href => href !== readmeHref(config.githubUrl, README_SETUP_ANCHOR))) problems.push('A setup link does not point to the setup section of the README.');
   const section = /<section data-section="donate">/.test(html);
   if (config.donateUrl === null) {
     if (section || hrefs('donate').length > 0) problems.push('The donate section is on the page, but donateUrl is null.');

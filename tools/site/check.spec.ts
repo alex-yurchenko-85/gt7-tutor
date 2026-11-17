@@ -68,6 +68,15 @@ describe('site check', () => {
     expect(applyConfig(template, { ...config, githubUrl: '' })).toContain('<a data-link="github-demo" href="#">');
   });
 
+  it('setup_link_points_to_the_readme_setup_section', () => {
+    const template = page(`${goodBody}<a data-link="github-setup" href="#">Read the setup guide</a>`);
+    const applied = applyConfig(template, config);
+    expect(applied).toContain('<a data-link="github-setup" href="https://github.com/owner/gt7-tutor#what-you-need">');
+    expect(checkSite(files(applied), config)).toEqual([]);
+    expect(checkSite(files(template), config)).toEqual([expect.stringContaining('setup link')]);
+    expect(applyConfig(template, { ...config, githubUrl: '' })).toContain('<a data-link="github-setup" href="#">');
+  });
+
   it('config_sets_a_link_that_has_other_attributes_first', () => {
     const template = page(`${goodBody}<a class="button" data-link="github" href="#">Source code</a>`);
     const applied = applyConfig(template, config);
