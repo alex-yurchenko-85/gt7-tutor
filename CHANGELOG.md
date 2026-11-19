@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.3.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.2.0...v1.3.0) (2026-11-19)
+
+### Features
+
+* redesign the app and time attempts with the game timer ([2e04a50](https://github.com/alex-yurchenko-85/gt7-tutor/commit/2e04a509920746e2e486aaa08334bb871c2122ef))
+
 # [1.2.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.1.0...v1.2.0) (2026-11-17)
 
 ### Features
