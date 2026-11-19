@@ -16,7 +16,7 @@ export function DemoConsoleSection() {
       <h2 id="console-title">Console</h2>
       <p className="notice">Demo mode uses recorded data.</p>
       <p className="sub" style={{ marginTop: 10 }}>
-        No PS5 is needed. To connect your own console, stop the demo and start GT7 Tutor with <code>pnpm start</code>.
+        No PS5 is needed. To connect your own console, stop the demo and start GT7 Tutor with <code>./start.sh</code>.
       </p>
     </section>
   );
