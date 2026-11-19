@@ -23,7 +23,8 @@
   <a href="#quick-setup-macos-and-linux">Setup</a> ·
   <a href="#try-the-demo-without-a-console">Demo</a> ·
   <a href="#connect-the-ps5">Connect the PS5</a> ·
-  <a href="#common-problems">Common problems</a>
+  <a href="#common-problems">Common problems</a> ·
+  <a href="#support-the-project">Support</a>
 </p>
 
 GT7 Tutor is a self-hosted voice tutor for Gran Turismo 7 on PS5.
@@ -268,6 +269,17 @@ PostgreSQL stores metadata, attempts and statistics. Raw capture files remain th
 
 The production stack is TypeScript, NestJS, React, PostgreSQL and Knex with `pg`.
 The project ignores `data/`, `.demo/`, dependencies and `.env` files in Git.
+
+## Support the project
+
+GT7 Tutor is free and open source, and it stays free.
+If it helps you, you can support it with a small donation.
+A donation is voluntary and unlocks nothing: every feature is in the free code.
+
+<p>
+  <a href="https://ko-fi.com/alex85"><img src="https://img.shields.io/badge/Support_on_Ko--fi-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white" alt="Support on Ko-fi"></a>
+  <a href="https://buymeacoffee.com/alex.y.85"><img src="https://img.shields.io/badge/Buy_me_a_coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
+</p>
 
 ## Acknowledgements
 
