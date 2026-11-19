@@ -179,88 +179,100 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onRemoved }: MyExe
     stopSelecting();
     onRemoved();
   };
+  const quickSelect = selecting ? (
+    <div className="quick-select" role="group" aria-label="Quick select">
+      <span className="sub" aria-hidden="true">
+        Select:
+      </span>
+      <button type="button" className="chip-button" onClick={() => setPicked(new Set(withoutHistory.map(exercise => exercise.id)))}>
+        Without history ({withoutHistory.length})
+      </button>
+      <button type="button" className="chip-button" onClick={() => setPicked(new Set(visible.map(exercise => exercise.id)))}>
+        All ({visible.length})
+      </button>
+      <button type="button" className="chip-button" onClick={() => setPicked(new Set())}>
+        None
+      </button>
+    </div>
+  ) : null;
+  const actions = (
+    <div className="my-exercises-actions">
+      {exercises.length > 0 && !selecting ? (
+        <button type="button" className="btn ghost inline" onClick={() => setSelecting(true)}>
+          <Icon name="select" size={16} />
+          Select
+        </button>
+      ) : null}
+      <Link to={paths.addExercise()} className="btn inline add-exercise" label="Add exercise">
+        {wide ? '+ Add exercise' : '+ Add'}
+      </Link>
+    </div>
+  );
   return (
     <section className={selecting ? 'my-exercises selecting-page' : 'my-exercises'} aria-labelledby="mine-title">
       <div className="my-exercises-head">
         <h2 id="mine-title">
           My exercises <span className="count">{exercises.length}</span>
         </h2>
-        <div className="my-exercises-actions">
-          {exercises.length > 0 && !selecting ? (
-            <button type="button" className="btn ghost inline" onClick={() => setSelecting(true)}>
-              <Icon name="select" size={16} />
-              Select
-            </button>
-          ) : null}
-          <Link to={paths.addExercise()} className="btn inline add-exercise" label="Add exercise">
-            {wide ? '+ Add exercise' : '+ Add'}
-          </Link>
-        </div>
+        {wide ? null : actions}
       </div>
       {wide ? (
-        <div className="family-filter" role="group" aria-label="Filter">
-          {[ALL, ...families].map(name => (
-            <button key={name} type="button" aria-pressed={family === name} onClick={() => setFamily(name)}>
-              {name}
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {selecting ? (
-        <div className="quick-select" role="group" aria-label="Quick select">
-          <span className="sub" aria-hidden="true">
-            Select:
-          </span>
-          <button type="button" className="chip-button" onClick={() => setPicked(new Set(withoutHistory.map(exercise => exercise.id)))}>
-            Without history ({withoutHistory.length})
-          </button>
-          <button type="button" className="chip-button" onClick={() => setPicked(new Set(visible.map(exercise => exercise.id)))}>
-            All ({visible.length})
-          </button>
-          <button type="button" className="chip-button" onClick={() => setPicked(new Set())}>
-            None
-          </button>
-        </div>
-      ) : null}
-      {shown.map(name => {
-        const members = exercises.filter(exercise => exercise.family === name);
-        if (members.length === 0) return null;
-        const id = `family-${name.replace(/\W+/g, '-')}`;
-        return (
-          <div key={name} className="family-group" role="group" aria-labelledby={id}>
-            <h3 id={id} className={wide ? undefined : 'visually-hidden'}>
-              {name}
-            </h3>
-            {members.map(exercise =>
-              selecting ? (
-                <SelectRow
-                  key={exercise.id}
-                  exercise={exercise}
-                  details={detailsOf(exercise)}
-                  wide={wide}
-                  picked={picked.has(exercise.id)}
-                  onToggle={() => toggle(exercise.id)}
-                />
-              ) : (
-                <ExerciseRow key={exercise.id} exercise={exercise} details={detailsOf(exercise)} wide={wide} />
-              )
-            )}
+        <>
+          <div className="my-exercises-tools">
+            <div className="family-filter" role="group" aria-label="Filter">
+              {[ALL, ...families].map(name => (
+                <button key={name} type="button" aria-pressed={family === name} onClick={() => setFamily(name)}>
+                  {name}
+                </button>
+              ))}
+            </div>
+            {quickSelect}
           </div>
-        );
-      })}
-      {exercises.length === 0 ? <p className="sub">No exercise yet. Add one from the catalogue.</p> : null}
-      {selecting ? (
-        <SelectionBar count={picked.size} action={`Remove ${counted(picked.size, 'exercise')}…`} onCancel={stopSelecting} onAction={() => setConfirming(true)} />
+          {actions}
+        </>
       ) : null}
-      {confirming ? (
-        <RemoveExercisesDialog
-          exercises={exercises.filter(exercise => picked.has(exercise.id))}
-          fromPage={false}
-          currentId={currentId}
-          onKeep={() => setConfirming(false)}
-          onRemoved={removed}
-        />
-      ) : null}
+      <div className="my-exercises-list">
+        {wide ? null : quickSelect}
+        {shown.map(name => {
+          const members = exercises.filter(exercise => exercise.family === name);
+          if (members.length === 0) return null;
+          const id = `family-${name.replace(/\W+/g, '-')}`;
+          return (
+            <div key={name} className="family-group" role="group" aria-labelledby={id}>
+              <h3 id={id} className={wide ? undefined : 'visually-hidden'}>
+                {name}
+              </h3>
+              {members.map(exercise =>
+                selecting ? (
+                  <SelectRow
+                    key={exercise.id}
+                    exercise={exercise}
+                    details={detailsOf(exercise)}
+                    wide={wide}
+                    picked={picked.has(exercise.id)}
+                    onToggle={() => toggle(exercise.id)}
+                  />
+                ) : (
+                  <ExerciseRow key={exercise.id} exercise={exercise} details={detailsOf(exercise)} wide={wide} />
+                )
+              )}
+            </div>
+          );
+        })}
+        {exercises.length === 0 ? <p className="sub">No exercise yet. Add one from the catalogue.</p> : null}
+        {selecting ? (
+          <SelectionBar count={picked.size} action={`Remove ${counted(picked.size, 'exercise')}…`} onCancel={stopSelecting} onAction={() => setConfirming(true)} />
+        ) : null}
+        {confirming ? (
+          <RemoveExercisesDialog
+            exercises={exercises.filter(exercise => picked.has(exercise.id))}
+            fromPage={false}
+            currentId={currentId}
+            onKeep={() => setConfirming(false)}
+            onRemoved={removed}
+          />
+        ) : null}
+      </div>
     </section>
   );
 }

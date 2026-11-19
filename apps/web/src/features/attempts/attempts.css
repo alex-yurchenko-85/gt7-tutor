@@ -28,18 +28,15 @@ tr.best td {
   }
 }
 
-.aborted-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  min-height: 44px;
-  font-size: 15px;
+.attempts-tools .hide-failed {
+  min-width: 124px;
 }
 
-.aborted-toggle input {
-  width: 20px;
-  height: 20px;
+.attempts-tools .btn.ghost.hide-failed.hiding,
+.attempts-tools .btn.ghost.hide-failed.hiding:hover:not(:disabled),
+.attempts-tools .btn.ghost.hide-failed.hiding:active:not(:disabled) {
+  background: var(--ink);
+  color: var(--onink);
 }
 
 tr.aborted td {
@@ -92,4 +89,43 @@ tr.aborted td {
 
 tr.picked td {
   background: var(--soft);
+}
+
+@media (min-width: 900px) {
+  .attempts-layout {
+    grid-template-rows: auto 1fr;
+    row-gap: 0;
+  }
+
+  .attempts-layout > .attempts-tools {
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 48px;
+    margin-bottom: 8px;
+  }
+
+  .attempts-layout > .attempts-main {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+
+  .attempts-main > .attempt-day:first-child > h2 {
+    margin-top: calc((48px - 20px * 1.1) / 2);
+    margin-bottom: calc(48px + 8px - (48px - 20px * 1.1) / 2 - 20px * 1.1);
+  }
+
+  .attempts-layout > .attempts-recurring {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 899px) {
+  .attempts-layout {
+    row-gap: 0;
+  }
+
+  .attempts-layout > .attempts-recurring {
+    margin-top: 24px;
+  }
 }

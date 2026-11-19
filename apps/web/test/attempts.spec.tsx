@@ -125,16 +125,18 @@ describe('attempts', () => {
     expect(within(row).getByText('T1')).toHaveClass('tag');
   });
 
-  it('aborted_attempts_can_be_hidden', async () => {
+  it('failed_attempts_can_be_hidden_and_shown_again', async () => {
     setViewportWidth(1280);
     exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
-    const toggle = await screen.findByRole('checkbox', { name: 'Show aborted attempts' });
-    expect(toggle).toBeChecked();
-    expect(screen.getByRole('row', { name: /Attempt 3/ })).toBeInTheDocument();
-    await userEvent.setup().click(toggle);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Hide failed' }));
     expect(screen.queryByRole('row', { name: /Attempt 3/ })).toBeNull();
     expect(screen.getByRole('row', { name: /Attempt 2/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Hide failed' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Show failed' }));
+    expect(screen.getByRole('row', { name: /Attempt 3/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide failed' })).toBeInTheDocument();
   });
 
   const ATTEMPTS_PATH = '/exercises/e0000000-0000-4000-8000-000000000001/attempts';

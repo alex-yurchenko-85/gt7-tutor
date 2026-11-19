@@ -89,7 +89,7 @@ function Recurring({ exercise }: { exercise: Exercise }) {
   const items = recurring.data ?? [];
   const shown = expanded ? items : items.slice(0, RECURRING_SHOWN);
   return (
-    <section className="panel" aria-labelledby="recurring-title">
+    <section className="panel attempts-recurring" aria-labelledby="recurring-title">
       <h2 id="recurring-title">Recurring differences</h2>
       <p className="sub">A difference repeats when it appears at the same place in at least half of your last complete attempts.</p>
       {!enough ? (
@@ -184,27 +184,27 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
   return (
     <section className={selecting ? 'selecting-page' : undefined}>
       <ExerciseHeader exercise={exercise.data} />
-      <div className="wide">
-        <div>
+      <div className="wide attempts-layout">
+        {list && list.days.length > 0 ? (
+          <div className="attempts-tools">
+            {selecting ? null : (
+              <button type="button" className="btn ghost inline" onClick={() => setSelecting(true)}>
+                <Icon name="select" size={16} />
+                Select
+              </button>
+            )}
+            <button type="button" className={showAborted ? 'btn ghost inline hide-failed' : 'btn ghost inline hide-failed hiding'} onClick={() => setShowAborted(!showAborted)}>
+              {showAborted ? 'Hide failed' : 'Show failed'}
+            </button>
+          </div>
+        ) : null}
+        <div className="attempts-main">
           {list && list.days.length === 0 ? (
             <div className="panel">
               <p className="lede">No attempts yet. Start an attempt in Drive, then drive the exercise in the game.</p>
               <Link to={paths.drive()} className="btn inline">
                 Open Drive
               </Link>
-            </div>
-          ) : null}
-          {list && list.days.length > 0 ? (
-            <div className="attempts-tools">
-              <label className="aborted-toggle">
-                <input type="checkbox" checked={showAborted} onChange={event => setShowAborted(event.target.checked)} /> Show aborted attempts
-              </label>
-              {selecting ? null : (
-                <button type="button" className="btn ghost inline" onClick={() => setSelecting(true)}>
-                  <Icon name="select" size={16} />
-                  Select
-                </button>
-              )}
             </div>
           ) : null}
           {days.map(day => (

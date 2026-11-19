@@ -118,7 +118,7 @@ Select **Add an exercise**. The next section tells you how to find the exercise.
 
 ## Find your way in the application
 
-![The Exercises home on a computer: the Continue card, My exercises with one exercise, and the Collections table.](images/exercises-home.webp)
+![The Exercises home on a computer: the Continue card, then the family filters with Select and + Add exercise in one row, My exercises with one exercise, and the Collections table.](images/exercises-home.webp)
 
 The application has two sections and the Drive screen:
 
@@ -379,12 +379,12 @@ Other actions at the bottom:
 
 **Where:** the **Attempts** tab of the exercise.
 
-![The Attempts tab: four attempts of 19 November with time, gap to best and largest difference, and the Recurring differences panel.](images/attempts.webp)
+![The Attempts tab: three attempts of 19 November with time, gap to best and largest difference. The buttons Select and Hide failed are above the Recurring differences panel.](images/attempts.webp)
 
 - Attempts are grouped by day. Each day shows its best time.
 - **Time from the game**: the time of a complete attempt. `No time` and `aborted` with the reason for an attempt that did not finish.
 - **Gap to best**, **Largest difference** and **Review**.
-- **Show aborted attempts** shows or hides the attempts that did not finish.
+- **Hide failed** hides the attempts that did not finish. The button then says **Show failed** and is filled. Select **Show failed** to show the attempts again.
 - **Select** lets you mark attempts and delete them. See [Delete data](#delete-data).
 
 **Recurring differences** lists the differences at the same place in at least half of your last complete attempts. GT7 Tutor uses the last 8 complete attempts and compares them with the active reference. You need at least three complete attempts. `No difference repeats in your last attempts.` means that no difference reaches half of them.
