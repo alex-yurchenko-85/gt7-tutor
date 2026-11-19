@@ -22,36 +22,32 @@
   <a href="https://gt7tutor.app">Website</a> ·
   <a href="#quick-setup-macos-and-linux">Setup</a> ·
   <a href="#try-the-demo-without-a-console">Demo</a> ·
-  <a href="#connect-the-ps5">Connect the PS5</a> ·
+  <a href="docs/user-guide/README.md">User guide</a> ·
   <a href="#common-problems">Common problems</a> ·
   <a href="#support-the-project">Support</a>
 </p>
 
 GT7 Tutor is a self-hosted voice tutor for Gran Turismo 7 on PS5.
-The player uses a DualSense controller and watches the game on a TV.
-A computer on the home network records telemetry and runs the application.
+You drive with a DualSense controller and watch the game on your TV, as usual.
+A computer on your home network receives the telemetry of the PS5 and runs GT7 Tutor.
 A browser on that computer or on a phone shows the interface and plays short English voice cues.
-GT7 Tutor has no account, no cloud service and no game footage.
+GT7 Tutor needs no account and no cloud service, and it does not see the game picture.
 It is an unofficial fan project (see [Licences](#licences)).
 
 ## How it works
 
 GT7 Tutor leads you through three steps for each exercise:
 
-1. **Reference.** Record the demonstration of the exercise once. GT7 Tutor finds the part where the timer of the demonstration runs. That part is the reference. You can record a second time to check that the same part repeats.
-2. **Attempts.** Drive attempts. The game timer starts and finishes each attempt and gives its time. On the voice device, GT7 Tutor calls the next action, for example `Hard brake 115`, about half a second before the point where the reference does it.
-3. **Review.** Compare each attempt with the reference: the line, the speed, the pedals and the differences. The differences are grouped by turn, with the time lost in each turn.
+1. **Reference.** Record the demonstration that the game shows before the exercise. GT7 Tutor finds the start and the end of the demonstration by itself. That part is the reference.
+2. **Attempts.** Drive the exercise. GT7 Tutor finds the start and the finish of each attempt by itself, and the time comes from the game. The Drive screen shows the next action, and a voice device says it, for example `Hard brake. One fifteen`, about half a second before the place where the reference does it.
+3. **Review.** Compare each attempt with the reference on a map and in speed, pedal and side-distance charts. The differences are grouped by turn, with the time lost in each turn. Differences that repeat in your last attempts show on the cue list.
 
-The application has two sections, **Exercises** and **Setup**.
-**Exercises** shows your exercises with their best times and medals. **Add exercise** opens the catalogue.
-Each exercise has its own page with the three steps, the cues, the references and the attempts.
-The **Drive** button opens the drive mode for the current exercise. On a phone, **Drive** is in the bottom bar.
-**Setup** has the sections Console, Voice, Profiles, Preferences, Catalogue and Data.
+The [user guide](docs/user-guide/README.md) shows each screen and each step.
 
 <table>
   <tr>
-    <td width="50%"><img src="https://gt7tutor.app/assets/screenshots/drive-desktop.webp" alt="The drive mode during an attempt. The current cue is Hard brake 115, and the map shows the position on the track."></td>
-    <td width="50%"><img src="https://gt7tutor.app/assets/screenshots/review-desktop.webp" alt="The review of one attempt. The map shows the reference line and the attempt line. The differences are grouped by turn, with the time lost in the turn, and the speed chart is below the map."></td>
+    <td width="50%"><img src="https://gt7tutor.app/assets/screenshots/drive-desktop.webp" alt="The Drive screen during a demo attempt. The current cue is Hard brake 115, cue 1 of 6 before turn 1, and the map shows the position on the reference line."></td>
+    <td width="50%"><img src="https://gt7tutor.app/assets/screenshots/review-desktop.webp" alt="The review of a demo attempt. The map shows the reference line and the attempt line. The differences are grouped by turn, with 0.36 s lost in turn 1, and the speed chart is below the map."></td>
   </tr>
   <tr>
     <td align="center"><b>Drive</b>: the current cue and the position on the track</td>
@@ -59,9 +55,19 @@ The **Drive** button opens the drive mode for the current exercise. On a phone, 
   </tr>
 </table>
 
+## Which exercises work
+
+GT7 Tutor finds the demonstration and the start and finish of each attempt from the data of the game. An exercise works when two things are true:
+
+- The game times the demonstration of the exercise. GT7 Tutor needs this to find the reference.
+- The game times your run from the start.
+
+The catalogue lists 100 licence tests, 58 Circuit Experience sections and 20 Brand Central exercises from public sources. A catalogue entry does not mean that the exercise works.
+For developers, [docs/protocol.md](docs/protocol.md#game-timer) gives the details.
+
 ## What you need
 
-- A computer with macOS or Linux.
+- A computer with macOS or Linux. Windows is not supported.
 - Docker Desktop (or Docker Engine on Linux), which runs the database.
 - Node.js 26 or later. Install it with the installer from <https://nodejs.org/en/download>. You do not need pnpm or Homebrew.
 - A current browser on that computer or on a phone on the same home network.
@@ -108,7 +114,9 @@ Press Ctrl+C to stop.
 ```
 
 Open the address of `On this computer` in a browser on the same computer.
-The first visit asks you to create a profile.
+The first visit asks you to create a profile. Then the **Get ready to train** page asks for the console address, the voice device and the first exercise.
+The [user guide](docs/user-guide/README.md#create-the-first-profile) shows these steps.
+
 Run `./start.sh` for each start. After an update, the script prepares GT7 Tutor again.
 
 ## Manual setup
@@ -129,6 +137,7 @@ Use this path when you want to do each step yourself.
    ```
 
 The first command copies the example settings. Do not run it if you already have a `.env` file.
+`pnpm start` shows no addresses. Open `http://localhost:3000`, or the port of `HTTP_PORT` in `.env`.
 
 ## Try the demo without a console
 
@@ -149,11 +158,9 @@ When the demo is ready, the script shows:
 - the demo profile `demo` and its password `demodemo`.
 
 The demo has the exercise `Autódromo de Interlagos` (Circuit Experience, sector 2), its reference, and three recorded attempts.
-Select the **Drive** button (on a phone, **Drive** in the bottom bar), then select **Play a demo attempt** to play a recorded attempt. The screen shows the cues, and a voice device also says them.
-To hear the voice, select **Use this device for voice** first. This button is on the Drive screen and in **Setup** → **Voice**.
-The attempt replays in real time and takes 27 to 41 s.
-After it, the summary shows the time from the game and one focus for the next attempt.
-**Review this attempt** opens the review. The **Exercises** home shows the best time and the medal.
+Select **Drive**, then **Play a demo attempt**. A recorded attempt replays in real time and takes 27 to 41 s.
+To hear the voice, select **Use this device for voice** first.
+The [user guide](docs/user-guide/README.md#try-the-demo) shows the demo step by step.
 
 The demo uses its own database and the folder `.demo/`.
 It never changes your own profiles and attempts.
@@ -164,7 +171,7 @@ To start the demo again from the beginning, run `./start.sh --demo --reset`.
 ## Connect the PS5
 
 1. On the PS5, open Settings → Network → View Connection Status, and read the IPv4 address.
-2. In GT7 Tutor, enter that address. On the first start, the **Get ready** screen asks for it. Later, use **Setup** → **Console**.
+2. In GT7 Tutor, enter that address. On the first start, the **Get ready to train** page asks for it. Later, use **Setup** → **Console**.
 3. Open Gran Turismo 7 past the title screen, and select the check button next to the address (**Save and check**). GT7 Tutor saves the address and checks the reception.
 
 The console address can change after a router restart. Check it again if reception stops.
@@ -181,7 +188,7 @@ Your computer firewall must accept TCP on that port.
 
 Two limits come from the phone browser, not from GT7 Tutor:
 
-- Tap **Use this device for voice** once. The button is in **Setup** → **Voice**, on the Drive screen and on the **Get ready** screen. A browser does not let a page start sound by itself.
+- Tap **Use this device for voice** once after you open the page. The button is in **Setup** → **Voice**, on the Drive screen and on the **Get ready to train** page. A browser does not let a page start sound by itself.
 - Do not let the phone screen lock during an attempt. A locked screen stops the sound. Turn off auto-lock for the session.
 
 Known issue on iPhone (Safari): after the screen locks and unlocks, the voice can stay silent.
@@ -204,14 +211,17 @@ Read the log before you attach it. It can contain addresses on your home network
 
 | Problem | What to do |
 | --- | --- |
+| `Install Docker Desktop` | Install Docker (see [Install Docker](#install-docker)). Then run `./start.sh` again. |
 | `Docker is not running` | Start Docker Desktop (macOS) or the Docker service (Linux). Then run `./start.sh` again. |
 | `Install Node.js 26 or later` | Install Node.js from <https://nodejs.org/en/download>. Then run `./start.sh` again. |
-| `Port 3000 is in use` | Stop the other program that uses the port, or run `./start.sh --port 3002`. To change the port for every start, set `HTTP_PORT` in `.env`. |
+| `Port 3000 is in use` | Stop the other program that uses the port, or start with another port, for example `./start.sh --port 3002`. To change the port for every start, set `HTTP_PORT` in `.env`. |
 | `The database cannot be updated` | A database from an old development version cannot be migrated. Run `./start.sh --reset`. The script asks you to type `yes`. This removes all GT7 Tutor data. For the demo, run `./start.sh --demo --reset`. The demo reset asks no question. |
 | `GT7 Tutor did not start` | Read the last lines of the log that the script shows. |
 | The phone cannot open the address | Check that the phone is on the same network as the computer, not on mobile data. Check the computer firewall. |
 | No sound on the phone | Tap **Use this device for voice** (in **Setup** → **Voice** or on the Drive screen). On an iPhone after a screen lock, reload the page first. Turn off silent mode. Keep the screen on. |
 | `No packets` in **Setup** → **Console** | Check the console address, the firewall rule for UDP 33740, and that GT7 is open past the title screen. |
+
+The [user guide](docs/user-guide/README.md#common-problems) covers problems inside the application, for example an attempt that does not start.
 
 ## Security
 
@@ -220,6 +230,13 @@ The password keeps other people on your home network out of your profile.
 GT7 Tutor uses plain HTTP on the home network.
 It does not protect against an attacker on the same network.
 Do not make GT7 Tutor reachable from the internet.
+
+## Documentation
+
+- [User guide](docs/user-guide/README.md): every screen, from the first profile to the review, with screenshots.
+- [Telemetry protocol](docs/protocol.md): transport, decryption, the byte layout of a packet and the game timer.
+- [Core algorithms](docs/algorithms.md): reference, matching, voice decisions and differences.
+- [CONTRIBUTING.md](CONTRIBUTING.md): the rules for a change.
 
 ## For developers
 
@@ -238,12 +255,6 @@ pnpm audio:generate        # network, about 400 MB, rewrites the voice clips
 Always pass `--ip` with the current console address.
 `pnpm db:reset` drops the database of `DATABASE_URL` (by default `gt7_tutor`), creates it again and migrates it. It deletes all data of that database. Use it only for a broken development database.
 Stop a running server before `pnpm test`: only one program can receive telemetry on UDP port 33740.
-[CONTRIBUTING.md](CONTRIBUTING.md) gives the rules for a change.
-
-## Read the project documents
-
-- [Telemetry protocol](docs/protocol.md): transport, decryption and the byte layout of a packet.
-- [Core algorithms](docs/algorithms.md): reference, matching, voice decisions and differences.
 
 ## Data terms
 
@@ -255,6 +266,7 @@ Stop a running server before `pnpm test`: only one program can receive telemetry
 | Reference | A reviewed range of a demonstration or trusted run |
 | Attempt | A selected player-driving range inside a capture |
 | Cue | A short voice instruction tied to a place on the section, for example `Hard brake. One fifteen`. The server decides it, and the voice device plays it. |
+| Difference | A place where an attempt is not the same as the reference, for example `Braked 17 m earlier`. The interface never calls it a mistake. |
 | Generation | A new attempt context that invalidates earlier matches and audio cues |
 | Trusted match | A position match that passes the configured direction, distance and freshness checks |
 | Game timer | The run time that the game sends in each packet. It starts and finishes an attempt. |
@@ -268,6 +280,7 @@ Stop a running server before `pnpm test`: only one program can receive telemetry
 `start.sh` and `tools/start/` hold the start script. `tools/setup/` holds `pnpm db:reset`.
 `fixtures/` holds short recorded captures for tests and for `./start.sh --demo`. They do not contain the console address.
 `tools/` holds the capture, replay and evaluation commands.
+`docs/` holds the user guide and the technical documents.
 The landing page at gt7tutor.app lives in <https://github.com/alex-yurchenko-85/gt7-tutor-site>. `.github/assets/` holds the logo files of this README.
 PostgreSQL stores metadata, attempts and statistics. Raw capture files remain the source of truth for telemetry.
 
@@ -313,6 +326,9 @@ To propose a change, send a pull request. See [CONTRIBUTING.md](CONTRIBUTING.md)
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) lists the work of other people that this project uses.
 Catalogue data from the Gran Turismo Wiki stays under CC BY-SA, in its own files with a notice beside them.
 See `content/catalogue/NOTICE.md` for the attribution.
+
+The voice clips are made with Kokoro-82M, voice `af_heart` (Apache-2.0).
+The interface fonts are Sofia Sans and Sofia Sans Condensed (SIL Open Font License 1.1).
 
 GT7 Tutor is an unofficial fan project.
 It is not affiliated with or endorsed by Sony Interactive Entertainment or Polyphony Digital.

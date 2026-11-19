@@ -1,458 +1,406 @@
 # Core algorithms
 
-This document describes the calculations of `packages/core`.
-It covers the reference, the match of the car to the reference, the attempt, the voice and the differences.
-Read it before you change a file in `packages/core/src`. The protocol is in `docs/protocol.md`.
+Calculations of `packages/core`. Read before a change to `packages/core/src`. The packet format is in `docs/protocol.md`.
 
-Rules of the core:
+## Rules of the core
 
-- It is pure TypeScript. It imports nothing from Node, NestJS, storage or audio, and it reads no clock. Time enters as an argument (`receivedMonoMs`, `clockMs`, `nowMonoMs`).
-- The same samples and the same configuration give the same decisions. `replayCoach` and the golden traces in `fixtures/golden/` depend on this.
-- Units: metres, m/s, milliseconds, pedals 0 to 1. km/h only on the screen and in speech. `DEFAULT_CONFIG` writes a speed threshold with `kph(n)`, which gives `n` km/h in m/s (`n / 3.6`). The target speed of an event (`targetSpeedKph`) and its step (`target.roundDownKph`) stay in km/h, because they are spoken values. `comparableSize` converts m/s to km/h to compare the sizes of differences (section Comparison and differences).
-- The calibration thresholds are in `DEFAULT_CONFIG` (`packages/core/src/config.ts`). They are calibration values, not physical limits. Some fixed limits are not in `DEFAULT_CONFIG`:
-  - `packet-clock.ts`: the packet clock and its warm-up (`ENVELOPE_RISE`, `PACKET_STEP_MAX`, `CLOCK_WARMUP_PACKETS`).
-  - `sequence.ts`: the duplicate window and the discontinuity step (`DEFAULT_SEQUENCE_LIMITS`).
-  - `cue-text.ts`: the range of target speeds (30 to 350 km/h), the last turn with a focus clip (`MAX_SPOKEN_TURN`) and the estimate of a phrase duration (`estimatedPhraseMs`).
-  - `match.ts`: the minimum travel that gives a travel direction (0.05 m).
-  - `@gt7/contracts`: the range of the timing offsets, the side cue distances, the wide apex distance and the minimum number of attempts for a recurring difference. `DEFAULT_CONFIG` takes the last two values from there.
+- Pure TypeScript. No import from Node, NestJS, storage or audio. No clock read. Time is an argument (`receivedMonoMs`, `clockMs`, `nowMonoMs`).
+- The same samples and configuration give the same decisions. `replayCoach` and the golden traces in `fixtures/golden/` use this.
+- Units: m, m/s, ms, pedals 0 to 1. km/h only for spoken and shown values: `targetSpeedKph`, `target.roundDownKph`, and `comparableSize`. `kph(n)` in `DEFAULT_CONFIG` gives `n` km/h in m/s.
+- Calibration values are in `DEFAULT_CONFIG` (`config.ts`). Fixed limits outside it:
+
+| File | Limits |
+| --- | --- |
+| `packet-clock.ts` | `ENVELOPE_RISE` 0.02, `PACKET_STEP_MAX` 600, `CLOCK_WARMUP_PACKETS` 600 |
+| `sequence.ts` | `DEFAULT_SEQUENCE_LIMITS`: reorder window 64, forward gap 600 |
+| `cue-text.ts` | Target speeds 30 to 350 km/h, `MAX_SPOKEN_TURN` 10, `estimatedPhraseMs` |
+| `match.ts` | Minimum travel for a travel direction: 0.05 m |
+| `@gt7/contracts` | Cue offsets −500 to +1000 ms in steps of 100 ms, side cue distances 0.5 to 3 m, `WIDE_APEX_M` 2, `RECURRING_MIN_ATTEMPTS` 3 |
 
 ## Data flow
 
 ```text
 datagram → SampleStream (decode, drop duplicates, packet time) → Sample
-Sample → AttemptTracker → started, paused, resumed, finished, aborted
-Sample → Matcher(reference) → Match (sM, lateralM, trusted)
+Sample → TrainingRun.step = AttemptTracker + Matcher + live gap + next cue + Coach
 reference samples → analyseReference → path, events, corners, reference time
-Sample + Match → Coach → Cue or a suppressed decision
-TrainingRun.step(sample) = AttemptTracker + Matcher + live gap + next cue + Coach, live and in replay
-attempt samples + reference → buildReview → findDifferences → recurring → focusSentence
+attempt samples + ReferenceAnalysis → buildReview → findDifferences → recurring → focusSentence
 ```
 
 | Step | File |
 | --- | --- |
-| Decode a datagram | `decode.ts` |
+| Decode | `decode.ts` |
 | Packet order | `sequence.ts` |
-| Attempt start, pause and end | `attempts.ts` |
-| Live gap | `timing.ts` |
+| Packet time | `packet-clock.ts` |
+| Game timer | `game-timer.ts` |
+| Attempt start, pause, end | `attempts.ts` |
+| Missed start | `missed-start.ts` |
 | Reference path | `reference.ts` |
-| Reference analysis (path, events, corners, reference time) | `reference-analysis.ts` |
-| Demonstration range in a capture | `demo-range.ts` |
+| Reference analysis | `reference-analysis.ts` |
+| Demonstration range | `demo-range.ts` |
 | Position on the reference | `match.ts` |
-| Reference events (brake, ease off, throttle) | `cue-events.ts` |
-| Corners and apexes | `corners.ts` |
+| Reference events | `cue-events.ts` |
+| Corners | `corners.ts` |
 | Voice decisions | `coach.ts`, `guidance.ts`, `coach-replay.ts` |
-| One training step, live and in replay | `training-run.ts` |
+| Training step | `training-run.ts` |
+| Live gap | `timing.ts` |
 | Phrases and clip keys | `cue-text.ts` |
-| Comparison of an attempt with the reference | `compare.ts` |
-| Differences and recurring differences | `findings.ts` |
-| Turn of a position and time lost per turn | `turns.ts` |
-| Packet time (`clockMs`) | `packet-clock.ts` |
-| Focus sentence and brake reaction | `focus.ts` |
-| Exercise status and medal | `progress.ts` |
-| Vector helpers | `geometry.ts` |
+| Comparison | `compare.ts` |
+| Differences, recurring | `findings.ts` |
+| Turn of a position, time lost per turn | `turns.ts` |
+| Focus sentence, brake reaction | `focus.ts` |
+| Exercise status, medal | `progress.ts` |
 
 ## Packet time
 
-The arrival time of a packet (`receivedMonoMs`) has network bursts: a packet can arrive late, and the packets after it then arrive almost together. On the home network about 5 % of the packets arrive 0 to 3 ms after the packet before them. A late packet can be 60 to 80 ms late. The packet ID increases by 1 per packet, but the packet rate is not constant: in one capture it changed between about 59.2 and 59.9 packets per second.
+`PacketClock` gives each sample `clockMs` from the packet ID and the arrival time. Arrivals come in bursts. About 5 % of packets arrive 0 to 3 ms after the previous packet. A late packet can be 60 to 80 ms late. The packet rate changes between about 59.2 and 59.9 per second.
 
-`PacketClock` (`packet-clock.ts`) gives each sample a packet time `clockMs`:
+| Step from the last packet ID | Added time |
+| --- | --- |
+| First packet | `clockMs` = arrival time |
+| 1 to 600 ahead | `steps × 1000 / 60` + change of the envelope, never below 0 |
+| Same, or up to 64 behind | 0 |
+| Any other step | Arrival difference, not below 0. A new envelope starts. |
 
-1. The first packet gets its arrival time.
-2. A packet that is 1 to 600 IDs after the last one adds `steps × 1000 / 60` ms, plus the change of the arrival envelope. The envelope is the arrival time minus the nominal time of the packet number. A packet that arrives earlier than the envelope moves the envelope to its arrival at once, because a packet cannot arrive before it is sent. A later packet moves the envelope by 2 % of the difference (`ENVELOPE_RISE`). So a late packet changes the time very little, and a slower or faster packet rate moves the time with the computer clock. The time never goes back: one packet adds at least 0 ms. This applies when the first packet of a run arrived late and the next packet moves the envelope down.
-3. The same ID, or an ID up to 64 behind, adds nothing.
-4. Any other step adds the arrival difference (not below 0) and starts a new envelope.
+Envelope = arrival time − nominal time of the packet number. An earlier arrival moves the envelope to it at once. A later arrival moves it by 2 % of the difference (`ENVELOPE_RISE`).
 
-`SampleStream` (`packages/capture/src/sample-stream.ts`) applies the clock to each sample that is not a duplicate, live and when the server reads a file (`docs/protocol.md`, Packet ID and sequence). Live, the server counts `clockMs` from the first packet of a capture. When it reads a range of a capture file (`readSamples`), it starts the clock 600 packets (`CLOCK_WARMUP_PACKETS`, 10 s) before the first row of the range (`clockWarmupStart`). The rows before the first row of the range only move the clock and the duplicate check of the stream (`warmupFrom`). They give no sample. The storage cleanup keeps these 600 rows before each range. After 600 packets the envelope does not depend on where the clock started, so the times inside the range are the same as live, also after a cleanup. Measured times use `clockMs`: the time of the reference points and the time series of a review. The time of an attempt is the game time (section Attempt lifecycle, Stored time). The live gap uses the game timer on both sides. Real-time rules use `receivedMonoMs`: silence, the freshness of cues, the decisions of the coach, the extrapolation of the matcher. `clockOf(sample)` gives `clockMs`, or `receivedMonoMs` when a sample has no `clockMs`.
+A range read starts the clock 600 packets (`CLOCK_WARMUP_PACKETS`) before the first row (`clockWarmupStart`). These rows move the clock and the duplicate check. They give no sample. After 600 packets the envelope does not depend on the start row, so a range read gives the live times.
+
+`clockOf(sample)` = `clockMs`, or `receivedMonoMs` when `clockMs` is absent.
+
+| Time | Use |
+| --- | --- |
+| `clockMs` (measured) | Reference point times, review time series, time lost |
+| `receivedMonoMs` (real time) | Silence, cue freshness, coach decisions, matcher extrapolation |
+| Game timer | Attempt time, live gap, review gap |
 
 ## Continuity
 
-Two samples in a row are **broken** when one of these is true:
+Two samples in a row are broken when:
 
 | Break | Rule |
 | --- | --- |
-| `silence` | More than 1000 ms between the samples |
-| `car-changed` | The car ID differs |
-| `discontinuity` | The distance between the positions is more than `max(speed) × elapsed time + 20 m` |
+| `silence` | More than 1000 ms between them |
+| `car-changed` | Different car ID |
+| `discontinuity` | Distance > `max(speed) × elapsed time + 20 m` |
 
-`continuityBreak` checks all three breaks. `positionBreak` checks only `car-changed` and `discontinuity`.
+`continuityBreak` checks all three. `positionBreak` checks `car-changed` and `discontinuity`. The attempt tracker and the demonstration range use `continuityBreak`. `buildReference` uses `positionBreak`.
 
-- The attempt tracker and the demonstration-range finder use `continuityBreak`. For them, a silence is a break.
-- `buildReference` uses `positionBreak`. In a reference range, a silence is not a break. The path joins the samples before and after the silence.
-
-A sample is **driven** when it is not paused and not loading. The player **has control** when `playerSession` is true and the sample is driven.
+A sample is driven when it is not paused and not loading. The player has control when `playerSession` is true and the sample is driven.
 
 ## Reference path
 
-`buildReference(samples)` turns a reviewed range of a capture into a path.
+`buildReference(samples)`:
 
-1. Reject a sample with a field that is not finite. Reject a range with a `car-changed` or `discontinuity` break (`positionBreak`). A silence does not reject a range.
+1. Reject a sample with a field that is not finite. Reject a range with a `positionBreak`.
 2. Keep the driven samples. Remove repeated identical positions at both ends.
-3. Add up the straight distances between the samples. The total is the length `lengthM`.
-4. Resample to one point per metre of travel, plus the end point. Each point has `sM` (distance from the start), position, speed, throttle, brake, `timeMs` and `timerMs`.
-5. `timeMs` is active time from the start, in packet time (`clockOf`): paused and loading time is not counted. It is a measured time.
-6. `timerMs` is the game timer of the samples (`gameTimerMs`), interpolated like the other values. It is not relative to the first point.
-7. The tangent of a point is the direction from the point before it to the point after it.
+3. Sum the straight distances between samples: `lengthM`.
+4. Resample to one point per metre, plus the end point. A point has `sM`, position, speed, throttle, brake, `timeMs` and `timerMs`.
+5. `timeMs`: active packet time from the start (`clockOf`). Paused and loading time is not counted.
+6. `timerMs`: the interpolated `gameTimerMs`, not relative to the first point.
+7. Tangent of a point: direction from the previous point to the next point.
 
-`pointAt(path, sM)` interpolates between two points.
-A reference is never changed after it is built. Each exercise keeps a history of references with one active reference.
+`pointAt(path, sM)` interpolates between two points. A reference never changes after `buildReference`.
 
 ## Reference analysis
 
-`analyseReference(samples, config)` builds the path (`buildReference`), the events (`buildCueEvents`) and the corners (`findCorners`) of a reference range one time. It gives them in one `ReferenceAnalysis` with the reference time `timeMs`. In the analysis of the samples, `timeMs` is the timer value of the last sample of the range.
+`analyseReference(samples, config)` builds the path, the events (`buildCueEvents`) and the corners (`findCorners`) once and returns a `ReferenceAnalysis`. Its `timeMs` is the timer value of the last sample of the range. `Coach`, `TrainingRun`, `replayCoach`, `buildReview` and `focusSentence` take the analysis. No other code calls `buildCueEvents` or `findCorners` for a reference.
 
-`Coach`, `TrainingRun`, `replayCoach` and `buildReview` take the `ReferenceAnalysis`. The focus sentence takes its corners. No other code calls `buildCueEvents` or `findCorners` for a reference.
+## Game timer watch
 
-The server keeps the analysis of each reference in memory (`ReferencesService.analysisOf`). The key is the reference ID. A reference does not change, so the analysis does not change. The server keeps the 8 references that it used last. The cues, corners, path and clips of a reference and the reviews and the training use this analysis. A failed analysis is not kept.
-
-## Demonstration range
-
-A capture of a demonstration also holds the background before and after it.
-The demonstration runs the game timer with bit 0 false (`docs/protocol.md`, Game timer). So one capture gives the range and the time of the reference.
-
-`demonstrationRuns(capture)` gives the complete runs of the demonstration timer in the capture, in order. It reads the timer with the rule of step 5 (session `demonstration`). It starts at the first sample of the capture. After each timer run, it starts again at the sample after the end of the run. The background scene can also run the timer with bit 0 false. So each timer run must also pass the two checks of step 4 below:
-
-- **Scene change.** A break (`continuityBreak`) comes before one of the samples from the start of the search to the first sample of the timer run. The search starts at the first sample of the capture, or at the sample after the previous timer run.
-- **Movement.** The car moves more than 10 m (`demoRange.minMovementM`) in the timer run.
-
-The function does not give a timer run that fails a check. For `demo-a` it gives one run from 457 to 1422 with 16 082 ms. For `demo-b` it gives one run from 738 to 1703 with 16 082 ms. For `demo-c` it gives one run: the demonstration from 1054 to 2019 with 16 082 ms. The background timer run of `demo-c` from 758 to 970 (3 533 ms) has no scene change before it, because the capture starts in that scene. A capture that stops before the finish of the demonstration timer gives no demonstration run. But it can give a background timer run that passes both checks. For example, the capture starts in a menu, a break comes before the background scene, and the car moves more than 10 m in the background timer run. The function then gives that background run.
-
-The proposals API (`POST /api/exercises/:id/reference-proposals`) takes one or two capture IDs:
-
-- **One capture.** The API gives one proposal for each run of `demonstrationRuns`, in order. The evidence is `Timer runs <s.mmm> s`. With two or more runs, each proposal is ambiguous, and the user selects one. Without a run, the API gives an empty list.
-- **Two captures.** This is the check of a second recording. The API gives the result of `findDemoRangeCandidates` (below). The Record screen compares the range in the first capture with the selected run. If they are the same, the same part repeats in both captures.
-
-Each proposal has `timeMs`: the game time of the timer run in the first capture.
-
-The demonstration is the same in every run and the background is not. So the part that repeats in all captures also gives its place.
-
-`findDemoRangeCandidates(captures)`:
-
-1. Collapse repeated samples with the same physical state (position within 0.05 m, speed within 0.1 m/s, pedals within 0.02, same gear and car).
-2. Find the pieces that the first capture shares with each other capture, at least 10 samples long. Join pieces that follow each other with a gap of at most 2 samples and no break between them (`continuityBreak`).
-3. Keep the runs that all captures share, at least 60 samples long. If more than half of a run in the first capture is also in a longer run, remove the shorter run.
-4. Describe each run with two checks. A break comes before its first sample (`continuityBreak`, section Continuity), for example a position jump. It moves more than 10 m.
-5. Cut each run to the run of the demonstration timer inside it (`cutToTimerRun(capture, range, 'demonstration')`). A `GameTimerWatch` with the session `demonstration` reads the run from its first sample. The cut starts at the last sample with the value 0 before the start, as the stored first sample of an attempt. The cut ends at the `rawIndex` of the `finished` event: the first packet with the final value. The watch can read packets after the end of the run to see that the value stays the same. But the first packet with the final value must be inside the run. A timer that runs before the run starts, for example a background timer, does not count. The evidence gives the game time of each cut, or says that a capture has no complete timer run.
-6. A run that passes both checks and has a complete timer run in every capture is eligible. The function needs at least two captures. With three or more captures and exactly one eligible run, that run is not ambiguous. In every other case the user must choose. The proposals API gives the function one or two captures, so with two captures every run is ambiguous. A run without a complete timer run keeps its uncut ranges and has `timed` false.
-7. Order: timed runs first. Then the score of the checks in step 4: 2 for the break before the run, 1 for the movement. Then the number of samples in the first capture, more first. Then the earlier start in the first capture. The proposals API (`POST /api/exercises/:id/reference-proposals`) gives only timed runs. Without a timed run it gives an empty list.
-8. After the cut, two runs can have the same range in the first capture: their uncut ranges are different, but they hold the same timer run. Only the first of these runs in the order of step 7 stays. The reference comes from the range in the first capture, so the other run gives the same reference. Without this step, the same range shows twice. If both runs are eligible, step 6 also marks them as ambiguous.
-
-The reference time is the run of the demonstration timer: the final timer value of the reference range. The server stores it with the reference (`references.timer_ms`). For a cut range, it is the game time of the timer run (`TimerRunRange.gameTimeMs`). For an attempt as a reference, it is the game time of the attempt (`game_ms`). `ReferenceAnalysis.timeMs` of the server gives the stored value. The reference time is not the timer of the last point of the path, because `buildReference` removes held positions at the end of the range, and the timer can continue there. A reference row without a stored value gets it on its first read: the server takes `timeMs` of the analysis of the samples, stores it and then uses it. The cut range starts at the timer value 0, so the first point has `timerMs` 0. For `demo-a` the reference time is 16 082 ms. The packet time of the same path is 16 100 ms. `AttemptReview.referenceTimeMs` and `ReferenceTrace.timeMs` give the reference time. A reference range without a timer run has no valid reference time. The code has no other source for it.
-
-Every reference range is cut to a timer run before the server stores it:
-
-- **Range set by hand** (`POST /api/references`): the server cuts the range to the run of the demonstration timer, with the same rules as step 5. It stores the cut range, not the requested range. For `demo-a`, the range 300 to 1700 is stored as 457 to 1422. If the range has no complete timer run, the server refuses it: HTTP 400 with `{ code: 'no-timer-run', reason }`. It stores no reference.
-- **Attempt as a reference** (`POST /api/attempts/:id/promote`): the attempt must be complete. Otherwise the server refuses it: HTTP 409 with `{ code: 'not-complete', reason: 'Only a complete attempt can become a reference.' }`. The server cuts the attempt range to the run of the player timer (session `player`). The stored attempt range ends 3 packets after the finish, so the cut ends at the first packet with the final value. The reference time of the new reference is the game time of the attempt. For the `ce-clean` attempt it is 17 071 ms.
-
-`matchesReference(capture, path)` checks that a later capture holds the same demonstration. It gives the raw range of the first run that passes, or `null`. The limits are in `DEFAULT_CONFIG.demoRange`.
-
-1. A **run** is a sequence of samples in a row that follow the path. A sample follows the path when all of these are true:
-   - The matcher gives a match.
-   - The lateral distance is at most 0.5 m, and the height difference is at most 0.5 m.
-   - The speed difference is at most 5 % of the reference speed plus 0.5 m/s.
-2. A sample that does not follow the path ends the run. If the run does not pass, the matcher starts again.
-3. A run passes when all of these are true:
-   - It starts at most 1 m after the start of the path, and it ends at most 1 m before the end of the path.
-   - The median speed difference is at most 1 % of the reference speed. Below a reference speed of 1 m/s, the check divides the difference by 1 m/s.
-   - The 95th percentile of the lateral distance is at most 0.2 m.
-   - The median throttle difference is at most 0.05, and the median brake difference is at most 0.05.
-
-The server uses this check in `POST /api/references/:id/check`. A change of the game version sets `needs_check` on each reference of an older version. When the check passes, the server clears `needs_check` of the reference.
-
-## Matching the car to the reference
-
-`Matcher.step(sample)` gives a `Match` or `null`.
-
-1. **Search window.** For the first sample: 0 to 20 m of the path. After that: from 5 m behind the last match to `max(20 m, speed × elapsed time + 10 m)` ahead.
-2. **Candidates.** Project the position on each one-metre segment in the window. A projection up to 1 m beyond a segment end is accepted and clamped.
-3. **Near.** Keep the candidates with a lateral distance of at most 8 m and a height difference of at most 3 m.
-4. **Heading.** The travel direction comes from the last two positions (at least 0.05 m apart), or from the velocity. At 2 m/s or more, prefer the candidates whose path tangent is within 45° of the travel direction.
-5. **Cost.** `distance + 0.5 × |sM − expected sM|`, where the expected `sM` is the last match plus `speed × elapsed time`. The lowest cost wins.
-
-Fields of a `Match`:
-
-| Field | Meaning |
-| --- | --- |
-| `sM` | Distance along the reference, metres |
-| `lateralM` | Distance to the side of the reference. Positive is to the right of the travel direction. |
-| `heightM` | Height difference |
-| `headingErrorDeg` | Angle between the travel direction and the path tangent |
-| `velocityErrorDeg` | Angle between the velocity and the path tangent, or `null` below 2 m/s |
-| `trusted` | The heading check passed and ` | lateralM | ` is at most 8 m |
-| `reference` | The reference point at `sM` |
-
-Guidance uses a match only when it is trusted.
-
-## Attempt lifecycle
-
-`AttemptTracker` has four states: `waiting`, `driving`, `paused`, `finished`. Each start gives a new **generation** number. A cue of an older generation is never played.
-
-The game timer starts and finishes an attempt. The tracker gives each sample to a `GameTimerWatch` (section Game timer below). The position of the car does not start or finish an attempt.
-
-An attempt event has the arrival time (`atMonoMs`) and the packet time (`atClockMs`). The event `finished` also has the game time (`gameTimeMs`). The other events have `gameTimeMs` `null`.
-
-**Start:** the tracker is not driving or paused, and the watch gives `started`. The event `started` has the reason `game-timer` and the `rawIndex` of the sample. Its time is the time of the sample minus the timer value of the sample. So the start is the moment when the timer was 0. A training that starts while the game timer runs waits for the next start of the timer.
-
-**While driving or paused,** in this order:
-
-| Condition | Result |
-| --- | --- |
-| More than 1000 ms without a sample | `aborted`, reason `silence` |
-| `playerSession` is false | `aborted`, reason `player-session-ended` |
-| The watch gives `left-track` (the timer is −1) | `aborted`, reason `left-track` |
-| The watch gives `restart` (the timer falls to 0) | `aborted`, reason `restart` |
-| A break between the samples | `aborted`, reason `car-changed` or `discontinuity` |
-| `loading` is true | `aborted`, reason `loading` |
-| `paused` becomes true | `paused` |
-| `paused` becomes false | `resumed` |
-| The watch gives `finished` | `finished`, reason `game-timer` |
-
-The event `finished` has the `rawIndex` of the first sample with the final timer value. Its time is the time of that sample, not the time of the later sample on which the watch reports the finish. Its `gameTimeMs` is the final timer value.
-
-The server stores the raw range of a finished attempt up to the sample on which the watch reports the finish. So the range holds the still packets.
-
-Only the game timer starts and finishes an attempt. The user has no action that starts or finishes an attempt. The user can only stop the training: Stop in Drive sends `POST /api/training/disarm`. If an attempt runs, the server then calls `abortByUser`, and the attempt gets the reason `manual`. There is no other manual action. When the tracker ends an attempt for another reason than the watch, it resets the watch. The watch then needs a new start of the timer.
-
-**Stored time:** `attempts.game_ms` is the `gameTimeMs` of the live `finished` event. It is the time of a complete attempt (`AttemptSummary.timeMs`). The best time of an exercise (`bestMs`), the gap to the best time, the best time of a day and the medal from the targets use it. The gap to the reference and the gap to the next medal use the game time. An aborted attempt has no stored time: `game_ms` is `null` and `AttemptSummary.timeMs` is `null`. There is no manual official time. The database check `attempts_game_time_check` requires `game_ms` for a complete attempt and no `game_ms` for an aborted attempt.
-
-**Live gap** (`gapToReferenceMs`): the game timer of the running attempt minus the demonstration timer at the matched position. The attempt side is the game timer of the current sample (`gameTimerMs`). The reference side is `timerMs` of the reference point of the match (`match.reference`, which the matcher gets with `pointAt`). A positive gap means that the attempt is slower than the reference at this position. The server sends the gap as `gapMs` in the live state. During a pause the game timer and the position do not change, so the gap keeps its value from before the pause. The gap is `null` when no attempt runs, when the matcher gives no position, or when the timer is 0 or -1. On `ce-pause` with the `demo-a` reference, the gap has a value up to packet 13306. That packet has the final timer value 17 412 ms, and its gap is 1330 ms. The still packets 13307 and 13308 come after the end of the reference path. The matcher gives no position for them, so their gap is `null`. The attempt ends at packet 13309, and the gap stays `null`. The reference time is 16 082 ms. So the last live gap is the Review gap.
-
-**Review gap:** the game time of a complete attempt (`AttemptSummary.timeMs`) minus the reference time (`AttemptReview.referenceTimeMs`). Both are game times. On `ce-pause` with the `demo-a` reference, the Review gap is 17 412 − 16 082 = 1330 ms. The time lost by distance and the time lost per turn use measured times on both sides. These are the time series `t` of the attempt and of the reference in the review.
-
-### Game timer
-
-`GameTimerWatch` reads `gameTimerMs` of each sample. It gives the events `started`, `finished`, `left-track` and `restart`. Each event has the `rawIndex` and the game time in ms. The watch is active from `started` until one of the other three events.
-
-**Started:** the watch is not active. The sample has `playerSession`. The previous sample had the value 0. This sample has a value from 1 to 50 ms (`gameTimer.startMaxMs`). A jump to a larger value is not a start.
-
-**Repeated packets:** while the watch is active, a sample with the same packet ID as the last counted one, or up to 64 IDs behind it, changes nothing. Any other packet ID counts as newer, also after a wrap of the 32-bit counter or a large drop. `SequenceTracker` uses the same rule (`isRepeatedPacket`).
-
-**Left track:** the value is -1. The watch becomes inactive.
-
-**Restart:** the value is 0. The watch becomes inactive.
-
-**Finished:** the sample is not paused. The value did not increase for 3 packets in a row (`gameTimer.stillPackets`). Each of these packets is a newer packet, as in the rule above. The event has the `rawIndex` of the first packet with the final value. Its game time is that value. The watch becomes inactive. A packet with `paused` set clears the count of still packets.
-
-After an event, the watch needs the full start rule again. `docs/protocol.md`, Game timer, gives the facts.
-
-**Session:** the default session `player` needs `playerSession` for a start. The session `demonstration` needs `playerSession` false. Only the demonstration-range finder uses it. The attempt tracker always uses `player`.
-
-## Reference events
-
-`buildCueEvents(path)` reads the pedals of the reference and gives the events that the voice can speak.
-A condition must hold for three points in a row.
+`GameTimerWatch` reads `gameTimerMs` and gives `started`, `finished`, `left-track` and `restart` with the `rawIndex` and the game time. It is active from `started` to one of the other events.
 
 | Event | Rule |
 | --- | --- |
-| `brake` | Brake above 0.10. The zone ends when the brake is at or below 0.10. Zones closer than 5 m are joined. |
-| `ease-off` | Throttle was 0.5 or more and falls to 0.1 or less, and no brake zone starts within 1000 ms |
-| `throttle` | After a release or a brake zone, throttle above 0.5 outside a brake zone |
+| `started` | Watch not active. Session matches (below). Previous value 0. This value 1 to 50 ms (`gameTimer.startMaxMs`). |
+| `left-track` | Value −1. Watch becomes inactive. |
+| `restart` | Value 0. Watch becomes inactive. |
+| `finished` | Sample not paused. Value did not increase for 3 newer packets in a row (`gameTimer.stillPackets`). A paused packet clears the count. Watch becomes inactive. |
 
-- The key of an event is `<kind>@<sM rounded>`, for example `brake@332`. Mutes and timing offsets use this key. `eventKey`, `eventKeyKind` and `eventKeyPlace` in `packages/contracts` make and read keys. The server and the web use these functions or the stored columns, and do not split a key themselves.
-- Two events of the same kind (not brake) closer than 5 m: the second is dropped.
-- An event in the last 20 m of the path is dropped.
+- Session `player` needs `playerSession` true. Session `demonstration` needs it false. Only the demonstration range uses `demonstration`.
+- While active, a packet ID equal to the last counted ID or up to 64 behind changes nothing (`isRepeatedPacket`).
+- `finished` has the `rawIndex` of the first packet with the final value. Its game time is that value.
+- After any event, the next start needs the full `started` rule.
 
-**Target speed.** For a brake: the speed at the end of the zone. For a throttle: the reference speed 2 s later. The value is rounded down to 5 km/h. Supported values are 30 to 350 km/h. Outside this range there is no target.
+## Attempt lifecycle
 
-**Phrase of a brake.** The speed loss is the entry speed minus the speed at the end of the zone.
+`AttemptTracker` states: `waiting`, `driving`, `paused`, `finished`. Each start takes a new generation. A cue of an older generation is never played.
 
-| Loss | Phrase |
+Start: the tracker is not `driving` or `paused`, and the watch gives `started`. The event has reason `game-timer`. Its time is the sample time minus the timer value of the sample.
+
+While `driving` or `paused`, the first true row applies:
+
+| Condition | Event, reason |
 | --- | --- |
-| 16.67 m/s (60 km/h) or more | `Hard brake` |
-| 6.94 m/s (25 km/h) or more | `Brake` |
-| Less | `Light brake` |
+| More than 1000 ms without a sample | `aborted`, `silence` |
+| `playerSession` false | `aborted`, `player-session-ended` |
+| Watch gives `left-track` or `restart` | `aborted`, `left-track` or `restart` |
+| Break between samples | `aborted`, `car-changed` or `discontinuity` |
+| `loading` true | `aborted`, `loading` |
+| State `paused`, `paused` false | `resumed` |
+| State `driving`, `paused` true | `paused` |
+| Watch gives `finished` | `finished`, `game-timer` |
 
-**Big stop.** A brake with an entry speed of 55.56 m/s (200 km/h) or more and a loss of 27.78 m/s (100 km/h) or more also gets the warning `Big stop` before it.
+- An event has `atMonoMs` and `atClockMs`. Only `finished` has `gameTimeMs`: the final timer value.
+- `finished` has the `rawIndex` and time of the first sample with the final value.
+- `abortByUser` gives `aborted`, `manual`. Nothing else ends an attempt from outside.
+- An abort for any reason other than the watch resets the watch.
 
-**Phrase of a throttle.** `Full throttle` when the reference throttle reaches 0.95 within 2 s after the event. In other cases, `Throttle`.
+**Live gap** (`gapToReferenceMs`) = `gameTimerMs` of the sample − `timerMs` of the matched reference point. Positive: slower. `null` when no attempt runs, no match exists, or the value is 0 or −1. A pause keeps the value.
 
-**Text and clips of an event.** `cue-text.ts` composes all cue text and all clip keys. The server and the browser use these values and do not make their own.
+**Review gap** = game time of the attempt − reference time.
 
-- The clip of an event is its phrase key, for example `hard-brake`. The text is the phrase, for example `Hard brake`.
-- The follow clip of a brake with a target is `speed-<km/h>`, for example `speed-85`. The voice speaks it after the action clip only when `Speak target speeds` is on.
-- The spoken phrase adds the target in words when `Speak target speeds` is on, for example `Hard brake. Eighty five`.
-- The words of the fixed cues (`CUE_WORDS`) are in `@gt7/contracts`, so that the Drive screen shows the same words that the voice speaks.
+## Missed start
 
-**Clips of a reference.** `clipsOf(events, corners)` gives each clip that a training on the reference can play: the clip and the follow clip of each event, `Big stop` if a brake is a big stop, `Tighter` if the reference has a corner, the side cues, the guidance cues, the focus sentences of each turn up to turn ten, and `Voice check`. The browser loads this list before a training (`GET /api/references/:id/clips`).
+`startMissed` is true when all are true:
+
+1. A training is armed.
+2. No attempt runs. A paused attempt runs.
+3. `playerSession` is true.
+4. The value increases, and the previous value is above 0.
+5. The value is not the run of the last attempt. After an attempt ends, this stays false until the value is 0.
+
+Condition 3 excludes the background scene. Condition 4 excludes a fixed value after the finish, a false jump from 0 and a pause. Condition 5 excludes the count after a −1.
+
+## Demonstration range
+
+A capture of a demonstration also holds the background before and after it. The demonstration runs the game timer with `playerSession` false.
+
+**`demonstrationRuns(capture)`** gives the complete demonstration timer runs in order. The search starts at the first sample, then after each run. The function keeps a run when both checks pass:
+
+- Scene change: a `continuityBreak` lies between the search start and the first sample of the run.
+- Movement: the car moves more than 10 m in the run (`demoRange.minMovementM`).
+
+**`cutToTimerRun(capture, range, session)`** cuts a range to the timer run inside it. The cut starts at the last sample with value 0 before the start. It ends at the `rawIndex` of `finished`. The first packet with the final value must lie inside the range. A timer that runs before the range does not count. The result has the game time of the run (`TimerRunRange.gameTimeMs`).
+
+**`findDemoRangeCandidates(captures)`** needs two or more captures:
+
+1. Collapse repeated samples with the same state: position within 0.05 m, speed within 0.1 m/s, pedals within 0.02, same gear and car.
+2. Find pieces of at least 10 samples that the first capture shares with each other capture. Join pieces with a gap of at most 2 samples and no `continuityBreak`.
+3. Keep runs that all captures share, at least 60 samples long. Remove a run when more than half of it in the first capture lies in a longer run.
+4. Score each run: 2 for a break before its first sample, 1 for movement above 10 m.
+5. Cut each run with `cutToTimerRun(…, 'demonstration')`. A run without a complete timer run in every capture keeps its uncut ranges and has `timed` false.
+6. Eligible: both checks pass and `timed` is true. With three or more captures and exactly one eligible run, that run is not ambiguous. Else every run is ambiguous.
+7. Order: timed first, then score, then samples in the first capture (more first), then earlier start.
+8. Keep only the first of two runs with the same cut range in the first capture.
+
+**Reference time** = the final timer value of the cut range. The first point has `timerMs` 0. A range without a timer run has no reference time.
+
+**`matchesReference(capture, path)`** gives the raw range of the first run that follows the path, or `null`. Limits in `DEFAULT_CONFIG.demoRange`.
+
+A sample follows the path when all are true:
+
+- The matcher gives a match.
+- Lateral and height difference ≤ 0.5 m.
+- Speed difference ≤ 5 % of the reference speed + 0.5 m/s.
+
+A sample that does not follow ends the run. A run passes when:
+
+- It starts ≤ 1 m after the path start and ends ≤ 1 m before the path end.
+- Median speed difference ≤ 1 % of the reference speed. Below 1 m/s the divisor is 1 m/s.
+- 95th percentile of the lateral distance ≤ 0.2 m.
+- Median throttle difference ≤ 0.05 and median brake difference ≤ 0.05.
+
+## Matching the car to the reference
+
+`Matcher.step(sample)` gives a `Match` or `null`:
+
+1. Window: 0 to 20 m for the first sample. Then from 5 m behind the last match to `max(20 m, speed × elapsed + 10 m)` ahead.
+2. Project the position on each one-metre segment of the window. The matcher clamps a projection up to 1 m past a segment end.
+3. Keep candidates with lateral distance ≤ 8 m and height difference ≤ 3 m.
+4. Travel direction: the last two positions (≥ 0.05 m apart), else the velocity. At 2 m/s or more, prefer candidates with the tangent within 45° of it.
+5. Cost = `distance + 0.5 × |sM − expected sM|`. Expected `sM` = last match + `speed × elapsed`. The lowest cost wins.
+
+| Field | Meaning |
+| --- | --- |
+| `sM` | Distance along the reference, m |
+| `lateralM` | Side distance. Positive is right of the travel direction. |
+| `heightM` | Height difference |
+| `headingErrorDeg` | Travel direction against the tangent |
+| `velocityErrorDeg` | Velocity against the tangent, `null` below 2 m/s |
+| `trusted` | Heading check passed and ` | lateralM | ` ≤ 8 m |
+| `reference` | Reference point at `sM` |
+
+Guidance uses only trusted matches.
+
+## Reference events
+
+`buildCueEvents(path)`. A condition must hold for 3 points in a row.
+
+| Event | Rule |
+| --- | --- |
+| `brake` | Brake > 0.10. Ends at ≤ 0.10. Zones closer than 5 m join. |
+| `ease-off` | Throttle falls from ≥ 0.5 to ≤ 0.1, and no brake zone starts within 1000 ms |
+| `throttle` | After a release or brake zone, throttle > 0.5 outside a brake zone |
+
+- Key: `<kind>@<sM rounded>`, for example `brake@332`. Use `eventKey`, `eventKeyKind`, `eventKeyPlace` from `@gt7/contracts`.
+- The builder drops a second event of the same kind (not brake) within 5 m.
+- The builder drops an event in the last 20 m.
+
+| Value | Rule |
+| --- | --- |
+| Target speed, brake | Speed at the end of the zone |
+| Target speed, throttle | Reference speed 2 s later |
+| Target rounding | Down to 5 km/h. Outside 30 to 350 km/h: no target. |
+| `Hard brake` | Speed loss ≥ 16.67 m/s (60 km/h) |
+| `Brake` | Loss ≥ 6.94 m/s (25 km/h) |
+| `Light brake` | Smaller loss |
+| `Big stop` before a brake | Entry ≥ 55.56 m/s (200 km/h) and loss ≥ 27.78 m/s (100 km/h) |
+| `Full throttle` | Reference throttle reaches 0.95 within 2 s. Else `Throttle`. |
+
+`cue-text.ts` makes all cue text and clip keys:
+
+- Clip = phrase key, for example `hard-brake`. Follow clip of a brake with a target = `speed-<km/h>`, played only with `Speak target speeds`.
+- Spoken text with targets on: `Hard brake. Eighty five`.
+- `CUE_WORDS` in `@gt7/contracts` gives the shown words.
+- `clipsOf(events, corners)` lists every clip of a reference. These are the event clips and follow clips, `Big stop` if any, `Tighter` if a corner exists, and `Voice check`. It adds the side cues, the guidance cues and the focus sentences up to turn 10.
 
 ## Corners
 
-`findCorners(path, events)` (called only by `analyseReference`):
+`findCorners(path, events)`:
 
-1. **Curvature.** At each metre, take the tangents 10 m before and 10 m after. The angle between them divided by 20 m is the curvature. The sign of the angle is the turn direction.
-2. **Window.** Each `brake` or `ease-off` opens a window. It ends 40 m after the next `throttle`, or at the end of the path.
-3. **Apex.** The point of the largest curvature in the window. A window whose radius at that point is more than 150 m is not a corner.
-4. **Turn-in.** The last point before the apex where the curvature is below one third of the apex curvature.
-5. Corners are numbered in order of their apex, from 1.
+1. Curvature at each metre: angle between the tangents 10 m before and after, divided by 20 m. The sign gives the direction.
+2. Window: from each `brake` or `ease-off` to 40 m after the next `throttle`, or to the path end.
+3. Apex: largest curvature in the window. Radius > 150 m there: no corner.
+4. Turn-in: last point before the apex with curvature below one third of the apex curvature.
+5. Number corners by apex order from 1.
 
-`outsideM(corner, lateralM) = −insideSign × lateralM`. A positive value means that the car is on the outside of the corner.
+`outsideM(corner, lateralM)` = `−insideSign × lateralM`. Positive: outside.
 
-**Turn zone.** `turnZones(corners, lengthM)` gives one zone for each corner. The zone starts at the turn-in. It ends at the apex plus the distance from the turn-in to the apex. It ends earlier at the turn-in of the next corner or at the end of the section. When the turn-ins come in the order of the apexes, two zones do not overlap. If a turn-in comes before the turn-in of the corner before it, the zones can overlap, and a zone can be empty. The distance between two zones is not in a turn. For `demo-a` (457 to 1422) the zone of turn 1 is 346 to 462 m. The server sends the zone of each corner as `zoneFromSM` and `zoneToSM`. The Review charts shade the zones. With `Side distance × 6`, the Review map gives one label for each zone, at the point of the largest lateral distance. On Drive, the note `before T<n>` names the first corner whose zone ends after the position of the cue. Review, Drive and the time lost per turn use the same zone.
+`turnZones(corners, lengthM)`: one zone per corner, from the turn-in to `apex + (apex − turn-in)`. It ends earlier at the next turn-in or the section end. Zones can overlap or be empty when turn-ins are out of apex order.
 
 ## Voice decisions
 
-`Coach.step(input)` runs once per sample and gives at most one cue. The coach gets the settings of the exercise once, when it is made (`CoachSettings`: muted keys, speak targets, timing offsets, side cue distance). Each step gives only the sample, the match, the time, the generation, the device delay and the phrase durations.
+`TrainingRun.step(sample)` is the one training step, live and in `replayCoach`:
 
-`TrainingRun` (`training-run.ts`) is the one training step. The live training (`TrainingSession` on the server) and `replayCoach` both use it, so the two cannot give different decisions. `TrainingRun.step(sample)` does these steps in this sequence:
+1. Give the sample to `AttemptTracker`.
+2. On `started`: new generation, reset the matcher, guidance active. Return the start samples (timer 0 and start).
+3. Compute `startMissed`.
+4. If no attempt runs, stop. Match, gap and next cue are `null`.
+5. Match the sample. Compute the live gap and the next cue that is not muted.
+6. Give the sample to `Coach`. A new generation resets the coach on its first step.
 
-1. It gives the sample to the `AttemptTracker`.
-2. On `started`, it takes a new generation (`nextGeneration`), resets the matcher and sets guidance to active. It gives the start samples: the sample before the start (timer 0) and the start sample.
-3. It finds a missed start (`startMissed`, `docs/protocol.md`, Game timer, Missed start).
-4. If no attempt runs (state not `driving` or `paused`), it stops. The match, the gap and the next cue are then `null`.
-5. It matches the sample, and it calculates the live gap and the next cue that is not muted.
-6. It gives the sample to the coach. A new generation resets the coach on its first step. No other call resets the coach.
+`TrainingRun` expects unique samples in packet order. `Coach.step` gives at most one cue per sample. The coach gets `CoachSettings` (muted keys, targets on, offsets, side cue distance) once, at construction.
 
-`TrainingRun` expects unique samples in packet order. `SampleStream` removes the repeated packets before the step, live and in the evaluation tool (`readSamples`). `TrainingSession` only adds the effects: it sends the cue, cancels old generations, records the cue rows and gives the ended attempt to storage. `replayCoach` folds the steps of a capture into a trace. The evaluation tool and the golden traces use it.
+### Silence
 
-### When the coach is silent
+The coach gives no cue when:
 
 - The player has no control, or the sample is older than 150 ms.
-- Guidance waits for a restart (the car passed the end of the path).
+- Guidance waits for a restart: the car passed the path end.
 - The match is missing or not trusted. Guidance is then suspended.
 
-### Time to an event
+### Due time
 
-`time = (−v + √(v² + 2·a·d)) / a` for a distance `d`, a speed `v` and an acceleration `a` above 0.
-When the acceleration is 0, `time = d / v`.
-The acceleration is the speed change over the last 300 ms and is never negative. With less than 100 ms of speeds, the acceleration is 0.
+Time to an event: `(−v + √(v² + 2ad)) / a` for distance `d`, speed `v`, acceleration `a` > 0. With `a` = 0: `d / v`. `a` = speed change over the last 300 ms, never negative, 0 with less than 100 ms of data.
 
-### When a cue is due
+| Rule | Value |
+| --- | --- |
+| Cue due | time ≤ device delay + 500 ms + cue offset + sample period |
+| `Big stop` due | time ≤ device delay + 2000 ms + offset of its brake + sample period |
+| Sample period | Time since the last coach step, ≤ 100 ms. First step: 1000 / 60 ms. |
+| Cue offset | −500 to +1000 ms, step 100 ms. Positive is earlier. |
+| Too late | time < device delay |
 
-The coach decides a cue when the time to its event is at most `device delay + 500 ms + offset of this cue + sample period`.
-The sample period is the time since the previous step of the coach, at most 100 ms. On the first step it is 1000 / 60 ms.
-The 500 ms is the reaction time: the first word starts 500 ms before the point.
-The offset is the per-cue setting of the exercise, −500 to +1000 ms in steps of 100 ms. A positive value is earlier.
-`Big stop` is due at `device delay + 2000 ms + offset of its brake + sample period`.
+`Big stop` is also too late in two cases. Its phrase cannot end before the lead of its brake. Or a brake or ease-off between the car and its brake becomes due before the phrase ends. It gets `cooldown` for 1500 ms after a last cue with priority ≥ 90.
 
-A cue is **too late** when the time to its event is less than the device delay. `Big stop` has three more checks:
-
-- It is too late when its phrase would not finish before the lead of its brake.
-- It is too late when a brake or ease-off event between the car and its brake becomes due before the end of the `Big stop` phrase. An event between them that becomes due later does not stop `Big stop`.
-- It gets `cooldown` for 1500 ms after a cue with a priority of 90 or more, when that cue is the last cue of the coach. A brake, `Big stop` and `Ease off` have a priority of 90 or more.
-
-### Targets and the mute check
-
-Each candidate and each suppressed decision has a target: the event kind, the voice, the place `sM` and the mute key.
+### Targets and mutes
 
 | Cue | Event kind | Place | Mute key |
 | --- | --- | --- | --- |
-| Brake, ease-off, throttle | `brake`, `ease-off`, `throttle` | The event | The event key |
-| `Big stop` | `big-stop` | Its brake | The key of its brake |
-| `Tighter` | `tighter` | Where the cue is decided | `tighter` |
-| `Keep left`, `Keep right` | `keep-left`, `keep-right` | Where the cue is decided | `keep-left`, `keep-right` |
+| Brake, ease-off, throttle | `brake`, `ease-off`, `throttle` | The event | Event key |
+| `Big stop` | `big-stop` | Its brake | Key of its brake |
+| `Tighter` | `tighter` | Decision place | `tighter` |
+| `Keep left`, `Keep right` | `keep-left`, `keep-right` | Decision place | `keep-left`, `keep-right` |
 | `Guidance paused`, `Guidance resumed` | `guidance` | None | None |
 
-- The coach checks mutes at one point, when it chooses the cue of a sample. A candidate is muted when it has a mute key and that key is in the muted keys.
-- A mute comes before every other reason: a muted candidate gets `muted` also when it is too late.
+- The coach checks mutes once, when it chooses the cue of a sample.
+- A mute comes first: a muted candidate gets `muted` also when it is too late.
 - A muted throttle event opens no window.
-- The server stores the event kind and the place of each cue event (`event_kind`, `s_m`). `kind` stays the voice of a spoken cue and the event kind of a suppressed decision. The focus cue has the event kind `focus` and no place.
 
-### Priority and cooldown
+### Priority
 
 | Cue | Priority |
 | --- | --- |
-| Brake (`Hard brake`, `Brake`, `Light brake`) | 100 |
+| `Hard brake`, `Brake`, `Light brake` | 100 |
 | `Big stop` | 95 |
 | `Ease off` | 90 |
-| Position (`Keep left`, `Keep right`, `Tighter`) | 50 |
-| Throttle (`Throttle`, `Full throttle`) | 20 |
-| System (`Guidance paused`, `Guidance resumed`, focus) | 10 |
+| `Keep left`, `Keep right`, `Tighter` | 50 |
+| `Throttle`, `Full throttle` | 20 |
+| `Guidance paused`, `Guidance resumed`, focus | 10 |
 
-- Of the candidates of one sample, the highest priority speaks. The others get `lower-priority`.
-- For 1500 ms after a cue, a candidate with the same or a lower priority gets `cooldown`. A higher priority speaks at once.
-- One factory (`makeCue` in `packages/core`) builds every cue, also the focus cue. It sets the id, the priority from the kind, and the time to live.
-- Each cue has a time to live of `150 ms + device delay`. The browser drops a cue that arrives later, and a cue of an older generation.
-- Known limit: a position cue has a higher priority than a throttle cue, so it can follow a throttle cue inside the cooldown.
+- The highest priority of a sample speaks. The others get `lower-priority`.
+- For 1500 ms after a cue, equal or lower priority gets `cooldown`. Higher priority speaks.
+- `makeCue` builds every cue: ID, priority, time to live `150 ms + device delay`.
+- A position cue can follow a throttle cue inside the cooldown.
 
-### Throttle cues
+### Throttle window
 
-A throttle event opens a window when it becomes due. The cue speaks at the first sample where all of these are true, and never after the point:
+A due throttle event opens a window. The cue speaks at the first sample, never after the point, where:
 
 - No brake event lies between the car and `event + speed × 2 s`.
-- The match is stable for the last 300 ms.
-- The car is at most 1 m/s faster than the reference and at most 3 m to the side.
-- The heading and velocity errors are at most 10°, and the brake is at most 0.05.
-- For `Full throttle`: the player's throttle is below 0.95.
+- The match is stable for 300 ms.
+- The car is ≤ 1 m/s faster than the reference and ≤ 3 m to the side.
+- Heading and velocity errors ≤ 10°, brake ≤ 0.05.
+- `Full throttle` only: player throttle < 0.95.
 
-### Missed braking
+### Missed braking and suspension
 
-When the car passes the end of a brake zone more than 4.17 m/s (15 km/h) faster than the reference, guidance is suspended (`target-incompatible`). The throttle and ease-off cues up to the next brake are cancelled.
-
-### Suspended guidance
-
-- Guidance resumes after 1000 ms of a trusted match beyond the cancelled section.
-- `Guidance paused` is spoken only after 2000 ms of suspension, and `Guidance resumed` only if the pause was spoken. Neither phrase is spoken when a brake or ease-off cue would come during it.
-- A cue that became due during the suspension is never replayed.
+- Past a brake zone end > 4.17 m/s (15 km/h) faster than the reference: guidance suspends (`target-incompatible`). The coach cancels the throttle and ease-off cues up to the next brake.
+- Guidance resumes after 1000 ms of trusted match past the cancelled section.
+- `Guidance paused` speaks after 2000 ms of suspension. `Guidance resumed` speaks only after `Guidance paused`. Neither speaks when a brake or ease-off cue would fall inside it.
+- A cue that became due during suspension never replays.
 
 ### Tighter
 
-The voice says `Tighter` when the car stays more than 2 m on the outside for a hold time of 300 ms or more.
-This applies between the turn-in point and the apex of a corner.
-The voice says it once per corner.
-The mute key is `tighter`.
+More than 2 m outside for ≥ 300 ms between turn-in and apex. Once per corner.
 
 ### Side cues
 
-`Keep left` and `Keep right` use the setting `Side cue distance` of the exercise (`Off`, or 0.5 m to 3 m). The default is `DEFAULT_SIDE_CUE_DISTANCE_M`, 2 m.
+Distance from `CoachSettings`: off, or 0.5 to 3 m. Default `DEFAULT_SIDE_CUE_DISTANCE_M` 2 m.
 
-- When `|lateralM|` is above the distance on the same side for 300 ms, a cue is decided.
-- A positive `lateralM` (car to the right of the reference) gives `Keep left`. A negative one gives `Keep right`.
-- Once per excursion: the car must come back within the distance before the next side cue. A side cue that loses to another cue or to the cooldown is not repeated in that excursion.
-- Between the turn-in point and the apex the side cue does not speak. The excursion timer continues, so the cue can speak once after the apex.
-- The mute keys are `keep-left` and `keep-right`.
-
-### Snapshot
-
-Training takes the muted keys, the timing offsets, `Speak target speeds` and the side cue distance at arm time. A change of the exercise during an armed session has no effect until the next arm.
+- `|lateralM|` above the distance for 300 ms: `Keep left` for positive, `Keep right` for negative.
+- Once per excursion. The car must return within the distance first. A side cue that loses to another cue or to cooldown does not repeat in that excursion.
+- No side cue between turn-in and apex. The hold time continues, so the cue can speak after the apex.
 
 ## Comparison and differences
 
-`buildReview(attempt, analysis)` puts the attempt and the reference on one grid of 2 m along the path: time, speed, throttle, brake, position and lateral distance. A gap of more than 10 m between two matches stays empty. The attempt's own events are detected with the same rules as the reference events.
+`buildReview(attempt, analysis)` puts attempt and reference on a 2 m grid: time, speed, throttle, brake, position, lateral distance. A gap > 10 m between matches stays empty. Attempt events use the reference event rules.
 
-`findDifferences(review)` gives the differences. A difference is not called a mistake.
+`findDifferences(review)`:
 
 | Kind | Rule | Size |
 | --- | --- | --- |
-| `brake-early`, `brake-late` | The attempt's brake nearest to a reference brake (within 60 m) is more than 8 m before or after it | metres |
-| `slow-corner` | The lowest speed in the zone is more than 2.22 m/s (8 km/h) below the reference. The zone starts at the brake point and ends 40 m after the brake zone, or before the next brake. | m/s (unit `m/s`). The screen shows km/h. |
-| `throttle-late` | The attempt's throttle is more than 10 m after the reference throttle (within 60 m) | metres |
-| `off-line` | More than 1.5 m to one side for more than 500 ms | largest distance, metres |
-| `wide-apex` | More than 2 m on the outside at the apex of a corner | metres |
+| `brake-early`, `brake-late` | Nearest attempt brake to a reference brake, within 60 m, > 8 m before or after | m |
+| `slow-corner` | Lowest speed > 2.22 m/s (8 km/h) below the reference, from the brake point to 40 m after the zone or the next brake | m/s |
+| `throttle-late` | Attempt throttle > 10 m after the reference throttle, within 60 m | m |
+| `off-line` | > 1.5 m to one side for > 500 ms | largest distance, m |
+| `wide-apex` | > 2 m outside at an apex | m |
 
-**Turn of a position.** `turnOf(corners, sM)` gives the number of the last corner whose `zoneStartSM` is at or before `sM`. `zoneStartSM` is the position of the `brake` or `ease-off` that opens the window of the corner. It is not the start of the turn zone. A position before the `zoneStartSM` of turn 1 belongs to turn 1. Without corners the result is `null`. Each difference gets the turn of its position.
+An attempt brake more than 60 m from the reference brake is not matched. The finder then uses the nearest brake inside 60 m.
 
-**Time lost per turn.** `turnLosses(corners, lengthM, gridM, attemptT, referenceT)` gives one value for each turn zone (section Corners, Turn zone). The time between two zones is not in a turn. The gap at a grid point is the attempt time minus the reference time. The time lost in a zone is the gap at the last grid point that has both times, minus the gap at the first such point. Both ends of the zone are included. A zone with fewer than two such points has no value. Without corners the list is empty. A negative value is time gained.
+**`turnOf(corners, sM)`**: the last corner whose `zoneStartSM` (its opening `brake` or `ease-off`) is ≤ `sM`. Before turn 1: turn 1. No corners: `null`.
 
-**Recurring.** With at least three complete attempts, a difference is recurring when it occurs in at least half of them. The code groups differences that have an event key by kind and key. It groups `off-line` differences by place, within 20 m. The size is the median.
+**`turnLosses(corners, lengthM, gridM, attemptT, referenceT)`**: per turn zone, gap at the last grid point with both times − gap at the first. Gap = attempt time − reference time. Fewer than two points: no value. Negative: time gained.
 
-**Focus sentence.** After an attempt the voice names one difference: the most frequent recurring difference, or else the largest difference of the last attempt. To compare sizes of different units, `comparableSize` counts 1 m/s as 3.6, so 1 km/h counts as 1 m. The largest difference of an attempt summary uses the same rule. The sentence is the corner number and an action, for example `Turn two. Tighter at the apex.` Up to turn ten has a clip.
+**`recurring(perAttempt, config)`**: empty with fewer than 3 attempts. A difference recurs in at least half of the attempts (`recurring.minShare` 0.5). Group by kind and event key, `off-line` by place within 20 m. Size: median. Sort by count, then place.
 
-**Brake reaction.** The reaction to a played brake cue is the time from the start of the clip to the moment the brake rises above 0.10. The limit is 3000 ms. A negative value means that the player braked before the cue.
+**`focusSentence(recurring, latest, corners)`**: the most frequent recurring difference, else the largest difference of the last attempt (`comparableSize`: 1 m/s counts as 3.6). No corner at its place (`cornerAt`): no sentence. Text: turn number and action from `FOCUS_ACTIONS`.
+
+| Kind | Action |
+| --- | --- |
+| `brake-early` | `Brake later.` |
+| `brake-late` | `Brake earlier.` |
+| `slow-corner` | `Carry more speed.` |
+| `throttle-late` | `Throttle earlier.` |
+| `off-line` | `Stay on the line.` |
+| `wide-apex` | `Tighter at the apex.` |
+
+**`brakeReactions(samples, cues)`**: time from the clip start to the brake rise above 0.10. Brake above 0.10 at the clip start: the last rise before the clip. Else: the first rise after it. More than 3000 ms away: no value. Negative: braked before the cue.
 
 ## Exercise status
 
-`exerciseStatus`: with no complete attempt the status is `ready` (an active reference exists) or `new`. Else the medal that the best game time reaches against the targets of the exercise, or `practising`.
-
-`nextMedal`: the first medal in the order bronze, silver, gold whose target exists and is lower than the best game time. The result has the medal, its target and the gap in ms. It is `null` with no best time, or when the best time reaches every target that exists. The server sets `Exercise.nextMedal` with it.
-
-## Thresholds
-
-The full list is `DEFAULT_CONFIG`. These values appear most often in this document.
-
-| Setting | Value |
-| --- | --- |
-| Freshness of a sample | 150 ms |
-| Silence gap | 1000 ms |
-| Trusted lateral distance, height, heading | 8 m, 3 m, 45° at 2 m/s or more |
-| Matcher search | 5 m back, `max(20 m, speed × time + 10 m)` ahead |
-| Discontinuity margin | 20 m |
-| Cue lead | Device delay + 500 ms |
-| Cue time to live | 150 ms + device delay |
-| Cooldown | 1500 ms |
-| Big stop | Entry 55.56 m/s (200 km/h), loss 27.78 m/s (100 km/h), lead 2000 ms |
-| Target speed step | 5 km/h, rounded down |
-| Side cue hold, default distance | 300 ms, 2 m |
-| Wide apex and `Tighter` | 2 m, hold 300 ms |
-| Review grid | 2 m |
+- `exerciseStatus`: no complete attempt → `ready` with an active reference, else `new`. Else the medal of the best game time against the targets, or `practising`.
+- `nextMedal`: first of bronze, silver, gold with a target below the best time. Result: medal, target, gap in ms. `null` without a best time, or when the best time reaches every target.
 
 ## Test fixtures
 
@@ -460,17 +408,16 @@ Tests use `fixtures/`, never `data/`. `fixtures/manifest.json` names the source 
 
 | Fixture | Content |
 | --- | --- |
-| `demo-a`, `demo-b`, `demo-c` | Three captures of the same demonstration of Autódromo de Interlagos, Circuit Experience sector 2. The demonstration timer runs 16 082 ms. The reference of the tests is `demo-a`, raw 457 to 1422 (the cut to the demonstration timer): 966 samples, 818.17 m, one corner with the apex at 404 m. |
-| `ce-clean` | A clean run of the same sector: start 8452, finish 17 071 ms at 9476, screen 0:17.071 (bronze). The stored attempt range is 8451 to 9479. |
-| `ce-slow` | A run of the same sector, too slow for the game: start 5492, finish 18 824 ms at 6621. It brakes late at the first corner. The stored attempt range is 5491 to 6624. |
-| `ce-pause` | A run with a pause of 696 samples (raw 11651 to 12346): start 11565, finish 17 412 ms at 13306. It brakes early at the first corner. |
-| `ce-off-track-reset`, `ce-off-track-end` | Runs that leave the track (value -1), then restart or end the session |
-| `b3-run`, `b1-run` | National B licence tests B-3 (15 839 ms) and B-1 (standing start, 20 366 ms) |
+| `demo-a`, `demo-b`, `demo-c` | Demonstration of Autódromo de Interlagos, Circuit Experience sector 2, 16 082 ms. Test reference: `demo-a`, raw 457 to 1422, 818.17 m. One corner: apex 404 m, turn zone 346 to 462 m. `demo-c` also has a background timer run, raw 758 to 970. |
+| `ce-clean` | Clean run, 17 071 ms, finish at raw 9476 |
+| `ce-slow` | 18 824 ms, finish at raw 6621. Two brake zones before turn 1, about 216 to 300 m and 328 to 348 m. |
+| `ce-pause` | 17 412 ms, pause raw 11651 to 12346, brakes early at turn 1 |
+| `ce-off-track-reset`, `ce-off-track-end` | Value −1, then restart or session end |
+| `b3-run`, `b1-run` | National B-3: final value 15 839 ms, screen 0:15.839. B-1, standing start: final value 20 366 ms, screen 0:20.352. |
 
-The demo uses `demo-a` and the attempts `ce-clean`, `ce-slow` and `ce-pause`. The demo exercise gets the medal targets of the sector from the seed: gold 16.400 s, silver 16.700 s, bronze 17.800 s. The catalogue has no targets for it.
+The demo uses `demo-a` and the attempts `ce-clean`, `ce-slow`, `ce-pause`.
 
-Golden traces: `fixtures/golden/ce-slow-cues.json` (default settings) and `fixtures/golden/ce-slow-cues-side-1m.json` (side cue distance 1 m).
-Rewrite them only after a deliberate coach or clip change, and read the new trace first:
+Golden traces: `fixtures/golden/ce-slow-cues.json` (defaults) and `ce-slow-cues-side-1m.json` (side cue distance 1 m). Rewrite only after a deliberate coach or clip change, and read the new trace first:
 
 ```sh
 pnpm evaluate-coach --attempt ce-slow --reference demo-a --first 457 --last 1422 --out fixtures/golden/ce-slow-cues.json
