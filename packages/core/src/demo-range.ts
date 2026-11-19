@@ -1,13 +1,11 @@
-import type { Sample } from '@gt7/contracts';
+import type { RawRange, Sample } from '@gt7/contracts';
 import { continuityBreak } from './attempts.ts';
 import { DEFAULT_CONFIG, type CoreConfig } from './config.ts';
 import { GameTimerWatch, type GameTimerSession } from './game-timer.ts';
 import { distance } from './geometry.ts';
 import { Matcher, type Match } from './match.ts';
 import type { ReferencePath } from './reference.ts';
-import { median } from './statistics.ts';
-
-export type RawRange = { first: number; last: number };
+import { median, percentile95 } from './statistics.ts';
 
 export type TimerRunRange = RawRange & { gameTimeMs: number };
 
@@ -314,14 +312,9 @@ export function findDemoRangeCandidates(
 
 type ConfirmRun = { firstIndex: number; lastIndex: number; firstSM: number; lastSM: number; matches: Match[]; samples: Sample[] };
 
-function percentile95(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] ?? Number.POSITIVE_INFINITY;
-}
-
 function followsReference(match: Match | null, sample: Sample, tolerance: Tolerance): match is Match {
   if (!match) return false;
-  const speedLimit = 0.05 * match.reference.speedMps + 0.5;
+  const speedLimit = tolerance.followSpeedRatio * match.reference.speedMps + tolerance.followSpeedBaseMps;
   return (
     Math.abs(match.lateralM) <= tolerance.confirmMaxLateralM &&
     match.heightM <= tolerance.confirmMaxLateralM &&

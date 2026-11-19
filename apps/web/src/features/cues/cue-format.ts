@@ -1,17 +1,7 @@
-import type { CornerReview, Difference, RecurringDifference, ReferenceCue } from '@gt7/contracts';
+import { KPH_PER_MPS, type CornerReview, type Difference, type RecurringDifference } from '@gt7/contracts';
+import { counted } from '../../app/plural.ts';
 
-export const OFFSET_STEP_MS = 100;
-export const OFFSET_MIN_MS = -500;
-export const OFFSET_MAX_MS = 1000;
 export const ON_THE_LINE_M = 0.5;
-
-export function clipOf(cue: Pick<ReferenceCue, 'voice'>): string {
-  return cue.voice;
-}
-
-export function followClipOf(cue: Pick<ReferenceCue, 'kind' | 'targetSpeedKph'>, speakTargets: boolean): string | null {
-  return speakTargets && cue.kind === 'brake' && cue.targetSpeedKph !== null ? `speed-${cue.targetSpeedKph}` : null;
-}
 
 function seconds(ms: number): string {
   return (Math.abs(ms) / 1000).toFixed(1);
@@ -27,7 +17,7 @@ export function reactionText(reactionMs: number): string {
 }
 
 export function attemptsText(count: number): string {
-  return `${count} guided attempt${count === 1 ? '' : 's'}`;
+  return counted(count, 'guided attempt');
 }
 
 export function apexPlaceText(outside: number | null): string {
@@ -36,9 +26,9 @@ export function apexPlaceText(outside: number | null): string {
   return `${Math.abs(outside).toFixed(1)} m ${outside > 0 ? 'outside' : 'inside'}`;
 }
 
-export function apexSpeedText(corner: Pick<CornerReview, 'speedKph' | 'apexSpeedKph'>): string {
-  if (corner.speedKph === null) return 'no speed match at the apex';
-  return `${Math.round(corner.speedKph)} km/h at the apex, reference ${Math.round(corner.apexSpeedKph)} km/h`;
+export function apexSpeedText(corner: Pick<CornerReview, 'speedMps' | 'apexSpeedMps'>): string {
+  if (corner.speedMps === null) return 'no speed match at the apex';
+  return `${Math.round(corner.speedMps * KPH_PER_MPS)} km/h at the apex, reference ${Math.round(corner.apexSpeedMps * KPH_PER_MPS)} km/h`;
 }
 
 const DIFFERENCE_NAMES: Record<Difference['kind'], string> = {
@@ -50,8 +40,8 @@ const DIFFERENCE_NAMES: Record<Difference['kind'], string> = {
   'wide-apex': 'Wide at the apex'
 };
 
-function size(value: number, unit: Difference['unit']): string {
-  return `${Math.round(value)} ${unit}`;
+export function sizeText(value: number, unit: Difference['unit']): string {
+  return unit === 'm/s' ? `${Math.round(value * KPH_PER_MPS)} km/h` : `${Math.round(value)} m`;
 }
 
 export function differenceName(kind: Difference['kind']): string {
@@ -59,7 +49,7 @@ export function differenceName(kind: Difference['kind']): string {
 }
 
 export function differenceText(difference: Difference): string {
-  const amount = size(difference.size, difference.unit);
+  const amount = sizeText(difference.size, difference.unit);
   switch (difference.kind) {
     case 'brake-early':
       return `Braked ${amount} earlier`;
@@ -77,9 +67,9 @@ export function differenceText(difference: Difference): string {
 }
 
 export function recurringText(recurring: RecurringDifference): string {
-  return `${differenceName(recurring.kind)} in ${recurring.count} of ${recurring.of} attempts, median ${size(recurring.medianSize, recurring.unit)}`;
+  return `${differenceName(recurring.kind)} in ${recurring.count} of ${recurring.of} attempts, median ${sizeText(recurring.medianSize, recurring.unit)}`;
 }
 
 export function recurringAtText(recurring: RecurringDifference): string {
-  return `${differenceName(recurring.kind)} at ${Math.round(recurring.sM)} m in ${recurring.count} of ${recurring.of} attempts, median ${size(recurring.medianSize, recurring.unit)}`;
+  return `${differenceName(recurring.kind)} at ${Math.round(recurring.sM)} m in ${recurring.count} of ${recurring.of} attempts, median ${sizeText(recurring.medianSize, recurring.unit)}`;
 }

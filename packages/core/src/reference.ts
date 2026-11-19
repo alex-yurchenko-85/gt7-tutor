@@ -1,10 +1,8 @@
-import type { Sample, Vec3 } from '@gt7/contracts';
+import type { Sample, StartKindName, Vec3 } from '@gt7/contracts';
 import { positionBreak, type PositionBreak } from './attempts.ts';
 import { DEFAULT_CONFIG, type CoreConfig } from './config.ts';
 import { distance, isFiniteVec, lerp, normalize, sub } from './geometry.ts';
 import { clockOf } from './packet-clock.ts';
-
-export type StartKind = 'standing' | 'flying';
 
 export type ReferencePoint = {
   sM: number;
@@ -20,7 +18,7 @@ export type ReferencePoint = {
 export type ReferencePath = {
   points: ReferencePoint[];
   lengthM: number;
-  startKind: StartKind;
+  startKind: StartKindName;
 };
 
 export type ReferencePathErrorCode = 'too-few-points' | 'nonfinite-field' | 'discontinuity' | 'car-changed';
@@ -133,7 +131,7 @@ function withTangents(points: Omit<ReferencePoint, 'tangent'>[]): ReferencePoint
   });
 }
 
-export function buildReference(samples: Sample[], startKind: StartKind, config: CoreConfig = DEFAULT_CONFIG): ReferencePath {
+export function buildReference(samples: Sample[], startKind: StartKindName, config: CoreConfig = DEFAULT_CONFIG): ReferencePath {
   samples.forEach(assertFinite);
   assertContinuous(samples, config);
   const moving = trimHeldEnds(withActiveTime(samples).filter(timed => isDriven(timed.sample)));
@@ -161,8 +159,4 @@ export function pointAt(path: ReferencePath, sM: number): ReferencePoint {
     timeMs: mix(from.timeMs, to.timeMs, u),
     timerMs: mix(from.timerMs, to.timerMs, u)
   };
-}
-
-export function referenceTimeMs(path: ReferencePath): number {
-  return path.points.at(-1)!.timerMs;
 }

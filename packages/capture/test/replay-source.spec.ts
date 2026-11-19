@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ReplaySource, type Datagram } from '../src/index.ts';
-import { fixturePath } from './helpers.ts';
+import { fixturePath } from '../../../tools/testing/fixture-path.ts';
 
 describe('ReplaySource', () => {
   it('replay_speed_zero_is_ordered', async () => {

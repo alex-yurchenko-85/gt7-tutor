@@ -2,24 +2,22 @@ import { randomUUID } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import { Logger } from '@nestjs/common';
 import { WebSocketGateway, type OnGatewayConnection } from '@nestjs/websockets';
-import { clientMsgSchema } from '@gt7/contracts';
+import { UNAUTHENTICATED_CLOSE_CODE, clientMsgSchema } from '@gt7/contracts';
 import { WebSocket, type RawData } from 'ws';
 import { AuthService, hashToken } from '../auth/auth.service.js';
 import { isForeignOrigin } from '../auth/origin.guard.js';
 import { sessionTokenOf } from '../auth/session-cookie.js';
-import { LiveHub, SESSION_ENDED, type LiveClient } from './live-hub.service.js';
+import { LiveHub, type LiveClient } from './live-hub.service.js';
 
-export const UNAUTHENTICATED_CLOSE_CODE = 4401;
 export const FORBIDDEN_ORIGIN_CLOSE_CODE = 4403;
 export const SERVER_ERROR_CLOSE_CODE = 1011;
 const MAX_MESSAGE_BYTES = 4096;
 
-function socketClient(socket: WebSocket, userId: string, sessionKey: string, expiresAtMs: number): LiveClient {
+function socketClient(socket: WebSocket, userId: string, sessionKey: string): LiveClient {
   return {
     id: randomUUID(),
     userId,
     sessionKey,
-    expiresAtMs,
     get bufferedAmount() {
       return socket.bufferedAmount;
     },
@@ -70,14 +68,14 @@ export class LiveGateway implements OnGatewayConnection {
     const keepEarly = (data: RawData) => early.push(data);
     socket.on('message', keepEarly);
     const token = sessionTokenOf(request);
-    const session = await this.auth.sessionFor(token);
+    const user = await this.auth.userForToken(token);
     socket.off('message', keepEarly);
-    if (!session) {
+    if (!user) {
       socket.close(UNAUTHENTICATED_CLOSE_CODE, 'Sign in first');
       return;
     }
     if (socket.readyState !== WebSocket.OPEN) return;
-    const client = socketClient(socket, session.user.id, hashToken(token!), session.expiresAtMs);
+    const client = socketClient(socket, user.id, hashToken(token!));
     const receive = (data: RawData) => {
       const parsed = clientMsgSchema.safeParse(parseMessage(data));
       if (parsed.success) this.hub.receive(client, parsed.data);
@@ -87,6 +85,5 @@ export class LiveGateway implements OnGatewayConnection {
     socket.on('close', () => this.hub.detach(client));
     this.hub.attach(client);
     for (const data of early) receive(data);
-    if (!(await this.auth.sessionFor(token))) client.close(SESSION_ENDED);
   }
 }

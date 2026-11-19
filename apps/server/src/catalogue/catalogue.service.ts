@@ -1,55 +1,11 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CATALOGUE_SOURCES } from '@gt7/catalogue';
-import type {
-  Car,
-  Catalogue,
-  CatalogueEntry,
-  CatalogueInfo,
-  CatalogueListEntry,
-  CatalogueQuery,
-  Circuit,
-  MedalTargetTimes
-} from '@gt7/contracts';
+import type { Car, Catalogue, CatalogueEntry, CatalogueInfo, CatalogueListEntry } from '@gt7/contracts';
 import type { Knex } from 'knex';
 import { exerciseStatuses, type ExerciseStatusSummary } from '../exercises/exercise-status.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { CatalogueFiles } from './catalogue-files.js';
-import { importCatalogue } from './catalogue-import.js';
-
-type EntryRow = {
-  id: string;
-  family: string;
-  collection: string;
-  code: string | null;
-  name: string;
-  track: string | null;
-  circuit_id: string | null;
-  car: string | null;
-  targets: MedalTargetTimes | null;
-  sections: number | null;
-  source: string;
-};
-
-function entryFromRow(row: EntryRow): CatalogueEntry {
-  return {
-    id: row.id,
-    family: row.family,
-    collection: row.collection,
-    code: row.code,
-    name: row.name,
-    track: row.track,
-    circuitId: row.circuit_id === null ? null : Number(row.circuit_id),
-    car: row.car,
-    targets: row.targets,
-    sections: row.sections,
-    source: row.source
-  };
-}
-
-function likePattern(text: string): string {
-  return `%${text.replace(/[\\%_]/g, character => `\\${character}`)}%`;
-}
 
 function latestExerciseByCatalogueId(statuses: ExerciseStatusSummary[]): Map<string, ExerciseStatusSummary> {
   const byCatalogueId = new Map<string, ExerciseStatusSummary>();
@@ -63,7 +19,7 @@ export class CatalogueService implements OnModuleInit {
   private readonly logger = new Logger(CatalogueService.name);
   private current: Catalogue | null = null;
   private carNames = new Map<number, string>();
-  private order = new Map<string, number>();
+  private entries = new Map<string, CatalogueEntry>();
 
   constructor(
     @Inject(KNEX) private readonly db: Knex,
@@ -74,7 +30,7 @@ export class CatalogueService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     const loaded = await this.files.active(reason => this.logger.warn(`Saved catalogue ignored: ${reason}`));
-    await this.activate(loaded.catalogue);
+    this.activate(loaded.catalogue);
   }
 
   get active(): Catalogue {
@@ -82,11 +38,10 @@ export class CatalogueService implements OnModuleInit {
     return this.current;
   }
 
-  async activate(catalogue: Catalogue): Promise<void> {
-    await importCatalogue(this.db, catalogue);
+  activate(catalogue: Catalogue): void {
     this.current = catalogue;
     this.carNames = new Map(catalogue.cars.map((car: Car) => [car.id, car.name]));
-    this.order = new Map(catalogue.entries.map((entry, index) => [entry.id, index]));
+    this.entries = new Map(catalogue.entries.map(entry => [entry.id, entry]));
   }
 
   async info(): Promise<CatalogueInfo> {
@@ -102,10 +57,6 @@ export class CatalogueService implements OnModuleInit {
     };
   }
 
-  circuits(): Circuit[] {
-    return this.active.circuits;
-  }
-
   carName(carId: number): string | null {
     return this.carNames.get(carId) ?? null;
   }
@@ -115,33 +66,19 @@ export class CatalogueService implements OnModuleInit {
     return this.active.cars.find(car => car.name === name)?.id ?? null;
   }
 
-  async list(userId: string, query: CatalogueQuery): Promise<CatalogueListEntry[]> {
-    const rows = await this.db<EntryRow>('catalogue_entries')
-      .modify(builder => {
-        if (query.family) builder.where('family', query.family);
-        if (query.collection) builder.where('collection', query.collection);
-        if (query.track) builder.where('track', query.track);
-        if (query.q) {
-          const pattern = likePattern(query.q);
-          builder.where(inner =>
-            inner
-              .whereILike('name', pattern)
-              .orWhereILike('code', pattern)
-              .orWhereILike('track', pattern)
-              .orWhereILike('car', pattern)
-              .orWhereILike('collection', pattern)
-          );
-        }
-      })
-      .select<EntryRow[]>('*');
+  entry(id: string): CatalogueEntry | null {
+    return this.entries.get(id) ?? null;
+  }
+
+  list(): CatalogueEntry[] {
+    return this.active.entries;
+  }
+
+  async listFor(userId: string): Promise<CatalogueListEntry[]> {
     const exercises = latestExerciseByCatalogueId(await exerciseStatuses(this.db, userId));
-    const position = (id: string) => this.order.get(id) ?? Number.MAX_SAFE_INTEGER;
-    return rows
-      .map(entryFromRow)
-      .sort((left, right) => position(left.id) - position(right.id) || left.id.localeCompare(right.id))
-      .map(entry => {
-        const exercise = exercises.get(entry.id);
-        return { ...entry, exerciseId: exercise?.exerciseId ?? null, status: exercise?.status ?? null };
-      });
+    return this.list().map(entry => {
+      const exercise = exercises.get(entry.id);
+      return { ...entry, exerciseId: exercise?.exerciseId ?? null, status: exercise?.status ?? null };
+    });
   }
 }

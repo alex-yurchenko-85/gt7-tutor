@@ -1,9 +1,9 @@
+import { RECURRING_MIN_ATTEMPTS, WIDE_APEX_M } from '@gt7/contracts';
+import { kph } from './units.ts';
+
 export type CoreConfig = {
-  udp: { receivePort: number; heartbeatPort: number; heartbeatMs: number };
-  rawQueueBytes: number;
   freshnessMs: number;
   silenceGapMs: number;
-  liveStateMaxHz: number;
   match: {
     lateralM: number;
     searchLateralM: number;
@@ -30,10 +30,11 @@ export type CoreConfig = {
   cue: {
     leadReactionMs: number;
     ttlBaseMs: number;
+    countdownTtlMs: number;
     cooldownMs: number;
-    priority: { brake: number; bigStop: number; easeOff: number; position: number; throttle: number; system: number };
+    priority: { brake: number; bigStop: number; easeOff: number; position: number; throttle: number; system: number; countdown: number };
   };
-  position: { lookAheadMs: number; holdMs: number };
+  position: { holdMs: number };
   acceleration: {
     maxOverspeedMps: number;
     maxLateralM: number;
@@ -43,11 +44,11 @@ export type CoreConfig = {
   };
   target: { roundDownKph: number; throttleLookAheadMs: number };
   voice: {
-    hardBrakeLossKph: number;
-    lightBrakeLossKph: number;
+    hardBrakeLossMps: number;
+    lightBrakeLossMps: number;
     fullThrottle: number;
-    bigStopEntryKph: number;
-    bigStopLossKph: number;
+    bigStopEntryMps: number;
+    bigStopLossMps: number;
     bigStopLeadMs: number;
   };
   corners: {
@@ -60,11 +61,10 @@ export type CoreConfig = {
   };
   guidanceResumeMs: number;
   guidanceAnnounceAfterMs: number;
-  incompatibleOverspeedKph: number;
-  sideCuesEnabled: boolean;
+  incompatibleOverspeedMps: number;
   findings: {
     brakeM: number;
-    slowCornerKph: number;
+    slowCornerMps: number;
     throttleLateM: number;
     offLineM: number;
     offLineMs: number;
@@ -73,6 +73,10 @@ export type CoreConfig = {
   };
   recurring: { minAttempts: number; minShare: number; placeWithinM: number };
   reviewGridM: number;
+  reviewMaxBridgeM: number;
+  gameTimer: { startMaxMs: number; stillPackets: number };
+  brakeReaction: { onThreshold: number; windowMs: number };
+  coach: { defaultPeriodMs: number; maxPeriodMs: number; accelerationWindowMs: number; minAccelerationSpanMs: number };
   demoRange: {
     positionToleranceM: number;
     speedToleranceMps: number;
@@ -86,17 +90,16 @@ export type CoreConfig = {
     confirmMaxLateralP95M: number;
     confirmMaxSpeedRatio: number;
     confirmMaxMedianPedal: number;
+    followSpeedRatio: number;
+    followSpeedBaseMps: number;
   };
 };
 
 export const DEFAULT_SIDE_CUE_DISTANCE_M = 2;
 
 export const DEFAULT_CONFIG: CoreConfig = {
-  udp: { receivePort: 33740, heartbeatPort: 33739, heartbeatMs: 1000 },
-  rawQueueBytes: 8 * 1024 * 1024,
   freshnessMs: 150,
   silenceGapMs: 1000,
-  liveStateMaxHz: 15,
   match: {
     lateralM: 8,
     searchLateralM: 8,
@@ -123,10 +126,11 @@ export const DEFAULT_CONFIG: CoreConfig = {
   cue: {
     leadReactionMs: 500,
     ttlBaseMs: 150,
+    countdownTtlMs: 800,
     cooldownMs: 1500,
-    priority: { brake: 100, bigStop: 95, easeOff: 90, position: 50, throttle: 20, system: 10 }
+    priority: { brake: 100, bigStop: 95, easeOff: 90, position: 50, throttle: 20, system: 10, countdown: 101 }
   },
-  position: { lookAheadMs: 2000, holdMs: 300 },
+  position: { holdMs: 300 },
   acceleration: {
     maxOverspeedMps: 1,
     maxLateralM: 3,
@@ -136,11 +140,11 @@ export const DEFAULT_CONFIG: CoreConfig = {
   },
   target: { roundDownKph: 5, throttleLookAheadMs: 2000 },
   voice: {
-    hardBrakeLossKph: 60,
-    lightBrakeLossKph: 25,
+    hardBrakeLossMps: kph(60),
+    lightBrakeLossMps: kph(25),
     fullThrottle: 0.95,
-    bigStopEntryKph: 200,
-    bigStopLossKph: 100,
+    bigStopEntryMps: kph(200),
+    bigStopLossMps: kph(100),
     bigStopLeadMs: 2000
   },
   corners: {
@@ -148,24 +152,27 @@ export const DEFAULT_CONFIG: CoreConfig = {
     turnInShare: 1 / 3,
     curvatureSpanM: 10,
     apexAfterThrottleM: 40,
-    wideApexM: 2,
+    wideApexM: WIDE_APEX_M,
     tighterHoldMs: 300
   },
   guidanceResumeMs: 1000,
   guidanceAnnounceAfterMs: 2000,
-  incompatibleOverspeedKph: 15,
-  sideCuesEnabled: true,
+  incompatibleOverspeedMps: kph(15),
   findings: {
     brakeM: 8,
-    slowCornerKph: 8,
+    slowCornerMps: kph(8),
     throttleLateM: 10,
     offLineM: 1.5,
     offLineMs: 500,
     eventWindowM: 60,
     cornerExtensionM: 40
   },
-  recurring: { minAttempts: 3, minShare: 0.5, placeWithinM: 20 },
+  recurring: { minAttempts: RECURRING_MIN_ATTEMPTS, minShare: 0.5, placeWithinM: 20 },
   reviewGridM: 2,
+  reviewMaxBridgeM: 10,
+  gameTimer: { startMaxMs: 50, stillPackets: 3 },
+  brakeReaction: { onThreshold: 0.1, windowMs: 3000 },
+  coach: { defaultPeriodMs: 1000 / 60, maxPeriodMs: 100, accelerationWindowMs: 300, minAccelerationSpanMs: 100 },
   demoRange: {
     positionToleranceM: 0.05,
     speedToleranceMps: 0.1,
@@ -178,6 +185,8 @@ export const DEFAULT_CONFIG: CoreConfig = {
     confirmMaxLateralM: 0.5,
     confirmMaxLateralP95M: 0.2,
     confirmMaxSpeedRatio: 0.01,
-    confirmMaxMedianPedal: 0.05
+    confirmMaxMedianPedal: 0.05,
+    followSpeedRatio: 0.05,
+    followSpeedBaseMps: 0.5
   }
 };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../../api/client.ts';
+import { counted } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths } from '../../app/router.tsx';
 
@@ -31,7 +32,7 @@ export function StorageSection() {
           <div className="kv">
             <span>Your captures</span>
             <b>
-              {megabytes(storage.data.profileRawBytes)} in {storage.data.profileCaptures} {storage.data.profileCaptures === 1 ? 'capture' : 'captures'}
+              {megabytes(storage.data.profileRawBytes)} in {counted(storage.data.profileCaptures, 'capture')}
             </b>
           </div>
           <div className="kv">

@@ -1,25 +1,17 @@
-import { STATE_RATES, type StateRate } from '@gt7/contracts';
+import { DEFAULT_STATE_RATE, STATE_RATES, type StateRate } from '@gt7/contracts';
+import { readStored, writeStored } from './storage.ts';
 
 const STATE_RATE_KEY = 'gt7.stateRate';
-const DEFAULT_RATE: StateRate = 15;
 
 function isStateRate(value: number): value is StateRate {
   return STATE_RATES.some(rate => rate === value);
 }
 
 export function stateRate(): StateRate {
-  try {
-    const stored = Number(window.localStorage.getItem(STATE_RATE_KEY));
-    return isStateRate(stored) ? stored : DEFAULT_RATE;
-  } catch {
-    return DEFAULT_RATE;
-  }
+  const stored = Number(readStored(STATE_RATE_KEY));
+  return isStateRate(stored) ? stored : DEFAULT_STATE_RATE;
 }
 
 export function setStateRate(rate: StateRate): void {
-  try {
-    window.localStorage.setItem(STATE_RATE_KEY, String(rate));
-  } catch {
-    return;
-  }
+  writeStored(STATE_RATE_KEY, String(rate));
 }

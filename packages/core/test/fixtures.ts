@@ -1,14 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import type { RawDatagram, Sample } from '@gt7/contracts';
+import { fixturePath } from '../../../tools/testing/fixture-path.ts';
 import { toSample } from '../src/decode.ts';
 import { withPacketClock } from '../src/packet-clock.ts';
 
 export type FixtureName = 'b3-run' | 'b1-run' | 'ce-clean' | 'ce-slow' | 'ce-pause' | 'ce-off-track-reset' | 'ce-off-track-end' | 'demo-a' | 'demo-b' | 'demo-c';
-
-export function fixturePath(name: FixtureName): string {
-  return fileURLToPath(new URL(`../../../fixtures/${name}.ndjson`, import.meta.url));
-}
 
 export function readFixture(name: FixtureName): RawDatagram[] {
   return readFileSync(fixturePath(name), 'utf8')

@@ -15,7 +15,7 @@ export type Route =
   | { name: 'record'; exerciseId: string }
   | { name: 'attempts'; exerciseId: string }
   | { name: 'review'; attemptId: string }
-  | { name: 'not-found'; kind: 'page' };
+  | { name: 'not-found' };
 
 const SIMPLE: Record<string, Route> = {
   '/': { name: 'exercises' },
@@ -25,19 +25,10 @@ const SIMPLE: Record<string, Route> = {
   '/setup/delete-history': { name: 'delete-history' }
 };
 
-const LEGACY: Record<string, string> = {
-  '/catalogue': '/exercises/add',
-  '/progress': '/'
-};
-
 const EXERCISE_VIEWS = ['cues', 'references', 'record', 'attempts'] as const;
 
 function cleanPath(path: string): string {
   return path.replace(/\/+$/, '') || '/';
-}
-
-export function legacyRedirect(path: string): string | null {
-  return LEGACY[cleanPath(path)] ?? null;
 }
 
 export function parseRoute(path: string): Route {
@@ -51,7 +42,7 @@ export function parseRoute(path: string): Route {
   if (exercise && view) return { name: view, exerciseId: decodeURIComponent(exercise[1]!) };
   const review = /^\/attempts\/([^/]+)\/review$/.exec(clean);
   if (review) return { name: 'review', attemptId: decodeURIComponent(review[1]!) };
-  return { name: 'not-found', kind: 'page' };
+  return { name: 'not-found' };
 }
 
 export const paths = {
@@ -75,13 +66,7 @@ type Navigation = { route: Route; search: URLSearchParams; hash: string; navigat
 
 const RouterContext = createContext<Navigation | null>(null);
 
-function replaceLegacyAddress(): void {
-  const target = legacyRedirect(window.location.pathname);
-  if (target) window.history.replaceState(null, '', `${target}${window.location.search}${window.location.hash}`);
-}
-
 function currentLocation() {
-  replaceLegacyAddress();
   return { route: parseRoute(window.location.pathname), search: new URLSearchParams(window.location.search), hash: window.location.hash.slice(1) };
 }
 

@@ -103,17 +103,13 @@ export class AuthService {
   }
 
   async userForToken(token: string | null): Promise<ProfileUser | null> {
-    return (await this.sessionFor(token))?.user ?? null;
-  }
-
-  async sessionFor(token: string | null): Promise<{ user: ProfileUser; expiresAtMs: number } | null> {
     if (!token) return null;
     const row = await this.db('sessions')
       .join('users', 'users.id', 'sessions.user_id')
       .where('sessions.token_hash', hashToken(token))
       .where('sessions.expires_at', '>', this.db.fn.now())
-      .first('users.id as id', 'users.name as name', this.db.raw('extract(epoch from (sessions.expires_at - now())) * 1000 as "remainingMs"'));
-    return row ? { user: { id: row.id, name: row.name }, expiresAtMs: Date.now() + Number(row.remainingMs) } : null;
+      .first('users.id as id', 'users.name as name');
+    return row ? { id: row.id, name: row.name } : null;
   }
 
   private refuseWhenBlocked(name: string, address: string): void {
@@ -137,7 +133,7 @@ export class AuthService {
     await this.db('sessions').insert({
       user_id: userId,
       token_hash: hashToken(token),
-      expires_at: this.db.raw("now() + ? * interval '1 millisecond'", [SESSION_LIFETIME_MS])
+      expires_at: new Date(Date.now() + SESSION_LIFETIME_MS)
     });
     return token;
   }

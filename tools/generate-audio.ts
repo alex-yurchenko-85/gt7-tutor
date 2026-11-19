@@ -20,7 +20,7 @@ type KokoroModule = {
 };
 
 const toolDir = resolve('tools/audio');
-const audioDir = resolve('audio');
+const audioDir = resolve('content/audio');
 const clipDir = join(audioDir, 'clips');
 
 async function loadKokoro(): Promise<KokoroModule> {

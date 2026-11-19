@@ -1,8 +1,7 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
 import { profileCredentialsSchema, type AuthState, type ProfileCard, type ProfileCredentials, type ProfileResponse } from '@gt7/contracts';
 import type { Request, Response } from 'express';
-import { LiveHub } from '../live/live-hub.service.js';
-import { AuthService, hashToken, type IssuedSession } from './auth.service.js';
+import { AuthService, type IssuedSession } from './auth.service.js';
 import { Public } from './public.decorator.js';
 import { SESSION_COOKIE, SESSION_LIFETIME_MS, sessionCookieOptions, sessionTokenOf } from './session-cookie.js';
 
@@ -14,10 +13,7 @@ function setSessionCookie(response: Response, session: IssuedSession): ProfileRe
 @Public()
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly auth: AuthService,
-    private readonly hub: LiveHub
-  ) {}
+  constructor(private readonly auth: AuthService) {}
 
   @Get('state')
   state(@Req() request: Request): Promise<AuthState> {
@@ -50,9 +46,7 @@ export class AuthController {
   @Post('sign-out')
   @HttpCode(204)
   async signOut(@Req() request: Request, @Res({ passthrough: true }) response: Response): Promise<void> {
-    const token = sessionTokenOf(request);
-    await this.auth.signOut(token);
-    if (token) this.hub.closeSession(hashToken(token));
+    await this.auth.signOut(sessionTokenOf(request));
     response.clearCookie(SESSION_COOKIE, sessionCookieOptions);
   }
 }

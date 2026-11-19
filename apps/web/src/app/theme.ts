@@ -1,14 +1,12 @@
+import { readStored, writeStored } from './storage.ts';
+
 export type ThemeChoice = 'system' | 'light' | 'dark';
 
 const THEME_KEY = 'gt7.theme';
 
 export function storedTheme(): ThemeChoice {
-  try {
-    const value = window.localStorage.getItem(THEME_KEY);
-    return value === 'light' || value === 'dark' ? value : 'system';
-  } catch {
-    return 'system';
-  }
+  const value = readStored(THEME_KEY);
+  return value === 'light' || value === 'dark' ? value : 'system';
 }
 
 export function applyTheme(choice: ThemeChoice): void {
@@ -18,12 +16,6 @@ export function applyTheme(choice: ThemeChoice): void {
 }
 
 export function chooseTheme(choice: ThemeChoice): void {
-  try {
-    if (choice === 'system') window.localStorage.removeItem(THEME_KEY);
-    else window.localStorage.setItem(THEME_KEY, choice);
-  } catch {
-    applyTheme(choice);
-    return;
-  }
+  writeStored(THEME_KEY, choice === 'system' ? null : choice);
   applyTheme(choice);
 }

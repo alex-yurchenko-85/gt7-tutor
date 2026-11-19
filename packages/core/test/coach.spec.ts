@@ -8,11 +8,11 @@ import { buildCueEvents } from '../src/cue-events.ts';
 import { estimatedPhraseMs } from '../src/cue-text.ts';
 import { Matcher } from '../src/match.ts';
 import { between, samplesOf } from './fixtures.ts';
-import { bendPath, bendWaypoints, interlagosReference } from './paths.ts';
+import { analysisOf, bendPath, bendWaypoints, interlagosReference } from './paths.ts';
 import { drive } from './synthetic.ts';
 import { findCorners, type Corner } from '../src/corners.ts';
 import type { ReferenceCueEvent } from '../src/cue-events.ts';
-import { decisionFor, event, flatPath, runCoach, simulate } from './coaching.ts';
+import { decisionFor, event, flatPath, runCoach, settingsOf, simulate } from './coaching.ts';
 
 const reference = (sM: number) => (sM < 600 ? 200 : sM < 680 ? 200 - (sM - 600) * 1.25 : sM < 700 ? 100 : Math.min(200, 100 + (sM - 700) * 0.5));
 const brakePath = flatPath(2000, reference);
@@ -94,17 +94,33 @@ describe('Coach', () => {
   });
 
   it('one_cue_per_event_and_generation', () => {
-    const coach = new Coach(brakePath, [brake600, brake1200], DEFAULT_CONFIG);
+    const coach = new Coach(analysisOf(brakePath, [brake600, brake1200]), DEFAULT_CONFIG, settingsOf());
     const samples = simulate(1500, followReference());
     const first = runCoach(brakePath, [], samples, { coach, generation: 1 });
     const again = runCoach(brakePath, [], samples, { coach, generation: 1 });
     expect(first.cues.map(decision => decision.cue.id)).toEqual(['1:brake@600', '1:brake@1200']);
     expect(again.cues).toEqual([]);
-    coach.reset(2);
     const next = runCoach(brakePath, [], samples, { coach, generation: 2 });
     expect(next.cues.map(decision => decision.cue.id)).toEqual(['2:brake@600', '2:brake@1200']);
     const switched = runCoach(brakePath, [], samples, { coach, generation: 3 });
     expect(switched.cues.map(decision => decision.cue.id)).toEqual(['3:brake@600', '3:brake@1200']);
+  });
+
+  it('jump_back_in_one_generation_decides_no_passed_event_again', () => {
+    const coach = new Coach(analysisOf(brakePath, [brake600, throttle700, brake1200]), DEFAULT_CONFIG, settingsOf());
+    const samples = simulate(1500, followReference());
+    const first = runCoach(brakePath, [], samples.filter(sample => sample.position.x < 650), { coach });
+    expect(decisionFor(first, 'brake@600')).toBe('cue');
+    expect(decisionFor(first, 'throttle@700')).toBe('none');
+    const shiftMs = samples.at(-1)!.receivedMonoMs + 1000;
+    const back = runCoach(brakePath, [], samples.map(sample => ({ ...sample, receivedMonoMs: sample.receivedMonoMs + shiftMs })), { coach });
+    const keys = [...back.cues.map(decision => decision.cue.eventKey), ...back.suppressed.map(entry => entry.eventKey)];
+    expect(keys.filter(key => key === 'brake@600')).toEqual([]);
+    expect(keys.filter(key => key === 'throttle@700')).toHaveLength(1);
+    expect(decisionFor(back, 'brake@1200')).toBe('cue');
+    const again = runCoach(brakePath, [], samples.map(sample => ({ ...sample, receivedMonoMs: sample.receivedMonoMs + 2 * shiftMs })), { coach });
+    expect(again.cues).toEqual([]);
+    expect(again.suppressed).toEqual([]);
   });
 
   it('muted_event_is_suppressed_and_reported', () => {
@@ -291,7 +307,6 @@ describe('Coach', () => {
       run.cues.filter(decision => decision.cue.kind === 'keep-left' || decision.cue.kind === 'keep-right').map(decision => decision.cue.kind);
 
     it('side_cues_are_enabled_by_default', () => {
-      expect(DEFAULT_CONFIG.sideCuesEnabled).toBe(true);
       expect(DEFAULT_SIDE_CUE_DISTANCE_M).toBe(2);
     });
 
@@ -385,7 +400,7 @@ describe('Coach', () => {
     const golden = JSON.parse(
       readFileSync(fileURLToPath(new URL('../../../fixtures/golden/ce-slow-cues.json', import.meta.url)), 'utf8')
     );
-    const trace = replayCoach(slowRun, path, events, DEFAULT_CONFIG, {
+    const trace = replayCoach(slowRun, analysisOf(path, events), DEFAULT_CONFIG, {
       deviceDelayMs: 60,
       phraseMs: estimatedPhraseMs,
       mutedKeys: new Set(),
@@ -396,11 +411,28 @@ describe('Coach', () => {
     expect(JSON.parse(JSON.stringify(trace))).toEqual(golden.trace);
   });
 
+  it('trace_rounds_distance_to_a_centimetre_and_times_to_a_millisecond', () => {
+    const trace = replayCoach(slowRun, analysisOf(path, events), DEFAULT_CONFIG, {
+      deviceDelayMs: 60,
+      phraseMs: estimatedPhraseMs,
+      mutedKeys: new Set(),
+      speakTargets: true,
+      offsetsMs: new Map(),
+      sideCueDistanceM: DEFAULT_SIDE_CUE_DISTANCE_M
+    });
+    expect(trace.cues.length).toBeGreaterThan(0);
+    for (const cue of trace.cues) {
+      expect(Number.isInteger(cue.decidedMonoMs)).toBe(true);
+      expect(Number.isInteger(cue.ttlMs)).toBe(true);
+      expect(cue.sM === null || Math.abs(cue.sM * 100 - Math.round(cue.sM * 100)) < 1e-6).toBe(true);
+    }
+  });
+
   it('golden_trace_at_1_m_speaks_side_cues', () => {
     const golden = JSON.parse(
       readFileSync(fileURLToPath(new URL('../../../fixtures/golden/ce-slow-cues-side-1m.json', import.meta.url)), 'utf8')
     );
-    const trace = replayCoach(slowRun, path, events, DEFAULT_CONFIG, {
+    const trace = replayCoach(slowRun, analysisOf(path, events), DEFAULT_CONFIG, {
       deviceDelayMs: 60,
       phraseMs: estimatedPhraseMs,
       mutedKeys: new Set(),
@@ -416,18 +448,30 @@ describe('Coach', () => {
     expect(JSON.parse(JSON.stringify(trace))).toEqual(golden.trace);
   });
 
+  it('every_muteable_cue_has_one_mute_key', () => {
+    const run = runCoach(path, events, attempt, { deviceDelayMs: 60, sideCueDistanceM: 1 });
+    const muteKeys = new Set([...events.map(entry => entry.key), 'tighter', 'keep-left', 'keep-right']);
+    const targets = [...run.cues.map(decision => decision.target), ...run.suppressed.map(entry => entry.target)];
+    const muteable = targets.filter(target => target.eventKind !== 'guidance');
+    expect(new Set(muteable.map(target => target.eventKind))).toEqual(new Set(['brake', 'big-stop', 'ease-off', 'throttle', 'keep-left', 'keep-right']));
+    for (const target of muteable) expect(target.muteKey !== null && muteKeys.has(target.muteKey), JSON.stringify(target)).toBe(true);
+    const bigStop = muteable.find(target => target.eventKind === 'big-stop')!;
+    expect(bigStop.muteKey).toBe(events.find(entry => entry.bigStop)!.key);
+    expect(targets.filter(target => target.eventKind === 'guidance').every(target => target.muteKey === null)).toBe(true);
+  });
+
   it('slow_run_speaks_action_phrases', () => {
     const run = runCoach(path, events, attempt, { deviceDelayMs: 60 });
-    const brakes = run.cues.filter(decision => decision.cue.eventKey.startsWith('brake@')).map(decision => decision.cue);
+    const brakes = run.cues.filter(decision => decision.target.eventKind === 'brake').map(decision => decision.cue);
     expect(brakes.map(cue => [cue.kind, cue.clip, cue.followClip])).toEqual([['hard-brake', 'hard-brake', 'speed-115']]);
-    const throttles = run.cues.filter(decision => decision.cue.eventKey.startsWith('throttle@')).map(decision => decision.cue);
+    const throttles = run.cues.filter(decision => decision.target.eventKind === 'throttle').map(decision => decision.cue);
     expect(throttles.every(cue => cue.followClip === null)).toBe(true);
     expect(throttles.every(cue => cue.clip === 'full-throttle' || cue.clip === 'throttle')).toBe(true);
   });
 
   it('speak_targets_off_gives_no_follow_clip', () => {
     const run = runCoach(path, events, attempt, { deviceDelayMs: 60, speakTargets: false });
-    const brakes = run.cues.filter(decision => decision.cue.eventKey.startsWith('brake@'));
+    const brakes = run.cues.filter(decision => decision.target.eventKind === 'brake');
     expect(brakes).toHaveLength(1);
     expect(brakes.every(decision => decision.cue.followClip === null)).toBe(true);
     expect(brakes.map(decision => decision.cue.targetSpeedKph)).toEqual([115]);
@@ -469,7 +513,7 @@ describe('Coach', () => {
     const reachMs = cruising.find(sample => sample.position.x >= 1200)!.receivedMonoMs;
 
     it('big_stop_comes_about_2_s_before_the_first_brake', () => {
-      const trace = replayCoach(slowRun, path, events, DEFAULT_CONFIG, {
+      const trace = replayCoach(slowRun, analysisOf(path, events), DEFAULT_CONFIG, {
         deviceDelayMs: 60,
         phraseMs: estimatedPhraseMs,
         mutedKeys: new Set(),
@@ -508,7 +552,7 @@ describe('Coach', () => {
 
     it('big_stop_never_delays_brake', () => {
       const matcher = new Matcher(fast, DEFAULT_CONFIG);
-      const coach = new Coach(fast, [bigBrake], DEFAULT_CONFIG);
+      const coach = new Coach(analysisOf(fast, [bigBrake]), DEFAULT_CONFIG, settingsOf());
       const lateStart = reachMs - 600;
       const cues: string[] = [];
       const suppressed: string[] = [];
@@ -521,11 +565,7 @@ describe('Coach', () => {
           nowMonoMs: sample.receivedMonoMs,
           generation: 0,
           deviceDelayMs: 60,
-          phraseMs: estimatedPhraseMs,
-          mutedKeys: new Set(),
-          speakTargets: true,
-          offsetsMs: new Map(),
-          sideCueDistanceM: DEFAULT_SIDE_CUE_DISTANCE_M
+          phraseMs: estimatedPhraseMs
         });
         if (output.cue) cues.push(output.cue.eventKey);
         suppressed.push(...output.suppressed.map(entry => `${entry.eventKey}:${entry.why}`));

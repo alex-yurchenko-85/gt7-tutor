@@ -1,7 +1,7 @@
-import type { Vec3 } from '@gt7/contracts';
+import { KPH_PER_MPS, type Vec3 } from '@gt7/contracts';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../src/config.ts';
-import { cornerAt, findCorners, outsideM, type Corner } from '../src/corners.ts';
+import { cornerAt, cornerCursor, findCorners, outsideM, type Corner } from '../src/corners.ts';
 import { buildCueEvents } from '../src/cue-events.ts';
 import { Matcher } from '../src/match.ts';
 import type { ReferencePath } from '../src/reference.ts';
@@ -9,6 +9,7 @@ import { event } from './coaching.ts';
 import { between, samplesOf } from './fixtures.ts';
 import { pathFromCorners, polyline, interlagosReference } from './paths.ts';
 import { drive } from './synthetic.ts';
+import { kph } from '../src/units.ts';
 
 function interlagosCorners(): Corner[] {
   const path = interlagosReference();
@@ -66,7 +67,7 @@ describe('corners', () => {
     expect(Math.abs(corner.zoneStartSM - 291)).toBeLessThanOrEqual(5);
     expect(Math.abs(corner.apexSM - 404)).toBeLessThanOrEqual(5);
     expect(Math.abs(corner.radiusM - 70)).toBeLessThanOrEqual(7);
-    expect(Math.abs(corner.apexSpeedKph - 116)).toBeLessThanOrEqual(3);
+    expect(Math.abs(corner.apexSpeedMps * KPH_PER_MPS - 116)).toBeLessThanOrEqual(3);
     expect(corner.insideSign).toBe(-1);
   });
 
@@ -108,11 +109,30 @@ describe('corners', () => {
       turnInSM: zoneStartSM + 20,
       apexSM: zoneStartSM + 40,
       radiusM: 60,
-      apexSpeedKph: 90,
+      apexSpeedMps: kph(90),
       insideSign: 1
     });
     const corners = [zoneCorner(1, 300), zoneCorner(2, 600), zoneCorner(3, 900)];
     expect([100, 300, 599, 600, 899, 900, 1200].map(sM => cornerAt(corners, sM)!.number)).toEqual([1, 1, 1, 2, 2, 3, 3]);
+  });
+
+  it('corner_cursor_gives_the_corner_of_corner_at_forwards_backwards_and_after_jumps', () => {
+    const corner = (number: number, zoneStartSM: number): Corner => ({
+      number,
+      zoneStartSM,
+      turnInSM: zoneStartSM + 20,
+      apexSM: zoneStartSM + 40,
+      radiusM: 60,
+      apexSpeedMps: kph(90),
+      insideSign: 1
+    });
+    const sets = [[], [corner(1, 300)], [corner(1, 300), corner(2, 600), corner(3, 900)], [corner(1, 400), corner(2, 250), corner(3, 250), corner(4, 700), corner(5, 650)]];
+    const forwards = Array.from({ length: 1201 }, (_, index) => index);
+    const places = [...forwards, ...forwards.toReversed(), 650, 0, 1200, 249.5, 250, 700, 399.99, 400, -10, 699.99, 650, 300, 900, 899.99];
+    for (const corners of sets) {
+      const cursor = cornerCursor(corners);
+      for (const sM of places) expect(cursor.at(sM), `${corners.length} corners at ${sM}`).toBe(cornerAt(corners, sM));
+    }
   });
 
   it('clean_run_is_wider_at_the_apex_than_the_slow_run', () => {

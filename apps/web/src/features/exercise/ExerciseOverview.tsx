@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { CornerInfo, Exercise, ExerciseStep, RecurringDifference, ReferenceCue, ReferenceTrace } from '@gt7/contracts';
+import { BASELINE_ATTEMPTS, type CornerInfo, type Exercise, type ExerciseStep, type RecurringDifference, type ReferenceCue, type ReferenceTrace } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { MapDialog } from '../../charts/MapDialog.tsx';
@@ -13,13 +13,13 @@ import { errorText, useResource } from '../../app/resource.ts';
 import { counted } from '../../app/plural.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
-import { differenceName } from '../cues/cue-format.ts';
+import { differenceName, sizeText } from '../cues/cue-format.ts';
 import { primaryAction, STEP_LABELS, type Action } from '../exercises/next-step.ts';
 import { RemoveExercisesDialog } from '../exercises/RemoveExercisesDialog.tsx';
+import { spokenCues } from '../drive/cue-display.ts';
 import { ExerciseHeader } from './ExerciseHeader.tsx';
+import { useExercise } from './use-exercise.ts';
 import './overview.css';
-
-const BASELINE_TARGET = 3;
 
 const SHOWN_RECURRING = 3;
 
@@ -34,7 +34,7 @@ const NEXT: Record<ExerciseStep, NextText> = {
   },
   2: {
     title: 'Next: baseline attempts without voice',
-    detail: () => `Drive ${BASELINE_TARGET} attempts without voice so the differences show. You can skip this step.`
+    detail: () => `Drive ${BASELINE_ATTEMPTS} attempts without voice so the differences show. You can skip this step.`
   },
   3: {
     title: 'Next: a guided attempt with voice',
@@ -74,11 +74,6 @@ function stepNote(step: ExerciseStep, current: ExerciseStep): string {
   return step === current + 1 ? 'next' : '';
 }
 
-function spokenCues(cues: ReferenceCue[]): number {
-  return cues.filter(cue => !cue.muted && cue.phrase).length;
-}
-
-
 function NextPanel({ exercise, reference }: { exercise: Exercise; reference: ReferenceData | null }) {
   const primary = primaryAction(exercise);
   const next = NEXT[exercise.step];
@@ -99,7 +94,7 @@ function NextPanel({ exercise, reference }: { exercise: Exercise; reference: Ref
         })}
       </ol>
       <h2 id="next-title">{next.title}</h2>
-      <p className="lede">{next.detail(reference ? spokenCues(reference.cues) : null)}</p>
+      <p className="lede">{next.detail(reference ? spokenCues(reference.cues).length : null)}</p>
       <Link to={primary.to} className="btn" primary>
         {primary.label}
       </Link>
@@ -144,7 +139,7 @@ function TimesPanel({ bestMs, referenceMs }: { bestMs: number | null; referenceM
 }
 
 function recurringLine(item: RecurringDifference): string {
-  return `${differenceName(item.kind)}, median ${Math.round(item.medianSize)} ${item.unit}`;
+  return `${differenceName(item.kind)}, median ${sizeText(item.medianSize, item.unit)}`;
 }
 
 function WorkFirst({ exerciseId }: { exerciseId: string }) {
@@ -178,7 +173,7 @@ function WorkFirst({ exerciseId }: { exerciseId: string }) {
 function MapPanel({ title, reference }: { title: string; reference: ReferenceData }) {
   const [open, setOpen] = useState(false);
   const { trace, cues, corners } = reference;
-  const spoken = spokenCues(cues);
+  const spoken = spokenCues(cues).length;
   return (
     <section className="panel overview-map" aria-labelledby="map-title">
       <div className="panel-head">
@@ -282,7 +277,7 @@ function Overview({ exercise }: { exercise: Exercise }) {
 
 export function ExerciseOverview({ exerciseId }: { exerciseId: string }) {
   const { user } = useSession();
-  const exercise = useResource(() => api.exercise(exerciseId), [exerciseId]);
+  const exercise = useExercise(exerciseId);
   useEffect(() => {
     if (exercise.data) rememberExercise(user.id, exercise.data.id);
   }, [exercise.data, user.id]);

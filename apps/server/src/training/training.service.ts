@@ -1,13 +1,13 @@
-import { ConflictException, Inject, Injectable, Logger, ServiceUnavailableException, type BeforeApplicationShutdown, type OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, ServiceUnavailableException, type BeforeApplicationShutdown, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { ArmResponse, ArmTrainingRequest, ConnectionState, CueOutcome, LiveMode } from '@gt7/contracts';
-import type { LiveCue } from '@gt7/contracts';
-import { DEFAULT_CONFIG, buildCueEvents, findCorners, type Cue, type Finding, type Focus } from '@gt7/core';
+import { ACTIVE_GUIDANCE, DEFAULT_CONFIG, makeCue, type CoachSettings, type Cue, type Finding } from '@gt7/core';
 import type { Knex } from 'knex';
 import { CaptureService, type CaptureReservation } from '../captures/capture.service.js';
+import { conflict } from '../http-errors.js';
+import { dropOldest } from '../drop-oldest.js';
 import { LiveHub, type ProfileState } from '../live/live-hub.service.js';
 import { ownedExercise, type ReferenceRow } from '../ownership/owned.js';
-import { ReferenceLocks } from '../references/reference-locks.js';
 import { ReferencesService } from '../references/references.service.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { FOCUS_ATTEMPTS, focusOf, recentFindings } from '../attempts/attempt-focus.js';
@@ -19,27 +19,20 @@ export const WATCHDOG_INTERVAL_MS = 50;
 export const DISCONNECTED_AFTER_MS = 5000;
 const ENDED_CUE_LIMIT = 500;
 
-type Training = { userId: string; session: TrainingSession; unsubscribe: () => void; release: () => void };
+type Training = { userId: string; session: TrainingSession; unsubscribe: () => void };
 
 type ArmPlan = {
   userId: string;
   request: ArmTrainingRequest;
   exerciseId: string;
   referenceId: string;
-  mutedKeys: ReadonlySet<string>;
-  speakTargets: boolean;
-  offsetsMs: ReadonlyMap<string, number>;
-  sideCueDistanceM: number | null;
+  settings: CoachSettings;
   reservation: CaptureReservation;
 };
 
-type PendingArm = { userId: string; done: Promise<ArmResponse> };
+type PendingArm = { userId: string; referenceId: string; done: Promise<ArmResponse> };
 
 type EndedCue = { userId: string; record: CueRecord; attemptId: string | null };
-
-function conflict(code: string, reason: string): ConflictException {
-  return new ConflictException({ code, reason });
-}
 
 function shuttingDown(): ServiceUnavailableException {
   return new ServiceUnavailableException({ code: 'shutting-down', reason: 'The server is stopping.' });
@@ -62,7 +55,6 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     @Inject(KNEX) private readonly db: Knex,
     private readonly captures: CaptureService,
     private readonly references: ReferencesService,
-    private readonly locks: ReferenceLocks,
     private readonly hub: LiveHub,
     config: ConfigService
   ) {
@@ -73,6 +65,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
   onModuleInit(): void {
     this.hub.useStateSource(userId => this.profileState(userId));
     this.hub.onOutcome((userId, cueId, outcome, startDelayMs) => this.recordOutcome(userId, cueId, outcome, startDelayMs));
+    this.references.useDeleteGate((userId, referenceId) => this.beforeReferenceDelete(userId, referenceId));
   }
 
   async beforeApplicationShutdown(): Promise<void> {
@@ -100,13 +93,15 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
       request,
       exerciseId: exercise.id,
       referenceId: exercise.active_reference_id,
-      mutedKeys: new Set(exercise.muted_cues),
-      speakTargets: exercise.speak_targets,
-      offsetsMs: new Map(Object.entries(exercise.cue_offsets)),
-      sideCueDistanceM: exercise.side_cue_distance_m,
+      settings: {
+        mutedKeys: new Set(exercise.muted_cues),
+        speakTargets: exercise.speak_targets,
+        offsetsMs: new Map(Object.entries(exercise.cue_offsets)),
+        sideCueDistanceM: exercise.side_cue_distance_m
+      },
       reservation: this.captures.reserve()
     });
-    const pending: PendingArm = { userId, done };
+    const pending: PendingArm = { userId, referenceId: exercise.active_reference_id, done };
     this.pendingArm = pending;
     try {
       return await done;
@@ -117,23 +112,17 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
 
   private async start(plan: ArmPlan): Promise<ArmResponse> {
     const { userId, request, exerciseId, reservation } = plan;
-    const release = await this.locks.hold(plan.referenceId);
     try {
-      const reference = await this.db<ReferenceRow>('references').where({ id: plan.referenceId }).first();
-      if (!reference) throw conflict('no-reference', 'Record and confirm a reference first.');
-      const path = await this.references.pathOf(reference);
+      const reference = (await this.db<ReferenceRow>('references').where({ id: plan.referenceId }).first())!;
+      const analysis = await this.references.analysisOf(reference);
       if (this.stopping) throw shuttingDown();
       const snapshot: TrainingSnapshot = {
         userId,
         exerciseId,
         referenceId: reference.id,
         mode: request.mode,
-        path,
-        events: buildCueEvents(path, DEFAULT_CONFIG),
-        mutedKeys: plan.mutedKeys,
-        speakTargets: plan.speakTargets,
-        offsetsMs: plan.offsetsMs,
-        sideCueDistanceM: plan.sideCueDistanceM
+        analysis,
+        ...plan.settings
       };
       const session = new TrainingSession(snapshot, DEFAULT_CONFIG, {
         deviceDelayMs: () => this.hub.deviceDelayMs(userId),
@@ -144,10 +133,10 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
         attemptEnded: record => this.attemptEnded(snapshot, record),
         changed: () => this.hub.changed()
       });
-      const training: Training = { userId, session, unsubscribe: this.captures.onSample(sample => session.onSample(sample)), release };
+      const training: Training = { userId, session, unsubscribe: this.captures.onSample(sample => session.onSample(sample)) };
       this.training = training;
       try {
-        const capture = await this.captures.beginReserved({ userId, exerciseId, purpose: 'player', startAfterS: null }, reservation, 'training');
+        const capture = await this.captures.beginReserved({ userId, exerciseId, purpose: 'player', startAfterS: null }, reservation);
         this.hub.changed();
         return { captureId: capture.id, exerciseId, referenceId: reference.id, mode: request.mode };
       } catch (error) {
@@ -155,9 +144,6 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
         this.training = null;
         throw error;
       }
-    } catch (error) {
-      release();
-      throw error;
     } finally {
       this.captures.release(reservation);
     }
@@ -175,11 +161,16 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     if (training.session.attemptActive && now !== null) training.session.abortByUser(now);
     training.unsubscribe();
     this.training = null;
-    this.storing = this.storing.then(training.release);
     const capture = this.captures.activeCapture;
-    if (capture) await this.captures.stopForTraining(capture.id);
+    if (capture) await this.captures.stop(userId, capture.id);
     this.hub.changed();
     return { ok: true };
+  }
+
+  private async beforeReferenceDelete(userId: string, referenceId: string): Promise<void> {
+    const uses = [this.training?.session.snapshot, this.pendingArm].some(use => use?.userId === userId && use.referenceId === referenceId);
+    if (uses) throw conflict('reference-in-use', 'A training uses this reference. Stop the training first.');
+    await this.storing;
   }
 
   profileState(userId: string): ProfileState {
@@ -191,11 +182,11 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
       exerciseId: null,
       attemptNumber: null,
       generation: 0,
-      guidance: { mode: 'active', reason: null },
+      guidance: ACTIVE_GUIDANCE,
       recordingComplete: true,
       storageError: null,
       sM: null,
-      speedKph: null,
+      speedMps: null,
       lastCue: null,
       nextCue: null,
       lastAttemptId: this.lastAttemptIds.get(userId) ?? null,
@@ -208,21 +199,8 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     const base = { ...neutral, connection: this.connection(), exerciseId: capture?.exerciseId ?? null, recordingComplete: storageError === null, storageError };
     if (!this.training) return { ...base, mode: 'capturing' };
     const view = this.training.session.state;
-    return {
-      ...base,
-      exerciseId: this.training.session.snapshot.exerciseId,
-      trainingMode: this.training.session.snapshot.mode,
-      referenceId: this.training.session.snapshot.referenceId,
-      mode: view.mode,
-      attemptNumber: view.attemptNumber,
-      generation: view.generation,
-      guidance: view.guidance,
-      sM: view.sM,
-      speedKph: view.speedKph,
-      lastCue: view.lastCue,
-      nextCue: view.nextCue,
-      gapMs: view.gapMs
-    };
+    const { exerciseId, mode, referenceId } = this.training.session.snapshot;
+    return { ...base, ...view, exerciseId, trainingMode: mode, referenceId };
   }
 
   private ownTraining(userId: string): Training {
@@ -276,33 +254,36 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
 
   private async focusCue(snapshot: TrainingSnapshot, record: AttemptRecord, findings: Finding[]): Promise<CueRecord | null> {
     if (record.completion !== 'complete' || snapshot.mode !== 'guided') return null;
-    const scope = { exerciseId: snapshot.exerciseId, referenceId: snapshot.referenceId, upTo: null };
+    const scope = { exerciseId: snapshot.exerciseId, referenceId: snapshot.referenceId };
     const previous = await recentFindings(this.db, scope, FOCUS_ATTEMPTS - 1);
-    const focus = focusOf([findings, ...previous], findCorners(snapshot.path, snapshot.events, DEFAULT_CONFIG));
+    const focus = focusOf([findings, ...previous], snapshot.analysis.corners);
     if (!focus?.clip) return null;
-    return this.speakFocus(snapshot.userId, record, focus, focus.clip);
+    return this.speakFocus(snapshot.userId, record, focus.clip);
   }
 
-  private speakFocus(userId: string, record: AttemptRecord, focus: Focus, clip: string): CueRecord {
+  private speakFocus(userId: string, record: AttemptRecord, clip: string): CueRecord {
     const deviceDelayMs = this.hub.deviceDelayMs(userId);
-    const cue: LiveCue = {
-      id: `${record.generation}:focus`,
-      eventKey: 'focus',
-      kind: 'focus',
-      targetSpeedKph: null,
-      clip,
-      followClip: null,
-      generation: record.generation,
-      priority: DEFAULT_CONFIG.cue.priority.system,
-      decidedMonoMs: record.samples.at(-1)?.receivedMonoMs ?? 0,
-      ttlMs: DEFAULT_CONFIG.cue.ttlBaseMs + deviceDelayMs
-    };
+    const cue = makeCue(
+      {
+        kind: 'focus',
+        generation: record.generation,
+        eventKey: 'focus',
+        clip,
+        followClip: null,
+        targetSpeedKph: null,
+        decidedMonoMs: record.samples.at(-1)?.receivedMonoMs ?? 0,
+        deviceDelayMs
+      },
+      DEFAULT_CONFIG
+    );
     const busy = this.training?.userId === userId && this.training.session.attemptActive;
     const outcome = busy ? 'suppressed-during-attempt' : this.hub.sendCue(userId, cue) ? 'sent' : 'no-device';
     return {
       cueId: busy ? null : cue.id,
       eventKey: cue.eventKey,
       kind: cue.kind,
+      eventKind: 'focus',
+      sM: null,
       targetKph: null,
       decidedMonoMs: cue.decidedMonoMs,
       outcome,
@@ -325,6 +306,6 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
   }
 
   private trimEndedCues(): void {
-    while (this.endedCues.size > ENDED_CUE_LIMIT) this.endedCues.delete(this.endedCues.keys().next().value!);
+    dropOldest(this.endedCues, ENDED_CUE_LIMIT);
   }
 }

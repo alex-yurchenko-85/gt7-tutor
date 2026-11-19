@@ -3,6 +3,8 @@ import type { CatalogueCheckResponse, CatalogueEntry } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { IconButton } from '../../app/IconButton.tsx';
 import { Icon } from '../../app/icons.tsx';
+import { formatClock, formatDate } from '../../app/format.ts';
+import { counted } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { orderedFamilies } from '../exercises/next-step.ts';
 import { lastCatalogueCheck, rememberCatalogueCheck, type CatalogueCheck } from './catalogue-check.ts';
@@ -13,22 +15,16 @@ function entryLabel(entry: CatalogueEntry): string {
   return `${entry.code ? `${entry.code} ` : ''}${entry.name} (${entry.family})`;
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
 function checkResult(check: CatalogueCheckResponse): string {
   if (check.diff.rejected) return 'The update was rejected.';
   const total = check.diff.added.length + check.diff.changed.length + check.diff.removed.length;
   if (total === 0) return 'No changes.';
-  return `${total} ${total === 1 ? 'change' : 'changes'}, not applied.`;
+  return `${counted(total, 'change')}, not applied.`;
 }
 
 function lastCheckText(check: CatalogueCheck | null): string {
   if (!check) return 'Not checked on this device yet.';
-  const at = new Date(check.at);
-  const clock = at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  return `Last checked ${formatDate(check.at)}, ${clock}. ${check.result} On this device.`;
+  return `Last checked ${formatDate(check.at)}, ${formatClock(new Date(check.at))}. ${check.result} On this device.`;
 }
 
 function DiffGroup({ title, items }: { title: string; items: string[] }) {

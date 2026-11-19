@@ -20,8 +20,6 @@ export const rawDatagramSchema = z.object({
 
 export type RawDatagram = z.infer<typeof rawDatagramSchema>;
 
-export type PacketExtension = { wheelRotationRad: number; sway: number; heave: number; surge: number };
-
 export type Sample = {
   rawIndex: number;
   packetId: number;
@@ -40,5 +38,4 @@ export type Sample = {
   paused: boolean;
   loading: boolean;
   gameTimerMs: number;
-  extension?: PacketExtension;
 };

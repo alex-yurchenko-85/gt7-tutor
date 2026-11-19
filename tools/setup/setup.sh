@@ -16,7 +16,7 @@ for option in "$@"; do
     --demo) demo=1 ;;
     *)
       echo "Unknown option: $option"
-      echo "Use: sh scripts/setup.sh [--dry-run] [--demo]"
+      echo "Use: sh tools/setup/setup.sh [--dry-run] [--demo]"
       exit 2
       ;;
   esac
@@ -60,7 +60,7 @@ case "$0" in
   */*) script_dir=${0%/*} ;;
   *) script_dir=. ;;
 esac
-cd "$script_dir/.."
+cd "$script_dir/../.."
 
 say "GT7 Tutor setup for macOS and Linux."
 if [ "$dry_run" -eq 1 ]; then

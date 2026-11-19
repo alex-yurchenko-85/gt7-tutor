@@ -1,8 +1,8 @@
 <h1 align="center">
   <a href="https://gt7tutor.app">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="assets/gt-tutor-logo-on-dark.png">
-      <img src="assets/gt-tutor-logo-transparent.png" alt="GT7 Tutor" width="460">
+      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/gt-tutor-logo-on-dark.png">
+      <img src=".github/assets/gt-tutor-logo-transparent.png" alt="GT7 Tutor" width="460">
     </picture>
   </a>
 </h1>
@@ -83,7 +83,7 @@ Install Docker before you run the setup. The setup script does not install it.
 4. Start the setup:
 
    ```sh
-   sh scripts/setup.sh
+   sh tools/setup/setup.sh
    ```
 
 The script checks Docker, Node.js and pnpm, and then prepares GT7 Tutor.
@@ -91,7 +91,7 @@ It prints each step in plain English.
 On macOS with [Homebrew](https://brew.sh), it installs Node.js and pnpm if they are missing.
 On Linux, it stops and gives the install link for a missing tool. Install the tool, then run the script again.
 The script is safe to run again.
-To see the steps without a change to your computer, run `sh scripts/setup.sh --dry-run`.
+To see the steps without a change to your computer, run `sh tools/setup/setup.sh --dry-run`.
 
 When the script finishes, start GT7 Tutor:
 
@@ -162,7 +162,7 @@ It never changes your own profiles and attempts.
 The demo server writes its messages to `.demo/server.log`.
 Press Ctrl+C to stop the demo.
 To start the demo again from the beginning, run `pnpm demo --reset`.
-You can also run the setup and the demo in one step: `sh scripts/setup.sh --demo`.
+You can also run the setup and the demo in one step: `sh tools/setup/setup.sh --demo`.
 
 ## Connect the PS5
 
@@ -235,6 +235,7 @@ pnpm audio:generate        # network, about 400 MB, rewrites the voice clips
 ```
 
 Always pass `--ip` with the current console address.
+`pnpm db:reset` drops the database of `DATABASE_URL` (by default `gt7_tutor`), creates it again and migrates it. It deletes all data of that database. Use it only for a broken development database.
 Stop a running server before `pnpm test`: only one program can receive telemetry on UDP port 33740.
 [CONTRIBUTING.md](CONTRIBUTING.md) gives the rules for a change.
 
@@ -249,7 +250,7 @@ Stop a running server before `pnpm test`: only one program can receive telemetry
 | --- | --- |
 | Capture | A complete file of received datagrams, including background and transitions |
 | Sample | Telemetry fields that the decoder reads from one datagram |
-| Exercise | A task with an activity type, selected section and driving conditions |
+| Exercise | A task with an activity type and a selected section |
 | Reference | A reviewed range of a demonstration or trusted run |
 | Attempt | A selected player-driving range inside a capture |
 | Cue | A short voice instruction tied to a place on the section, for example `Hard brake. One fifteen`. The server decides it, and the voice device plays it. |
@@ -261,10 +262,12 @@ Stop a running server before `pnpm test`: only one program can receive telemetry
 
 `apps/server` is the NestJS server. `apps/web` is the React interface.
 `packages/` holds the core logic, the shared contracts, the capture code and the catalogue builder.
-`scripts/setup.sh` and `tools/setup/` hold the guided setup. `tools/demo/` holds the demo command.
+`content/` holds the catalogue file (`content/catalogue/`) and the voice clips (`content/audio/`).
+`apps/server/db/migrations/` holds the database migrations. Each schema change is a new migration file.
+`tools/setup/` holds the guided setup. `tools/demo/` holds the demo command.
 `fixtures/` holds short recorded captures for tests and for the demo. They do not contain the console address.
 `tools/` holds the capture, replay and evaluation commands.
-The landing page at gt7tutor.app lives in <https://github.com/alex-yurchenko-85/gt7-tutor-site>. `assets/` holds the logo files of this README.
+The landing page at gt7tutor.app lives in <https://github.com/alex-yurchenko-85/gt7-tutor-site>. `.github/assets/` holds the logo files of this README.
 PostgreSQL stores metadata, attempts and statistics. Raw capture files remain the source of truth for telemetry.
 
 The production stack is TypeScript, NestJS, React, PostgreSQL and Knex with `pg`.
@@ -308,7 +311,7 @@ To propose a change, send a pull request. See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) lists the work of other people that this project uses.
 Catalogue data from the Gran Turismo Wiki stays under CC BY-SA, in its own files with a notice beside them.
-See `catalogue/NOTICE.md` for the attribution.
+See `content/catalogue/NOTICE.md` for the attribution.
 
 GT7 Tutor is an unofficial fan project.
 It is not affiliated with or endorsed by Sony Interactive Entertainment or Polyphony Digital.

@@ -1,4 +1,5 @@
 import type { Exercise, LiveState } from '@gt7/contracts';
+import { readStored, writeStored } from './storage.ts';
 
 const TRAINING_MODES: LiveState['mode'][] = ['armed', 'driving', 'paused', 'finished'];
 
@@ -7,22 +8,14 @@ function key(userId: string): string {
 }
 
 export function rememberedExerciseId(userId: string): string | null {
-  try {
-    return window.localStorage.getItem(key(userId));
-  } catch {
-    return null;
-  }
+  return readStored(key(userId));
 }
 
 const CURRENT_CHANGED = 'gt7:current-exercise-changed';
 
 export function rememberExercise(userId: string, exerciseId: string): void {
-  try {
-    if (window.localStorage.getItem(key(userId)) === exerciseId) return;
-    window.localStorage.setItem(key(userId), exerciseId);
-  } catch {
-    return;
-  }
+  if (readStored(key(userId)) === exerciseId) return;
+  writeStored(key(userId), exerciseId);
   window.dispatchEvent(new Event(CURRENT_CHANGED));
 }
 
@@ -45,11 +38,7 @@ export function currentExercise(exercises: Exercise[], userId: string, liveId: s
 }
 
 export function forgetExercises(userId: string, exerciseIds: string[]): void {
-  try {
-    if (exerciseIds.includes(window.localStorage.getItem(key(userId)) ?? '')) window.localStorage.removeItem(key(userId));
-  } catch {
-    return;
-  }
+  if (exerciseIds.includes(readStored(key(userId)) ?? '')) writeStored(key(userId), null);
 }
 
 const EXERCISES_CHANGED = 'gt7:exercises-changed';

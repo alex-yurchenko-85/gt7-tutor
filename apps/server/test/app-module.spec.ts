@@ -6,7 +6,7 @@ import { configureApp } from '../src/app.setup.js';
 import { parseAppConfig } from '../src/config/app-config.js';
 import { KNEX } from '../src/storage/knex.provider.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
-import { tempDir } from './support/process.js';
+import { testTempDir } from '../../../tools/testing/temp-root.js';
 
 describe('AppModule', () => {
   let database: DisposableDatabase;
@@ -21,7 +21,7 @@ describe('AppModule', () => {
 
   it('app_module_uses_given_config_without_environment', async () => {
     const before = process.env.DATABASE_URL;
-    const config = parseAppConfig({ DATABASE_URL: database.url, DATA_DIR: tempDir() });
+    const config = parseAppConfig({ DATABASE_URL: database.url, DATA_DIR: testTempDir('gt7-server-') });
     const moduleRef = await Test.createTestingModule({ imports: [AppModule.register(config)] }).compile();
     const app = moduleRef.createNestApplication();
     configureApp(app);

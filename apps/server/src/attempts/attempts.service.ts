@@ -1,52 +1,43 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import type {
-  AttemptReaction,
-  BrakeReactionSummary,
-  CornerReview,
-  AttemptList,
-  Sample,
-  AttemptReview,
-  AttemptSummary,
-  Difference,
-  StoredCueEvent,
-  UpdateAttemptRequest
+import {
+  eventKeyPlace,
+  type AttemptReaction,
+  type BrakeReactionSummary,
+  type CornerReview,
+  type AttemptList,
+  type Sample,
+  type AttemptReview,
+  type AttemptSummary,
+  type Difference,
+  type StoredCueEvent
 } from '@gt7/contracts';
 import {
   DEFAULT_CONFIG,
-  KPH_PER_MPS,
   brakeReactions,
-  buildCueEvents,
-  findCorners,
+  comparableSize,
   findDifferences,
   buildReview,
   median,
   outsideM,
-  referenceTimeMs,
   seriesAt,
   turnLosses,
   turnOf,
   type Corner,
   type Finding,
   type PlayedBrakeCue,
-  type ReferencePath,
   type Review
 } from '@gt7/core';
 import { cornerInfo } from '../references/references.service.js';
-import { FOCUS_ATTEMPTS, focusOf, focusSummary, recentFindings } from './attempt-focus.js';
+import { FOCUS_ATTEMPTS, focusOf, focusSummary } from './attempt-focus.js';
 import type { Knex } from 'knex';
 import { ownedAttempt, ownedExercise, type AttemptRow, type CaptureRow, type ReferenceRow } from '../ownership/owned.js';
 import { ReferencesService } from '../references/references.service.js';
 import { KNEX } from '../storage/knex.provider.js';
+import { FINDING_COLUMNS, saveComparison, toFinding, type FindingRow } from './finding-rows.js';
 import { localDate } from './local-date.js';
-
-type FindingRow = { kind: Difference['kind']; event_key: string | null; s_m: number; size: number; unit: Difference['unit'] };
 
 export function attemptTimeMs(row: Pick<AttemptRow, 'completion' | 'game_ms'>): number | null {
   return row.completion === 'complete' ? row.game_ms : null;
-}
-
-function findingOf(row: FindingRow): Finding {
-  return { kind: row.kind, eventKey: row.event_key, sM: row.s_m, size: row.size, unit: row.unit };
 }
 
 export function withTurn(finding: Finding, corners: Corner[]): Difference {
@@ -54,14 +45,14 @@ export function withTurn(finding: Finding, corners: Corner[]): Difference {
 }
 
 function largest(findings: Difference[]): Difference | null {
-  return findings.reduce<Difference | null>((best, finding) => (best === null || finding.size > best.size ? finding : best), null);
+  return findings.reduce<Difference | null>((best, finding) => (best === null || comparableSize(finding.size, finding.unit) > comparableSize(best.size, best.unit) ? finding : best), null);
 }
 
 export const REACTION_ATTEMPTS = 8;
 
 const VOICED_OUTCOMES = ['sent', 'played'];
 
-type CueRow = { event_key: string; outcome: string; decided_mono_ms: number; start_delay_ms: number | null; device_delay_ms: number | null };
+type CueRow = { event_key: string; event_kind: string; outcome: string; decided_mono_ms: number; start_delay_ms: number | null; device_delay_ms: number | null };
 
 function playedBrakeCues(rows: CueRow[]): PlayedBrakeCue[] {
   return rows.map(row => ({ eventKey: row.event_key, clipStartMonoMs: row.decided_mono_ms + (row.start_delay_ms ?? row.device_delay_ms ?? 0) }));
@@ -73,16 +64,12 @@ function cornerReview(corner: Corner, review: Review): CornerReview {
   return {
     ...cornerInfo(corner),
     outsideM: lateralM === null ? null : outsideM(corner, lateralM),
-    speedKph: speedMps === null ? null : speedMps * KPH_PER_MPS
+    speedMps
   };
 }
 
-function isVoicedBrake(row: { event_key: string; outcome: string }): boolean {
-  return row.event_key.startsWith('brake@') && VOICED_OUTCOMES.includes(row.outcome);
-}
-
-function eventPlace(eventKey: string): number {
-  return Number(eventKey.slice(eventKey.indexOf('@') + 1));
+function isVoicedBrake(row: Pick<CueRow, 'event_kind' | 'outcome'>): boolean {
+  return row.event_kind === 'brake' && VOICED_OUTCOMES.includes(row.outcome);
 }
 
 function bestOf(times: (number | null)[]): number | null {
@@ -114,13 +101,7 @@ export class AttemptsService {
 
   async get(userId: string, id: string): Promise<AttemptSummary> {
     const attempt = await ownedAttempt(this.db, userId, id);
-    return (await this.summaries(attempt.exercise_id)).find(summary => summary.id === id)!;
-  }
-
-  async update(userId: string, id: string, body: UpdateAttemptRequest): Promise<AttemptSummary> {
-    await ownedAttempt(this.db, userId, id);
-    if (body.medal !== undefined) await this.db('attempts').where({ id }).update({ medal: body.medal });
-    return this.get(userId, id);
+    return (await this.summaries(attempt.exercise_id, id))[0]!;
   }
 
   async review(userId: string, id: string, referenceId?: string): Promise<AttemptReview> {
@@ -159,7 +140,7 @@ export class AttemptsService {
       .limit(REACTION_ATTEMPTS);
     const byEvent = new Map<string, number[]>();
     for (const attempt of attempts) {
-      const cues = await this.db('cue_events').where({ attempt_id: attempt.id }).orderBy('decided_mono_ms').select<CueRow[]>('event_key', 'outcome', 'decided_mono_ms', 'start_delay_ms', 'device_delay_ms');
+      const cues = await this.db('cue_events').where({ attempt_id: attempt.id }).orderBy('decided_mono_ms').select<CueRow[]>('event_key', 'event_kind', 'outcome', 'decided_mono_ms', 'start_delay_ms', 'device_delay_ms');
       const played = cues.filter(isVoicedBrake);
       if (played.length === 0) continue;
       for (const reaction of brakeReactions(await this.samplesFor(attempt), playedBrakeCues(played))) {
@@ -168,18 +149,35 @@ export class AttemptsService {
     }
     return [...byEvent.entries()]
       .map(([eventKey, values]) => ({ eventKey, medianMs: median(values), count: values.length }))
-      .sort((a, b) => eventPlace(a.eventKey) - eventPlace(b.eventKey));
+      .sort((a, b) => (eventKeyPlace(a.eventKey) ?? 0) - (eventKeyPlace(b.eventKey) ?? 0));
   }
 
   async cornersOfReference(reference: ReferenceRow): Promise<Corner[]> {
-    const path: ReferencePath = await this.references.pathOf(reference);
-    return findCorners(path, buildCueEvents(path, DEFAULT_CONFIG), DEFAULT_CONFIG);
+    return (await this.references.analysisOf(reference)).corners;
   }
 
-  async findingsAgainst(attempt: AttemptRow, reference: ReferenceRow): Promise<Finding[]> {
-    const stored = await this.storedFindings(attempt.id, reference.id);
-    if (stored.length > 0) return stored;
-    return (await this.compare(attempt, reference)).findings;
+  async findingsFor(attemptIds: string[], referenceId: string): Promise<Map<string, Finding[]>> {
+    const [rows, compared] = await Promise.all([
+      this.db('attempt_findings')
+        .whereIn('attempt_id', attemptIds)
+        .andWhere({ reference_id: referenceId })
+        .orderBy('s_m')
+        .select<FindingRow[]>(...FINDING_COLUMNS),
+      this.db('attempt_comparisons').whereIn('attempt_id', attemptIds).andWhere({ reference_id: referenceId }).pluck<string[]>('attempt_id')
+    ]);
+    const found = new Map(attemptIds.map((id): [string, Finding[]] => [id, []]));
+    for (const row of rows) found.get(row.attempt_id)!.push(toFinding(row));
+    const known = new Set(compared);
+    const missing = attemptIds.filter(id => !known.has(id));
+    if (missing.length === 0) return found;
+    const reference = (await this.db<ReferenceRow>('references').where({ id: referenceId }).first())!;
+    const attempts = await this.db<AttemptRow>('attempts').whereIn('id', missing);
+    await Promise.all(
+      attempts.map(async attempt => {
+        found.set(attempt.id, (await this.compare(attempt, reference)).findings);
+      })
+    );
+    return found;
   }
 
   private async samplesFor(attempt: AttemptRow): Promise<Sample[]> {
@@ -189,37 +187,15 @@ export class AttemptsService {
 
   private async compare(attempt: AttemptRow, reference: ReferenceRow): Promise<{ review: Review; findings: Finding[]; samples: Sample[]; referenceTimeMs: number }> {
     const samples = await this.samplesFor(attempt);
-    const path = await this.references.pathOf(reference);
-    const review = buildReview(samples, path, DEFAULT_CONFIG);
+    const analysis = await this.references.analysisOf(reference);
+    const review = buildReview(samples, analysis, DEFAULT_CONFIG);
     const findings = findDifferences(review, DEFAULT_CONFIG);
-    await this.storeFindings(attempt.id, reference.id, findings);
-    return { review, findings, samples, referenceTimeMs: referenceTimeMs(path) };
+    await this.recordComparison(attempt.id, reference.id, findings);
+    return { review, findings, samples, referenceTimeMs: analysis.timeMs };
   }
 
-  private async storeFindings(attemptId: string, referenceId: string, findings: Finding[]): Promise<void> {
-    await this.db.transaction(async trx => {
-      await trx('attempt_findings').where({ attempt_id: attemptId, reference_id: referenceId }).delete();
-      if (findings.length === 0) return;
-      await trx('attempt_findings').insert(
-        findings.map(finding => ({
-          attempt_id: attemptId,
-          reference_id: referenceId,
-          kind: finding.kind,
-          event_key: finding.eventKey,
-          s_m: finding.sM,
-          size: finding.size,
-          unit: finding.unit
-        }))
-      );
-    });
-  }
-
-  private async storedFindings(attemptId: string, referenceId: string): Promise<Finding[]> {
-    const rows = await this.db('attempt_findings')
-      .where({ attempt_id: attemptId, reference_id: referenceId })
-      .orderBy('s_m')
-      .select<FindingRow[]>('kind', 'event_key', 's_m', 'size', 'unit');
-    return rows.map(findingOf);
+  private async recordComparison(attemptId: string, referenceId: string, findings: Finding[]): Promise<void> {
+    await this.db.transaction(trx => saveComparison(trx, attemptId, referenceId, findings));
   }
 
   private async referenceFor(attempt: AttemptRow, referenceId: string): Promise<ReferenceRow> {
@@ -228,24 +204,31 @@ export class AttemptsService {
     return reference;
   }
 
-  private async summaries(exerciseId: string): Promise<AttemptSummary[]> {
+  private async summaries(exerciseId: string, only?: string): Promise<AttemptSummary[]> {
     const rows = await this.db<AttemptRow>('attempts').where({ exercise_id: exerciseId }).orderBy([{ column: 'started_at' }, { column: 'id' }]);
     const findingRows = await this.db('attempt_findings as f')
       .join('attempts as a', 'a.id', 'f.attempt_id')
       .where('a.exercise_id', exerciseId)
       .whereRaw('f.reference_id = a.reference_id')
-      .select<(FindingRow & { attempt_id: string })[]>('f.attempt_id', 'f.kind', 'f.event_key', 's_m', 'size', 'unit');
+      .orderBy('f.s_m')
+      .select<FindingRow[]>(...FINDING_COLUMNS.map(column => `f.${column}`));
+    const findings = new Map<string, Finding[]>();
+    for (const row of findingRows) findings.set(row.attempt_id, [...(findings.get(row.attempt_id) ?? []), toFinding(row)]);
     const bestMs = bestOf(rows.map(attemptTimeMs));
     const corners = await this.cornersOf(rows);
-    const focuses = new Map<string, AttemptSummary['focus']>();
-    for (const row of rows) {
-      if (row.completion !== 'complete') continue;
-      const scope = { exerciseId, referenceId: row.reference_id, upTo: { startedAt: row.started_at, id: row.id } };
-      focuses.set(row.id, focusSummary(focusOf(await recentFindings(this.db, scope, FOCUS_ATTEMPTS), corners.get(row.reference_id)!)));
-    }
-    return rows.map((row, index) => {
+    const history = new Map<string, Finding[][]>();
+    const summaries: AttemptSummary[] = [];
+    rows.forEach((row, index) => {
+      const own = findings.get(row.id) ?? [];
+      let focus: AttemptSummary['focus'] = null;
+      if (row.completion === 'complete') {
+        const recent = [...(history.get(row.reference_id) ?? []), own];
+        history.set(row.reference_id, recent);
+        if (only === undefined || row.id === only) focus = focusSummary(focusOf(recent.slice(-FOCUS_ATTEMPTS).reverse(), corners.get(row.reference_id)!));
+      }
+      if (only !== undefined && row.id !== only) return;
       const timeMs = attemptTimeMs(row);
-      return {
+      const summary = {
         id: row.id,
         exerciseId: row.exercise_id,
         number: index + 1,
@@ -254,20 +237,15 @@ export class AttemptsService {
         first: row.first_raw_index,
         last: row.last_raw_index,
         mode: row.mode,
-        completion: row.completion,
         reason: row.reason,
-        measuredMs: row.completion === 'complete' ? row.measured_ms : null,
-        gameMs: timeMs,
-        medal: row.medal,
-        timeMs,
         gapToBestMs: timeMs === null || bestMs === null ? null : timeMs - bestMs,
-        largestDifference: largest(
-          findingRows.filter(finding => finding.attempt_id === row.id).map(finding => withTurn(findingOf(finding), corners.get(row.reference_id)!))
-        ),
-        focus: focuses.get(row.id) ?? null,
+        largestDifference: largest(own.map(finding => withTurn(finding, corners.get(row.reference_id)!))),
+        focus,
         startedAt: row.started_at.toISOString()
       };
+      summaries.push(timeMs === null ? { ...summary, completion: 'aborted', timeMs: null } : { ...summary, completion: 'complete', timeMs });
     });
+    return summaries;
   }
 
   private async cornersOf(rows: AttemptRow[]): Promise<Map<string, Corner[]>> {

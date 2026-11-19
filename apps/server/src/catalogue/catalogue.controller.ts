@@ -1,13 +1,10 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import {
   catalogueApplySchema,
-  catalogueQuerySchema,
   type CatalogueApplyRequest,
   type CatalogueCheckResponse,
   type CatalogueInfo,
   type CatalogueListEntry,
-  type CatalogueQuery,
-  type Circuit,
   type ProfileUser
 } from '@gt7/contracts';
 import { CurrentUser } from '../auth/current-user.decorator.js';
@@ -23,18 +20,13 @@ export class CatalogueController {
   ) {}
 
   @Get()
-  list(@CurrentUser() user: ProfileUser, @Query({ schema: catalogueQuerySchema }) query: CatalogueQuery): Promise<CatalogueListEntry[]> {
-    return this.catalogue.list(user.id, query);
+  list(@CurrentUser() user: ProfileUser): Promise<CatalogueListEntry[]> {
+    return this.catalogue.listFor(user.id);
   }
 
   @Get('info')
   info(): Promise<CatalogueInfo> {
     return this.catalogue.info();
-  }
-
-  @Get('circuits')
-  circuits(): Circuit[] {
-    return this.catalogue.circuits();
   }
 
   @Post('update/check')

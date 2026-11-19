@@ -3,7 +3,6 @@ import { existsSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
-  ConflictException,
   Inject,
   Injectable,
   Logger,
@@ -11,10 +10,11 @@ import {
   type OnModuleInit
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RawWriter, type Datagram, type OpenStream, type TelemetrySource } from '@gt7/capture';
+import { RawWriter, SampleStream, type Datagram, type OpenStream, type TelemetrySource } from '@gt7/capture';
 import type { CaptureInfo, CapturePurpose, ReceptionCheck, Sample } from '@gt7/contracts';
-import { decode, PacketClock } from '@gt7/core';
+import { decode } from '@gt7/core';
 import type { Knex } from 'knex';
+import { conflict } from '../http-errors.js';
 import { MONO_CLOCK, type MonoClock } from '../clock/mono-clock.js';
 import { ownedCapture, ownedExercise, type CaptureRow } from '../ownership/owned.js';
 import { SettingsService } from '../settings/settings.service.js';
@@ -34,21 +34,16 @@ export const RAW_STREAM_OPENER = Symbol('RAW_STREAM_OPENER');
 
 export type CaptureReservation = { readonly token: symbol };
 
-type CaptureOwner = 'training' | null;
-
 type ActiveCapture = {
   id: string;
   userId: string;
   exerciseId: string;
   purpose: CapturePurpose;
-  owner: CaptureOwner;
   lastReceivedMono: number;
-  received: boolean;
   source: TelemetrySource;
   writer: RawWriter;
+  samples: SampleStream;
   startedMono: number;
-  nextRawIndex: number;
-  clock: PacketClock;
 };
 
 export function captureInfo(row: CaptureRow, activeId: string | null): CaptureInfo {
@@ -64,10 +59,6 @@ export function captureInfo(row: CaptureRow, activeId: string | null): CaptureIn
     startCueMonoMs: row.start_cue_mono_ms,
     active: row.id === activeId
   };
-}
-
-function conflict(code: string, reason: string): ConflictException {
-  return new ConflictException({ code, reason });
 }
 
 function fileStamp(date: Date): string {
@@ -136,7 +127,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
   }
 
   hasReceived(): boolean {
-    return this.current?.received === true;
+    return (this.current?.writer.appended ?? 0) > 0;
   }
 
   incompleteReason(): string | null {
@@ -151,10 +142,6 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
   async list(userId: string): Promise<CaptureInfo[]> {
     const rows = await this.db<CaptureRow>('captures').where({ user_id: userId }).orderBy('started_at', 'desc');
     return rows.map(row => captureInfo(row, this.activeCaptureId));
-  }
-
-  async get(userId: string, id: string): Promise<CaptureInfo> {
-    return captureInfo(await ownedCapture(this.db, userId, id), this.activeCaptureId);
   }
 
   reserve(): CaptureReservation {
@@ -173,10 +160,10 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     return this.beginReserved(request, this.reserve());
   }
 
-  async beginReserved(request: CaptureRequest, reservation: CaptureReservation, owner: CaptureOwner = null): Promise<CaptureInfo> {
+  async beginReserved(request: CaptureRequest, reservation: CaptureReservation): Promise<CaptureInfo> {
     if (this.reservation !== reservation) throw conflict('busy', 'The capture reservation is no longer valid.');
     try {
-      return await this.open(request, owner);
+      return await this.open(request);
     } finally {
       this.release(reservation);
     }
@@ -194,19 +181,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
   async stop(userId: string, id: string): Promise<CaptureInfo> {
     const row = await ownedCapture(this.db, userId, id);
     if (this.current?.id !== row.id) throw conflict('not-active', 'This capture is not active.');
-    if (this.current.owner === 'training') throw conflict('training-owns-capture', 'A training uses this capture. Stop the training first.');
     return captureInfo(await this.finish(this.current), null);
-  }
-
-  async stopForTraining(id: string): Promise<CaptureInfo> {
-    const current = this.current;
-    if (current?.id !== id) throw conflict('not-active', 'This capture is not active.');
-    try {
-      return captureInfo(await this.finish(current), null);
-    } catch (error) {
-      current.owner = null;
-      throw error;
-    }
   }
 
   private async consoleAddress(): Promise<string | null> {
@@ -245,7 +220,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     return result;
   }
 
-  private async open(request: CaptureRequest, owner: CaptureOwner): Promise<CaptureInfo> {
+  private async open(request: CaptureRequest): Promise<CaptureInfo> {
     const ps5Ip = await this.consoleAddress();
     const id = randomUUID();
     const startedAt = new Date();
@@ -263,7 +238,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
       })
       .returning('*');
     const startedMono = this.clock.now();
-    const writer = new RawWriter(join(this.dataDir, rawPath), id, undefined, this.openStream ?? undefined);
+    const writer = new RawWriter(join(this.dataDir, rawPath), id, this.openStream ? { open: this.openStream } : {});
     let source: TelemetrySource;
     try {
       source = this.sourceFactory({ ps5Ip, now: () => this.clock.now() - startedMono });
@@ -272,14 +247,11 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
         userId: request.userId,
         exerciseId: request.exerciseId,
         purpose: request.purpose,
-        owner,
         lastReceivedMono: startedMono,
-        received: false,
         source,
         writer,
-        startedMono,
-        nextRawIndex: 0,
-        clock: new PacketClock()
+        samples: new SampleStream({ warmupFrom: 0 }),
+        startedMono
       };
       this.current = active;
       await source.start(datagram => this.receive(active, datagram));
@@ -297,18 +269,10 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
   }
 
   private receive(active: ActiveCapture, datagram: Datagram): void {
-    const rawIndex = active.nextRawIndex++;
     active.lastReceivedMono = this.clock.now();
-    active.received = true;
-    active.writer.append(datagram);
-    const decoded = decode(datagram.payload);
-    if (!decoded.ok) return;
-    const sample: Sample = {
-      ...decoded.sample,
-      rawIndex,
-      receivedMonoMs: datagram.receivedMonoMs,
-      clockMs: active.clock.next(decoded.sample.packetId, datagram.receivedMonoMs)
-    };
+    const rawIndex = active.writer.append(datagram);
+    const sample = active.samples.push({ rawIndex, receivedMonoMs: datagram.receivedMonoMs, payload: datagram.payload });
+    if (!sample) return;
     for (const listener of this.listeners) {
       try {
         listener(sample);

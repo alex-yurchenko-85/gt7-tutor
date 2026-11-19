@@ -1,5 +1,5 @@
 import { createSocket, type Socket } from 'node:dgram';
-import { DEFAULT_CONFIG } from '@gt7/core';
+import { CAPTURE_CONFIG } from './config.ts';
 import type { DatagramHandler, TelemetrySource } from './datagram.ts';
 
 export type UdpSourceOptions = {
@@ -27,10 +27,10 @@ export class UdpSource implements TelemetrySource {
 
   constructor(options: UdpSourceOptions) {
     this.ps5Ip = options.ps5Ip;
-    this.bindPort = options.bindPort ?? DEFAULT_CONFIG.udp.receivePort;
+    this.bindPort = options.bindPort ?? CAPTURE_CONFIG.udp.receivePort;
     this.bindAddress = options.bindAddress ?? '0.0.0.0';
-    this.heartbeatPort = options.heartbeatPort ?? DEFAULT_CONFIG.udp.heartbeatPort;
-    this.heartbeatMs = options.heartbeatMs ?? DEFAULT_CONFIG.udp.heartbeatMs;
+    this.heartbeatPort = options.heartbeatPort ?? CAPTURE_CONFIG.udp.heartbeatPort;
+    this.heartbeatMs = options.heartbeatMs ?? CAPTURE_CONFIG.udp.heartbeatMs;
     this.heartbeatMessage = Buffer.from('C');
     this.now = options.now ?? (() => performance.now());
   }
@@ -47,7 +47,7 @@ export class UdpSource implements TelemetrySource {
         this.foreignDatagrams++;
         return;
       }
-      on({ payload: new Uint8Array(message), receivedMonoMs: this.now(), receivedUnixMs: Date.now(), peerIp: peer.address });
+      on({ payload: message, receivedMonoMs: this.now(), receivedUnixMs: Date.now(), peerIp: peer.address });
     });
     return new Promise((resolve, reject) => {
       const onBindError = (error: NodeJS.ErrnoException) => {

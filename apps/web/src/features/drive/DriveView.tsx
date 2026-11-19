@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import type { CornerInfo, Exercise, LiveCue, LiveState, ReferenceCue, ReferenceTrace, TrainingMode } from '@gt7/contracts';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { KPH_PER_MPS, type CornerInfo, type Exercise, type LiveCue, type LiveState, type ReferenceCue, type ReferenceTrace, type TrainingMode } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
-import { useLive } from '../../api/live.tsx';
+import { useLiveConnection, useLiveState } from '../../api/live.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { TrackMap } from '../../charts/TrackMap.tsx';
 import { currentExercise, liveExerciseId } from '../../app/current-exercise.ts';
@@ -13,11 +13,11 @@ import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
 import { StatusDot } from '../../app/Shell.tsx';
-import { telemetryStatus, voiceStatus, type Status } from '../../app/status.ts';
+import { telemetryStatus, voiceState, voiceStatus, type Status } from '../../app/status.ts';
 import { AttemptSummary } from '../attempt-summary/AttemptSummary.tsx';
-import { clipsForCues } from '../../voice/clips.ts';
 import { useVoiceClaim } from '../../voice/use-voice-claim.ts';
 import { ARMED_MODES, connectionProblem, cueNote, cueWords, guidanceText, nextCueProgress, shownOnDrive, spokenCues } from './cue-display.ts';
+import { SeenCues } from './seen-cues.ts';
 import { useMissedStart } from './missed-start.ts';
 import './drive.css';
 
@@ -37,11 +37,11 @@ function useTicker(running: boolean, everyMs: number): number {
 }
 
 function useFreshCue(cue: LiveCue | null): LiveCue | null {
-  const seen = useRef(new Map<string, number>());
+  const seen = useRef(new SeenCues());
   const now = useTicker(cue !== null, 250);
   if (!cue) return null;
-  if (!seen.current.has(cue.id)) seen.current.set(cue.id, Date.now());
-  return Math.max(now, Date.now()) - seen.current.get(cue.id)! <= CUE_VISIBLE_MS ? cue : null;
+  const first = seen.current.firstSeenMs(cue, Date.now());
+  return Math.max(now, Date.now()) - first <= CUE_VISIBLE_MS ? cue : null;
 }
 
 function useReferenceData(referenceId: string | null) {
@@ -131,7 +131,7 @@ function LiveNumbers({ state, live, reference }: { state: LiveState; live: boole
   return (
     <div className="live-numbers">
       <div>
-        <b>{!live || state.speedKph === null ? '–' : Math.round(state.speedKph)}</b>km/h
+        <b>{!live || state.speedMps === null ? '–' : Math.round(state.speedMps * KPH_PER_MPS)}</b>km/h
       </div>
       <div>
         <b>{!live || state.sM === null ? '–' : Math.round(state.sM)}</b>
@@ -172,7 +172,8 @@ function MissedStart({ onDismiss }: { onDismiss(): void }) {
 type StageProps = { state: LiveState; mode: TrainingMode; exercise: Exercise; finishedAttempt: string | null; onDriveAgain(): void; onStop(): void };
 
 function Stage({ state, mode, exercise, finishedAttempt, onDriveAgain, onStop }: StageProps) {
-  const { connected, deviceId } = useLive();
+  const { deviceId } = useLiveConnection();
+  const { connected } = useLiveState(snapshot => snapshot);
   const demo = useDemo() !== null;
   const telemetry = telemetryStatus(state, connected, demo);
   const voice = voiceStatus(state, deviceId);
@@ -180,6 +181,7 @@ function Stage({ state, mode, exercise, finishedAttempt, onDriveAgain, onStop }:
   const live = problem === null;
   const reference = useReferenceData(exercise.activeReferenceId).data ?? null;
   const missedStart = useMissedStart(state);
+  const marks = useMemo(() => (reference ? cornerMarks(reference.corners) : []), [reference]);
 
   return (
     <div className="drive-stage" data-surface="night">
@@ -224,7 +226,7 @@ function Stage({ state, mode, exercise, finishedAttempt, onDriveAgain, onStop }:
           <TrackMap
             label="Your position on the reference line, with the turns"
             reference={reference.trace}
-            marks={cornerMarks(reference.corners)}
+            marks={marks}
             cursorSM={live ? state.sM : null}
             dark
           />
@@ -235,13 +237,13 @@ function Stage({ state, mode, exercise, finishedAttempt, onDriveAgain, onStop }:
 }
 
 function useReferenceClips(referenceId: string | null) {
-  const { player } = useLive();
+  const { player } = useLiveConnection();
   const loading = useRef<{ referenceId: string; done: Promise<number> } | null>(null);
   return useCallback((): Promise<number> => {
     if (!referenceId) return Promise.resolve(0);
     if (loading.current?.referenceId !== referenceId) {
-      const done = Promise.all([api.referenceCues(referenceId), api.referenceCorners(referenceId)]).then(async ([cues, corners]) => {
-        await player.preload(clipsForCues(cues, corners.length));
+      const done = Promise.all([api.referenceCues(referenceId), api.referenceClips(referenceId)]).then(async ([cues, clips]) => {
+        await player.preload(clips);
         return spokenCues(cues).length;
       });
       done.catch(() => {
@@ -254,7 +256,8 @@ function useReferenceClips(referenceId: string | null) {
 }
 
 function VoiceBlock({ ensureClips }: { ensureClips(): Promise<number> }) {
-  const { state, player } = useLive();
+  const { player, deviceId } = useLiveConnection();
+  const { state } = useLiveState(snapshot => snapshot);
   const voice = useVoiceClaim();
   const [loaded, setLoaded] = useState<number | null>(null);
   const [testProblem, setTestProblem] = useState<string | null>(null);
@@ -299,7 +302,7 @@ function VoiceBlock({ ensureClips }: { ensureClips(): Promise<number> }) {
     );
   }
 
-  const elsewhere = state?.voiceDeviceId !== null && state?.voiceDeviceId !== undefined && !voice.here;
+  const elsewhere = voiceState(state, deviceId) === 'elsewhere';
   return (
     <div className="notice bad voice-off" aria-labelledby={titleId} role="group">
       <h2 id={titleId}>{elsewhere ? 'The voice is on another device' : 'The voice is off'}</h2>
@@ -318,7 +321,8 @@ function VoiceBlock({ ensureClips }: { ensureClips(): Promise<number> }) {
 
 function ArmPanel({ exercise, onArmed }: { exercise: Exercise; onArmed(mode: TrainingMode): void }) {
   const { search } = useRouter();
-  const { state, deviceId } = useLive();
+  const { deviceId } = useLiveConnection();
+  const { state } = useLiveState(snapshot => snapshot);
   const demo = useDemo() !== null;
   const [chosenMode, setMode] = useState<TrainingMode>(search.get('mode') === 'baseline' ? 'baseline' : 'guided');
   const mode: TrainingMode = demo ? 'guided' : chosenMode;
@@ -400,7 +404,7 @@ function ArmPanel({ exercise, onArmed }: { exercise: Exercise; onArmed(mode: Tra
 }
 
 function DriveExercise({ exercise }: { exercise: Exercise }) {
-  const { state } = useLive();
+  const { state } = useLiveState(snapshot => snapshot);
   const [justArmed, setJustArmed] = useState<TrainingMode | null>(null);
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -473,11 +477,11 @@ function DriveExercise({ exercise }: { exercise: Exercise }) {
 
 export function DriveView() {
   const { user } = useSession();
-  const { state } = useLive();
+  const liveId = useLiveState(({ state }) => liveExerciseId(state));
   const exercises = useResource(() => api.exercises(), []);
   if (exercises.error) return <p className="error">{errorText(exercises.error)}</p>;
   if (!exercises.data) return <h1>Drive</h1>;
-  const exercise = currentExercise(exercises.data, user.id, liveExerciseId(state));
+  const exercise = currentExercise(exercises.data, user.id, liveId);
   if (!exercise || !exercise.activeReferenceId) {
     return (
       <section>

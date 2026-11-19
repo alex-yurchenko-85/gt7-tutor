@@ -5,9 +5,9 @@ import { once } from 'node:events';
 import { finished } from 'node:stream/promises';
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { readRaw, type RawRange } from '@gt7/capture';
+import { readRaw } from '@gt7/capture';
 import { clockWarmupStart } from '@gt7/core';
-import type { CleanupResult, StorageUse } from '@gt7/contracts';
+import type { CleanupResult, RawRange, StorageUse } from '@gt7/contracts';
 import type { Knex } from 'knex';
 import type { CaptureRow } from '../ownership/owned.js';
 import { KNEX } from '../storage/knex.provider.js';
@@ -69,14 +69,13 @@ export class StorageService {
     return result;
   }
 
-  async removeFiles(rows: Pick<CaptureRow, 'id' | 'raw_path'>[]): Promise<CleanupResult> {
+  async removeFiles(rows: Pick<CaptureRow, 'raw_path'>[]): Promise<CleanupResult> {
     const result: CleanupResult = { captures: 0, bytesBefore: 0, bytesAfter: 0 };
     for (const row of rows) {
       const path = this.captures.rawPath(row);
       if (!existsSync(path)) continue;
       result.bytesBefore += fileSize(path);
       await unlink(path);
-      this.samples.forget(row.id);
       result.captures++;
     }
     return result;

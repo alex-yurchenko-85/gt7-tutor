@@ -1,28 +1,16 @@
-import type { Sample } from '@gt7/contracts';
+import { eventKey, type CueEventKind, type LiveCueKind, type LiveGuidance, type Sample } from '@gt7/contracts';
 import { hasPlayerControl } from './attempts.ts';
 import type { CoreConfig } from './config.ts';
 import type { ReferenceCueEvent } from './cue-events.ts';
-import { cornerAt, findCorners, outsideM, type Corner } from './corners.ts';
-import { clipKey, speedClipKey, type CueKind } from './cue-text.ts';
-import { Guidance, type GuidanceState, type GuidanceTransition } from './guidance.ts';
+import { cuePriority, makeCue, type Cue } from './cue-factory.ts';
+import { cornerCursor, outsideM, type Corner } from './corners.ts';
+import { clipKey, targetClip } from './cue-text.ts';
+import { Guidance, type GuidanceTransition } from './guidance.ts';
 import type { Match } from './match.ts';
+import type { ReferenceAnalysis } from './reference-analysis.ts';
 import { pointAt, type ReferencePath } from './reference.ts';
-import { KPH_PER_MPS } from './units.ts';
-
-export type CueCommandKind = CueKind | 'guidance-paused' | 'guidance-resumed';
-
-export type Cue = {
-  id: string;
-  eventKey: string;
-  kind: CueCommandKind;
-  targetSpeedKph: number | null;
-  clip: string;
-  followClip: string | null;
-  generation: number;
-  priority: number;
-  decidedMonoMs: number;
-  ttlMs: number;
-};
+import { SpeedWindow } from './speed-window.ts';
+import type { StepCursor } from './step-cursor.ts';
 
 export type SuppressReason =
   | 'muted'
@@ -37,7 +25,16 @@ export type SuppressReason =
   | 'acceleration-unsafe'
   | 'target-incompatible';
 
-export type Suppressed = { eventKey: string; why: SuppressReason };
+export type CueTarget = { eventKind: CueEventKind; voice: string; sM: number | null; muteKey: string | null };
+
+export type Suppressed = { eventKey: string; why: SuppressReason; target: CueTarget };
+
+export type CoachSettings = {
+  mutedKeys: ReadonlySet<string>;
+  speakTargets: boolean;
+  offsetsMs: ReadonlyMap<string, number>;
+  sideCueDistanceM: number | null;
+};
 
 export type CoachInput = {
   sample: Sample;
@@ -46,23 +43,22 @@ export type CoachInput = {
   generation: number;
   deviceDelayMs: number;
   phraseMs: (clip: string) => number;
-  mutedKeys: ReadonlySet<string>;
-  speakTargets: boolean;
-  offsetsMs: ReadonlyMap<string, number>;
-  sideCueDistanceM: number | null;
 };
 
-export type CoachOutput = { cue: Cue | null; guidance: GuidanceState; suppressed: Suppressed[] };
+export type CoachOutput = { cue: Cue | null; target: CueTarget | null; guidance: LiveGuidance; suppressed: Suppressed[] };
 
-type Candidate = {
+type Speech = {
   eventKey: string;
-  kind: CueCommandKind;
+  target: CueTarget;
+  kind: LiveCueKind;
   targetSpeedKph: number | null;
   clip: string;
   followClip: string | null;
-  priority: number;
-  sM: number;
 };
+
+type Candidate = Speech & { priority: number; gate: SuppressReason | null; held: SuppressReason | null; opens: ReferenceCueEvent | null };
+
+type Spoken = { cue: Cue; target: CueTarget };
 
 type ThrottleWindow = { event: ReferenceCueEvent; lastWhy: SuppressReason };
 
@@ -72,22 +68,39 @@ type WideEpisode = { corner: number; sinceMs: number };
 
 type SideEpisode = { side: 'left' | 'right'; sinceMs: number; decided: boolean };
 
-type SpeedMark = { atMs: number; speedMps: number };
-
 type Step = { input: CoachInput; match: Match; periodMs: number; accelerationMps2: number; suppressed: Suppressed[] };
 
-const DEFAULT_PERIOD_MS = 1000 / 60;
-const MAX_PERIOD_MS = 100;
-const ACCELERATION_WINDOW_MS = 300;
-const MIN_ACCELERATION_SPAN_MS = 100;
 const TIGHTER_MUTE_KEY = 'tighter';
 
 export function bigStopKey(brake: ReferenceCueEvent): string {
-  return `big-stop@${Math.round(brake.sM)}`;
+  return eventKey('big-stop', brake.sM);
+}
+
+function eventTarget(event: ReferenceCueEvent): CueTarget {
+  return { eventKind: event.kind, voice: event.voice, sM: event.sM, muteKey: event.key };
+}
+
+function bigStopTarget(brake: ReferenceCueEvent): CueTarget {
+  return { eventKind: 'big-stop', voice: 'big-stop', sM: brake.sM, muteKey: brake.key };
+}
+
+function candidateOf(config: CoreConfig, speech: Speech, gate: SuppressReason | null = null, held: SuppressReason | null = null, opens: ReferenceCueEvent | null = null): Candidate {
+  return { ...speech, priority: cuePriority(speech.kind, config), gate, held, opens };
 }
 
 export function tighterKey(corner: Corner): string {
   return `tighter@${corner.number}`;
+}
+
+function byKey(events: ReferenceCueEvent[], keyOf: (event: ReferenceCueEvent) => string): Map<string, ReferenceCueEvent[]> {
+  const grouped = new Map<string, ReferenceCueEvent[]>();
+  for (const event of events) {
+    const key = keyOf(event);
+    const group = grouped.get(key);
+    if (group) group.push(event);
+    else grouped.set(key, [event]);
+  }
+  return grouped;
 }
 
 function timeToReachMs(distanceM: number, speedMps: number, accelerationMps2: number): number {
@@ -102,12 +115,18 @@ function timeToReachMs(distanceM: number, speedMps: number, accelerationMps2: nu
 export class Coach {
   private readonly path: ReferencePath;
   private readonly events: ReferenceCueEvent[];
+  private readonly bigStops: ReferenceCueEvent[];
+  private readonly eventsByKey: Map<string, ReferenceCueEvent[]>;
+  private readonly bigStopsByKey: Map<string, ReferenceCueEvent[]>;
   private readonly config: CoreConfig;
-  private readonly corners: Corner[];
+  private readonly settings: CoachSettings;
+  private readonly corners: StepCursor<Corner | null>;
+  private readonly speeds: SpeedWindow;
   private readonly guidance = new Guidance();
   private generation = 0;
-  private pending: ReferenceCueEvent[] = [];
-  private bigStops: ReferenceCueEvent[] = [];
+  private passed = 0;
+  private settled = new Set<ReferenceCueEvent>();
+  private settledBigStops = new Set<ReferenceCueEvent>();
   private spokenCorners = new Set<number>();
   private wideEpisode: WideEpisode | null = null;
   private openWindows = new Map<string, ThrottleWindow>();
@@ -116,24 +135,29 @@ export class Coach {
   private lastCue: { priority: number; decidedMonoMs: number } | null = null;
   private stableSinceMs: number | null = null;
   private sideEpisode: SideEpisode | null = null;
-  private speeds: SpeedMark[] = [];
   private previousNowMs: number | null = null;
   private transitions = 0;
   private suspendedSinceMs: number | null = null;
   private pauseAnnounced = false;
 
-  constructor(path: ReferencePath, events: ReferenceCueEvent[], config: CoreConfig) {
-    this.path = path;
-    this.events = [...events].sort((a, b) => a.sM - b.sM);
+  constructor(analysis: ReferenceAnalysis, config: CoreConfig, settings: CoachSettings) {
+    this.path = analysis.path;
+    this.events = [...analysis.events].sort((a, b) => a.sM - b.sM);
+    this.bigStops = this.events.filter(event => event.bigStop);
+    this.eventsByKey = byKey(this.events, event => event.key);
+    this.bigStopsByKey = byKey(this.bigStops, bigStopKey);
     this.config = config;
-    this.corners = findCorners(path, this.events, config);
+    this.settings = settings;
+    this.corners = cornerCursor(analysis.corners);
+    this.speeds = new SpeedWindow(config.coach.accelerationWindowMs);
     this.reset(0);
   }
 
-  reset(generation: number): void {
+  private reset(generation: number): void {
     this.generation = generation;
-    this.pending = [...this.events];
-    this.bigStops = this.events.filter(event => event.bigStop);
+    this.passed = 0;
+    this.settled = new Set();
+    this.settledBigStops = new Set();
     this.spokenCorners = new Set();
     this.wideEpisode = null;
     this.openWindows = new Map();
@@ -142,7 +166,7 @@ export class Coach {
     this.lastCue = null;
     this.stableSinceMs = null;
     this.sideEpisode = null;
-    this.speeds = [];
+    this.speeds.clear();
     this.previousNowMs = null;
     this.transitions = 0;
     this.suspendedSinceMs = null;
@@ -171,32 +195,32 @@ export class Coach {
     return this.output(this.decide(step), suppressed);
   }
 
-  private output(cue: Cue | null, suppressed: Suppressed[]): CoachOutput {
-    if (cue) this.lastCue = { priority: cue.priority, decidedMonoMs: cue.decidedMonoMs };
-    return { cue, guidance: this.guidance.state, suppressed };
+  private output(spoken: Spoken | null, suppressed: Suppressed[]): CoachOutput {
+    if (spoken) this.lastCue = { priority: spoken.cue.priority, decidedMonoMs: spoken.cue.decidedMonoMs };
+    return { cue: spoken?.cue ?? null, target: spoken?.target ?? null, guidance: this.guidance.state, suppressed };
   }
 
   private periodMs(nowMonoMs: number): number {
     const previous = this.previousNowMs;
     this.previousNowMs = nowMonoMs;
-    if (previous === null) return DEFAULT_PERIOD_MS;
-    return Math.min(MAX_PERIOD_MS, Math.max(0, nowMonoMs - previous));
+    if (previous === null) return this.config.coach.defaultPeriodMs;
+    return Math.min(this.config.coach.maxPeriodMs, Math.max(0, nowMonoMs - previous));
   }
 
   private isStale(input: CoachInput): boolean {
     return input.nowMonoMs - input.sample.receivedMonoMs > this.config.freshnessMs;
   }
 
-  private untrusted(input: CoachInput): Cue | null {
+  private untrusted(input: CoachInput): Spoken | null {
     this.stableSinceMs = null;
     this.sideEpisode = null;
     this.wideEpisode = null;
-    this.speeds = [];
+    this.speeds.clear();
     this.guidance.suspend('untrusted-position');
     return this.announcePause(input);
   }
 
-  private announcePause(input: CoachInput, step?: Step): Cue | null {
+  private announcePause(input: CoachInput, step?: Step): Spoken | null {
     if (this.guidance.state.mode !== 'suspended' || this.pauseAnnounced) return null;
     this.suspendedSinceMs ??= input.nowMonoMs;
     if (input.nowMonoMs - this.suspendedSinceMs < this.config.guidanceAnnounceAfterMs) return null;
@@ -205,7 +229,7 @@ export class Coach {
     return cue;
   }
 
-  private announceResume(input: CoachInput, step: Step): Cue | null {
+  private announceResume(input: CoachInput, step: Step): Spoken | null {
     const announced = this.pauseAnnounced;
     this.suspendedSinceMs = null;
     this.pauseAnnounced = false;
@@ -214,18 +238,33 @@ export class Coach {
 
   private acceleration(input: CoachInput): number {
     const now = input.nowMonoMs;
-    this.speeds = this.speeds.filter(mark => now - mark.atMs <= ACCELERATION_WINDOW_MS);
-    this.speeds.push({ atMs: now, speedMps: input.sample.speedMps });
-    const oldest = this.speeds[0]!;
-    const spanMs = now - oldest.atMs;
-    if (spanMs < MIN_ACCELERATION_SPAN_MS) return 0;
-    return Math.max(0, ((input.sample.speedMps - oldest.speedMps) * 1000) / spanMs);
+    this.speeds.add(now, input.sample.speedMps);
+    const spanMs = now - this.speeds.oldestAtMs;
+    if (spanMs < this.config.coach.minAccelerationSpanMs) return 0;
+    return Math.max(0, ((input.sample.speedMps - this.speeds.oldestSpeedMps) * 1000) / spanMs);
+  }
+
+  private pending(): ReferenceCueEvent[] {
+    const pending: ReferenceCueEvent[] = [];
+    for (let index = this.passed; index < this.events.length; index++) {
+      const event = this.events[index]!;
+      if (!this.settled.has(event)) pending.push(event);
+    }
+    return pending;
+  }
+
+  private somePending(test: (event: ReferenceCueEvent) => boolean): boolean {
+    for (let index = this.passed; index < this.events.length; index++) {
+      const event = this.events[index]!;
+      if (!this.settled.has(event) && test(event)) return true;
+    }
+    return false;
   }
 
   private settle(event: ReferenceCueEvent, why: SuppressReason, step: Step): void {
-    this.pending = this.pending.filter(candidate => candidate !== event);
+    this.settled.add(event);
     this.openWindows.delete(event.key);
-    step.suppressed.push({ eventKey: event.key, why });
+    step.suppressed.push({ eventKey: event.key, why, target: eventTarget(event) });
   }
 
   private closeWindows(step: Step, isClosed: (window: ThrottleWindow) => boolean, why?: SuppressReason): void {
@@ -235,16 +274,20 @@ export class Coach {
   }
 
   private settleBigStop(brake: ReferenceCueEvent, why: SuppressReason, step: Step): void {
-    this.bigStops = this.bigStops.filter(candidate => candidate !== brake);
-    step.suppressed.push({ eventKey: bigStopKey(brake), why });
+    this.settledBigStops.add(brake);
+    step.suppressed.push({ eventKey: bigStopKey(brake), why, target: bigStopTarget(brake) });
   }
 
   private passEvents(step: Step): void {
     const why: SuppressReason = this.guidance.state.mode === 'suspended' ? 'suspended' : 'missed';
-    for (const brake of this.bigStops.filter(candidate => candidate.sM <= step.match.sM || !this.pending.includes(candidate))) {
-      this.settleBigStop(brake, why, step);
+    for (const brake of this.bigStops) {
+      if (!this.settledBigStops.has(brake) && (brake.sM <= step.match.sM || this.settled.has(brake))) this.settleBigStop(brake, why, step);
     }
-    for (const event of this.pending.filter(candidate => candidate.sM <= step.match.sM)) this.settle(event, why, step);
+    while (this.passed < this.events.length && this.events[this.passed]!.sM <= step.match.sM) {
+      const event = this.events[this.passed]!;
+      this.passed += 1;
+      if (!this.settled.has(event)) this.settle(event, why, step);
+    }
   }
 
   private checkBrakeZones(step: Step): boolean {
@@ -252,8 +295,8 @@ export class Coach {
     for (const brake of this.events) {
       if (brake.kind !== 'brake' || brake.endSM === null || brake.endSM > step.match.sM || this.checkedZones.has(brake.key)) continue;
       this.checkedZones.add(brake.key);
-      const overspeedKph = (step.input.sample.speedMps - pointAt(this.path, brake.endSM).speedMps) * KPH_PER_MPS;
-      if (overspeedKph <= this.config.incompatibleOverspeedKph) continue;
+      const overspeedMps = step.input.sample.speedMps - pointAt(this.path, brake.endSM).speedMps;
+      if (overspeedMps <= this.config.incompatibleOverspeedMps) continue;
       this.cancelDependents(brake, step);
       incompatible = true;
     }
@@ -263,15 +306,15 @@ export class Coach {
   private cancelDependents(brake: ReferenceCueEvent, step: Step): void {
     const nextBrake = this.events.find(candidate => candidate.kind === 'brake' && candidate.sM > brake.sM);
     const limitM = nextBrake?.sM ?? Number.POSITIVE_INFINITY;
-    const waiting = [...this.pending, ...[...this.openWindows.values()].map(window => window.event)];
+    const waiting = [...this.pending(), ...[...this.openWindows.values()].map(window => window.event)];
     const dependents = waiting.filter(candidate => candidate.kind !== 'brake' && candidate.sM > brake.sM && candidate.sM < limitM);
     for (const dependent of dependents) this.settle(dependent, 'target-incompatible', step);
     const lastDependentM = Math.max(brake.endSM ?? brake.sM, ...dependents.map(dependent => dependent.sM));
     this.blockedUntilSM = Math.max(this.blockedUntilSM ?? 0, lastDependentM);
   }
 
-  private whileSuspended(step: Step, paused: GuidanceTransition): Cue | null {
-    if (!this.pending.some(event => event.sM > step.match.sM) && this.openWindows.size === 0) {
+  private whileSuspended(step: Step, paused: GuidanceTransition): Spoken | null {
+    if (!this.somePending(event => event.sM > step.match.sM) && this.openWindows.size === 0) {
       this.guidance.awaitRestart();
       return null;
     }
@@ -291,36 +334,31 @@ export class Coach {
     this.closeWindows(step, () => true, 'suspended');
   }
 
-  private systemCue(kind: 'guidance-paused' | 'guidance-resumed', input: CoachInput, step?: Step): Cue | null {
+  private systemCue(kind: 'guidance-paused' | 'guidance-resumed', input: CoachInput, step?: Step): Spoken | null {
     const clip = clipKey(kind);
     if (step && this.urgentCueWithin(step, input.phraseMs(clip))) return null;
     this.transitions += 1;
-    const priority = this.config.cue.priority.system;
-    return this.cue({ eventKey: `${kind}#${this.transitions}`, kind, targetSpeedKph: null, clip, followClip: null, priority, sM: 0 }, input);
+    const target: CueTarget = { eventKind: 'guidance', voice: kind, sM: null, muteKey: null };
+    return this.cue({ eventKey: `${kind}#${this.transitions}`, target, kind, targetSpeedKph: null, clip, followClip: null }, input);
   }
 
   private urgentCueWithin(step: Step, windowMs: number): boolean {
-    return this.pending.some(event => {
+    return this.somePending(event => {
       if (event.kind === 'throttle' || event.sM <= step.match.sM) return false;
       return this.timeToEventMs(event, step) <= this.leadMs(step.input, event) + windowMs;
     });
   }
 
-  private followClipFor(event: ReferenceCueEvent, input: CoachInput): string | null {
-    if (event.kind !== 'brake' || event.targetSpeedKph === null || !input.speakTargets) return null;
-    return speedClipKey(event.targetSpeedKph);
-  }
-
-  private offsetMs(input: CoachInput, event: ReferenceCueEvent): number {
-    return input.offsetsMs.get(event.key) ?? 0;
+  private offsetMs(event: ReferenceCueEvent): number {
+    return this.settings.offsetsMs.get(event.key) ?? 0;
   }
 
   private leadMs(input: CoachInput, event: ReferenceCueEvent): number {
-    return input.deviceDelayMs + this.config.cue.leadReactionMs + this.offsetMs(input, event);
+    return input.deviceDelayMs + this.config.cue.leadReactionMs + this.offsetMs(event);
   }
 
   private bigStopLeadMs(input: CoachInput, brake: ReferenceCueEvent): number {
-    return input.deviceDelayMs + this.config.voice.bigStopLeadMs + this.offsetMs(input, brake);
+    return input.deviceDelayMs + this.config.voice.bigStopLeadMs + this.offsetMs(brake);
   }
 
   private timeToEventMs(event: ReferenceCueEvent, step: Step): number {
@@ -328,41 +366,42 @@ export class Coach {
   }
 
   private dueEvents(step: Step): Due[] {
-    return this.pending
-      .filter(event => event.sM > step.match.sM)
-      .map(event => ({ event, timeMs: this.timeToEventMs(event, step) }))
-      .filter(entry => entry.timeMs <= this.leadMs(step.input, entry.event) + step.periodMs);
+    const due: Due[] = [];
+    for (let index = this.passed; index < this.events.length; index++) {
+      const event = this.events[index]!;
+      if (this.settled.has(event) || event.sM <= step.match.sM) continue;
+      const timeMs = this.timeToEventMs(event, step);
+      if (timeMs <= this.leadMs(step.input, event) + step.periodMs) due.push({ event, timeMs });
+    }
+    return due;
   }
 
   private dueBigStops(step: Step): Due[] {
-    return this.bigStops
-      .filter(brake => brake.sM > step.match.sM)
-      .map(brake => ({ event: brake, timeMs: this.timeToEventMs(brake, step) }))
-      .filter(entry => entry.timeMs <= this.bigStopLeadMs(step.input, entry.event) + step.periodMs);
+    const due: Due[] = [];
+    for (const brake of this.bigStops) {
+      if (this.settledBigStops.has(brake) || brake.sM <= step.match.sM) continue;
+      const timeMs = this.timeToEventMs(brake, step);
+      if (timeMs <= this.bigStopLeadMs(step.input, brake) + step.periodMs) due.push({ event: brake, timeMs });
+    }
+    return due;
   }
 
-  private decide(step: Step): Cue | null {
+  private decide(step: Step): Spoken | null {
     const candidates: Candidate[] = [];
     const due = this.dueEvents(step);
     this.closeWindows(
       step,
       window => this.timeToEventMs(window.event, step) < step.input.deviceDelayMs || due.some(entry => entry.event.sM > window.event.sM)
     );
-    for (const due of this.dueBigStops(step)) {
-      const why = this.bigStopGate(due, step);
-      if (why) this.settleBigStop(due.event, why, step);
-      else candidates.push(this.bigStopCandidate(due.event));
-    }
+    for (const entry of this.dueBigStops(step)) candidates.push(candidateOf(this.config, this.bigStopSpeech(entry.event), this.bigStopGate(entry, step)));
     for (const { event, timeMs } of due) {
-      const why = this.gate(event, timeMs, step);
-      if (why) this.settle(event, why, step);
-      else if (event.kind === 'throttle') this.open(event);
-      else candidates.push(this.candidateFor(event, step.input));
+      const gate = timeMs < step.input.deviceDelayMs ? 'too-late' : null;
+      const opens = event.kind === 'throttle' && gate === null;
+      const held = opens ? this.accelerationGate(event, step) : null;
+      candidates.push(candidateOf(this.config, this.speechFor(event), gate, held, opens ? event : null));
     }
     for (const window of this.openWindows.values()) {
-      const why = this.accelerationGate(window.event, step);
-      if (why) window.lastWhy = why;
-      else candidates.push(this.candidateFor(window.event, step.input));
+      candidates.push(candidateOf(this.config, this.speechFor(window.event), null, this.accelerationGate(window.event, step)));
     }
     const tighter = this.tighterCandidate(step);
     if (tighter) candidates.push(tighter);
@@ -372,37 +411,27 @@ export class Coach {
   }
 
   private open(event: ReferenceCueEvent): void {
-    this.pending = this.pending.filter(candidate => candidate !== event);
+    this.settled.add(event);
     this.openWindows.set(event.key, { event, lastWhy: 'unstable' });
   }
 
-  private candidateFor(event: ReferenceCueEvent, input: CoachInput): Candidate {
-    const priority = this.config.cue.priority;
-    const value = event.kind === 'brake' ? priority.brake : event.kind === 'ease-off' ? priority.easeOff : priority.throttle;
+  private speechFor(event: ReferenceCueEvent): Speech {
     return {
       eventKey: event.key,
+      target: eventTarget(event),
       kind: event.voice,
       targetSpeedKph: event.targetSpeedKph,
       clip: clipKey(event.voice),
-      followClip: this.followClipFor(event, input),
-      priority: value,
-      sM: event.sM
+      followClip: this.settings.speakTargets ? targetClip(event) : null
     };
   }
 
-  private bigStopCandidate(brake: ReferenceCueEvent): Candidate {
-    const priority = this.config.cue.priority.bigStop;
-    return { eventKey: bigStopKey(brake), kind: 'big-stop', targetSpeedKph: null, clip: clipKey('big-stop'), followClip: null, priority, sM: brake.sM };
-  }
-
-  private gate(event: ReferenceCueEvent, timeMs: number, step: Step): SuppressReason | null {
-    if (step.input.mutedKeys.has(event.key)) return 'muted';
-    return timeMs < step.input.deviceDelayMs ? 'too-late' : null;
+  private bigStopSpeech(brake: ReferenceCueEvent): Speech {
+    return { eventKey: bigStopKey(brake), target: bigStopTarget(brake), kind: 'big-stop', targetSpeedKph: null, clip: clipKey('big-stop'), followClip: null };
   }
 
   private bigStopGate(due: Due, step: Step): SuppressReason | null {
     const { input } = step;
-    if (input.mutedKeys.has(due.event.key) || input.mutedKeys.has(bigStopKey(due.event))) return 'muted';
     const bigStopMs = input.phraseMs(clipKey('big-stop'));
     if (due.timeMs < this.leadMs(input, due.event) + bigStopMs) return 'too-late';
     if (this.urgentBefore(due.event, step, bigStopMs)) return 'too-late';
@@ -410,7 +439,7 @@ export class Coach {
   }
 
   private urgentBefore(brake: ReferenceCueEvent, step: Step, bigStopMs: number): boolean {
-    return this.pending.some(
+    return this.somePending(
       event =>
         event !== brake &&
         event.kind !== 'throttle' &&
@@ -428,7 +457,7 @@ export class Coach {
 
   private tighterCandidate(step: Step): Candidate | null {
     const { match, input } = step;
-    const corner = cornerAt(this.corners, match.sM);
+    const corner = this.corners.at(match.sM);
     if (!corner || !this.beforeApex(match.sM) || this.spokenCorners.has(corner.number) || outsideM(corner, match.lateralM) <= this.config.corners.wideApexM) {
       this.wideEpisode = null;
       return null;
@@ -437,13 +466,8 @@ export class Coach {
     if (input.nowMonoMs - this.wideEpisode.sinceMs < this.config.corners.tighterHoldMs) return null;
     this.spokenCorners.add(corner.number);
     this.wideEpisode = null;
-    const eventKey = tighterKey(corner);
-    if (input.mutedKeys.has(TIGHTER_MUTE_KEY)) {
-      step.suppressed.push({ eventKey, why: 'muted' });
-      return null;
-    }
-    const priority = this.config.cue.priority.position;
-    return { eventKey, kind: 'tighter', targetSpeedKph: null, clip: clipKey('tighter'), followClip: null, priority, sM: match.sM };
+    const target: CueTarget = { eventKind: 'tighter', voice: 'tighter', sM: match.sM, muteKey: TIGHTER_MUTE_KEY };
+    return candidateOf(this.config, { eventKey: tighterKey(corner), target, kind: 'tighter', targetSpeedKph: null, clip: clipKey('tighter'), followClip: null });
   }
 
   private accelerationGate(event: ReferenceCueEvent, step: Step): SuppressReason | null {
@@ -470,9 +494,9 @@ export class Coach {
   }
 
   private sideCandidate(step: Step): Candidate | null {
-    const distanceM = step.input.sideCueDistanceM;
+    const distanceM = this.settings.sideCueDistanceM;
     const lateralM = step.match.lateralM;
-    if (!this.config.sideCuesEnabled || distanceM === null || Math.abs(lateralM) <= distanceM) {
+    if (distanceM === null || Math.abs(lateralM) <= distanceM) {
       this.sideEpisode = null;
       return null;
     }
@@ -485,17 +509,12 @@ export class Coach {
     if (this.beforeApex(step.match.sM)) return null;
     episode.decided = true;
     const kind = side === 'right' ? 'keep-left' : 'keep-right';
-    const eventKey = `${kind}@${Math.round(step.match.sM)}`;
-    if (step.input.mutedKeys.has(kind)) {
-      step.suppressed.push({ eventKey, why: 'muted' });
-      return null;
-    }
-    const priority = this.config.cue.priority.position;
-    return { eventKey, kind, targetSpeedKph: null, clip: clipKey(kind), followClip: null, priority, sM: step.match.sM };
+    const target: CueTarget = { eventKind: kind, voice: kind, sM: step.match.sM, muteKey: kind };
+    return candidateOf(this.config, { eventKey: eventKey(kind, step.match.sM), target, kind, targetSpeedKph: null, clip: clipKey(kind), followClip: null });
   }
 
   private beforeApex(sM: number): boolean {
-    const corner = cornerAt(this.corners, sM);
+    const corner = this.corners.at(sM);
     return corner !== null && sM >= corner.turnInSM && sM <= corner.apexSM;
   }
 
@@ -505,8 +524,24 @@ export class Coach {
     return nowMonoMs - last.decidedMonoMs < this.config.cue.cooldownMs;
   }
 
-  private choose(candidates: Candidate[], step: Step): Cue | null {
-    const ordered = [...candidates].sort((a, b) => b.priority - a.priority || a.sM - b.sM);
+  private admitted(candidates: Candidate[], step: Step): Candidate[] {
+    const admitted: Candidate[] = [];
+    for (const entry of candidates) {
+      const { muteKey } = entry.target;
+      const why = muteKey !== null && this.settings.mutedKeys.has(muteKey) ? 'muted' : entry.gate;
+      if (why) {
+        this.drop(entry, why, step);
+        continue;
+      }
+      if (entry.opens) this.open(entry.opens);
+      if (entry.held) this.openWindows.get(entry.eventKey)!.lastWhy = entry.held;
+      else admitted.push(entry);
+    }
+    return admitted;
+  }
+
+  private choose(candidates: Candidate[], step: Step): Spoken | null {
+    const ordered = this.admitted(candidates, step).sort((a, b) => b.priority - a.priority || (a.target.sM ?? 0) - (b.target.sM ?? 0));
     let chosen: Candidate | null = null;
     for (const candidate of ordered) {
       const blocked: SuppressReason | null = this.coolingDown(candidate, step.input.nowMonoMs)
@@ -526,24 +561,18 @@ export class Coach {
       window.lastWhy = blocked;
       return;
     }
-    this.openWindows.delete(candidate.eventKey);
-    this.pending = this.pending.filter(event => event.key !== candidate.eventKey);
-    this.bigStops = this.bigStops.filter(brake => bigStopKey(brake) !== candidate.eventKey);
-    if (blocked) step.suppressed.push({ eventKey: candidate.eventKey, why: blocked });
+    this.drop(candidate, blocked, step);
   }
 
-  private cue(candidate: Candidate, input: CoachInput): Cue {
-    return {
-      id: `${this.generation}:${candidate.eventKey}`,
-      eventKey: candidate.eventKey,
-      kind: candidate.kind,
-      targetSpeedKph: candidate.targetSpeedKph,
-      clip: candidate.clip,
-      followClip: candidate.followClip,
-      generation: this.generation,
-      priority: candidate.priority,
-      decidedMonoMs: input.nowMonoMs,
-      ttlMs: this.config.cue.ttlBaseMs + input.deviceDelayMs
-    };
+  private drop(candidate: Candidate, why: SuppressReason | null, step: Step): void {
+    this.openWindows.delete(candidate.eventKey);
+    for (const event of this.eventsByKey.get(candidate.eventKey) ?? []) this.settled.add(event);
+    for (const brake of this.bigStopsByKey.get(candidate.eventKey) ?? []) this.settledBigStops.add(brake);
+    if (why) step.suppressed.push({ eventKey: candidate.eventKey, why, target: candidate.target });
+  }
+
+  private cue(speech: Speech, input: CoachInput): Spoken {
+    const cue = makeCue({ ...speech, generation: this.generation, decidedMonoMs: input.nowMonoMs, deviceDelayMs: input.deviceDelayMs }, this.config);
+    return { cue, target: speech.target };
   }
 }

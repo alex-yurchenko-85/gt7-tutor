@@ -1,6 +1,8 @@
 import type { AttemptList, AttemptReview, AttemptSummary } from '@gt7/contracts';
 
-export function attemptSummary(overrides: Partial<AttemptSummary> = {}): AttemptSummary {
+type AttemptOverrides = Partial<Omit<AttemptSummary, 'completion' | 'timeMs'>> & { completion?: AttemptSummary['completion']; timeMs?: number | null };
+
+export function attemptSummary(overrides: AttemptOverrides = {}): AttemptSummary {
   return {
     id: 'a0000000-0000-4000-8000-000000000001',
     exerciseId: 'e0000000-0000-4000-8000-000000000001',
@@ -12,16 +14,13 @@ export function attemptSummary(overrides: Partial<AttemptSummary> = {}): Attempt
     mode: 'baseline',
     completion: 'complete',
     reason: null,
-    measuredMs: 27100,
-    gameMs: 27100,
-    medal: null,
     timeMs: 27100,
     gapToBestMs: 0,
     largestDifference: null,
     focus: null,
     startedAt: '2026-11-16T11:23:30.000Z',
     ...overrides
-  };
+  } as AttemptSummary;
 }
 
 export const ATTEMPT_LIST: AttemptList = {
@@ -31,8 +30,8 @@ export const ATTEMPT_LIST: AttemptList = {
       date: '2026-11-17',
       bestMs: 26800,
       attempts: [
-        attemptSummary({ id: 'a0000000-0000-4000-8000-000000000003', number: 3, timeMs: null, measuredMs: null, gameMs: null, completion: 'aborted', reason: 'manual', gapToBestMs: null }),
-        attemptSummary({ id: 'a0000000-0000-4000-8000-000000000002', number: 2, timeMs: 26800, measuredMs: 26800, gameMs: 26800, gapToBestMs: 0, mode: 'guided' })
+        attemptSummary({ id: 'a0000000-0000-4000-8000-000000000003', number: 3, timeMs: null, completion: 'aborted', reason: 'manual', gapToBestMs: null }),
+        attemptSummary({ id: 'a0000000-0000-4000-8000-000000000002', number: 2, timeMs: 26800, gapToBestMs: 0, mode: 'guided' })
       ]
     },
     {

@@ -1,10 +1,12 @@
 import { Inject, Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
-import type { ClientMsg, CueOutcome, LiveCue, LiveState, ServerMsg, StateRate } from '@gt7/contracts';
+import { DEFAULT_STATE_RATE, median, type ClientMsg, type CueOutcome, type LiveCue, type LiveState, type ServerMsg, type StateRate } from '@gt7/contracts';
+import type { Knex } from 'knex';
+import { dropOldest } from '../drop-oldest.js';
 import { MONO_CLOCK, type MonoClock } from '../clock/mono-clock.js';
+import { KNEX } from '../storage/knex.provider.js';
 
 export const STATE_TICKS_PER_SECOND = 60;
 export const STATE_TICK_MS = 1000 / STATE_TICKS_PER_SECOND;
-export const DEFAULT_STATE_RATE: StateRate = 15;
 export const PING_INTERVAL_MS = 1000;
 export const MAX_PENDING_BYTES = 256 * 1024;
 export const UNMEASURED_DEVICE_DELAY_MS = 60;
@@ -15,14 +17,12 @@ export type LiveClient = {
   readonly id: string;
   readonly userId: string;
   readonly sessionKey: string;
-  readonly expiresAtMs: number;
   readonly bufferedAmount: number;
   send(text: string): void;
   close(reason: string): void;
 };
 
 export const SESSION_ENDED = 'Session ended';
-export const PROFILE_DELETED = 'Profile deleted';
 
 export type ProfileState = Omit<LiveState, 'seq' | 'voiceDeviceId' | 'voiceReady'>;
 
@@ -43,12 +43,6 @@ function ticksPerState(rate: StateRate): number {
 
 type VoiceDevice = { clientId: string; deviceId: string; ready: boolean };
 
-function median(values: number[]): number {
-  const sorted = [...values].sort((left, right) => left - right);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 1 ? sorted[middle]! : (sorted[middle - 1]! + sorted[middle]!) / 2;
-}
-
 @Injectable()
 export class LiveHub implements OnModuleDestroy {
   private readonly logger = new Logger(LiveHub.name);
@@ -65,7 +59,10 @@ export class LiveHub implements OnModuleDestroy {
   private nextPingId = 1;
   private generation = Date.now();
 
-  constructor(@Inject(MONO_CLOCK) private readonly clock: MonoClock) {
+  constructor(
+    @Inject(MONO_CLOCK) private readonly clock: MonoClock,
+    @Inject(KNEX) private readonly db: Knex
+  ) {
     this.stateTimer = setInterval(() => this.flush(), STATE_TICK_MS);
     this.pingTimer = setInterval(() => this.pingAll(), PING_INTERVAL_MS);
   }
@@ -119,19 +116,6 @@ export class LiveHub implements OnModuleDestroy {
     for (const entry of this.clientsOf(userId)) if (entry.client.sessionKey !== keptSessionKey) this.closeClient(entry, SESSION_ENDED);
   }
 
-  closeSession(sessionKey: string): void {
-    for (const entry of this.clients.values()) if (entry.client.sessionKey === sessionKey) this.closeClient(entry, SESSION_ENDED);
-  }
-
-  closeExpired(nowUnixMs: number): void {
-    for (const entry of this.clients.values()) if (entry.client.expiresAtMs <= nowUnixMs) this.closeClient(entry, SESSION_ENDED);
-  }
-
-  dropProfile(userId: string): void {
-    this.voices.delete(userId);
-    for (const entry of this.clientsOf(userId)) this.closeClient(entry, PROFILE_DELETED);
-  }
-
   voiceReady(userId: string): boolean {
     return this.voices.get(userId)?.ready === true;
   }
@@ -139,7 +123,7 @@ export class LiveHub implements OnModuleDestroy {
   deviceDelayMs(userId: string): number {
     const voice = this.voices.get(userId);
     const delays = voice ? this.clients.get(voice.clientId)?.delays : undefined;
-    return delays && delays.length > 0 ? median(delays) : UNMEASURED_DEVICE_DELAY_MS;
+    return median(delays ?? []) ?? UNMEASURED_DEVICE_DELAY_MS;
   }
 
   sendCue(userId: string, cue: LiveCue): boolean {
@@ -219,15 +203,30 @@ export class LiveHub implements OnModuleDestroy {
   }
 
   private pingAll(): void {
-    this.closeExpired(Date.now());
     for (const entry of this.clients.values()) this.ping(entry);
+    void this.closeEndedSessions();
+  }
+
+  private async closeEndedSessions(): Promise<void> {
+    const entries = [...this.clients.values()];
+    if (entries.length === 0) return;
+    const keys = [...new Set(entries.map(entry => entry.client.sessionKey))];
+    let rows: { token_hash: string }[];
+    try {
+      rows = await this.db('sessions').whereRaw('token_hash = any(?)', [keys]).where('expires_at', '>', this.db.fn.now()).select('token_hash');
+    } catch (error) {
+      this.logger.warn(`Session check failed: ${error instanceof Error ? error.message : String(error)}`);
+      return;
+    }
+    const live = new Set(rows.map(row => row.token_hash));
+    for (const entry of entries) if (!live.has(entry.client.sessionKey) && this.clients.get(entry.client.id) === entry) this.closeClient(entry, SESSION_ENDED);
   }
 
   private ping(entry: ClientEntry): void {
     const id = this.nextPingId++;
     const serverMs = this.clock.now();
     entry.pings.set(id, serverMs);
-    if (entry.pings.size > PENDING_PING_LIMIT) entry.pings.delete(entry.pings.keys().next().value!);
+    dropOldest(entry.pings, PENDING_PING_LIMIT);
     this.deliver(entry, { type: 'ping', id, serverMs });
   }
 

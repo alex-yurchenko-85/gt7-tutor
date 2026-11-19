@@ -61,7 +61,7 @@ async function dropDatabase(name: string): Promise<void> {
 async function migrate(databaseUrl: string): Promise<void> {
   const db = knex({ client: 'pg', connection: databaseUrl });
   try {
-    await db.migrate.latest({ directory: join(repoRoot, 'migrations'), loadExtensions: ['.cjs'] });
+    await db.migrate.latest({ directory: join(repoRoot, 'apps/server/db/migrations'), loadExtensions: ['.cjs'] });
   } finally {
     await db.destroy();
   }

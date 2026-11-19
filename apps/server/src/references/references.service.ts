@@ -1,36 +1,39 @@
-import { BadRequestException, ConflictException, Inject, Injectable } from '@nestjs/common';
-import type { RawRange } from '@gt7/capture';
-import type {
-  CornerInfo,
-  CreateReferenceRequest,
-  ReferenceCheckResult,
-  ReferenceCue,
-  ReferenceInfo,
-  ReferenceProposal,
-  ReferenceTrace,
-  Sample,
-  StartKindName
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  KPH_PER_MPS,
+  type CornerInfo,
+  type CreateReferenceRequest,
+  type RawRange,
+  type ReferenceCheckResult,
+  type ReferenceCue,
+  type ReferenceInfo,
+  type ReferenceOrigin,
+  type ReferenceProposal,
+  type ReferenceTrace,
+  type Sample,
+  type StartKindName
 } from '@gt7/contracts';
 import {
   DEFAULT_CONFIG,
   ReferencePathError,
-  buildCueEvents,
+  analyseReference,
   buildReference,
+  clipKey,
+  clipsOf,
   cueText,
   cutToTimerRun,
-  findCorners,
+  eventPhrase,
   findDemoRangeCandidates,
-  KPH_PER_MPS,
   matchesReference,
   pointAt,
-  referenceTimeMs,
-  speedWords,
+  targetClip,
   type Corner,
   type GameTimerSession,
-  type ReferenceCueEvent,
-  type ReferencePath
+  type ReferenceAnalysis,
+  type TimerRunRange
 } from '@gt7/core';
 import type { Knex } from 'knex';
+import { badRequest, conflict } from '../http-errors.js';
 import { CaptureService } from '../captures/capture.service.js';
 import { SampleCache } from '../captures/sample-cache.js';
 import {
@@ -43,25 +46,28 @@ import {
   type ReferenceRow
 } from '../ownership/owned.js';
 import { SettingsService } from '../settings/settings.service.js';
-import { ReferenceLocks } from './reference-locks.js';
 import { KNEX } from '../storage/knex.provider.js';
+import { dropOldest } from '../drop-oldest.js';
 
 type ReferenceSource = {
   exercise: ExerciseRow;
   capture: CaptureRow;
   range: RawRange;
+  timerMs: number;
   startKind: StartKindName;
-  origin: 'demo' | 'attempt';
+  origin: ReferenceOrigin;
 };
 
 type ReferenceListRow = ReferenceRow & { attempt_count: number; active: boolean };
 
-function conflict(code: string, reason: string): ConflictException {
-  return new ConflictException({ code, reason });
-}
+export type ReferenceDeleteGate = (userId: string, referenceId: string) => Promise<void>;
 
-function badRequest(code: string, reason: string): BadRequestException {
-  return new BadRequestException({ code, reason });
+const FOREIGN_KEY_VIOLATION = '23503';
+
+export const ANALYSIS_CACHE_SIZE = 8;
+
+function isForeignKeyViolation(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as { code?: string }).code === FOREIGN_KEY_VIOLATION;
 }
 
 function referenceInfo(row: ReferenceListRow): ReferenceInfo {
@@ -81,23 +87,13 @@ function referenceInfo(row: ReferenceListRow): ReferenceInfo {
   };
 }
 
-function capitalized(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-export function spokenPhrase(event: ReferenceCueEvent, speakTargets: boolean): string {
-  const action = cueText(event.voice);
-  if (!speakTargets || event.kind !== 'brake' || event.targetSpeedKph === null) return action;
-  return `${action}. ${capitalized(speedWords(event.targetSpeedKph))}`;
-}
-
 export function cornerInfo(corner: Corner): CornerInfo {
   return {
     number: corner.number,
     turnInSM: corner.turnInSM,
     apexSM: corner.apexSM,
     radiusM: corner.radiusM,
-    apexSpeedKph: corner.apexSpeedKph
+    apexSpeedMps: corner.apexSpeedMps
   };
 }
 
@@ -111,18 +107,43 @@ export class ReferencesService {
     @Inject(KNEX) private readonly db: Knex,
     private readonly captures: CaptureService,
     private readonly settings: SettingsService,
-    private readonly samples: SampleCache,
-    private readonly locks: ReferenceLocks
+    private readonly samples: SampleCache
   ) {}
+
+  private deleteGate: ReferenceDeleteGate | null = null;
+  private readonly analyses = new Map<string, Promise<ReferenceAnalysis>>();
+
+  useDeleteGate(gate: ReferenceDeleteGate): void {
+    this.deleteGate = gate;
+  }
 
   async samplesOf(capture: CaptureRow, range?: RawRange): Promise<Sample[]> {
     return this.samples.read(capture.id, this.captures.rawPath(capture), range);
   }
 
-  async pathOf(reference: ReferenceRow): Promise<ReferencePath> {
+  analysisOf(reference: ReferenceRow): Promise<ReferenceAnalysis> {
+    const cached = this.analyses.get(reference.id);
+    if (cached) {
+      this.analyses.delete(reference.id);
+      this.analyses.set(reference.id, cached);
+      return cached;
+    }
+    const analysis = this.analyse(reference);
+    this.analyses.set(reference.id, analysis);
+    dropOldest(this.analyses, ANALYSIS_CACHE_SIZE);
+    analysis.catch(() => {
+      if (this.analyses.get(reference.id) === analysis) this.analyses.delete(reference.id);
+    });
+    return analysis;
+  }
+
+  private async analyse(reference: ReferenceRow): Promise<ReferenceAnalysis> {
     const capture = await this.db<CaptureRow>('captures').where({ id: reference.capture_id }).first();
     const samples = await this.samplesOf(capture!, { first: reference.first_raw_index, last: reference.last_raw_index });
-    return buildReference(samples, reference.start_kind);
+    const analysis = analyseReference(samples, reference.start_kind, DEFAULT_CONFIG);
+    if (reference.timer_ms !== null) return { ...analysis, timeMs: reference.timer_ms };
+    await this.db('references').where({ id: reference.id }).whereNull('timer_ms').update({ timer_ms: analysis.timeMs });
+    return analysis;
   }
 
   async proposals(userId: string, exerciseId: string, captureIds: string[]): Promise<ReferenceProposal[]> {
@@ -145,7 +166,7 @@ export class ReferencesService {
     const exercise = await ownedExercise(this.db, userId, body.exerciseId);
     const capture = await this.finishedCapture(userId, body.captureId);
     const range = await this.timerRunOf(capture, { first: body.first, last: body.last }, 'demonstration');
-    return this.store({ exercise, capture, range, startKind: body.startKind, origin: 'demo' });
+    return this.store({ exercise, capture, range, timerMs: range.gameTimeMs, startKind: body.startKind, origin: 'demo' });
   }
 
   async promote(userId: string, attemptId: string): Promise<ReferenceInfo> {
@@ -157,7 +178,7 @@ export class ReferencesService {
     const capture = await this.finishedCapture(userId, attempt.capture_id);
     const used = await this.db<ReferenceRow>('references').where({ id: attempt.reference_id }).first();
     const range = await this.timerRunOf(capture, { first: attempt.first_raw_index, last: attempt.last_raw_index }, 'player');
-    return this.store({ exercise, capture, range, startKind: used!.start_kind, origin: 'attempt' });
+    return this.store({ exercise, capture, range, timerMs: attempt.game_ms, startKind: used!.start_kind, origin: 'attempt' });
   }
 
   async history(userId: string, exerciseId: string): Promise<ReferenceInfo[]> {
@@ -173,22 +194,25 @@ export class ReferencesService {
 
   async remove(userId: string, id: string): Promise<{ ok: true }> {
     const reference = await ownedReference(this.db, userId, id);
-    const done = this.locks.deleting([reference.id]);
-    if (!done) throw conflict('reference-in-use', 'A training uses this reference. Stop the training first.');
+    await this.deleteGate?.(userId, reference.id);
+    let deleted: number;
     try {
-      const used = await this.db('attempts').where({ reference_id: reference.id }).first('id');
-      if (used) throw conflict('reference-in-use', 'Attempts point to this reference. It cannot be deleted.');
-      await this.db('references').where({ id: reference.id }).delete();
-      return { ok: true };
-    } finally {
-      done();
+      deleted = await this.db('references')
+        .where({ id: reference.id })
+        .whereNotIn('id', this.db('exercises').whereNotNull('active_reference_id').select('active_reference_id'))
+        .delete();
+    } catch (error) {
+      if (isForeignKeyViolation(error)) throw conflict('reference-in-use', 'Attempts point to this reference. It cannot be deleted.');
+      throw error;
     }
+    if (deleted === 0) throw conflict('reference-active', 'Activate another reference first.');
+    return { ok: true };
   }
 
   async check(userId: string, id: string, captureId: string): Promise<ReferenceCheckResult> {
     const reference = await ownedReference(this.db, userId, id);
     const capture = await this.finishedCapture(userId, captureId);
-    const range = matchesReference(await this.samplesOf(capture), await this.pathOf(reference));
+    const range = matchesReference(await this.samplesOf(capture), (await this.analysisOf(reference)).path);
     if (range) {
       const gameVersion = await this.settings.get('gameVersion');
       await this.db('references')
@@ -202,26 +226,33 @@ export class ReferencesService {
     const reference = await ownedReference(this.db, userId, id);
     const exercise = await ownedExercise(this.db, userId, reference.exercise_id);
     const muted = new Set(exercise.muted_cues);
-    return buildCueEvents(await this.pathOf(reference), DEFAULT_CONFIG).map(event => ({
+    return (await this.analysisOf(reference)).events.map(event => ({
       key: event.key,
       kind: event.kind,
       sM: event.sM,
       endSM: event.endSM,
       targetSpeedKph: event.targetSpeedKph,
-      phrase: spokenPhrase(event, exercise.speak_targets),
+      phrase: eventPhrase(event, exercise.speak_targets),
       voice: event.voice,
       bigStop: event.bigStop,
-      muted: muted.has(event.key)
+      muted: muted.has(event.key),
+      clip: clipKey(event.voice),
+      followClip: targetClip(event),
+      text: cueText(event.voice)
     }));
   }
 
+  async clips(userId: string, id: string): Promise<string[]> {
+    const { events, corners } = await this.analysisOf(await ownedReference(this.db, userId, id));
+    return clipsOf(events, corners);
+  }
+
   async corners(userId: string, id: string): Promise<CornerInfo[]> {
-    const path = await this.pathOf(await ownedReference(this.db, userId, id));
-    return findCorners(path, buildCueEvents(path, DEFAULT_CONFIG), DEFAULT_CONFIG).map(cornerInfo);
+    return (await this.analysisOf(await ownedReference(this.db, userId, id))).corners.map(cornerInfo);
   }
 
   async trace(userId: string, id: string): Promise<ReferenceTrace> {
-    const path = await this.pathOf(await ownedReference(this.db, userId, id));
+    const { path, timeMs } = await this.analysisOf(await ownedReference(this.db, userId, id));
     const gridM = DEFAULT_CONFIG.reviewGridM;
     const count = Math.floor(path.lengthM / gridM + 1e-9) + 1;
     const points = Array.from({ length: count }, (_, index) => pointAt(path, index * gridM));
@@ -229,10 +260,10 @@ export class ReferencesService {
     return {
       gridM,
       lengthM: path.lengthM,
-      timeMs: referenceTimeMs(path),
+      timeMs,
       x: points.map(point => round(point.position.x, 2)),
       z: points.map(point => round(point.position.z, 2)),
-      speedKph: points.map(point => round(point.speedMps * KPH_PER_MPS, 1))
+      speedMps: points.map(point => round(point.speedMps * KPH_PER_MPS, 1) / KPH_PER_MPS)
     };
   }
 
@@ -258,7 +289,8 @@ export class ReferencesService {
           last_raw_index: source.range.last,
           origin: source.origin,
           start_kind: source.startKind,
-          game_version: gameVersion
+          game_version: gameVersion,
+          timer_ms: source.timerMs
         })
         .returning<{ id: string }[]>('id');
       await trx('exercises')
@@ -269,10 +301,10 @@ export class ReferencesService {
     return this.info(id);
   }
 
-  private async timerRunOf(capture: CaptureRow, range: RawRange, session: GameTimerSession): Promise<RawRange> {
+  private async timerRunOf(capture: CaptureRow, range: RawRange, session: GameTimerSession): Promise<TimerRunRange> {
     const run = cutToTimerRun(await this.samplesOf(capture), range, session);
     if (!run) throw badRequest('no-timer-run', 'The range has no complete game timer run.');
-    return { first: run.first, last: run.last };
+    return run;
   }
 
   private async finishedCapture(userId: string, captureId: string): Promise<CaptureRow> {

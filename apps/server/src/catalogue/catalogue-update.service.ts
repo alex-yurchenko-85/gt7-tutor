@@ -1,8 +1,9 @@
 import { randomBytes } from 'node:crypto';
-import { ConflictException, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CatalogueSourceError, CatalogueValidationError, diffCatalogue, fetchCatalogue } from '@gt7/catalogue';
 import type { Catalogue, CatalogueCheckResponse, CatalogueDiff } from '@gt7/contracts';
+import { conflict } from '../http-errors.js';
 import { CatalogueService } from './catalogue.service.js';
 import { CATALOGUE_FETCH } from './catalogue.tokens.js';
 
@@ -12,10 +13,6 @@ type PendingUpdate = { next: Catalogue; diff: CatalogueDiff; base: Catalogue; ex
 
 function updateFailed(reason: string): HttpException {
   return new HttpException({ code: 'update-failed', reason }, HttpStatus.BAD_GATEWAY);
-}
-
-function conflict(code: string, reason: string): ConflictException {
-  return new ConflictException({ code, reason });
 }
 
 @Injectable()
@@ -47,7 +44,7 @@ export class CatalogueUpdateService {
     if (update.base !== this.catalogue.active) throw conflict('stale-check', 'The active catalogue changed after the check. Check for updates again.');
     await this.exclusively(async () => {
       await this.catalogue.files.save(update.next, update.base);
-      await this.catalogue.activate(update.next);
+      this.catalogue.activate(update.next);
       this.pending.delete(token);
     });
   }
@@ -57,7 +54,7 @@ export class CatalogueUpdateService {
     await this.exclusively(async () => {
       const previous = await this.catalogue.files.previous();
       await this.catalogue.files.restore(previous);
-      await this.catalogue.activate(previous);
+      this.catalogue.activate(previous);
       this.pending.clear();
     });
   }

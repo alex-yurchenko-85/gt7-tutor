@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Corner } from '../src/corners.ts';
 import { turnLosses, turnOf } from '../src/turns.ts';
+import { kph } from '../src/units.ts';
 
 function corner(number: number, zoneStartSM: number): Corner {
   return {
@@ -9,7 +10,7 @@ function corner(number: number, zoneStartSM: number): Corner {
     turnInSM: zoneStartSM + 20,
     apexSM: zoneStartSM + 40,
     radiusM: 60,
-    apexSpeedKph: 90,
+    apexSpeedMps: kph(90),
     insideSign: 1
   };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activeTimesMs, buildReference, pointAt, referenceTimeMs, ReferencePathError } from '../src/reference.ts';
+import { activeTimesMs, buildReference, pointAt, ReferencePathError } from '../src/reference.ts';
 import { interlagosReference } from './paths.ts';
 import { drive, straightLine, syntheticSample } from './synthetic.ts';
 
@@ -42,7 +42,6 @@ describe('buildReference', () => {
     expect(path.points.at(-1)!.timerMs).toBe(16082);
     const timers = path.points.map(point => point.timerMs);
     expect(timers.slice(1).every((timer, index) => timer >= timers[index]!)).toBe(true);
-    expect(referenceTimeMs(path)).toBe(16082);
   });
 
   it('point_at_interpolates_the_timer', () => {

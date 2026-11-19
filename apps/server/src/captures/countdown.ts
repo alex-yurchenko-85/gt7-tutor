@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { LiveCue } from '@gt7/contracts';
-import { COUNTDOWN_CLIPS, DEFAULT_CONFIG } from '@gt7/core';
+import { COUNTDOWN_CLIPS, DEFAULT_CONFIG, makeCue } from '@gt7/core';
 import { MONO_CLOCK, type MonoClock } from '../clock/mono-clock.js';
 import { LiveHub } from '../live/live-hub.service.js';
 
@@ -14,9 +13,6 @@ export const timerScheduler: CountdownScheduler = {
     return () => clearTimeout(timer);
   }
 };
-
-export const COUNTDOWN_TTL_MS = 800;
-export const COUNTDOWN_PRIORITY = Math.max(...Object.values(DEFAULT_CONFIG.cue.priority)) + 1;
 
 export type CountdownStep = { count: number; clip: string; atMs: number };
 
@@ -55,18 +51,10 @@ export class CountdownService {
 
   private speak(request: CountdownRequest, step: CountdownStep, generation: number): void {
     const key = `countdown-${request.captureId}-${step.count}`;
-    const cue: LiveCue = {
-      id: key,
-      eventKey: key,
-      kind: 'countdown',
-      targetSpeedKph: null,
-      clip: step.clip,
-      followClip: null,
-      generation,
-      priority: COUNTDOWN_PRIORITY,
-      decidedMonoMs: this.clock.now(),
-      ttlMs: COUNTDOWN_TTL_MS
-    };
+    const cue = makeCue(
+      { kind: 'countdown', generation, eventKey: key, clip: step.clip, followClip: null, targetSpeedKph: null, decidedMonoMs: this.clock.now(), deviceDelayMs: 0 },
+      DEFAULT_CONFIG
+    );
     this.hub.sendCue(request.userId, cue);
   }
 }

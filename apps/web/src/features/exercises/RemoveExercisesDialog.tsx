@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Exercise } from '@gt7/contracts';
+import { medalSchema, type Exercise } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { deletionErrorText } from '../../app/busy.ts';
 import { ConfirmDialog } from '../../app/ConfirmDialog.tsx';
@@ -8,7 +8,7 @@ import { formatTime } from '../../app/format.ts';
 import { counted, theirs } from '../../app/plural.ts';
 import { useSession } from '../../app/session.tsx';
 
-const MEDALS = new Set(['bronze', 'silver', 'gold']);
+const MEDALS = new Set<string>(medalSchema.options);
 
 function hasHistory(exercise: Exercise): boolean {
   return exercise.attemptCount > 0 || exercise.referenceCount > 0;

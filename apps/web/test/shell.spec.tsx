@@ -1,8 +1,13 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { Profiler } from 'react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { exercise, exerciseApi, rememberExercise } from './fixtures.ts';
-import { ApiStub, liveState, renderApp, setViewportWidth, signedIn } from './support.tsx';
+import { LiveProvider } from '../src/api/live.tsx';
+import { RouterProvider } from '../src/app/router.tsx';
+import { SessionContext } from '../src/app/session.tsx';
+import { Shell } from '../src/app/Shell.tsx';
+import { ApiStub, FakeSockets, liveState, renderApp, setViewportWidth, signedIn, USER } from './support.tsx';
 
 afterEach(() => {
   delete document.documentElement.dataset.theme;
@@ -10,6 +15,36 @@ afterEach(() => {
 });
 
 describe('shell', () => {
+  it('shell_does_not_render_on_a_speed_change', async () => {
+    setViewportWidth(1440);
+    window.history.replaceState(null, '', '/no-such-page');
+    signedIn(new ApiStub()).on('GET /api/exercises', []).on('GET /api/progress', { collections: [], exercises: [] }).install();
+    const sockets = new FakeSockets();
+    let commits = 0;
+    render(
+      <SessionContext.Provider value={{ user: USER, signOut: async () => undefined, ended: () => undefined }}>
+        <LiveProvider socketFactory={sockets.factory}>
+          <RouterProvider>
+            <Profiler id="shell" onRender={() => commits++}>
+              <Shell />
+            </Profiler>
+          </RouterProvider>
+        </LiveProvider>
+      </SessionContext.Provider>
+    );
+    await screen.findByRole('navigation', { name: 'Main' });
+    const socket = sockets.latest;
+    act(() => {
+      socket.open();
+      socket.receive({ type: 'state', state: liveState({ mode: 'driving', exerciseId: null, connection: 'connected', speedMps: 10, seq: 1 }) });
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+    const settled = commits;
+    act(() => socket.receive({ type: 'state', state: liveState({ mode: 'driving', exerciseId: null, connection: 'connected', speedMps: 40, seq: 2 }) }));
+    act(() => socket.receive({ type: 'state', state: liveState({ mode: 'driving', exerciseId: null, connection: 'connected', speedMps: 41, seq: 3 }) }));
+    expect(commits).toBe(settled);
+  });
+
   it('wide_nav_has_exercises_setup_and_drive_button', async () => {
     setViewportWidth(1440);
     rememberExercise();

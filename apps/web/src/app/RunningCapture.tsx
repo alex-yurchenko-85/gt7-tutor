@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { api } from '../api/client.ts';
-import { useLive } from '../api/live.tsx';
+import { useLiveState } from '../api/live.tsx';
 import { errorText } from './resource.ts';
 import { useRouter } from './router.tsx';
 
 export function RunningCapture() {
-  const { state } = useLive();
+  const capturing = useLiveState(({ state }) => state?.mode === 'capturing');
   const { route } = useRouter();
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  if (state?.mode !== 'capturing' || route.name === 'record') return null;
+  if (!capturing || route.name === 'record') return null;
 
   const stop = async () => {
     setBusy(true);

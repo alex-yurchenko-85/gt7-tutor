@@ -1,8 +1,9 @@
 import type { Sample } from '@gt7/contracts';
 import type { CoreConfig } from './config.ts';
-import { findCorners, type Corner } from './corners.ts';
+import type { Corner } from './corners.ts';
 import { detectEvents, type EventPoint, type ReferenceCueEvent } from './cue-events.ts';
 import { Matcher } from './match.ts';
+import type { ReferenceAnalysis } from './reference-analysis.ts';
 import { activeTimesMs, isDriven, pointAt, type ReferencePath } from './reference.ts';
 
 export type Series = {
@@ -27,7 +28,6 @@ export type Review = {
 
 type TracePoint = { sM: number; t: number; v: number; th: number; br: number; x: number; z: number; lat: number };
 
-const MAX_BRIDGE_M = 10;
 const EVENT_STEP_M = 1;
 
 function attemptTrace(samples: Sample[], path: ReferencePath, config: CoreConfig): (TracePoint | null)[] {
@@ -56,7 +56,7 @@ function mixPoints(a: TracePoint, b: TracePoint, sM: number): TracePoint {
   return { sM, t: mix(a.t, b.t), v: mix(a.v, b.v), th: mix(a.th, b.th), br: mix(a.br, b.br), x: mix(a.x, b.x), z: mix(a.z, b.z), lat: mix(a.lat, b.lat) };
 }
 
-function resample(trace: (TracePoint | null)[], stepM: number, lengthM: number, toleranceM: number): (TracePoint | null)[] {
+function resample(trace: (TracePoint | null)[], stepM: number, lengthM: number, toleranceM: number, maxBridgeM: number): (TracePoint | null)[] {
   const count = Math.floor(lengthM / stepM + 1e-9) + 1;
   const grid: (TracePoint | null)[] = Array.from({ length: count }, () => null);
   const assign = (index: number, point: TracePoint) => {
@@ -64,7 +64,7 @@ function resample(trace: (TracePoint | null)[], stepM: number, lengthM: number, 
   };
   trace.forEach((current, index) => {
     const previous = trace[index - 1];
-    if (!current || !previous || current.sM <= previous.sM || current.sM - previous.sM > MAX_BRIDGE_M) return;
+    if (!current || !previous || current.sM <= previous.sM || current.sM - previous.sM > maxBridgeM) return;
     for (let cell = Math.ceil(previous.sM / stepM); cell * stepM <= current.sM; cell++) {
       assign(cell, mixPoints(previous, current, cell * stepM));
     }
@@ -117,19 +117,19 @@ function contiguousRuns(points: (TracePoint | null)[]): EventPoint[][] {
   return runs;
 }
 
-export function buildReview(attempt: Sample[], path: ReferencePath, config: CoreConfig): Review {
+export function buildReview(attempt: Sample[], reference: ReferenceAnalysis, config: CoreConfig): Review {
+  const { path } = reference;
   const trace = attemptTrace(attempt, path, config);
   const tolerance = config.match.sectionEndToleranceM;
-  const grid = resample(trace, config.reviewGridM, path.lengthM, tolerance);
-  const detail = resample(trace, EVENT_STEP_M, path.lengthM, tolerance);
-  const referenceEvents = detectEvents(path.points, path.lengthM, config);
+  const grid = resample(trace, config.reviewGridM, path.lengthM, tolerance, config.reviewMaxBridgeM);
+  const detail = resample(trace, EVENT_STEP_M, path.lengthM, tolerance, config.reviewMaxBridgeM);
   return {
     gridM: config.reviewGridM,
     lengthM: path.lengthM,
     reference: referenceSeries(path, config.reviewGridM),
     attempt: toSeries(grid),
-    referenceEvents,
+    referenceEvents: reference.events,
     attemptEvents: contiguousRuns(detail).flatMap(run => detectEvents(run, path.lengthM, config)),
-    corners: findCorners(path, referenceEvents, config)
+    corners: reference.corners
   };
 }

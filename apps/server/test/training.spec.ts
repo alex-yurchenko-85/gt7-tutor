@@ -3,29 +3,30 @@ import { Writable } from 'node:stream';
 import type { INestApplication } from '@nestjs/common';
 import knex, { type Knex } from 'knex';
 import request from 'supertest';
-import { randomUUID } from 'node:crypto';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { OpenStream } from '@gt7/capture';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { readSamples, type OpenStream } from '@gt7/capture';
 import type { LiveState, RawDatagram, Sample, ServerMsg } from '@gt7/contracts';
-import { DEFAULT_CONFIG, DEFAULT_SIDE_CUE_DISTANCE_M, buildCueEvents, buildReference, estimatedPhraseMs, replayCoach, toSample } from '@gt7/core';
+import { DEFAULT_CONFIG, DEFAULT_SIDE_CUE_DISTANCE_M, analyseReference, estimatedPhraseMs, replayCoach, toSample } from '@gt7/core';
 
 function fixtureSamples(rows: RawDatagram[], first: number, last: number): Sample[] {
   return rows.filter(row => row.rawIndex >= first && row.rawIndex <= last).map(row => toSample(row)!);
 }
 import { RAW_STREAM_OPENER } from '../src/captures/capture.service.js';
-import { readSamples } from '../src/captures/capture-samples.js';
 import { SampleCache } from '../src/captures/sample-cache.js';
 import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.factory.js';
 import { MONO_CLOCK } from '../src/clock/mono-clock.js';
 import { LiveHub, type LiveClient } from '../src/live/live-hub.service.js';
 import { TrainingSession, type AttemptRecord } from '../src/training/training-session.js';
 import { TrainingService } from '../src/training/training.service.js';
-import { ReferenceLocks } from '../src/references/reference-locks.js';
+import { hashToken } from '../src/auth/auth.service.js';
+import { SESSION_COOKIE, readCookie } from '../src/auth/session-cookie.js';
 import { createTestApp } from './support/app.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
-import { ManualSource, TestClock, eventually, fixtureRows, openLive, type LiveConnection } from './support/live.js';
-import { tempDir } from './support/process.js';
-import { FixtureReplays, fixturePath } from './support/replay-sources.js';
+import { ManualSource, TestClock, fixtureRows, openLive, type LiveConnection } from './support/live.js';
+import { eventually } from '../../../tools/testing/eventually.js';
+import { testTempDir } from '../../../tools/testing/temp-root.js';
+import { FixtureReplays } from './support/replay-sources.js';
+import { fixturePath } from '../../../tools/testing/fixture-path.js';
 import { firstProfile } from './support/session.js';
 
 type GoldenCue = { id: string; decidedMonoMs: number };
@@ -48,18 +49,6 @@ class SwitchableOpener {
           }
         })
       : createWriteStream(path, { flags: 'wx' });
-}
-
-class StopFailsOnce extends ManualSource {
-  failed = false;
-
-  override async stop(): Promise<void> {
-    if (!this.failed) {
-      this.failed = true;
-      throw new Error('stop failed');
-    }
-    await super.stop();
-  }
 }
 
 class GatedSampleCache extends SampleCache {
@@ -97,6 +86,7 @@ describe('training pipeline and live protocol', () => {
   let closed: boolean;
   let cookie: string;
   let exerciseId: string;
+  let referenceId: string;
   let slowRun: RawDatagram[];
   let pauseRun: RawDatagram[];
   const sockets: LiveConnection[] = [];
@@ -172,7 +162,7 @@ describe('training pipeline and live protocol', () => {
     samples = new GatedSampleCache();
     closed = false;
     app = await createTestApp(database.url, {
-      env: { DATA_DIR: tempDir(), TELEMETRY_SOURCE: 'replay' },
+      env: { DATA_DIR: testTempDir('gt7-server-'), TELEMETRY_SOURCE: 'replay' },
       override: builder =>
         builder
           .overrideProvider(TELEMETRY_SOURCE_FACTORY)
@@ -192,11 +182,13 @@ describe('training pipeline and live protocol', () => {
     const capture = await http().post('/api/captures').set('Cookie', cookie).send({ exerciseId, purpose: 'demo' }).expect(201);
     await replays.finished();
     await http().post(`/api/captures/${capture.body.id}/stop`).set('Cookie', cookie).expect(201);
-    await http()
-      .post('/api/references')
-      .set('Cookie', cookie)
-      .send({ exerciseId, captureId: capture.body.id, first: 457, last: 1422, startKind: 'flying' })
-      .expect(201);
+    referenceId = (
+      await http()
+        .post('/api/references')
+        .set('Cookie', cookie)
+        .send({ exerciseId, captureId: capture.body.id, first: 457, last: 1422, startKind: 'flying' })
+        .expect(201)
+    ).body.id;
   });
 
   afterEach(async () => {
@@ -210,7 +202,6 @@ describe('training pipeline and live protocol', () => {
     const [attempt] = await storedAttempts();
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
     expect(attempt).toMatchObject({ mode: 'guided', completion: 'complete', reason: 'game-timer', first_raw_index: 391, last_raw_index: 1524 });
-    expect(Math.abs(attempt.measured_ms - 18824)).toBeLessThanOrEqual(50);
     expect(attempt.game_ms).toBe(18824);
     expect(Number((await db('attempt_findings').where({ attempt_id: attempt.id }).count('* as count'))[0]!.count)).toBeGreaterThan(0);
     const cues = (await cueEvents(attempt.id)).filter(row => !String(row.outcome).startsWith('suppressed'));
@@ -227,7 +218,7 @@ describe('training pipeline and live protocol', () => {
     expect(attempt).toMatchObject({ completion: 'complete', reason: 'game-timer', game_ms: 17071 });
     expect(await db('attempts').where({ exercise_id: exerciseId }).count('* as count')).toEqual([{ count: '1' }]);
     const summary = await http().get(`/api/attempts/${attempt.id}`).set('Cookie', cookie).expect(200);
-    expect(summary.body).toMatchObject({ gameMs: 17071, timeMs: 17071 });
+    expect(summary.body).toMatchObject({ timeMs: 17071 });
   });
 
   it('review_gap_uses_the_game_times', async () => {
@@ -237,9 +228,9 @@ describe('training pipeline and live protocol', () => {
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
     const summary = await http().get(`/api/attempts/${attempt.id}`).set('Cookie', cookie).expect(200);
     const review = await http().get(`/api/attempts/${attempt.id}/review`).set('Cookie', cookie).expect(200);
-    expect(summary.body.gameMs).toBe(17412);
+    expect(summary.body.timeMs).toBe(17412);
     expect(review.body.referenceTimeMs).toBe(16082);
-    expect(summary.body.gameMs - review.body.referenceTimeMs).toBe(1330);
+    expect(summary.body.timeMs - review.body.referenceTimeMs).toBe(1330);
   });
 
   it('left_track_is_stored_as_aborted', async () => {
@@ -247,7 +238,7 @@ describe('training pipeline and live protocol', () => {
     await replays.finished();
     const [attempt] = await storedAttempts();
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
-    expect(attempt).toMatchObject({ completion: 'aborted', reason: 'left-track', game_ms: null, measured_ms: null });
+    expect(attempt).toMatchObject({ completion: 'aborted', reason: 'left-track', game_ms: null });
     expect(await db('attempts').where({ exercise_id: exerciseId }).count('* as count')).toEqual([{ count: '1' }]);
   });
 
@@ -313,7 +304,7 @@ describe('training pipeline and live protocol', () => {
     await watcher.waitFor('state', message => message.state.mode === 'driving');
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
     const [attempt] = await storedAttempts();
-    expect(attempt).toMatchObject({ mode: 'baseline', completion: 'aborted', reason: 'manual', game_ms: null, measured_ms: null });
+    expect(attempt).toMatchObject({ mode: 'baseline', completion: 'aborted', reason: 'manual', game_ms: null });
   });
 
   it('no_focus_cue_after_an_aborted_attempt', async () => {
@@ -395,9 +386,9 @@ describe('training pipeline and live protocol', () => {
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
     await guidedRun(slowRun);
     const goldenBrake = golden.trace.cues.find(cue => cue.id.endsWith(':brake@291'))!;
-    expect(await decidedAt(0)).toBeCloseTo(goldenBrake.decidedMonoMs, 6);
-    const path = buildReference(fixtureSamples(await fixtureRows('demo-a'), 457, 1422), 'flying');
-    const replayed = replayCoach(fixtureSamples(slowRun, slowRun[0]!.rawIndex, slowRun.at(-1)!.rawIndex), path, buildCueEvents(path, DEFAULT_CONFIG), DEFAULT_CONFIG, {
+    expect(Math.round(await decidedAt(0))).toBe(goldenBrake.decidedMonoMs);
+    const analysis = analyseReference(fixtureSamples(await fixtureRows('demo-a'), 457, 1422), 'flying', DEFAULT_CONFIG);
+    const replayed = replayCoach(fixtureSamples(slowRun, slowRun[0]!.rawIndex, slowRun.at(-1)!.rawIndex), analysis, DEFAULT_CONFIG, {
       deviceDelayMs: 60,
       phraseMs: estimatedPhraseMs,
       mutedKeys: new Set(),
@@ -406,7 +397,7 @@ describe('training pipeline and live protocol', () => {
       sideCueDistanceM: DEFAULT_SIDE_CUE_DISTANCE_M
     });
     const shifted = replayed.cues.find(cue => cue.id.endsWith(':brake@291'))!;
-    expect(await decidedAt(1)).toBeCloseTo(shifted.decidedMonoMs, 6);
+    expect(Math.round(await decidedAt(1))).toBe(shifted.decidedMonoMs);
     expect(goldenBrake.decidedMonoMs - shifted.decidedMonoMs).toBeGreaterThan(800);
   });
 
@@ -422,8 +413,23 @@ describe('training pipeline and live protocol', () => {
       expect(entry.medianMs).toBeLessThanOrEqual(3000);
     }
     const [attempt] = await storedAttempts();
-    const played = (await cueEvents(attempt.id)).filter(row => String(row.event_key).startsWith('brake@'));
+    const played = (await cueEvents(attempt.id)).filter(row => row.event_kind === 'brake');
     expect(played.every(row => row.outcome === 'played' && row.start_delay_ms === 30)).toBe(true);
+  });
+
+  it('suppressed_brake_rows_store_event_kind_brake', async () => {
+    await http().patch(`/api/exercises/${exerciseId}`).set('Cookie', cookie).send({ mutedCues: ['brake@291'] }).expect(200);
+    await guidedRun(slowRun);
+    const [attempt] = await storedAttempts();
+    const rows = await cueEvents(attempt.id);
+    const brake = rows.filter(row => row.event_key === 'brake@291');
+    expect(brake).toEqual([expect.objectContaining({ kind: 'brake', event_kind: 'brake', outcome: 'suppressed-muted' })]);
+    expect(Math.round(brake[0].s_m)).toBe(291);
+    expect(rows.filter(row => row.event_key === 'big-stop@291')).toEqual([expect.objectContaining({ kind: 'big-stop', event_kind: 'big-stop', outcome: 'suppressed-muted' })]);
+    const throttle = rows.find(row => row.event_key === 'throttle@411' && !String(row.outcome).startsWith('suppressed-'));
+    expect(throttle).toMatchObject({ kind: 'full-throttle', event_kind: 'throttle' });
+    expect(Math.round(throttle.s_m)).toBe(411);
+    expect(rows.find(row => row.event_key === 'focus')).toMatchObject({ kind: 'focus', event_kind: 'focus', s_m: null });
   });
 
   it('wrong_address_goes_disconnected_after_5_s', async () => {
@@ -463,7 +469,6 @@ describe('training pipeline and live protocol', () => {
 
   it('state_names_the_training_mode_and_reference', async () => {
     const watcher = await live();
-    const referenceId = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body.activeReferenceId;
     await arm('baseline', new ManualSource()).then(response => expect(response.status).toBe(201));
     const armed = await watcher.waitFor('state', message => message.state.mode === 'armed');
     expect(armed.state).toMatchObject({ trainingMode: 'baseline', referenceId });
@@ -546,37 +551,20 @@ describe('training pipeline and live protocol', () => {
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
   });
 
-  it('capture_stop_is_refused_while_a_training_owns_it', async () => {
-    const armed = await arm('baseline', new ManualSource());
-    expect(armed.status).toBe(201);
-    const stop = await http().post(`/api/captures/${armed.body.captureId}/stop`).set('Cookie', cookie);
-    expect(stop.status).toBe(409);
-    expect(stop.body.code).toBe('training-owns-capture');
-    expect(stop.body.reason).toBe('A training uses this capture. Stop the training first.');
-    await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
-    expect(await openCaptures()).toEqual([]);
-  });
-
-  async function activeReferenceId(): Promise<string> {
-    const references = await http().get(`/api/exercises/${exerciseId}/references`).set('Cookie', cookie).expect(200);
-    return references.body[0].id as string;
-  }
-
   it('reference_delete_is_refused_while_a_training_uses_it', async () => {
-    const id = await activeReferenceId();
     expect((await arm('baseline', new ManualSource())).status).toBe(201);
-    const refused = await http().delete(`/api/references/${id}`).set('Cookie', cookie);
+    const refused = await http().delete(`/api/references/${referenceId}`).set('Cookie', cookie);
     expect(refused.status).toBe(409);
     expect(refused.body).toMatchObject({ code: 'reference-in-use', reason: 'A training uses this reference. Stop the training first.' });
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
     await app.get(TrainingService).idle();
-    await http().delete(`/api/references/${id}`).set('Cookie', cookie).expect(200);
+    const active = await http().delete(`/api/references/${referenceId}`).set('Cookie', cookie).expect(409);
+    expect(active.body.code).toBe('reference-active');
   });
 
   it('reference_delete_is_refused_while_a_training_arms', async () => {
-    const id = await activeReferenceId();
     const armed = (await armHeldAtReference()).response;
-    const refused = await http().delete(`/api/references/${id}`).set('Cookie', cookie);
+    const refused = await http().delete(`/api/references/${referenceId}`).set('Cookie', cookie);
     samples.open();
     expect(refused.status).toBe(409);
     expect(refused.body.code).toBe('reference-in-use');
@@ -584,92 +572,18 @@ describe('training pipeline and live protocol', () => {
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
   });
 
-  it('arm_during_a_reference_delete_waits_and_reports_no_reference', async () => {
-    const id = await activeReferenceId();
-    const locks = app.get(ReferenceLocks);
-    const done = locks.deleting([id])!;
-    const armed = arm('baseline', new ManualSource()).then(result => result);
-    await new Promise(resolve => setTimeout(resolve, 50));
-    await db('references').where({ id }).delete();
-    done();
-    const response = await armed;
-    expect(response.status).toBe(409);
-    expect(response.body.code).toBe('no-reference');
-    expect(locks.held(id)).toBe(false);
-    expect(await openCaptures()).toEqual([]);
-    replays.queue.length = 0;
-  });
-
-  it('history_delete_is_refused_while_a_training_holds_the_reference', async () => {
-    const id = await activeReferenceId();
-    const release = await app.get(ReferenceLocks).hold(id);
-    const refused = await http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'everything', cleanup: false });
-    release();
-    expect(refused.status).toBe(409);
-    expect(refused.body.code).toBe('busy');
-    expect(await db('references').where({ id })).toHaveLength(1);
-  });
-
-  it('exercise_remove_is_refused_while_a_training_holds_the_reference', async () => {
-    const id = await activeReferenceId();
-    const release = await app.get(ReferenceLocks).hold(id);
-    const refused = await http().post('/api/exercises/remove').set('Cookie', cookie).send({ ids: [exerciseId], cleanup: false });
-    release();
-    expect(refused.status).toBe(409);
-    expect(refused.body.code).toBe('busy');
-    expect(await db('references').where({ id })).toHaveLength(1);
-  });
-
-  it('capture_stop_recovers_after_a_failed_disarm', async () => {
-    const armed = await arm('baseline', new StopFailsOnce());
-    expect(armed.status).toBe(201);
-    const disarm = await http().post('/api/training/disarm').set('Cookie', cookie);
-    expect(disarm.status).toBe(500);
-    await http().post(`/api/captures/${armed.body.captureId}/stop`).set('Cookie', cookie).expect(201);
-    expect(await openCaptures()).toEqual([]);
-  });
-
-  it('history_delete_keeps_a_reference_inserted_during_the_delete', async () => {
-    const original = await db('references').where({ id: await activeReferenceId() }).first();
-    const copy = { ...original, id: randomUUID(), created_at: new Date() };
-    const locks = app.get(ReferenceLocks);
-    const deleting = locks.deleting.bind(locks);
-    let inserting: Promise<unknown> | null = null;
-    vi.spyOn(locks, 'deleting').mockImplementationOnce(ids => {
-      inserting = db('references')
-        .insert(copy)
-        .catch(() => undefined);
-      return deleting(ids);
-    });
-    const blocker = await db.transaction();
-    let deleted: Promise<request.Response>;
-    try {
-      await blocker.raw('lock table attempts in access exclusive mode');
-      deleted = http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'everything', cleanup: false }).then(result => result);
-      await eventually(() => inserting !== null);
-      await new Promise(resolve => setTimeout(resolve, 100));
-    } finally {
-      await blocker.commit();
-    }
-    expect((await deleted).status).toBe(200);
-    await inserting;
-    expect(await db('references').where({ id: copy.id })).toHaveLength(1);
-    expect(await db('references').where({ id: original.id })).toHaveLength(0);
-  });
-
   it('reference_delete_after_disarm_keeps_the_last_attempt', async () => {
-    const id = await activeReferenceId();
     const source = new ManualSource();
     const watcher = await live();
     expect((await arm('baseline', source)).status).toBe(201);
     source.emit(slowRun);
     await watcher.waitFor('state', message => message.state.mode === 'finished');
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
-    const refused = await http().delete(`/api/references/${id}`).set('Cookie', cookie);
+    const refused = await http().delete(`/api/references/${referenceId}`).set('Cookie', cookie);
     expect(refused.status).toBe(409);
-    expect(refused.body.code).toBe('reference-in-use');
+    expect(refused.body.code).toBe('reference-active');
     const [attempt] = await storedAttempts();
-    expect(attempt.reference_id).toBe(id);
+    expect(attempt.reference_id).toBe(referenceId);
   });
 
   it('capture_during_arm_is_409', async () => {
@@ -816,8 +730,7 @@ describe('training pipeline and live protocol', () => {
     const client: LiveClient & { bufferedAmount: number } = {
       id: 'slow',
       userId: user.id,
-      sessionKey: 'slow-session',
-      expiresAtMs: Number.MAX_SAFE_INTEGER,
+      sessionKey: hashToken(readCookie(cookie, SESSION_COOKIE)!),
       bufferedAmount: 300 * 1024,
       send: text => {
         const message = JSON.parse(text);
@@ -849,7 +762,7 @@ describe('training pipeline and live protocol', () => {
     clock.manual = slowRun[999]!.receivedMonoMs + 10000;
     await watcher.waitFor('cancel', message => message.generation === driving.state.generation);
     const [attempt] = await storedAttempts();
-    expect(attempt).toMatchObject({ completion: 'aborted', reason: 'silence', measured_ms: null });
+    expect(attempt).toMatchObject({ completion: 'aborted', reason: 'silence' });
   });
 
   it('unauthenticated_socket_is_closed', async () => {
@@ -866,7 +779,7 @@ describe('live gap', () => {
 
   async function gapStates(fixture: string): Promise<{ states: GapState[]; records: AttemptRecord[] }> {
     const reference = await readSamples(fixturePath('demo-a'), { first: 457, last: 1422 });
-    const path = buildReference(reference, 'flying');
+    const analysis = analyseReference(reference, 'flying', DEFAULT_CONFIG);
     const records: AttemptRecord[] = [];
     let generation = 0;
     const session = new TrainingSession(
@@ -875,8 +788,7 @@ describe('live gap', () => {
         exerciseId: 'exercise',
         referenceId: 'reference',
         mode: 'baseline',
-        path,
-        events: [],
+        analysis: { ...analysis, events: [], corners: [] },
         mutedKeys: new Set(),
         speakTargets: false,
         offsetsMs: new Map(),

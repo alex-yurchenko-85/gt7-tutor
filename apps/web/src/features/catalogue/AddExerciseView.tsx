@@ -115,7 +115,7 @@ function OwnExercise() {
       return;
     }
     try {
-      open((await api.createExercise({ family: family.trim(), name: name.trim(), conditions: {} })).id);
+      open((await api.createExercise({ family: family.trim(), name: name.trim() })).id);
     } catch (error) {
       setProblem(errorText(error));
     }

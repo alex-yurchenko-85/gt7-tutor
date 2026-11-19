@@ -1,5 +1,5 @@
 import { salsa20 } from '@noble/ciphers/salsa.js';
-import type { PacketExtension, RawDatagram, Sample, Vec3 } from '@gt7/contracts';
+import type { RawDatagram, Sample, Vec3 } from '@gt7/contracts';
 
 export type DecodedSample = Omit<Sample, 'rawIndex' | 'receivedMonoMs'>;
 
@@ -25,10 +25,6 @@ const Offset = {
   throttle: 0x91,
   brake: 0x92,
   carId: 0x124,
-  wheelRotation: 0x128,
-  sway: 0x130,
-  heave: 0x134,
-  surge: 0x138,
   gameTimer: 0x15c
 } as const;
 
@@ -67,15 +63,6 @@ function isFiniteVec3(v: Vec3): boolean {
   return Number.isFinite(v.x) && Number.isFinite(v.y) && Number.isFinite(v.z);
 }
 
-function readExtension(view: DataView): PacketExtension {
-  return {
-    wheelRotationRad: view.getFloat32(Offset.wheelRotation, true),
-    sway: view.getFloat32(Offset.sway, true),
-    heave: view.getFloat32(Offset.heave, true),
-    surge: view.getFloat32(Offset.surge, true)
-  };
-}
-
 function readFields(plain: Uint8Array): DecodedSample {
   const view = new DataView(plain.buffer, plain.byteOffset, plain.byteLength);
   const flags = view.getUint16(Offset.flags, true);
@@ -93,8 +80,7 @@ function readFields(plain: Uint8Array): DecodedSample {
     playerSession: (flags & Flag.playerSession) !== 0,
     paused: (flags & Flag.paused) !== 0,
     loading: (flags & Flag.loading) !== 0,
-    gameTimerMs: view.getInt32(Offset.gameTimer, true),
-    extension: readExtension(view)
+    gameTimerMs: view.getInt32(Offset.gameTimer, true)
   };
 }
 

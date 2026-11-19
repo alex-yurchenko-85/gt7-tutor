@@ -1,23 +1,6 @@
 import type { LiveState } from '@gt7/contracts';
 import type { SetupSection } from '../../app/router.tsx';
-import type { Status } from '../../app/status.ts';
-
-export type ConsoleState = 'recorded-data' | 'no-address' | 'receiving' | 'address-saved';
-
-export type VoiceState = 'none' | 'elsewhere' | 'here' | 'here-not-ready';
-
-export function consoleState(ps5Ip: string | null | undefined, state: LiveState | null, connected: boolean, recordedData: boolean): ConsoleState {
-  if (recordedData) return 'recorded-data';
-  if (ps5Ip === null) return 'no-address';
-  if (connected && state?.connection === 'connected') return 'receiving';
-  return 'address-saved';
-}
-
-export function voiceState(state: LiveState | null, deviceId: string): VoiceState {
-  if (!state || state.voiceDeviceId === null) return 'none';
-  if (state.voiceDeviceId !== deviceId) return 'elsewhere';
-  return state.voiceReady ? 'here' : 'here-not-ready';
-}
+import { consoleState, voiceState, type ConsoleState, type Status, type VoiceState } from '../../app/status.ts';
 
 const CONSOLE_READINESS: Record<ConsoleState, Status> = {
   'recorded-data': { tone: 'on', text: 'Console: recorded data' },

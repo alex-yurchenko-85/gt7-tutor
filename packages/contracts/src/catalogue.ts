@@ -85,17 +85,6 @@ export type ExerciseStatusName = z.infer<typeof exerciseStatusSchema>;
 
 export type CatalogueListEntry = CatalogueEntry & { exerciseId: string | null; status: ExerciseStatusName | null };
 
-const optionalFilter = z.string().trim().min(1).max(200).optional();
-
-export const catalogueQuerySchema = z.object({
-  family: optionalFilter,
-  collection: optionalFilter,
-  track: optionalFilter,
-  q: optionalFilter
-});
-
-export type CatalogueQuery = z.infer<typeof catalogueQuerySchema>;
-
 export type CatalogueSource = { name: string; licence: string; url: string };
 
 export type CatalogueInfo = {

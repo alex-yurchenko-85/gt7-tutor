@@ -81,6 +81,13 @@ describe('pnpm setup:local', () => {
     expect(runner.lines.at(-1)).toContain('Step 5 of 7 failed: starting the database');
   });
 
+  it('failed_migration_points_to_db_reset', async () => {
+    const runner = new FakeRunner();
+    runner.failing = 'pnpm db:migrate';
+    expect(await setupLocal(runner, { demo: false })).toBe(1);
+    expect(runner.lines.join('\n')).toContain('A database made before 19 Nov 2026 cannot be migrated. Only for such a database, run "pnpm db:reset" to create it again. This removes its data.');
+  });
+
   it('demo_option_ends_with_pnpm_demo', async () => {
     const runner = new FakeRunner();
     expect(await setupLocal(runner, { demo: true })).toBe(0);

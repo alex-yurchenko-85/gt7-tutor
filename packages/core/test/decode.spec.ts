@@ -94,19 +94,7 @@ describe('decode', () => {
     expect(toSample({ ...cleanRun[0]!, payloadBase64: '!!not base64!!' })).toBeNull();
   });
 
-  describe('format C extension', () => {
-    const b3Row = () => readFixture('b3-run').find(row => row.rawIndex === 5492)!;
-
-    it('decodes_the_wheel_and_motion_fields', () => {
-      const plain = decryptPayload(payloadOf(b3Row()))!;
-      const view = new DataView(plain.buffer, plain.byteOffset, plain.byteLength);
-      const sample = toSample(b3Row())!;
-      expect(sample.extension!.wheelRotationRad).toBe(view.getFloat32(0x128, true));
-      expect(sample.extension!.sway).toBe(view.getFloat32(0x130, true));
-      expect(sample.extension!.heave).toBe(view.getFloat32(0x134, true));
-      expect(sample.extension!.surge).toBe(view.getFloat32(0x138, true));
-    });
-
+  describe('other formats', () => {
     it('formats_b_and_tilde_are_refused', () => {
       for (const length of [316, 344]) expect(decode(new Uint8Array(length)), String(length)).toEqual({ ok: false, reason: 'unsupported-format' });
     });

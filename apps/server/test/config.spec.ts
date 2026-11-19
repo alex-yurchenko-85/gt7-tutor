@@ -13,9 +13,9 @@ describe('AppConfig', () => {
       TELEMETRY_SOURCE: 'udp',
       DEV_REPLAY: false,
       DEMO_MODE: false,
-      CATALOGUE_DIR: fileURLToPath(new URL('../../../catalogue', import.meta.url)),
+      CATALOGUE_DIR: fileURLToPath(new URL('../../../content/catalogue', import.meta.url)),
       CATALOGUE_TIMEOUT_MS: 30000,
-      AUDIO_DIR: fileURLToPath(new URL('../../../audio', import.meta.url)),
+      AUDIO_DIR: fileURLToPath(new URL('../../../content/audio', import.meta.url)),
       FIXTURES_DIR: fileURLToPath(new URL('../../../fixtures', import.meta.url)),
       WEB_DIR: fileURLToPath(new URL('../../web/dist', import.meta.url))
     });

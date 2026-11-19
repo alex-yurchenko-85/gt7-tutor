@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLive } from '../../api/live.tsx';
+import { useLiveConnection, useLiveState } from '../../api/live.tsx';
 import { errorText } from '../../app/resource.ts';
 import { StatusDot } from '../../app/Shell.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
@@ -12,7 +12,8 @@ function signed(ms: number): string {
 }
 
 export function VoiceSection() {
-  const { state, player, deviceId } = useLive();
+  const { player, deviceId } = useLiveConnection();
+  const { state } = useLiveState(snapshot => snapshot);
   const voice = useVoiceClaim();
   const [message, setMessage] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);

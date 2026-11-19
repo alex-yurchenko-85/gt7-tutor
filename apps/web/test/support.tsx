@@ -208,7 +208,7 @@ export function liveState(overrides: Partial<LiveState> = {}): LiveState {
     recordingComplete: true,
     storageError: null,
     sM: null,
-    speedKph: null,
+    speedMps: null,
     lastCue: null,
     nextCue: null,
     lastAttemptId: null,

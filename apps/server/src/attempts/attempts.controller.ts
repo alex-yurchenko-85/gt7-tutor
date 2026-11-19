@@ -1,14 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import {
   type BrakeReactionSummary,
   reviewQuerySchema,
-  updateAttemptSchema,
   type AttemptList,
   type AttemptReview,
   type AttemptSummary,
   type ProfileUser,
-  type ReviewQuery,
-  type UpdateAttemptRequest
+  type ReviewQuery
 } from '@gt7/contracts';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { AttemptsService } from './attempts.service.js';
@@ -30,15 +28,6 @@ export class AttemptsController {
   @Get('attempts/:id')
   get(@CurrentUser() user: ProfileUser, @Param('id', ParseUUIDPipe) id: string): Promise<AttemptSummary> {
     return this.attempts.get(user.id, id);
-  }
-
-  @Patch('attempts/:id')
-  update(
-    @CurrentUser() user: ProfileUser,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body({ schema: updateAttemptSchema }) body: UpdateAttemptRequest
-  ): Promise<AttemptSummary> {
-    return this.attempts.update(user.id, id, body);
   }
 
   @Get('attempts/:id/review')

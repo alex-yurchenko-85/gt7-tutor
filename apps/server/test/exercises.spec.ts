@@ -4,16 +4,18 @@ import type { INestApplication } from '@nestjs/common';
 import knex, { type Knex } from 'knex';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { readRaw } from '@gt7/capture';
-import { DEFAULT_SIDE_CUE_DISTANCE_M } from '@gt7/core';
-import type { RawDatagram } from '@gt7/contracts';
+import { readRaw, readSamples } from '@gt7/capture';
+import { DEFAULT_SIDE_CUE_DISTANCE_M, cutToTimerRun } from '@gt7/core';
+import { KPH_PER_MPS, type RawDatagram } from '@gt7/contracts';
 import { COUNTDOWN_SCHEDULER, type CountdownScheduler } from '../src/captures/countdown.js';
 import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.factory.js';
+import { KNEX } from '../src/storage/knex.provider.js';
 import { createTestApp } from './support/app.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
 import { openLive, type LiveConnection } from './support/live.js';
-import { tempDir } from './support/process.js';
-import { FixtureReplays, fixturePath } from './support/replay-sources.js';
+import { testTempDir } from '../../../tools/testing/temp-root.js';
+import { FixtureReplays } from './support/replay-sources.js';
+import { fixturePath } from '../../../tools/testing/fixture-path.js';
 import { anotherProfile, firstProfile } from './support/session.js';
 
 type Scheduled = { ms: number; run: () => void; cancelled: boolean };
@@ -120,12 +122,16 @@ describe('exercises, captures and references', () => {
         last_raw_index: range.last,
         mode: 'baseline',
         completion,
-        measured_ms: completion === 'complete' ? 17100 : null,
         game_ms: completion === 'complete' ? 17071 : null,
         started_at: new Date()
       })
       .returning('id');
     return row.id as string;
+  }
+
+  async function storedCapture(id: string): Promise<{ body: Record<string, unknown> }> {
+    const listed = await http().get('/api/captures').set('Cookie', cookie).expect(200);
+    return { body: listed.body.find((entry: { id: string }) => entry.id === id) };
   }
 
   async function rawPathOf(captureId: string): Promise<string> {
@@ -144,7 +150,7 @@ describe('exercises, captures and references', () => {
 
   beforeEach(async () => {
     await db.raw('truncate table users, sessions, settings cascade');
-    dataDir = tempDir();
+    dataDir = testTempDir('gt7-server-');
     replays = new FixtureReplays();
     await start();
     cookie = await firstProfile(app!);
@@ -159,22 +165,23 @@ describe('exercises, captures and references', () => {
   it('exercise_from_catalogue_copies_targets_and_car', async () => {
     const interlagos = await http().get(`/api/exercises/${await exercise()}`).set('Cookie', cookie).expect(200);
     expect(interlagos.body).toMatchObject({ family: 'Circuit Experience', carId: 1905, targets: {}, status: 'new', step: 1, mutedCues: [], activeReferenceId: null });
-    const targets = await http().patch(`/api/exercises/${interlagos.body.id}`).set('Cookie', cookie).send({ targets: INTERLAGOS_TARGETS }).expect(200);
+    await db('exercises').where({ id: interlagos.body.id }).update({ targets: JSON.stringify(INTERLAGOS_TARGETS) });
+    const targets = await http().get(`/api/exercises/${interlagos.body.id}`).set('Cookie', cookie).expect(200);
     expect(targets.body.targets).toEqual(INTERLAGOS_TARGETS);
     const licence = await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'licence-b-1' }).expect(201);
     expect(licence.body.targets).toEqual({ bronzeMs: 22800, silverMs: 21400, goldMs: 20800 });
     const own = await http()
       .post('/api/exercises')
       .set('Cookie', cookie)
-      .send({ family: 'Time Trial', name: 'Tsukuba lap', conditions: { weather: 'dry' } })
+      .send({ family: 'Time Trial', name: 'Tsukuba lap' })
       .expect(201);
-    expect(own.body).toMatchObject({ catalogueId: null, conditions: { weather: 'dry' }, targets: {}, carId: null });
+    expect(own.body).toMatchObject({ catalogueId: null, targets: {}, carId: null });
     const patched = await http()
       .patch(`/api/exercises/${own.body.id}`)
       .set('Cookie', cookie)
-      .send({ targets: { goldMs: 60000 }, mutedCues: ['brake@332'] })
+      .send({ mutedCues: ['brake@332'] })
       .expect(200);
-    expect(patched.body).toMatchObject({ targets: { goldMs: 60000 }, mutedCues: ['brake@332'] });
+    expect(patched.body).toMatchObject({ mutedCues: ['brake@332'] });
     await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'no-such-entry' }).expect(404);
     const listed = await http().get('/api/exercises').set('Cookie', cookie).expect(200);
     expect(listed.body).toHaveLength(3);
@@ -182,7 +189,7 @@ describe('exercises, captures and references', () => {
 
   it('capture_from_replay_is_stored_and_complete', async () => {
     const captureId = await capture(await exercise(), 'ce-clean', 'player');
-    const stored = await http().get(`/api/captures/${captureId}`).set('Cookie', cookie).expect(200);
+    const stored = await storedCapture(captureId);
     expect(stored.body).toMatchObject({ purpose: 'player', complete: true, packets: 1631, errorReason: null, active: false });
     expect(stored.body.endedAt).toEqual(expect.any(String));
     const written = await rows(await rawPathOf(captureId));
@@ -231,7 +238,7 @@ describe('exercises, captures and references', () => {
       .insert({ user_id: user.id, exercise_id: exerciseId, purpose: 'demo', raw_path: 'raw/interrupted.ndjson', started_at: new Date() })
       .returning('id');
     await start();
-    const stored = await http().get(`/api/captures/${row.id}`).set('Cookie', cookie).expect(200);
+    const stored = await storedCapture(row.id);
     expect(stored.body).toMatchObject({ complete: false, errorReason: 'interrupted', packets: 100, active: false });
     expect(stored.body.endedAt).toEqual(expect.any(String));
     expect((await rows(join(dataDir, 'raw', 'interrupted.ndjson'))).map(item => item.rawIndex)).toEqual([...Array(100).keys()]);
@@ -244,7 +251,7 @@ describe('exercises, captures and references', () => {
       await capture(exerciseId, 'demo-b', 'demo', 10),
       await capture(exerciseId, 'demo-c', 'demo', 15)
     ];
-    const stored = await http().get(`/api/captures/${captureIds[0]}`).set('Cookie', cookie).expect(200);
+    const stored = await storedCapture(captureIds[0]!);
     expect(stored.body.startCueMonoMs).toBe(5000);
     const response = await http().post(`/api/exercises/${exerciseId}/reference-proposals`).set('Cookie', cookie).send({ captureIds }).expect(201);
     expect(response.body[0]).toMatchObject({
@@ -356,17 +363,53 @@ describe('exercises, captures and references', () => {
     expect(path.body.timeMs).toBe(gameMs);
   });
 
+  it('reference_time_is_the_game_time_of_the_cut', async () => {
+    const exerciseId = await exercise();
+    const referenceId = await reference(exerciseId, await capture(exerciseId, 'demo-a'), 300, 1700);
+    const run = cutToTimerRun(await readSamples(fixturePath('demo-a')), { first: 457, last: 1422 }, 'demonstration');
+    const stored = await db('references').where({ id: referenceId }).first();
+    expect(run).toMatchObject({ first: 457, last: 1422, gameTimeMs: 16082 });
+    expect(stored.timer_ms).toBe(run!.gameTimeMs);
+  });
+
+  it('promoted_reference_stores_the_attempt_game_time', async () => {
+    const exerciseId = await exercise();
+    const demo = await reference(exerciseId, await capture(exerciseId, 'demo-a'), 457, 1422);
+    const attempt = await storedAttempt(exerciseId, await capture(exerciseId, 'ce-clean', 'player'), demo);
+    const promoted = await http().post(`/api/attempts/${attempt}/promote`).set('Cookie', cookie).expect(201);
+    const stored = await db('references').where({ id: promoted.body.id }).first();
+    expect(stored.timer_ms).toBe(17071);
+  });
+
+  it('reference_without_a_stored_timer_gets_it_on_the_first_read', async () => {
+    const exerciseId = await exercise();
+    const referenceId = await reference(exerciseId, await capture(exerciseId, 'demo-a'), 457, 1422);
+    await db('references').where({ id: referenceId }).update({ timer_ms: null });
+    await start();
+    const path = await http().get(`/api/references/${referenceId}/path`).set('Cookie', cookie).expect(200);
+    expect(path.body.timeMs).toBe(16082);
+    expect((await db('references').where({ id: referenceId }).first()).timer_ms).toBe(16082);
+  });
+
+  it('reference_time_reads_the_stored_timer_value', async () => {
+    const exerciseId = await exercise();
+    const referenceId = await reference(exerciseId, await capture(exerciseId, 'demo-a'), 457, 1422);
+    await db('references').where({ id: referenceId }).update({ timer_ms: 16000 });
+    await start();
+    const path = await http().get(`/api/references/${referenceId}/path`).set('Cookie', cookie).expect(200);
+    expect(path.body.timeMs).toBe(16000);
+    const attempt = await storedAttempt(exerciseId, await capture(exerciseId, 'ce-clean', 'player'), referenceId);
+    const review = await http().get(`/api/attempts/${attempt}/review`).set('Cookie', cookie).expect(200);
+    expect(review.body.referenceTimeMs).toBe(16000);
+  });
+
   it('promote_refuses_an_attempt_without_a_game_time', async () => {
     const exerciseId = await exercise();
     const demo = await reference(exerciseId, await capture(exerciseId, 'demo-a'), 457, 1422);
     const playerCapture = await capture(exerciseId, 'ce-clean', 'player');
     const aborted = await storedAttempt(exerciseId, playerCapture, demo, 'aborted');
-    const untimed = await storedAttempt(exerciseId, playerCapture, demo);
-    await db('attempts').where({ id: untimed }).update({ game_ms: null });
-    for (const attempt of [aborted, untimed]) {
-      const refused = await http().post(`/api/attempts/${attempt}/promote`).set('Cookie', cookie).expect(409);
-      expect(refused.body).toEqual({ code: 'no-game-time', reason: expect.any(String) });
-    }
+    const refused = await http().post(`/api/attempts/${aborted}/promote`).set('Cookie', cookie).expect(409);
+    expect(refused.body).toEqual({ code: 'no-game-time', reason: expect.any(String) });
     const history = await http().get(`/api/exercises/${exerciseId}/references`).set('Cookie', cookie).expect(200);
     expect(history.body.map((item: { id: string }) => item.id)).toEqual([demo]);
   });
@@ -390,9 +433,8 @@ describe('exercises, captures and references', () => {
     const referenceId = await reference(exerciseId, captureId, 457, 1422);
     const attemptId = await storedAttempt(exerciseId, captureId, referenceId);
     const faster = await storedAttempt(exerciseId, captureId, referenceId);
-    await db('attempts').where({ id: faster }).update({ game_ms: 16950, measured_ms: 17200 });
-    const aborted = await storedAttempt(exerciseId, captureId, referenceId, 'aborted');
-    await db('attempts').where({ id: aborted }).update({ game_ms: 15000 });
+    await db('attempts').where({ id: faster }).update({ game_ms: 16950 });
+    await storedAttempt(exerciseId, captureId, referenceId, 'aborted');
     const body = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
     expect(body.bestMs).toBe(16950);
     expect(body).not.toHaveProperty('bestMeasuredMs');
@@ -406,10 +448,45 @@ describe('exercises, captures and references', () => {
     await storedAttempt(exerciseId, captureId, used);
     const conflict = await http().delete(`/api/references/${used}`).set('Cookie', cookie).expect(409);
     expect(conflict.body.code).toBe('reference-in-use');
+    await http().post(`/api/references/${used}/activate`).set('Cookie', cookie).expect(201);
     await http().delete(`/api/references/${unused}`).set('Cookie', cookie).expect(200);
     const history = await http().get(`/api/exercises/${exerciseId}/references`).set('Cookie', cookie).expect(200);
     expect(history.body.map((item: { id: string }) => item.id)).toEqual([used]);
-    expect((await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie)).body.activeReferenceId).toBeNull();
+    expect((await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie)).body.activeReferenceId).toBe(used);
+  });
+
+  it('active_reference_cannot_be_deleted', async () => {
+    const exerciseId = await exercise();
+    const captureId = await capture(exerciseId, 'demo-a');
+    const older = await reference(exerciseId, captureId, 457, 1422);
+    const active = await reference(exerciseId, captureId, 457, 1422);
+    const refused = await http().delete(`/api/references/${active}`).set('Cookie', cookie).expect(409);
+    expect(refused.body).toMatchObject({ code: 'reference-active', reason: 'Activate another reference first.' });
+    expect(await db('references').where({ id: active })).toHaveLength(1);
+    await http().delete(`/api/references/${older}`).set('Cookie', cookie).expect(200);
+  });
+
+  it('reference_with_attempts_is_refused_by_the_foreign_key', async () => {
+    const exerciseId = await exercise();
+    const captureId = await capture(exerciseId, 'demo-a');
+    const used = await reference(exerciseId, captureId, 457, 1422);
+    await reference(exerciseId, captureId, 457, 1422);
+    await storedAttempt(exerciseId, captureId, used);
+    const queries: string[] = [];
+    const record = (query: { sql: string }) => queries.push(query.sql);
+    const appDb = app!.get<Knex>(KNEX);
+    appDb.on('query', record);
+    let refused: request.Response;
+    try {
+      refused = await http().delete(`/api/references/${used}`).set('Cookie', cookie).expect(409);
+    } finally {
+      appDb.off('query', record);
+    }
+    expect(refused.body).toMatchObject({ code: 'reference-in-use', reason: 'Attempts point to this reference. It cannot be deleted.' });
+    const deleteAt = queries.findIndex(sql => sql.startsWith('delete from "references"'));
+    expect(deleteAt).toBeGreaterThanOrEqual(0);
+    expect(queries.slice(0, deleteAt).filter(sql => sql.includes('"attempts"'))).toEqual([]);
+    expect(await db('references').where({ id: used })).toHaveLength(1);
   });
 
   it('game_version_change_marks_needs_check', async () => {
@@ -457,14 +534,32 @@ describe('exercises, captures and references', () => {
       phrase: 'Hard brake. One fifteen',
       voice: 'hard-brake',
       bigStop: true,
-      muted: false
+      muted: false,
+      clip: 'hard-brake',
+      followClip: 'speed-115',
+      text: 'Hard brake'
     });
-    expect(cues.body[0]).not.toHaveProperty('text');
-    expect(cues.body[1]).toMatchObject({ phrase: 'Full throttle', voice: 'full-throttle', targetSpeedKph: 140, bigStop: false, muted: true });
-    expect(cues.body[2]).toMatchObject({ phrase: 'Ease off', voice: 'ease-off', targetSpeedKph: null, bigStop: false, muted: false });
+    expect(cues.body[1]).toMatchObject({ phrase: 'Full throttle', voice: 'full-throttle', targetSpeedKph: 140, bigStop: false, muted: true, clip: 'full-throttle', followClip: null, text: 'Full throttle' });
+    expect(cues.body[2]).toMatchObject({ phrase: 'Ease off', voice: 'ease-off', targetSpeedKph: null, bigStop: false, muted: false, clip: 'ease-off', followClip: null, text: 'Ease off' });
     await http().patch(`/api/exercises/${exerciseId}`).set('Cookie', cookie).send({ speakTargets: false }).expect(200);
     const quiet = await http().get(`/api/references/${referenceId}/cues`).set('Cookie', cookie).expect(200);
-    expect(quiet.body[0]).toMatchObject({ phrase: 'Hard brake', targetSpeedKph: 115 });
+    expect(quiet.body[0]).toMatchObject({ phrase: 'Hard brake', targetSpeedKph: 115, clip: 'hard-brake', followClip: 'speed-115', text: 'Hard brake' });
+  });
+
+  it('reference_clips_cover_its_cues_corners_and_system_clips', async () => {
+    const exerciseId = await exercise();
+    const referenceId = await reference(exerciseId, await capture(exerciseId, 'demo-a'), 457, 1422);
+    const cues = await http().get(`/api/references/${referenceId}/cues`).set('Cookie', cookie).expect(200);
+    const corners = await http().get(`/api/references/${referenceId}/corners`).set('Cookie', cookie).expect(200);
+    const clips = await http().get(`/api/references/${referenceId}/clips`).set('Cookie', cookie).expect(200);
+    const list: string[] = clips.body;
+    expect(new Set(list).size).toBe(list.length);
+    for (const cue of cues.body as { clip: string; followClip: string | null }[]) {
+      expect(list).toContain(cue.clip);
+      if (cue.followClip) expect(list).toContain(cue.followClip);
+    }
+    for (const clip of ['big-stop', 'tighter', 'keep-left', 'keep-right', 'guidance-paused', 'guidance-resumed', 'voice-check', 'countdown-three', 'countdown-start']) expect(list).toContain(clip);
+    expect(list.filter(clip => clip.startsWith('focus-'))).toHaveLength(6 * Math.min(10, corners.body.length));
   });
 
   it('speak_targets_and_cue_offsets_are_validated_and_stored', async () => {
@@ -480,17 +575,6 @@ describe('exercises, captures and references', () => {
     expect(saved.body).toMatchObject({ speakTargets: false, cueOffsetsMs: { 'brake@332': 300, 'brake@832': -500 } });
     const again = await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200);
     expect(again.body).toMatchObject({ speakTargets: false, cueOffsetsMs: { 'brake@332': 300, 'brake@832': -500 } });
-  });
-
-  it('new_exercise_takes_the_side_cue_distance_from_the_core_default', async () => {
-    await db.raw('ALTER TABLE exercises ALTER COLUMN side_cue_distance_m SET DEFAULT 3');
-    try {
-      const exerciseId = await exercise();
-      const created = await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200);
-      expect(created.body.sideCueDistanceM).toBe(DEFAULT_SIDE_CUE_DISTANCE_M);
-    } finally {
-      await db.raw(`ALTER TABLE exercises ALTER COLUMN side_cue_distance_m SET DEFAULT ${DEFAULT_SIDE_CUE_DISTANCE_M}`);
-    }
   });
 
   it('side_cue_distance_is_stored_and_validated', async () => {
@@ -518,7 +602,7 @@ describe('exercises, captures and references', () => {
       turnInSM: expect.any(Number),
       apexSM: expect.any(Number),
       radiusM: expect.any(Number),
-      apexSpeedKph: expect.any(Number)
+      apexSpeedMps: expect.any(Number)
     });
     const other = await anotherProfile(app!, cookie, 'Other');
     await http().get(`/api/references/${referenceId}/corners`).set('Cookie', other).expect(404);
@@ -533,8 +617,8 @@ describe('exercises, captures and references', () => {
     const points = Math.floor(path.body.lengthM / 2) + 1;
     expect(path.body.x).toHaveLength(points);
     expect(path.body.z).toHaveLength(points);
-    expect(path.body.speedKph).toHaveLength(points);
-    expect(Math.max(...path.body.speedKph)).toBeGreaterThan(100);
+    expect(path.body.speedMps).toHaveLength(points);
+    expect(Math.max(...path.body.speedMps) * KPH_PER_MPS).toBeGreaterThan(100);
     expect(path.body.timeMs).toBe(16082);
     const other = await anotherProfile(app!, cookie, 'Other');
     await http().get(`/api/references/${referenceId}/path`).set('Cookie', other).expect(404);
@@ -550,9 +634,8 @@ describe('exercises, captures and references', () => {
     const otherExercise = await exercise(undefined, other);
     const as = (call: request.Test) => call.set('Cookie', other).expect(404);
     await as(http().get(`/api/exercises/${exerciseId}`));
-    await as(http().patch(`/api/exercises/${exerciseId}`).send({ name: 'Mine' }));
+    await as(http().patch(`/api/exercises/${exerciseId}`).send({ mutedCues: [] }));
     await as(http().post('/api/captures').send({ exerciseId, purpose: 'demo' }));
-    await as(http().get(`/api/captures/${captureId}`));
     await as(http().post(`/api/captures/${captureId}/stop`));
     await as(http().post(`/api/exercises/${exerciseId}/reference-proposals`).send({ captureIds }));
     await as(http().post(`/api/exercises/${otherExercise}/reference-proposals`).send({ captureIds }));
@@ -564,6 +647,7 @@ describe('exercises, captures and references', () => {
     await as(http().delete(`/api/references/${referenceId}`));
     await as(http().post(`/api/references/${referenceId}/check`).send({ captureId }));
     await as(http().get(`/api/references/${referenceId}/cues`));
+    await as(http().get(`/api/references/${referenceId}/clips`));
     await as(http().get(`/api/references/${referenceId}/corners`));
     await as(http().get(`/api/exercises/${exerciseId}/reactions`));
     expect((await http().get('/api/exercises').set('Cookie', other)).body.map((item: { id: string }) => item.id)).toEqual([otherExercise]);

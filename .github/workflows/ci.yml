@@ -102,12 +102,12 @@ jobs:
         with:
           node-version: '26'
       - name: Shell lint
-        run: shellcheck scripts/setup.sh
+        run: shellcheck tools/setup/setup.sh
       - name: Dry run
         shell: bash
         run: |
           set +e
-          sh scripts/setup.sh --dry-run > setup.out 2>&1
+          sh tools/setup/setup.sh --dry-run > setup.out 2>&1
           status=$?
           cat setup.out
           if [ "$status" -ne 0 ]; then grep -q "^Docker is" setup.out; fi
@@ -123,8 +123,8 @@ jobs:
         with:
           node-version: '26'
           cache: pnpm
-      - run: sh scripts/setup.sh
-      - run: sh scripts/setup.sh
+      - run: sh tools/setup/setup.sh
+      - run: sh tools/setup/setup.sh
       - run: pnpm demo --check
 
   release:

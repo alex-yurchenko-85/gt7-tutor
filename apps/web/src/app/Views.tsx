@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { AttemptsView } from '../features/attempts/AttemptsView.tsx';
 import { AddExerciseView } from '../features/catalogue/AddExerciseView.tsx';
 import { CuesView } from '../features/cues/CuesView.tsx';
@@ -18,7 +19,7 @@ function badId(route: Route): 'exercise' | 'attempt' | null {
   return null;
 }
 
-export function Views() {
+export const Views = memo(function Views() {
   const { route } = useRouter();
   const bad = badId(route);
   if (bad) return <NotFound kind={bad} />;
@@ -47,4 +48,4 @@ export function Views() {
     case 'not-found':
       return <NotFound kind="page" />;
   }
-}
+});

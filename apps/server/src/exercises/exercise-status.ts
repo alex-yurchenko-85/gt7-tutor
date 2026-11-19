@@ -1,10 +1,11 @@
-import { exerciseStatus, type ExerciseStatus, type Medal, type MedalTargets } from '@gt7/core';
+import type { ExerciseStatusName, ExerciseTargets } from '@gt7/contracts';
+import { exerciseStatus } from '@gt7/core';
 import type { Knex } from 'knex';
 
 export type ExerciseStatusSummary = {
   exerciseId: string;
   catalogueId: string | null;
-  status: ExerciseStatus;
+  status: ExerciseStatusName;
   attemptCount: number;
   referenceCount: number;
   completeAttempts: number;
@@ -19,7 +20,7 @@ type StatusRow = {
   id: string;
   catalogue_id: string | null;
   active_reference_id: string | null;
-  targets: MedalTargets;
+  targets: ExerciseTargets;
   created_at: Date;
   attempt_count: number;
   reference_count: number;
@@ -27,14 +28,7 @@ type StatusRow = {
   baseline_attempts: number;
   guided_attempts: number;
   best_ms: number | null;
-  medals: Medal[];
 };
-
-const medalRank: Record<Medal, number> = { bronze: 1, silver: 2, gold: 3 };
-
-function bestMedal(medals: Medal[]): Medal | null {
-  return medals.reduce<Medal | null>((best, medal) => (best === null || medalRank[medal] > medalRank[best] ? medal : best), null);
-}
 
 export async function exerciseStatuses(db: Knex, userId: string, exerciseId?: string): Promise<ExerciseStatusSummary[]> {
   const rows = await db('exercises as e')
@@ -56,8 +50,7 @@ export async function exerciseStatuses(db: Knex, userId: string, exerciseId?: st
       db.raw("(count(a.id) filter (where a.completion = 'complete'))::int as complete_attempts"),
       db.raw("(count(a.id) filter (where a.completion = 'complete' and a.mode = 'baseline'))::int as baseline_attempts"),
       db.raw("(count(a.id) filter (where a.completion = 'complete' and a.mode = 'guided'))::int as guided_attempts"),
-      db.raw("min(a.game_ms) filter (where a.completion = 'complete') as best_ms"),
-      db.raw("coalesce(array_agg(distinct a.medal) filter (where a.medal is not null), '{}'::text[]) as medals")
+      db.raw("min(a.game_ms) filter (where a.completion = 'complete') as best_ms")
     );
   return rows.map(row => ({
     exerciseId: row.id,
@@ -74,8 +67,7 @@ export async function exerciseStatuses(db: Knex, userId: string, exerciseId?: st
       hasActiveReference: row.active_reference_id !== null,
       completeAttempts: row.complete_attempts,
       bestMs: row.best_ms,
-      targets: row.targets,
-      manualMedal: bestMedal(row.medals)
+      targets: row.targets
     })
   }));
 }

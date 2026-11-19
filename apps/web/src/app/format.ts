@@ -46,6 +46,14 @@ export function formatDay(iso: string): string {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
 }
 
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+export function formatClock(at: Date): string {
+  return at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
 export function metres(value: number): string {
   return `${Math.round(value)} m`;
 }

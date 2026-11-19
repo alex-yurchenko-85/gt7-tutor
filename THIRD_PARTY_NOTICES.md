@@ -38,13 +38,13 @@ No file in this repository contains code from another GPL project.
 
 ## Catalogue data
 
-- `catalogue/catalogue.json` contains data from the Gran Turismo Wiki (CC BY-SA) and from `ddm999/gt7info` (MIT-0). `catalogue/NOTICE.md` gives the attribution and the licence terms.
+- `content/catalogue/catalogue.json` contains data from the Gran Turismo Wiki (CC BY-SA) and from `ddm999/gt7info` (MIT-0). `content/catalogue/NOTICE.md` gives the attribution and the licence terms.
 - `fixtures/catalogue-sources/` contains recorded answers of the same sources for tests. `fixtures/catalogue-sources/NOTICE.md` gives the attribution.
 - `packages/catalogue` is an independent implementation. It copies no code.
 
 ## Voice clips
 
-- `audio/clips/` contains speech generated with the Kokoro-82M model and the `af_heart` voice (Apache License 2.0). `audio/NOTICE.md` gives the tool, the voice and the licence.
+- `content/audio/clips/` contains speech generated with the Kokoro-82M model and the `af_heart` voice (Apache License 2.0). `content/audio/NOTICE.md` gives the tool, the voice and the licence.
 - `tools/generate-audio.ts` is an independent implementation. It copies no code.
 
 ## Fonts

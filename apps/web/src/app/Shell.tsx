@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import type { Exercise } from '@gt7/contracts';
 import { api } from '../api/client.ts';
-import { useLive } from '../api/live.tsx';
+import { useLiveConnection, useLiveState } from '../api/live.tsx';
 import { currentExercise, liveExerciseId, onCurrentExerciseChanged, onExercisesChanged, rememberExercise } from './current-exercise.ts';
 import { DEMO_LABEL, DemoLabel, useDemo } from './demo.tsx';
 import { shortName } from './format.ts';
@@ -30,8 +30,7 @@ export function StatusDot({ status }: { status: Status }) {
 
 function useCurrentExercise(enabled: boolean): Exercise | null {
   const { user } = useSession();
-  const { state } = useLive();
-  const liveId = liveExerciseId(state);
+  const liveId = useLiveState(({ state }) => liveExerciseId(state));
   const [exercises, setExercises] = useState<Exercise[] | null>(null);
   const [version, setVersion] = useState(0);
   const [, setRemembered] = useState(0);
@@ -57,9 +56,10 @@ function useCurrentExercise(enabled: boolean): Exercise | null {
 }
 
 function StatusLinks() {
-  const { state, connected, deviceId } = useLive();
-  const telemetry = telemetryStatus(state, connected, useDemo() !== null);
-  const voice = voiceStatus(state, deviceId);
+  const { deviceId } = useLiveConnection();
+  const demo = useDemo() !== null;
+  const telemetry = useLiveState(({ state, connected }) => telemetryStatus(state, connected, demo));
+  const voice = useLiveState(({ state }) => voiceStatus(state, deviceId));
   return (
     <div className="status-links" aria-live="polite">
       <Link to={paths.setup('console')} className="status-link" label={`Console: ${telemetry.text}. Open Setup`}>

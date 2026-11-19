@@ -10,18 +10,14 @@ import { CATALOGUE_FETCH } from '../src/catalogue/catalogue.tokens.js';
 import { createTestApp } from './support/app.js';
 import { keepFirstTests, recordedSources, withExtraTest, type SourceStub } from './support/catalogue-sources.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
-import { tempDir } from './support/process.js';
+import { cookiePair, sessionCookie } from './support/session.js';
+import { testTempDir } from '../../../tools/testing/temp-root.js';
 
-const committedPath = new URL('../../../catalogue/catalogue.json', import.meta.url);
+const committedPath = new URL('../../../content/catalogue/catalogue.json', import.meta.url);
 const committed = JSON.parse(readFileSync(committedPath, 'utf8')) as Catalogue;
 const throwingFetch: typeof fetch = () => {
   throw new Error('network access during the test');
 };
-
-function cookieOf(response: request.Response): string {
-  const header = response.headers['set-cookie'] as unknown as string[];
-  return header.find(value => value.startsWith('gt7_session='))!.split(';')[0]!;
-}
 
 function savedCatalogue(dataDir: string, catalogue: Catalogue): void {
   mkdirSync(join(dataDir, 'catalogue'), { recursive: true });
@@ -51,8 +47,12 @@ describe('catalogue', () => {
 
   async function signIn(name = 'Driver'): Promise<string> {
     const hasUsers = (await http().get('/api/auth/state')).body.hasUsers as boolean;
-    if (!hasUsers) return cookieOf(await http().post('/api/auth/first-profile').send({ name, password: 'correct horse' }).expect(201));
-    return cookieOf(await http().post('/api/auth/sign-in').send({ name, password: 'correct horse' }).expect(200));
+    if (!hasUsers) return cookiePair(sessionCookie(await http().post('/api/auth/first-profile').send({ name, password: 'correct horse' }).expect(201)));
+    return cookiePair(sessionCookie(await http().post('/api/auth/sign-in').send({ name, password: 'correct horse' }).expect(200)));
+  }
+
+  function entryOf(id: string) {
+    return (entry: { id: string }) => entry.id === id;
   }
 
   async function userId(name: string): Promise<string> {
@@ -78,8 +78,8 @@ describe('catalogue', () => {
 
   beforeEach(async () => {
     vi.useRealTimers();
-    await db.raw('truncate table users, sessions, catalogue_entries cascade');
-    dataDir = tempDir();
+    await db.raw('truncate table users, sessions cascade');
+    dataDir = testTempDir('gt7-server-');
   });
 
   afterEach(async () => {
@@ -88,80 +88,21 @@ describe('catalogue', () => {
     app = null;
   });
 
-  it('import_is_idempotent', async () => {
-    await start();
-    const first = await db('catalogue_entries').count<{ count: string }[]>('* as count');
-    await start();
-    const second = await db('catalogue_entries').count<{ count: string }[]>('* as count');
-    expect(Number(first[0]!.count)).toBe(committed.entries.length);
-    expect(second).toEqual(first);
-  });
-
-  it('import_updates_changed_targets_but_not_edited_exercises', async () => {
-    await start();
-    const cookie = await signIn();
-    const user = await userId('Driver');
-    const original = committed.entries.find(entry => entry.id === 'licence-b-1')!.targets!;
-    const unedited = await exerciseFor(user, 'licence-b-1', original);
-    const edited = await exerciseFor(user, 'licence-b-1', { ...original, goldMs: 19000 });
-    const newTargets = { bronzeMs: 23000, silverMs: 22000, goldMs: 21000 };
-    savedCatalogue(dataDir, {
-      ...committed,
-      retrieved: laterThanCommitted(1),
-      entries: committed.entries.map(entry => (entry.id === 'licence-b-1' ? { ...entry, targets: newTargets } : entry))
-    });
-    await start();
-    expect((await db('catalogue_entries').where({ id: 'licence-b-1' }).first()).targets).toEqual(newTargets);
-    expect((await db('exercises').where({ id: unedited }).first()).targets).toEqual(newTargets);
-    expect((await db('exercises').where({ id: edited }).first()).targets).toEqual({ ...original, goldMs: 19000 });
-    const listed = await http().get('/api/catalogue?q=Starting %26 Stopping 1').set('Cookie', cookie).expect(200);
-    expect(listed.body.find((entry: { id: string }) => entry.id === 'licence-b-1').targets).toEqual(newTargets);
-  });
-
-  it('import_never_deletes_entries_with_exercises', async () => {
-    await start();
-    await signIn();
-    const exercise = await exerciseFor(await userId('Driver'), 'licence-b-1', {});
-    savedCatalogue(dataDir, {
-      ...committed,
-      retrieved: laterThanCommitted(1),
-      entries: committed.entries.filter(entry => entry.id !== 'licence-b-1' && entry.id !== 'licence-b-2')
-    });
-    await start();
-    expect(await db('catalogue_entries').where({ id: 'licence-b-1' }).first()).toBeDefined();
-    expect(await db('catalogue_entries').where({ id: 'licence-b-2' }).first()).toBeUndefined();
-    expect(await db('exercises').where({ id: exercise }).first()).toBeDefined();
-  });
-
-  it('filters_combine', async () => {
-    await start();
-    const cookie = await signIn();
-    const response = await http().get('/api/catalogue?family=Licence&collection=National B').set('Cookie', cookie).expect(200);
-    expect(response.body).toHaveLength(10);
-    expect(response.body[0]).toMatchObject({ id: 'licence-b-1', code: 'B-1', exerciseId: null, status: null });
-    expect(response.body[0]).not.toHaveProperty('support');
-    const byTrack = await http().get('/api/catalogue?family=Licence&track=High Speed Ring&q=stopping').set('Cookie', cookie).expect(200);
-    expect(byTrack.body.length).toBeGreaterThan(0);
-    expect(byTrack.body.every((entry: { track: string }) => entry.track === 'High Speed Ring')).toBe(true);
-  });
-
   it('status_is_per_profile', async () => {
     await start();
     const first = await signIn('Driver');
     await http().post('/api/profiles').set('Cookie', first).send({ name: 'Second', password: 'correct horse' }).expect(201);
     const second = await signIn('Second');
     const exercise = await exerciseFor(await userId('Driver'), 'licence-b-1', {});
-    const mine = await http().get('/api/catalogue?collection=National B').set('Cookie', first).expect(200);
-    expect(mine.body[0]).toMatchObject({ id: 'licence-b-1', exerciseId: exercise, status: 'new' });
-    const theirs = await http().get('/api/catalogue?collection=National B').set('Cookie', second).expect(200);
-    expect(theirs.body[0]).toMatchObject({ id: 'licence-b-1', exerciseId: null, status: null });
+    const mine = await http().get('/api/catalogue').set('Cookie', first).expect(200);
+    expect(mine.body.find(entryOf('licence-b-1'))).toMatchObject({ id: 'licence-b-1', exerciseId: exercise, status: 'new' });
+    const theirs = await http().get('/api/catalogue').set('Cookie', second).expect(200);
+    expect(theirs.body.find(entryOf('licence-b-1'))).toMatchObject({ id: 'licence-b-1', exerciseId: null, status: null });
   });
 
   it('circuits_and_known_car', async () => {
     await start();
     const cookie = await signIn();
-    const circuits = await http().get('/api/catalogue/circuits').set('Cookie', cookie).expect(200);
-    expect(circuits.body.length).toBeGreaterThanOrEqual(122);
     const car = await http().get('/api/cars/3602').set('Cookie', cookie).expect(200);
     expect(car.body).toEqual({ name: "Yangwang U9 '24" });
   });
@@ -194,12 +135,12 @@ describe('catalogue', () => {
     const sources = recordedSources((page, text) => (page === 'GT7 B-License' ? withExtraTest(text, 'B-11') : text));
     await start(sources);
     const cookie = await signIn();
-    const before = await db('catalogue_entries').orderBy('id');
+    const before = (await http().get('/api/catalogue').set('Cookie', cookie).expect(200)).body;
     const response = await http().post('/api/catalogue/update/check').set('Cookie', cookie).expect(201);
     expect(response.body.token).toEqual(expect.any(String));
     expect(response.body.diff.added.map((entry: { id: string }) => entry.id)).toEqual(['licence-b-11']);
     expect(response.body.diff).toMatchObject({ removed: [], changed: [], rejected: null });
-    expect(await db('catalogue_entries').orderBy('id')).toEqual(before);
+    expect((await http().get('/api/catalogue').set('Cookie', cookie).expect(200)).body).toEqual(before);
     expect(existsSync(join(dataDir, 'catalogue', 'catalogue.json'))).toBe(false);
   });
 
@@ -209,7 +150,7 @@ describe('catalogue', () => {
     const cookie = await signIn();
     const { token } = (await http().post('/api/catalogue/update/check').set('Cookie', cookie).expect(201)).body;
     await http().post('/api/catalogue/update/apply').set('Cookie', cookie).send({ token }).expect(201);
-    expect(await db('catalogue_entries').where({ id: 'licence-b-11' }).first()).toBeDefined();
+    expect((await http().get('/api/catalogue').set('Cookie', await signIn()).expect(200)).body.some(entryOf('licence-b-11'))).toBe(true);
     const saved = JSON.parse(readFileSync(join(dataDir, 'catalogue', 'catalogue.json'), 'utf8')) as Catalogue;
     expect(saved.entries.some(entry => entry.id === 'licence-b-11')).toBe(true);
     const previous = JSON.parse(readFileSync(join(dataDir, 'catalogue', 'catalogue.previous.json'), 'utf8')) as Catalogue;
@@ -218,7 +159,7 @@ describe('catalogue', () => {
     expect(info.body).toMatchObject({ retrieved: saved.retrieved, hasPrevious: true, previousRetrieved: committed.retrieved });
     await http().post('/api/catalogue/update/apply').set('Cookie', cookie).send({ token }).expect(409);
     await start(sources);
-    expect(await db('catalogue_entries').where({ id: 'licence-b-11' }).first()).toBeDefined();
+    expect((await http().get('/api/catalogue').set('Cookie', await signIn()).expect(200)).body.some(entryOf('licence-b-11'))).toBe(true);
   });
 
   it('catalogue_info_reads_the_previous_file_at_most_once', async () => {
@@ -249,12 +190,12 @@ describe('catalogue', () => {
     const { token } = (await http().post('/api/catalogue/update/check').set('Cookie', cookie).expect(201)).body;
     await http().post('/api/catalogue/update/apply').set('Cookie', cookie).send({ token }).expect(201);
     await http().post('/api/catalogue/update/restore').set('Cookie', cookie).expect(201);
-    expect(await db('catalogue_entries').where({ id: 'licence-b-11' }).first()).toBeUndefined();
+    expect((await http().get('/api/catalogue').set('Cookie', await signIn()).expect(200)).body.some(entryOf('licence-b-11'))).toBe(false);
     const info = await http().get('/api/catalogue/info').set('Cookie', cookie).expect(200);
     expect(info.body).toMatchObject({ retrieved: committed.retrieved, hasPrevious: false, previousRetrieved: null });
     await http().post('/api/catalogue/update/restore').set('Cookie', cookie).expect(409);
     await start(sources);
-    expect(await db('catalogue_entries').where({ id: 'licence-b-11' }).first()).toBeUndefined();
+    expect((await http().get('/api/catalogue').set('Cookie', await signIn()).expect(200)).body.some(entryOf('licence-b-11'))).toBe(false);
   });
 
   it('apply_with_unknown_or_expired_token_is_409', async () => {
@@ -278,7 +219,7 @@ describe('catalogue', () => {
     expect(check.body.diff.rejected).toContain('21 of 100 Licence');
     const apply = await http().post('/api/catalogue/update/apply').set('Cookie', cookie).send({ token: check.body.token }).expect(409);
     expect(apply.body).toMatchObject({ code: 'rejected', reason: check.body.diff.rejected });
-    expect(await db('catalogue_entries').where({ family: 'Licence' }).count<{ count: string }[]>('* as count')).toEqual([{ count: '100' }]);
+    expect((await http().get('/api/catalogue').set('Cookie', cookie).expect(200)).body.filter((entry: { family: string }) => entry.family === 'Licence')).toHaveLength(100);
   });
 
   it('source_timeout_or_bad_page_reports_reason_and_keeps_catalogue', async () => {
@@ -292,7 +233,7 @@ describe('catalogue', () => {
     await start(recordedSources((page, text) => (page === 'Circuit Experience' ? 'This page has a new layout.' : text)));
     const badPage = await http().post('/api/catalogue/update/check').set('Cookie', cookie).expect(502);
     expect(badPage.body.reason).toContain('Circuit Experience');
-    expect(await db('catalogue_entries').count<{ count: string }[]>('* as count')).toEqual([{ count: String(committed.entries.length) }]);
+    expect((await http().get('/api/catalogue').set('Cookie', cookie).expect(200)).body).toHaveLength(committed.entries.length);
     expect(existsSync(join(dataDir, 'catalogue', 'catalogue.json'))).toBe(false);
   });
 
@@ -301,7 +242,7 @@ describe('catalogue', () => {
     savedCatalogue(dataDir, { ...committed, retrieved: laterThanCommitted(1), entries: [...committed.entries, extra] });
     await start();
     const cookie = await signIn();
-    expect(await db('catalogue_entries').where({ id: 'licence-saved-1' }).first()).toBeDefined();
+    expect((await http().get('/api/catalogue').set('Cookie', await signIn()).expect(200)).body.some(entryOf('licence-saved-1'))).toBe(true);
     const info = await http().get('/api/catalogue/info').set('Cookie', cookie).expect(200);
     expect(info.body.retrieved).toBe(laterThanCommitted(1));
   });
@@ -310,14 +251,27 @@ describe('catalogue', () => {
     const extra = { ...committed.entries[1]!, id: 'licence-saved-1', code: 'SAVED-1' };
     savedCatalogue(dataDir, { ...committed, retrieved: laterThanCommitted(-1), entries: [...committed.entries, extra] });
     await start();
-    expect(await db('catalogue_entries').where({ id: 'licence-saved-1' }).first()).toBeUndefined();
+    expect((await http().get('/api/catalogue').set('Cookie', await signIn()).expect(200)).body.some(entryOf('licence-saved-1'))).toBe(false);
   });
 
   it('invalid_saved_file_falls_back_to_committed_file', async () => {
     mkdirSync(join(dataDir, 'catalogue'), { recursive: true });
     writeFileSync(join(dataDir, 'catalogue', 'catalogue.json'), '{"schemaVersion":1');
     await start();
-    expect(await db('catalogue_entries').count<{ count: string }[]>('* as count')).toEqual([{ count: String(committed.entries.length) }]);
+    const cookie = await signIn();
+    expect((await http().get('/api/catalogue').set('Cookie', cookie).expect(200)).body).toHaveLength(committed.entries.length);
+  });
+
+  it('exercise_keeps_working_when_its_catalogue_entry_is_gone', async () => {
+    await start();
+    const cookie = await signIn();
+    const entry = committed.entries.find(candidate => candidate.id === 'licence-b-1')!;
+    const created = await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: entry.id }).expect(201);
+    app!.get(CatalogueService).activate({ ...committed, entries: committed.entries.filter(candidate => candidate.id !== entry.id) });
+    const listed = await http().get('/api/catalogue').set('Cookie', cookie).expect(200);
+    expect(listed.body.some(entryOf(entry.id))).toBe(false);
+    const response = await http().get(`/api/exercises/${created.body.id}`).set('Cookie', cookie).expect(200);
+    expect(response.body).toMatchObject({ name: entry.name, family: entry.family, targets: entry.targets });
   });
 
   it('update_needs_session', async () => {

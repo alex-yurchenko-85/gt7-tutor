@@ -1,5 +1,6 @@
-import { buildReview, findDifferences, measureAttemptTimes, type CoreConfig, type Finding } from '@gt7/core';
+import { buildReview, findDifferences, type CoreConfig, type Finding } from '@gt7/core';
 import type { Knex } from 'knex';
+import { saveComparison } from '../attempts/finding-rows.js';
 import type { AttemptRecord, CueRecord, TrainingSnapshot } from './training-session.js';
 
 export type StoredAttempt = { id: string; storedOutcomes: Map<CueRecord, string> };
@@ -9,6 +10,8 @@ function cueRow(attemptId: string, record: CueRecord) {
     attempt_id: attemptId,
     event_key: record.eventKey,
     kind: record.kind,
+    event_kind: record.eventKind,
+    s_m: record.sM,
     target_kph: record.targetKph,
     decided_mono_ms: record.decidedMonoMs,
     outcome: record.outcome,
@@ -18,7 +21,7 @@ function cueRow(attemptId: string, record: CueRecord) {
 }
 
 export function attemptFindings(snapshot: TrainingSnapshot, record: AttemptRecord, config: CoreConfig): Finding[] {
-  return record.samples.length >= 2 ? findDifferences(buildReview(record.samples, snapshot.path, config), config) : [];
+  return record.samples.length >= 2 ? findDifferences(buildReview(record.samples, snapshot.analysis, config), config) : [];
 }
 
 export async function storeAttempt(
@@ -30,7 +33,6 @@ export async function storeAttempt(
   config: CoreConfig
 ): Promise<StoredAttempt> {
   const complete = record.completion === 'complete';
-  const measuredMs = complete ? measureAttemptTimes(record.samples, config).measuredMs : null;
   const storedOutcomes = new Map(record.cues.map(cue => [cue, cue.outcome]));
   const id = await db.transaction(async trx => {
     const [row] = await trx('attempts')
@@ -43,25 +45,12 @@ export async function storeAttempt(
         mode: snapshot.mode,
         completion: record.completion,
         reason: record.reason,
-        measured_ms: measuredMs,
         game_ms: complete ? record.gameTimeMs : null,
         started_at: record.startedAt
       })
       .returning<{ id: string }[]>('id');
     const attemptId = row!.id;
-    if (findings.length > 0) {
-      await trx('attempt_findings').insert(
-        findings.map(finding => ({
-          attempt_id: attemptId,
-          reference_id: snapshot.referenceId,
-          kind: finding.kind,
-          event_key: finding.eventKey,
-          s_m: finding.sM,
-          size: finding.size,
-          unit: finding.unit
-        }))
-      );
-    }
+    await saveComparison(trx, attemptId, snapshot.referenceId, findings);
     if (record.cues.length > 0) await trx('cue_events').insert(record.cues.map(cue => cueRow(attemptId, cue)));
     return attemptId;
   });

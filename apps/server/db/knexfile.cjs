@@ -1,8 +1,8 @@
 const { existsSync } = require('node:fs');
 const { join } = require('node:path');
 
-if (!process.env.DATABASE_URL && existsSync(join(__dirname, '.env'))) {
-  process.loadEnvFile(join(__dirname, '.env'));
+if (!process.env.DATABASE_URL && existsSync(join(__dirname, '..', '..', '..', '.env'))) {
+  process.loadEnvFile(join(__dirname, '..', '..', '..', '.env'));
 }
 
 if (!process.env.DATABASE_URL) {

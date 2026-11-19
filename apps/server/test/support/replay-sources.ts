@@ -1,7 +1,6 @@
 import { ReplaySource, type TelemetrySource } from '@gt7/capture';
+import { fixturePath } from '../../../../tools/testing/fixture-path.js';
 import type { TelemetrySourceFactory } from '../../src/captures/telemetry-source.factory.js';
-
-export const fixturePath = (name: string) => new URL(`../../../../fixtures/${name}.ndjson`, import.meta.url).pathname;
 
 export class FixtureReplays {
   readonly queue: (string | TelemetrySource)[] = [];

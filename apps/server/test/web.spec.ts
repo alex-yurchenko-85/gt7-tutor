@@ -7,12 +7,12 @@ import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.facto
 import { createTestApp } from './support/app.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
 import { fixtureRows, ManualSource } from './support/live.js';
-import { tempDir } from './support/process.js';
+import { testTempDir } from '../../../tools/testing/temp-root.js';
 import { FixtureReplays } from './support/replay-sources.js';
 import { firstProfile } from './support/session.js';
 
 function webBuild(): string {
-  const dir = tempDir();
+  const dir = testTempDir('gt7-server-');
   mkdirSync(join(dir, 'assets'), { recursive: true });
   writeFileSync(join(dir, 'index.html'), '<!doctype html><title>GT7 Tutor</title><div id="root"></div>');
   writeFileSync(join(dir, 'assets', 'app.js'), 'export {};');

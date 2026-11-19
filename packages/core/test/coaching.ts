@@ -1,12 +1,12 @@
-import type { Sample } from '@gt7/contracts';
-import { Coach, type CoachInput, type Cue, type Suppressed } from '../src/coach.ts';
+import type { LiveGuidance, Sample } from '@gt7/contracts';
+import type { Cue } from '../src/cue-factory.ts';
+import { Coach, type CoachInput, type CoachSettings, type CueTarget, type Suppressed } from '../src/coach.ts';
 import { DEFAULT_CONFIG, DEFAULT_SIDE_CUE_DISTANCE_M, type CoreConfig } from '../src/config.ts';
 import { estimatedPhraseMs } from '../src/cue-text.ts';
 import type { ReferenceCueEvent } from '../src/cue-events.ts';
-import type { GuidanceState } from '../src/guidance.ts';
 import { Matcher, type Match } from '../src/match.ts';
 import type { ReferencePath } from '../src/reference.ts';
-import { profiledPath } from './paths.ts';
+import { analysisOf, profiledPath } from './paths.ts';
 import { FRAME_MS, syntheticSample } from './synthetic.ts';
 
 const MAX_LATERAL_STEP_M = 0.1;
@@ -61,12 +61,12 @@ export function event(
   return { key: `${kind}@${Math.round(sM)}`, kind, sM, endSM, targetSpeedKph, voice: kind, bigStop: false, ...tone };
 }
 
-export type Decision = { cue: Cue; sM: number | null; index: number };
+export type Decision = { cue: Cue; target: CueTarget; sM: number | null; index: number };
 
 export type CoachRun = {
   cues: Decision[];
   suppressed: (Suppressed & { index: number })[];
-  guidance: { index: number; state: GuidanceState }[];
+  guidance: { index: number; state: LiveGuidance }[];
   matches: (Match | null)[];
 };
 
@@ -82,10 +82,19 @@ export type RunOptions = {
   input?: (input: CoachInput, index: number) => CoachInput;
 };
 
+export function settingsOf(options: RunOptions = {}): CoachSettings {
+  return {
+    mutedKeys: options.mutedKeys ?? new Set(),
+    speakTargets: options.speakTargets ?? true,
+    offsetsMs: options.offsetsMs ?? new Map(),
+    sideCueDistanceM: options.sideCueDistanceM === undefined ? DEFAULT_SIDE_CUE_DISTANCE_M : options.sideCueDistanceM
+  };
+}
+
 export function runCoach(path: ReferencePath, events: ReferenceCueEvent[], samples: Sample[], options: RunOptions = {}): CoachRun {
   const config = options.config ?? DEFAULT_CONFIG;
   const matcher = new Matcher(path, config);
-  const coach = options.coach ?? new Coach(path, events, config);
+  const coach = options.coach ?? new Coach(analysisOf(path, events, config), config, settingsOf(options));
   const run: CoachRun = { cues: [], suppressed: [], guidance: [], matches: [] };
   let lastGuidance = '';
   samples.forEach((sample, index) => {
@@ -97,14 +106,10 @@ export function runCoach(path: ReferencePath, events: ReferenceCueEvent[], sampl
       nowMonoMs: sample.receivedMonoMs,
       generation: options.generation ?? 1,
       deviceDelayMs: options.deviceDelayMs ?? 60,
-      phraseMs: estimatedPhraseMs,
-      mutedKeys: options.mutedKeys ?? new Set(),
-      speakTargets: options.speakTargets ?? true,
-      offsetsMs: options.offsetsMs ?? new Map(),
-      sideCueDistanceM: options.sideCueDistanceM === undefined ? DEFAULT_SIDE_CUE_DISTANCE_M : options.sideCueDistanceM
+      phraseMs: estimatedPhraseMs
     };
     const output = coach.step(options.input ? options.input(base, index) : base);
-    if (output.cue) run.cues.push({ cue: output.cue, sM: match?.sM ?? null, index });
+    if (output.cue && output.target) run.cues.push({ cue: output.cue, target: output.target, sM: match?.sM ?? null, index });
     for (const entry of output.suppressed) run.suppressed.push({ ...entry, index });
     const key = JSON.stringify(output.guidance);
     if (key !== lastGuidance) run.guidance.push({ index, state: output.guidance });

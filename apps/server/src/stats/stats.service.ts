@@ -1,21 +1,20 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { ExerciseStatusName, Progress, ProgressCollection, ProgressExercise, RecurringDifference } from '@gt7/contracts';
+import { exerciseStatusSchema, type ExerciseStatusName, type Progress, type ProgressCollection, type ProgressExercise, type RecurringDifference } from '@gt7/contracts';
 import { DEFAULT_CONFIG, recurring, turnOf } from '@gt7/core';
 import type { Knex } from 'knex';
 import { AttemptsService, attemptTimeMs } from '../attempts/attempts.service.js';
 import { localDate } from '../attempts/local-date.js';
+import { CatalogueService } from '../catalogue/catalogue.service.js';
 import { exerciseStatuses } from '../exercises/exercise-status.js';
 import { ownedExercise, type AttemptRow, type ReferenceRow } from '../ownership/owned.js';
 import { KNEX } from '../storage/knex.provider.js';
 
 export const OWN_EXERCISES_COLLECTION = 'Own exercises';
 
-const STATUSES: ExerciseStatusName[] = ['new', 'ready', 'practising', 'bronze', 'silver', 'gold'];
-
-type ExerciseGroupRow = { id: string; name: string; family: string; collection: string | null };
+type ExerciseGroupRow = { id: string; name: string; family: string; catalogue_id: string | null };
 
 function zeroCounts(): Record<ExerciseStatusName, number> {
-  return Object.fromEntries(STATUSES.map(status => [status, 0])) as Record<ExerciseStatusName, number>;
+  return Object.fromEntries(exerciseStatusSchema.options.map(status => [status, 0])) as Record<ExerciseStatusName, number>;
 }
 
 function bestByDay(attempts: AttemptRow[]): { date: string; bestMs: number }[] {
@@ -33,7 +32,8 @@ function bestByDay(attempts: AttemptRow[]): { date: string; bestMs: number }[] {
 export class StatsService {
   constructor(
     @Inject(KNEX) private readonly db: Knex,
-    private readonly attempts: AttemptsService
+    private readonly attempts: AttemptsService,
+    private readonly catalogue: CatalogueService
   ) {}
 
   async recurring(userId: string, exerciseId: string, last: number): Promise<RecurringDifference[]> {
@@ -44,8 +44,8 @@ export class StatsService {
       .where({ exercise_id: exerciseId, completion: 'complete' })
       .orderBy([{ column: 'started_at', order: 'desc' }, { column: 'id', order: 'desc' }])
       .limit(last);
-    const perAttempt = [];
-    for (const attempt of recent) perAttempt.push(await this.attempts.findingsAgainst(attempt, reference));
+    const findings = await this.attempts.findingsFor(recent.map(attempt => attempt.id), reference.id);
+    const perAttempt = recent.map(attempt => findings.get(attempt.id)!);
     const found = recurring(perAttempt, DEFAULT_CONFIG);
     if (found.length === 0) return [];
     const corners = await this.attempts.cornersOfReference(reference);
@@ -54,10 +54,9 @@ export class StatsService {
 
   async progress(userId: string): Promise<Progress> {
     const exercises = await this.db('exercises as e')
-      .leftJoin('catalogue_entries as c', 'c.id', 'e.catalogue_id')
       .where('e.user_id', userId)
       .orderBy('e.created_at')
-      .select<ExerciseGroupRow[]>('e.id', 'e.name', 'e.family', 'c.collection');
+      .select<ExerciseGroupRow[]>('e.id', 'e.name', 'e.family', 'e.catalogue_id');
     const statuses = new Map((await exerciseStatuses(this.db, userId)).map(summary => [summary.exerciseId, summary]));
     const attempts = await this.db('attempts as a')
       .join('exercises as e', 'e.id', 'a.exercise_id')
@@ -66,7 +65,7 @@ export class StatsService {
     const collections = new Map<string, ProgressCollection>();
     const rows: ProgressExercise[] = exercises.map(exercise => {
       const summary = statuses.get(exercise.id)!;
-      const collection = exercise.collection ?? OWN_EXERCISES_COLLECTION;
+      const collection = (exercise.catalogue_id === null ? null : this.catalogue.entry(exercise.catalogue_id)?.collection) ?? OWN_EXERCISES_COLLECTION;
       const key = `${exercise.family}\u0000${collection}`;
       const group = collections.get(key) ?? { family: exercise.family, collection, counts: zeroCounts() };
       group.counts[summary.status]++;

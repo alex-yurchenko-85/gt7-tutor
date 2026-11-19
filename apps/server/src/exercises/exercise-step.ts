@@ -1,6 +1,5 @@
-import type { ExerciseStep } from '@gt7/contracts';
+import { BASELINE_ATTEMPTS, type ExerciseStep } from '@gt7/contracts';
 
-export const BASELINE_ATTEMPTS = 3;
 export const GUIDED_ATTEMPTS_BEFORE_REVIEW = 3;
 
 export type StepInput = { hasActiveReference: boolean; baselineAttempts: number; guidedAttempts: number };

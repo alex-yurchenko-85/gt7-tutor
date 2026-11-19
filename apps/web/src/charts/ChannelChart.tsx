@@ -1,4 +1,5 @@
-import type { KeyboardEvent, PointerEvent } from 'react';
+import { memo, type KeyboardEvent, type PointerEvent } from 'react';
+import { WIDTH, seriesSegments } from './geometry.ts';
 import { distanceTicks } from './ticks.ts';
 import './charts.css';
 
@@ -18,6 +19,7 @@ type ChannelChartProps = {
   lengthM: number;
   cursorSM: number;
   onCursor(sM: number): void;
+  onScrub?(sM: number): void;
   readout: string;
   ticks: ChartTick[];
   height?: number;
@@ -25,14 +27,14 @@ type ChannelChartProps = {
   turnLabels?: boolean;
 };
 
-const WIDTH = 800;
 const CHART_HEIGHT = 120;
+const NO_BANDS: ChartBand[] = [];
 
 function percent(value: number): string {
   return `${(value * 100).toFixed(2)}%`;
 }
 
-function DistanceAxis({ lengthM, bands, turnLabels }: { lengthM: number; bands: ChartBand[]; turnLabels: boolean }) {
+const DistanceAxis = memo(function DistanceAxis({ lengthM, bands, turnLabels }: { lengthM: number; bands: ChartBand[]; turnLabels: boolean }) {
   return (
     <div className="distance-axis" aria-hidden="true">
       <div>
@@ -51,33 +53,50 @@ function DistanceAxis({ lengthM, bands, turnLabels }: { lengthM: number; bands: 
       </div>
     </div>
   );
-}
+});
 
-export function seriesSegments(values: (number | null)[], toX: (index: number) => number, toY: (value: number) => number): string[] {
-  const segments: string[] = [];
-  let current: string[] = [];
-  values.forEach((value, index) => {
-    if (value === null) {
-      if (current.length > 1) segments.push(current.join(' '));
-      current = [];
-      return;
-    }
-    current.push(`${toX(index).toFixed(1)},${toY(value).toFixed(1)}`);
-  });
-  if (current.length > 1) segments.push(current.join(' '));
-  return segments;
-}
+type PlotLayerProps = Pick<ChannelChartProps, 'series' | 'ticks' | 'bands' | 'min' | 'max' | 'gridM' | 'lengthM'> & { height: number };
 
-export function ChannelChart({ id, label, series, min, max, gridM, lengthM, cursorSM, onCursor, readout, ticks, height = CHART_HEIGHT, bands = [], turnLabels = false }: ChannelChartProps) {
+const PlotLayer = memo(function PlotLayer({ series, ticks, bands = [], min, max, gridM, lengthM, height }: PlotLayerProps) {
   const span = max - min || 1;
   const toX = (index: number) => ((index * gridM) / lengthM) * WIDTH;
   const toY = (value: number) => height - 4 - ((value - min) / span) * (height - 8);
+  const zeroY = min < 0 && max > 0 ? toY(0) : null;
+  return (
+    <>
+      {bands.map(band => (
+        <rect
+          key={band.label}
+          className="chart-band"
+          data-band={band.label}
+          x={((band.fromSM / lengthM) * WIDTH).toFixed(1)}
+          width={(((band.toSM - band.fromSM) / lengthM) * WIDTH).toFixed(1)}
+          y={0}
+          height={height}
+        />
+      ))}
+      {ticks.map(tick => (
+        <line key={tick.value} className="chart-grid" x1={0} x2={WIDTH} y1={toY(tick.value)} y2={toY(tick.value)} />
+      ))}
+      {zeroY === null ? null : <line className="chart-zero" x1={0} x2={WIDTH} y1={zeroY} y2={zeroY} />}
+      {series.map(item =>
+        seriesSegments(item.values, toX, toY).map((points, index) => (
+          <polyline key={`${item.name}-${index}`} className={`chart-line ${item.name}`} data-series={item.name} points={points} />
+        ))
+      )}
+    </>
+  );
+});
+
+export function ChannelChart({ id, label, series, min, max, gridM, lengthM, cursorSM, onCursor, onScrub = onCursor, readout, ticks, height = CHART_HEIGHT, bands = NO_BANDS, turnLabels = false }: ChannelChartProps) {
+  const span = max - min || 1;
+  const toY = (value: number) => height - 4 - ((value - min) / span) * (height - 8);
   const cursorX = (cursorSM / lengthM) * WIDTH;
   const clamp = (sM: number) => Math.max(0, Math.min(lengthM, sM));
-  const fromPointer = (event: PointerEvent<HTMLDivElement>) => {
+  const fromPointer = (event: PointerEvent<HTMLDivElement>, report: (sM: number) => void) => {
     const box = event.currentTarget.getBoundingClientRect();
     if (box.width <= 0) return;
-    onCursor(clamp(Math.round((((event.clientX - box.left) / box.width) * lengthM) / gridM) * gridM));
+    report(clamp(Math.round((((event.clientX - box.left) / box.width) * lengthM) / gridM) * gridM));
   };
   const fromKey = (event: KeyboardEvent<HTMLDivElement>) => {
     const steps: Record<string, number> = { ArrowRight: gridM, ArrowLeft: -gridM, PageUp: gridM * 10, PageDown: -gridM * 10 };
@@ -87,7 +106,6 @@ export function ChannelChart({ id, label, series, min, max, gridM, lengthM, curs
     else return;
     event.preventDefault();
   };
-  const zeroY = min < 0 && max > 0 ? toY(0) : null;
   return (
     <div className="channel">
       <div className="channel-label">
@@ -112,33 +130,14 @@ export function ChannelChart({ id, label, series, min, max, gridM, lengthM, curs
           aria-valuemax={Math.round(lengthM)}
           aria-valuenow={Math.round(cursorSM)}
           aria-valuetext={`${Math.round(cursorSM)} m. ${readout}`}
-          onPointerDown={fromPointer}
+          onPointerDown={event => fromPointer(event, onCursor)}
           onPointerMove={event => {
-            if (event.buttons > 0 || event.pointerType === 'mouse') fromPointer(event);
+            if (event.buttons > 0 || event.pointerType === 'mouse') fromPointer(event, onScrub);
           }}
           onKeyDown={fromKey}
         >
           <svg viewBox={`0 0 ${WIDTH} ${height}`} preserveAspectRatio="none" style={{ height }} aria-hidden="true">
-            {bands.map(band => (
-              <rect
-                key={band.label}
-                className="chart-band"
-                data-band={band.label}
-                x={((band.fromSM / lengthM) * WIDTH).toFixed(1)}
-                width={(((band.toSM - band.fromSM) / lengthM) * WIDTH).toFixed(1)}
-                y={0}
-                height={height}
-              />
-            ))}
-            {ticks.map(tick => (
-              <line key={tick.value} className="chart-grid" x1={0} x2={WIDTH} y1={toY(tick.value)} y2={toY(tick.value)} />
-            ))}
-            {zeroY === null ? null : <line className="chart-zero" x1={0} x2={WIDTH} y1={zeroY} y2={zeroY} />}
-            {series.map(item =>
-              seriesSegments(item.values, toX, toY).map((points, index) => (
-                <polyline key={`${item.name}-${index}`} className={`chart-line ${item.name}`} data-series={item.name} points={points} />
-              ))
-            )}
+            <PlotLayer series={series} ticks={ticks} bands={bands} min={min} max={max} gridM={gridM} lengthM={lengthM} height={height} />
             <line className="chart-cursor" x1={cursorX.toFixed(1)} x2={cursorX.toFixed(1)} y1={0} y2={height} />
           </svg>
         </div>

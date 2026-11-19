@@ -1,16 +1,27 @@
 import { describe, expect, it } from 'vitest';
+import { replayCoach } from '../src/coach-replay.ts';
+import { DEFAULT_CONFIG, DEFAULT_SIDE_CUE_DISTANCE_M } from '../src/config.ts';
+import { findCorners } from '../src/corners.ts';
+import { buildCueEvents } from '../src/cue-events.ts';
 import {
   allClipKeys,
   clipKey,
+  clipsOf,
   clipText,
   COUNTDOWN_CLIPS,
   cueText,
+  estimatedPhraseMs,
+  eventPhrase,
   focusClipKey,
   focusText,
   speedClipKey,
   speedWords,
-  SUPPORTED_TARGETS_KPH
+  SUPPORTED_TARGETS_KPH,
+  targetClip
 } from '../src/cue-text.ts';
+import { samplesOf } from './fixtures.ts';
+import { event } from './coaching.ts';
+import { interlagosReference } from './paths.ts';
 
 describe('cue text', () => {
   it('speed_words', () => {
@@ -85,5 +96,41 @@ describe('cue text', () => {
     expect(COUNTDOWN_CLIPS.map(clipText)).toEqual(['Three', 'Two', 'One', 'Start']);
     const keys = allClipKeys();
     for (const clip of COUNTDOWN_CLIPS) expect(keys).toContain(clip);
+  });
+
+  it('event_clips_text_and_phrase', () => {
+    const brake = event('brake', 291, 115, 380, { voice: 'hard-brake' });
+    expect(clipKey(brake.voice)).toBe('hard-brake');
+    expect(targetClip(brake)).toBe('speed-115');
+    expect(cueText(brake.voice)).toBe('Hard brake');
+    expect(eventPhrase(brake, true)).toBe('Hard brake. One fifteen');
+    expect(eventPhrase(brake, false)).toBe('Hard brake');
+    const throttle = event('throttle', 411, 140, null, { voice: 'full-throttle' });
+    expect(targetClip(throttle)).toBeNull();
+    expect(eventPhrase(throttle, true)).toBe('Full throttle');
+    expect(targetClip(event('brake', 291, null, 380))).toBeNull();
+  });
+
+  it('clips_of_a_reference_cover_every_cue_of_its_replay', () => {
+    const path = interlagosReference();
+    const events = buildCueEvents(path, DEFAULT_CONFIG);
+    const corners = findCorners(path, events, DEFAULT_CONFIG);
+    const clips = new Set(clipsOf(events, corners));
+    for (const sideCueDistanceM of [DEFAULT_SIDE_CUE_DISTANCE_M, 1]) {
+      const trace = replayCoach(samplesOf('ce-slow'), { path, events, corners, timeMs: path.points.at(-1)!.timerMs }, DEFAULT_CONFIG, {
+        deviceDelayMs: 60,
+        phraseMs: estimatedPhraseMs,
+        mutedKeys: new Set(),
+        speakTargets: true,
+        offsetsMs: new Map(),
+        sideCueDistanceM
+      });
+      const played = trace.cues.flatMap(cue => (cue.followClip ? [cue.clip, cue.followClip] : [cue.clip]));
+      expect(played.length).toBeGreaterThan(0);
+      expect(played.filter(clip => !clips.has(clip))).toEqual([]);
+    }
+    for (const clip of [...COUNTDOWN_CLIPS, 'voice-check', 'keep-left', 'keep-right', 'guidance-paused', 'guidance-resumed', 'tighter']) expect(clips).toContain(clip);
+    expect([...clips].filter(clip => clip.startsWith('focus-'))).toHaveLength(6 * Math.min(10, corners.length));
+    expect(clips.size).toBe(clipsOf(events, corners).length);
   });
 });

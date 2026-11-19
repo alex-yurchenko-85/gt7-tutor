@@ -25,34 +25,18 @@ exports.up = async function up(knex) {
     table.timestamp('updated_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
   });
 
-  await knex.schema.createTable('catalogue_entries', table => {
-    table.text('id').primary();
-    table.text('family').notNullable();
-    table.text('collection').notNullable();
-    table.text('code');
-    table.text('name').notNullable();
-    table.text('track');
-    table.text('circuit_id');
-    table.text('car');
-    table.jsonb('targets');
-    table.jsonb('sections');
-    table.text('source').notNullable();
-    table.text('support').notNullable().defaultTo('unverified');
-    createdAt(knex, table);
-    table.check("support in ('verified', 'unverified')", [], 'catalogue_entries_support_check');
-    table.index(['family', 'collection']);
-  });
-
   await knex.schema.createTable('exercises', table => {
     uuidKey(knex, table);
-    table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('RESTRICT');
-    table.text('catalogue_id').references('id').inTable('catalogue_entries').onDelete('RESTRICT');
+    table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
+    table.text('catalogue_id');
     table.text('family').notNullable();
     table.text('name').notNullable();
     table.integer('car_id');
-    table.jsonb('conditions').notNullable().defaultTo('{}');
     table.jsonb('targets').notNullable().defaultTo('{}');
     table.jsonb('muted_cues').notNullable().defaultTo('[]');
+    table.boolean('speak_targets').notNullable().defaultTo(true);
+    table.jsonb('cue_offsets').notNullable().defaultTo(knex.raw("'{}'::jsonb"));
+    table.double('side_cue_distance_m').defaultTo(2);
     table.uuid('active_reference_id');
     createdAt(knex, table);
     table.index(['user_id']);
@@ -61,8 +45,8 @@ exports.up = async function up(knex) {
 
   await knex.schema.createTable('captures', table => {
     uuidKey(knex, table);
-    table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('RESTRICT');
-    table.uuid('exercise_id').references('id').inTable('exercises').onDelete('RESTRICT');
+    table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
+    table.uuid('exercise_id').references('id').inTable('exercises').onDelete('SET NULL');
     table.text('purpose').notNullable();
     table.text('raw_path').notNullable();
     table.timestamp('started_at', { useTz: true }).notNullable();
@@ -79,8 +63,8 @@ exports.up = async function up(knex) {
 
   await knex.schema.createTable('references', table => {
     uuidKey(knex, table);
-    table.uuid('exercise_id').notNullable().references('id').inTable('exercises').onDelete('RESTRICT');
-    table.uuid('capture_id').notNullable().references('id').inTable('captures').onDelete('RESTRICT');
+    table.uuid('exercise_id').notNullable().references('id').inTable('exercises').onDelete('CASCADE');
+    table.uuid('capture_id').notNullable().references('id').inTable('captures').onDelete('NO ACTION');
     table.integer('first_raw_index').notNullable();
     table.integer('last_raw_index').notNullable();
     table.text('origin').notNullable();
@@ -101,23 +85,21 @@ exports.up = async function up(knex) {
 
   await knex.schema.createTable('attempts', table => {
     uuidKey(knex, table);
-    table.uuid('exercise_id').notNullable().references('id').inTable('exercises').onDelete('RESTRICT');
-    table.uuid('capture_id').notNullable().references('id').inTable('captures').onDelete('RESTRICT');
-    table.uuid('reference_id').notNullable().references('id').inTable('references').onDelete('RESTRICT');
+    table.uuid('exercise_id').notNullable().references('id').inTable('exercises').onDelete('CASCADE');
+    table.uuid('capture_id').notNullable().references('id').inTable('captures').onDelete('NO ACTION');
+    table.uuid('reference_id').notNullable().references('id').inTable('references').onDelete('NO ACTION');
     table.integer('first_raw_index').notNullable();
     table.integer('last_raw_index').notNullable();
     table.text('mode').notNullable();
     table.text('completion').notNullable();
     table.text('reason');
-    table.double('measured_ms');
-    table.integer('official_ms');
-    table.text('medal');
+    table.double('game_ms');
     table.timestamp('started_at', { useTz: true }).notNullable();
     createdAt(knex, table);
     table.check('first_raw_index >= 0 and last_raw_index >= first_raw_index', [], 'attempts_range_check');
     table.check("mode in ('baseline', 'guided')", [], 'attempts_mode_check');
     table.check("completion in ('complete', 'aborted')", [], 'attempts_completion_check');
-    table.check("medal is null or medal in ('bronze', 'silver', 'gold')", [], 'attempts_medal_check');
+    table.check("(completion = 'complete') = (game_ms IS NOT NULL)", [], 'attempts_game_time_check');
     table.index(['exercise_id', 'started_at']);
     table.index(['reference_id']);
     table.index(['capture_id']);
@@ -132,6 +114,7 @@ exports.up = async function up(knex) {
     table.double('decided_mono_ms').notNullable();
     table.text('outcome').notNullable();
     table.double('start_delay_ms');
+    table.double('device_delay_ms');
     createdAt(knex, table);
     table.index(['attempt_id']);
   });
@@ -161,7 +144,6 @@ exports.down = async function down(knex) {
   await knex.schema.dropTable('references');
   await knex.schema.dropTable('captures');
   await knex.schema.dropTable('exercises');
-  await knex.schema.dropTable('catalogue_entries');
   await knex.schema.dropTable('settings');
   await knex.schema.dropTable('sessions');
   await knex.schema.dropTable('users');

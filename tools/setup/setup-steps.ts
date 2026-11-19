@@ -12,10 +12,15 @@ type Step = { title: string; act(runner: Runner): Promise<string | null> };
 
 const NODE_MAJOR_MIN = 26;
 const STEP_COUNT = 7;
+const DATABASE_HINT = 'A database made before 19 Nov 2026 cannot be migrated. Only for such a database, run "pnpm db:reset" to create it again. This removes its data.';
 
-function command(line: string): (runner: Runner) => Promise<string | null> {
+function command(line: string, hint?: string): (runner: Runner) => Promise<string | null> {
   const [name, ...args] = line.split(' ');
-  return async runner => ((await runner.run(name!, args)) === 0 ? null : `"${line}" failed. Read the messages above.`);
+  return async runner => {
+    if ((await runner.run(name!, args)) === 0) return null;
+    const failure = `"${line}" failed. Read the messages above.`;
+    return hint ? `${failure} ${hint}` : failure;
+  };
 }
 
 const STEPS: Step[] = [
@@ -46,7 +51,7 @@ const STEPS: Step[] = [
   },
   { title: 'installing packages', act: command('pnpm install --frozen-lockfile') },
   { title: 'starting the database', act: command('pnpm db:up') },
-  { title: 'preparing the database', act: command('pnpm db:migrate') },
+  { title: 'preparing the database', act: command('pnpm db:migrate', DATABASE_HINT) },
   { title: 'building the application', act: command('pnpm build') }
 ];
 

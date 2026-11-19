@@ -37,7 +37,7 @@ export class DemoSeed {
     if (await this.db('users').where({ name: DEMO_PROFILE.name }).first('id')) return;
     const user = await this.auth.createProfile(DEMO_PROFILE);
     const exercise = await this.exercises.create(user.id, { catalogueId: DEMO_CATALOGUE_ID });
-    await this.exercises.update(user.id, exercise.id, { targets: DEMO_TARGETS });
+    await this.exercises.setTargets(user.id, exercise.id, DEMO_TARGETS);
     const captureId = await this.recordDemonstration(user.id, exercise.id);
     const reference = await this.references.create(user.id, {
       exerciseId: exercise.id,

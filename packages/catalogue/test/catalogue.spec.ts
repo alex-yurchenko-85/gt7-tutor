@@ -14,7 +14,7 @@ import {
 
 const sourcesDir = new URL('../../../fixtures/catalogue-sources/', import.meta.url);
 const index = JSON.parse(readFileSync(new URL('index.json', sourcesDir), 'utf8')) as Record<string, string>;
-const aliases = JSON.parse(readFileSync(new URL('../../../catalogue/aliases.json', import.meta.url), 'utf8')) as Record<string, number>;
+const aliases = JSON.parse(readFileSync(new URL('../../../content/catalogue/aliases.json', import.meta.url), 'utf8')) as Record<string, number>;
 
 function recordedFetch(seen: { url: string; headers: Headers }[] = []): typeof fetch {
   return async (input, init) => {

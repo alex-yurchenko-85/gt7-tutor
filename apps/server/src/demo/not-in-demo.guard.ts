@@ -1,5 +1,6 @@
-import { ConflictException, Injectable, type CanActivate } from '@nestjs/common';
+import { Injectable, type CanActivate } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { conflict } from '../http-errors.js';
 
 @Injectable()
 export class NotInDemoGuard implements CanActivate {
@@ -7,7 +8,7 @@ export class NotInDemoGuard implements CanActivate {
 
   canActivate(): boolean {
     if (this.config.getOrThrow<boolean>('DEMO_MODE')) {
-      throw new ConflictException({ code: 'demo-mode', reason: 'Demo mode uses recorded data. This action is not available.' });
+      throw conflict('demo-mode', 'Demo mode uses recorded data. This action is not available.');
     }
     return true;
   }

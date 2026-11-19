@@ -1,7 +1,8 @@
 import type { RawDatagram, ServerMsg } from '@gt7/contracts';
 import { readRaw, type DatagramHandler, type TelemetrySource } from '@gt7/capture';
 import { WebSocket } from 'ws';
-import { fixturePath } from './replay-sources.js';
+import { eventually } from '../../../../tools/testing/eventually.js';
+import { fixturePath } from '../../../../tools/testing/fixture-path.js';
 
 export class LiveConnection {
   readonly messages: ServerMsg[] = [];
@@ -44,16 +45,6 @@ export function openLive(port: number, cookie?: string, headers: Record<string, 
     socket.once('open', () => resolve(connection));
     socket.once('error', reject);
   });
-}
-
-export async function eventually<T>(probe: () => T | undefined | null | false | Promise<T | undefined | null | false>, timeoutMs = 5000): Promise<T> {
-  const started = Date.now();
-  for (;;) {
-    const value = await probe();
-    if (value) return value;
-    if (Date.now() - started > timeoutMs) throw new Error(`Condition not met within ${timeoutMs} ms`);
-    await new Promise(resolve => setTimeout(resolve, 20));
-  }
 }
 
 export class TestClock {

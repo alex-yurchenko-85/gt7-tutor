@@ -24,7 +24,7 @@ describe('attempts', () => {
 
   it('game_time_shows_thousandths_without_a_label', async () => {
     setViewportWidth(1280);
-    const timed = { ...ATTEMPT_LIST.days[0]!.attempts[1]!, gameMs: 23429, timeMs: 23429 };
+    const timed = { ...ATTEMPT_LIST.days[0]!.attempts[1]!, timeMs: 23429 };
     const list = { ...ATTEMPT_LIST, days: [{ ...ATTEMPT_LIST.days[0]!, attempts: [timed] }] };
     exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', list).install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
@@ -67,7 +67,7 @@ describe('attempts', () => {
     setViewportWidth(1280);
     const reasons = ['left-track', 'restart', 'manual', 'silence', 'player-session-ended', 'loading', 'car-changed', 'discontinuity'];
     const attempts = reasons.map((reason, index) =>
-      attemptSummary({ id: `a0000000-0000-4000-8000-00000000001${index}`, number: index + 1, completion: 'aborted', reason, timeMs: null, gameMs: null, measuredMs: null, gapToBestMs: null })
+      attemptSummary({ id: `a0000000-0000-4000-8000-00000000001${index}`, number: index + 1, completion: 'aborted', reason, timeMs: null, gapToBestMs: null })
     );
     exerciseApi()
       .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', { bestMs: null, days: [{ date: '2026-11-17', bestMs: null, attempts }] })
@@ -114,7 +114,7 @@ describe('attempts', () => {
   it('attempts_without_hint_at_three_each', async () => {
     setViewportWidth(1280);
     const attempts = [1, 2, 3, 4, 5, 6].map(number =>
-      attemptSummary({ id: `a0000000-0000-4000-8000-00000000000${number}`, number, mode: number > 3 ? 'guided' : 'baseline', timeMs: 27000 + number * 100, measuredMs: 27000 + number * 100, gameMs: 27000 + number * 100 })
+      attemptSummary({ id: `a0000000-0000-4000-8000-00000000000${number}`, number, mode: number > 3 ? 'guided' : 'baseline', timeMs: 27000 + number * 100 })
     );
     exerciseApi()
       .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', { bestMs: 27100, days: [{ date: '2026-11-17', bestMs: 27100, attempts }] })

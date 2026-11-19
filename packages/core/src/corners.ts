@@ -1,7 +1,7 @@
 import type { CoreConfig } from './config.ts';
 import type { ReferenceCueEvent } from './cue-events.ts';
 import { pointAt, type ReferencePath } from './reference.ts';
-import { KPH_PER_MPS } from './units.ts';
+import { StepCursor } from './step-cursor.ts';
 
 export type Corner = {
   number: number;
@@ -9,7 +9,7 @@ export type Corner = {
   turnInSM: number;
   apexSM: number;
   radiusM: number;
-  apexSpeedKph: number;
+  apexSpeedMps: number;
   insideSign: 1 | -1;
 };
 
@@ -72,7 +72,7 @@ export function findCorners(path: ReferencePath, events: ReferenceCueEvent[], co
       turnInSM: turnIn(curve, apex, config),
       apexSM: apex.sM,
       radiusM: 1 / apex.curvature,
-      apexSpeedKph: pointAt(path, apex.sM).speedMps * KPH_PER_MPS,
+      apexSpeedMps: pointAt(path, apex.sM).speedMps,
       insideSign: apex.sign
     });
   }
@@ -81,6 +81,11 @@ export function findCorners(path: ReferencePath, events: ReferenceCueEvent[], co
 
 export function cornerAt(corners: Corner[], sM: number): Corner | null {
   return corners.filter(corner => corner.zoneStartSM <= sM).at(-1) ?? corners[0] ?? null;
+}
+
+export function cornerCursor(corners: Corner[]): StepCursor<Corner | null> {
+  const starts = [...new Set(corners.map(corner => corner.zoneStartSM))].sort((a, b) => a - b);
+  return new StepCursor(corners[0] ?? null, starts.map(fromM => ({ fromM, value: cornerAt(corners, fromM) })));
 }
 
 export function outsideM(corner: Corner, lateralM: number): number {

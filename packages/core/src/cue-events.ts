@@ -1,9 +1,7 @@
+import { KPH_PER_MPS, eventKey, type EventKind } from '@gt7/contracts';
 import type { CoreConfig } from './config.ts';
 import { isSupportedTarget } from './cue-text.ts';
 import type { ReferencePath, ReferencePoint } from './reference.ts';
-import { KPH_PER_MPS } from './units.ts';
-
-export type EventKind = 'brake' | 'ease-off' | 'throttle';
 
 export type EventVoice = 'hard-brake' | 'brake' | 'light-brake' | 'ease-off' | 'throttle' | 'full-throttle';
 
@@ -29,10 +27,6 @@ export function targetKph(speedMps: number, config: CoreConfig): number | null {
   const step = config.target.roundDownKph;
   const kph = Math.floor((speedMps * KPH_PER_MPS + ROUNDING_EPSILON) / step) * step;
   return isSupportedTarget(kph) ? kph : null;
-}
-
-export function eventKey(kind: EventKind, sM: number): string {
-  return `${kind}@${Math.round(sM)}`;
 }
 
 function holds(points: EventPoint[], index: number, count: number, test: (point: EventPoint) => boolean): boolean {
@@ -70,27 +64,27 @@ function speedAtTime(points: EventPoint[], timeMs: number): number {
   return from.speedMps + (to.speedMps - from.speedMps) * u;
 }
 
-function brakeVoice(lossKph: number, config: CoreConfig): EventVoice {
-  if (lossKph + ROUNDING_EPSILON >= config.voice.hardBrakeLossKph) return 'hard-brake';
-  if (lossKph + ROUNDING_EPSILON >= config.voice.lightBrakeLossKph) return 'brake';
+function brakeVoice(lossMps: number, config: CoreConfig): EventVoice {
+  if (lossMps + ROUNDING_EPSILON >= config.voice.hardBrakeLossMps) return 'hard-brake';
+  if (lossMps + ROUNDING_EPSILON >= config.voice.lightBrakeLossMps) return 'brake';
   return 'light-brake';
 }
 
-function isBigStop(entryKph: number, lossKph: number, config: CoreConfig): boolean {
-  return entryKph + ROUNDING_EPSILON >= config.voice.bigStopEntryKph && lossKph + ROUNDING_EPSILON >= config.voice.bigStopLossKph;
+function isBigStop(entryMps: number, lossMps: number, config: CoreConfig): boolean {
+  return entryMps + ROUNDING_EPSILON >= config.voice.bigStopEntryMps && lossMps + ROUNDING_EPSILON >= config.voice.bigStopLossMps;
 }
 
 function brakeEvents(points: EventPoint[], zones: Zone[], config: CoreConfig): Detected[] {
   return zones.map(zone => {
-    const entryKph = points[zone.from]!.speedMps * KPH_PER_MPS;
-    const lossKph = entryKph - points[zone.to]!.speedMps * KPH_PER_MPS;
+    const entryMps = points[zone.from]!.speedMps;
+    const lossMps = entryMps - points[zone.to]!.speedMps;
     return {
       kind: 'brake',
       sM: points[zone.from]!.sM,
       endSM: points[zone.to]!.sM,
       targetSpeedKph: targetKph(points[zone.to]!.speedMps, config),
-      voice: brakeVoice(lossKph, config),
-      bigStop: isBigStop(entryKph, lossKph, config)
+      voice: brakeVoice(lossMps, config),
+      bigStop: isBigStop(entryMps, lossMps, config)
     };
   });
 }

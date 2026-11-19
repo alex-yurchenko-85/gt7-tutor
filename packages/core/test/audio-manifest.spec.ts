@@ -1,9 +1,13 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { allClipKeys } from '../src/cue-text.ts';
+import { DEFAULT_CONFIG } from '../src/config.ts';
+import { findCorners } from '../src/corners.ts';
+import { buildCueEvents } from '../src/cue-events.ts';
+import { allClipKeys, clipsOf } from '../src/cue-text.ts';
+import { interlagosReference } from './paths.ts';
 
-const audioDir = fileURLToPath(new URL('../../../audio/', import.meta.url));
+const audioDir = fileURLToPath(new URL('../../../content/audio/', import.meta.url));
 
 type ClipEntry = { file: string; durationMs: number };
 type Manifest = { clips: Record<string, ClipEntry> };
@@ -76,5 +80,12 @@ describe('audio manifest', () => {
     const keys = new Set(allClipKeys());
     const files = readdirSync(`${audioDir}clips`).filter(file => file.endsWith('.wav'));
     expect(files.filter(file => !keys.has(file.slice(0, -'.wav'.length)))).toEqual([]);
+  });
+
+  it('clips_exist_in_the_audio_manifest', () => {
+    const path = interlagosReference();
+    const events = buildCueEvents(path, DEFAULT_CONFIG);
+    const clips = readManifest().clips;
+    expect(clipsOf(events, findCorners(path, events, DEFAULT_CONFIG)).filter(clip => !(clip in clips))).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { LiveMode, LiveState } from '@gt7/contracts';
+import { KPH_PER_MPS, type LiveMode, type LiveState } from '@gt7/contracts';
 
 export const MISSED_START_AFTER_MS = 10000;
 export const MOVING_KPH = 10;
@@ -8,7 +8,7 @@ type Prompt = { mode: LiveMode | null; missed: boolean; dismissed: boolean };
 
 export function useMissedStart(state: LiveState | null): { missed: boolean; dismiss(): void } {
   const mode = state?.mode ?? null;
-  const moving = mode === 'armed' && (state?.speedKph ?? 0) >= MOVING_KPH;
+  const moving = mode === 'armed' && (state?.speedMps ?? 0) * KPH_PER_MPS >= MOVING_KPH;
   const [prompt, setPrompt] = useState<Prompt>({ mode, missed: false, dismissed: false });
   if (prompt.mode !== mode) setPrompt({ mode, missed: false, dismissed: false });
 

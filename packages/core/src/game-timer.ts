@@ -1,8 +1,6 @@
 import type { Sample } from '@gt7/contracts';
+import { DEFAULT_CONFIG, type CoreConfig } from './config.ts';
 import { isRepeatedPacket } from './sequence.ts';
-
-export const GAME_TIMER_START_MAX_MS = 50;
-export const GAME_TIMER_STILL_PACKETS = 3;
 
 export type GameTimerEvent = {
   type: 'started' | 'finished' | 'left-track' | 'restart';
@@ -12,10 +10,11 @@ export type GameTimerEvent = {
 
 export type GameTimerSession = 'player' | 'demonstration';
 
-export type GameTimerWatchOptions = { session: GameTimerSession };
+export type GameTimerWatchOptions = { session: GameTimerSession; config?: CoreConfig };
 
 export class GameTimerWatch {
   private readonly session: GameTimerSession;
+  private readonly config: CoreConfig;
   private running = false;
   private previousTimerMs: number | null = null;
   private lastPacketId = 0;
@@ -25,6 +24,7 @@ export class GameTimerWatch {
 
   constructor(options: GameTimerWatchOptions = { session: 'player' }) {
     this.session = options.session;
+    this.config = options.config ?? DEFAULT_CONFIG;
   }
 
   get active(): boolean {
@@ -46,7 +46,7 @@ export class GameTimerWatch {
   private stepInactive(sample: Sample, previousTimerMs: number | null): GameTimerEvent | null {
     const timerMs = sample.gameTimerMs;
     if (!this.countsFor(sample) || previousTimerMs !== 0) return null;
-    if (timerMs < 1 || timerMs > GAME_TIMER_START_MAX_MS) return null;
+    if (timerMs < 1 || timerMs > this.config.gameTimer.startMaxMs) return null;
     this.running = true;
     this.lastPacketId = sample.packetId;
     this.valueMs = timerMs;
@@ -72,7 +72,7 @@ export class GameTimerWatch {
       return null;
     }
     this.stillPackets += 1;
-    if (this.stillPackets < GAME_TIMER_STILL_PACKETS) return null;
+    if (this.stillPackets < this.config.gameTimer.stillPackets) return null;
     this.running = false;
     return { type: 'finished', rawIndex: this.valueRawIndex, gameTimeMs: this.valueMs };
   }

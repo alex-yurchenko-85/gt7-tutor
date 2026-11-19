@@ -4,12 +4,16 @@ import type { INestApplication } from '@nestjs/common';
 import knex, { type Knex } from 'knex';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { hashToken } from '../src/auth/auth.service.js';
+import { SESSION_COOKIE, readCookie } from '../src/auth/session-cookie.js';
+import { SampleCache } from '../src/captures/sample-cache.js';
 import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.factory.js';
 import { LiveHub, type LiveClient } from '../src/live/live-hub.service.js';
 import { createTestApp } from './support/app.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
 import { ManualSource } from './support/live.js';
-import { tempDir } from './support/process.js';
+import { eventually } from '../../../tools/testing/eventually.js';
+import { testTempDir } from '../../../tools/testing/temp-root.js';
 import { FixtureReplays } from './support/replay-sources.js';
 import { anotherProfile, firstProfile, PASSWORD } from './support/session.js';
 
@@ -49,12 +53,12 @@ describe('deleting attempts and history', () => {
         last_raw_index: 1422,
         mode: 'baseline',
         completion: 'complete',
-        measured_ms: 17100,
+        game_ms: 17071,
         started_at: new Date()
       })
       .returning('id');
     const attemptId = row.id as string;
-    await db('cue_events').insert({ attempt_id: attemptId, event_key: 'brake@291', kind: 'brake', decided_mono_ms: 1000, outcome: 'played' });
+    await db('cue_events').insert({ attempt_id: attemptId, event_key: 'brake@291', kind: 'brake', event_kind: 'brake', s_m: 291, decided_mono_ms: 1000, outcome: 'played' });
     await db('attempt_findings').insert({ attempt_id: attemptId, reference_id: referenceId, kind: 'brake-late', event_key: 'brake@291', s_m: 290, size: 4, unit: 'm' });
     return attemptId;
   }
@@ -86,7 +90,7 @@ describe('deleting attempts and history', () => {
 
   beforeEach(async () => {
     await db.raw('truncate table users, sessions, settings cascade');
-    dataDir = tempDir();
+    dataDir = testTempDir('gt7-server-');
     replays = new FixtureReplays();
     app = await createTestApp(database.url, {
       env: { DATA_DIR: dataDir, TELEMETRY_SOURCE: 'replay' },
@@ -290,15 +294,15 @@ describe('deleting attempts and history', () => {
     const foreignPath = await rawPathOf(foreign.captureId);
     const hub = app!.get(LiveHub);
     let closed = false;
-    const client: LiveClient = { id: 'phone', userId: driverId, sessionKey: 'phone-session', expiresAtMs: Number.MAX_SAFE_INTEGER, bufferedAmount: 0, send: () => undefined, close: () => (closed = true) };
+    const client: LiveClient = { id: 'phone', userId: driverId, sessionKey: hashToken(readCookie(cookie, SESSION_COOKIE)!), bufferedAmount: 0, send: () => undefined, close: () => (closed = true) };
     hub.attach(client);
     hub.receive(client, { type: 'claim-voice', deviceId: 'phone', ready: true });
     expect(hub.voiceReady(driverId)).toBe(true);
     const response = await http().post('/api/profiles/me/delete').set('Cookie', cookie).send({ password: PASSWORD }).expect(200);
     expect(response.body).toEqual({ exercises: 1, attempts: 2, references: 1, cleanup: { captures: 1, bytesBefore: ownSize, bytesAfter: 0 } });
     expect(String(response.headers['set-cookie'])).toMatch(/gt7_session=;/);
+    await eventually(() => closed);
     expect(hub.voiceReady(driverId)).toBe(false);
-    expect(closed).toBe(true);
     expect(await db('users').where({ id: driverId })).toEqual([]);
     expect(await db('sessions').where({ user_id: driverId })).toEqual([]);
     expect(await db('exercises').where({ id: own.exerciseId })).toEqual([]);
@@ -310,6 +314,15 @@ describe('deleting attempts and history', () => {
     expect(state.body).toMatchObject({ hasUsers: true, user: null });
     expect(await db('attempts').where({ exercise_id: foreign.exerciseId })).toHaveLength(1);
     await http().get(`/api/exercises/${foreign.exerciseId}`).set('Cookie', other).expect(200);
+  });
+
+  it('history_delete_with_cleanup_forgets_cached_samples', async () => {
+    const captureId = await capture(await exercise(), 'demo-a');
+    const cache = app!.get(SampleCache);
+    await cache.read(captureId, await rawPathOf(captureId));
+    expect(cache.size).toBe(1);
+    await http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'everything', cleanup: true }).expect(200);
+    expect(cache.size).toBe(0);
   });
 
   it('delete_profile_refuses_a_cleanup_field', async () => {

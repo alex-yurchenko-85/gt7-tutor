@@ -1,7 +1,7 @@
 import { createSocket, type Socket } from 'node:dgram';
 import { afterEach, describe, expect, it } from 'vitest';
 import { UdpSource, type Datagram } from '../src/index.ts';
-import { waitFor } from './helpers.ts';
+import { eventually } from '../../../tools/testing/eventually.ts';
 
 const sockets: Socket[] = [];
 const sources: UdpSource[] = [];
@@ -37,7 +37,7 @@ describe('UdpSource', () => {
     const received: Datagram[] = [];
     const source = track(new UdpSource({ ps5Ip: '127.0.0.1', bindPort: 0, heartbeatPort: consolePort, heartbeatMs: 50 }));
     await source.start(datagram => received.push(datagram));
-    await waitFor(() => received.length >= 2);
+    await eventually(() => received.length >= 2);
     expect(received.map(d => [...d.payload])).toEqual([[1, 2, 3], [4, 5, 6]]);
     expect(received[1]!.receivedMonoMs).toBeGreaterThan(received[0]!.receivedMonoMs);
     expect(received[0]!.peerIp).toBe('127.0.0.1');
@@ -53,7 +53,7 @@ describe('UdpSource', () => {
     const received: Datagram[] = [];
     const source = track(new UdpSource({ ps5Ip: '127.0.0.1', bindPort: 0, heartbeatPort: consolePort, heartbeatMs: 50 }));
     await source.start(datagram => received.push(datagram));
-    await waitFor(() => received.length > 0);
+    await eventually(() => received.length > 0);
     expect(received[0]!.payload.byteLength).toBe(368);
   });
 

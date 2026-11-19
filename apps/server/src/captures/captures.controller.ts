@@ -21,11 +21,6 @@ export class CapturesController {
     return this.captures.list(user.id);
   }
 
-  @Get('captures/:id')
-  get(@CurrentUser() user: ProfileUser, @Param('id', ParseUUIDPipe) id: string): Promise<CaptureInfo> {
-    return this.captures.get(user.id, id);
-  }
-
   @Post('captures/:id/stop')
   stop(@CurrentUser() user: ProfileUser, @Param('id', ParseUUIDPipe) id: string): Promise<CaptureInfo> {
     return this.captures.stop(user.id, id);

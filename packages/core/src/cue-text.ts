@@ -1,44 +1,23 @@
-export type CueKind =
-  | 'hard-brake'
-  | 'brake'
-  | 'light-brake'
-  | 'ease-off'
-  | 'throttle'
-  | 'full-throttle'
-  | 'keep-left'
-  | 'keep-right'
-  | 'tighter'
-  | 'big-stop';
+import { CUE_WORDS, type FindingKindName, type WordedCueKind } from '@gt7/contracts';
+import { DEFAULT_CONFIG } from './config.ts';
+import type { Corner } from './corners.ts';
+import type { ReferenceCueEvent } from './cue-events.ts';
 
 export type CountdownKind = 'countdown-three' | 'countdown-two' | 'countdown-one' | 'countdown-start';
 
-export type ClipKind = CueKind | 'guidance-paused' | 'guidance-resumed' | 'voice-check' | CountdownKind;
-
-export type FocusKind = 'brake-early' | 'brake-late' | 'slow-corner' | 'throttle-late' | 'off-line' | 'wide-apex';
+export type ClipKind = WordedCueKind | 'voice-check' | CountdownKind;
 
 export const MIN_TARGET_KPH = 30;
 export const MAX_TARGET_KPH = 350;
-export const TARGET_STEP_KPH = 5;
 export const MAX_SPOKEN_TURN = 10;
 
 export const SUPPORTED_TARGETS_KPH: readonly number[] = Array.from(
-  { length: (MAX_TARGET_KPH - MIN_TARGET_KPH) / TARGET_STEP_KPH + 1 },
-  (_, index) => MIN_TARGET_KPH + index * TARGET_STEP_KPH
+  { length: (MAX_TARGET_KPH - MIN_TARGET_KPH) / DEFAULT_CONFIG.target.roundDownKph + 1 },
+  (_, index) => MIN_TARGET_KPH + index * DEFAULT_CONFIG.target.roundDownKph
 );
 
 const PHRASES: Record<ClipKind, string> = {
-  'hard-brake': 'Hard brake',
-  brake: 'Brake',
-  'light-brake': 'Light brake',
-  'ease-off': 'Ease off',
-  throttle: 'Throttle',
-  'full-throttle': 'Full throttle',
-  'keep-left': 'Keep left',
-  'keep-right': 'Keep right',
-  tighter: 'Tighter',
-  'big-stop': 'Big stop',
-  'guidance-paused': 'Guidance paused',
-  'guidance-resumed': 'Guidance resumed',
+  ...CUE_WORDS,
   'voice-check': 'Voice check',
   'countdown-three': 'Three',
   'countdown-two': 'Two',
@@ -48,7 +27,7 @@ const PHRASES: Record<ClipKind, string> = {
 
 const COUNTDOWN_KINDS: readonly CountdownKind[] = ['countdown-three', 'countdown-two', 'countdown-one', 'countdown-start'];
 
-const FOCUS_ACTIONS: Record<FocusKind, string> = {
+const FOCUS_ACTIONS: Record<FindingKindName, string> = {
   'brake-early': 'Brake later.',
   'brake-late': 'Brake earlier.',
   'slow-corner': 'Carry more speed.',
@@ -110,17 +89,17 @@ function assertTurn(turn: number): void {
   if (!Number.isInteger(turn) || turn < 1) throw new RangeError(`${turn} is not a turn number`);
 }
 
-export function focusText(kind: FocusKind, turn: number): string {
+export function focusText(kind: FindingKindName, turn: number): string {
   assertTurn(turn);
   return `Turn ${turnWords(turn)}. ${FOCUS_ACTIONS[kind]}`;
 }
 
-export function focusClipKey(kind: FocusKind, turn: number): string | null {
+export function focusClipKey(kind: FindingKindName, turn: number): string | null {
   assertTurn(turn);
   return turn <= MAX_SPOKEN_TURN ? `focus-${kind}-${turn}` : null;
 }
 
-const FOCUS_KINDS = Object.keys(FOCUS_ACTIONS) as FocusKind[];
+const FOCUS_KINDS = Object.keys(FOCUS_ACTIONS) as FindingKindName[];
 const SPOKEN_TURNS = Array.from({ length: MAX_SPOKEN_TURN }, (_, index) => index + 1);
 
 export function allClipKeys(): string[] {
@@ -128,6 +107,30 @@ export function allClipKeys(): string[] {
   const focus = FOCUS_KINDS.flatMap(kind => SPOKEN_TURNS.map(turn => focusClipKey(kind, turn)!));
   const speeds = SUPPORTED_TARGETS_KPH.map(speedClipKey);
   return [...fixed, ...focus, ...speeds];
+}
+
+const ALWAYS_LOADED: readonly ClipKind[] = ['keep-left', 'keep-right', 'guidance-paused', 'guidance-resumed', 'voice-check'];
+
+function capitalized(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+export function targetClip(event: Pick<ReferenceCueEvent, 'kind' | 'targetSpeedKph'>): string | null {
+  return event.kind === 'brake' && event.targetSpeedKph !== null ? speedClipKey(event.targetSpeedKph) : null;
+}
+
+export function eventPhrase(event: Pick<ReferenceCueEvent, 'kind' | 'voice' | 'targetSpeedKph'>, speakTargets: boolean): string {
+  const action = cueText(event.voice);
+  if (!speakTargets || event.kind !== 'brake' || event.targetSpeedKph === null) return action;
+  return `${action}. ${capitalized(speedWords(event.targetSpeedKph))}`;
+}
+
+export function clipsOf(events: ReferenceCueEvent[], corners: Corner[]): string[] {
+  const actions = events.flatMap(event => [clipKey(event.voice), targetClip(event)].filter(clip => clip !== null));
+  const bigStop = events.some(event => event.bigStop) ? [clipKey('big-stop')] : [];
+  const tighter = corners.length > 0 ? [clipKey('tighter')] : [];
+  const focus = FOCUS_KINDS.flatMap(kind => corners.map(corner => focusClipKey(kind, corner.number)).filter(clip => clip !== null));
+  return [...new Set([...actions, ...bigStop, ...tighter, ...ALWAYS_LOADED.map(clipKey), ...focus, ...COUNTDOWN_CLIPS])];
 }
 
 const PHRASE_BASE_MS = 200;
@@ -141,7 +144,7 @@ export function clipText(clip: string): string {
     return speedWords(kph);
   }
   const focus = /^focus-([a-z-]+)-(\d+)$/.exec(clip);
-  if (focus && focus[1]! in FOCUS_ACTIONS) return focusText(focus[1] as FocusKind, Number(focus[2]));
+  if (focus && focus[1]! in FOCUS_ACTIONS) return focusText(focus[1] as FindingKindName, Number(focus[2]));
   if (clip in PHRASES) return cueText(clip as ClipKind);
   throw new RangeError(`unknown clip ${clip}`);
 }

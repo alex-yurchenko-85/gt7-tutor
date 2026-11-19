@@ -1,18 +1,14 @@
-export type GuidanceMode = 'active' | 'suspended' | 'waiting-for-restart';
-
-export type GuidanceReason = 'untrusted-position' | 'target-incompatible' | 'model-uncertain' | 'awaiting-restart' | null;
-
-export type GuidanceState = { mode: GuidanceMode; reason: GuidanceReason };
+import type { GuidanceReason, LiveGuidance } from '@gt7/contracts';
 
 export type GuidanceTransition = 'paused' | 'resumed' | null;
 
-const ACTIVE: GuidanceState = { mode: 'active', reason: null };
+export const ACTIVE_GUIDANCE: LiveGuidance = Object.freeze({ mode: 'active', reason: null });
 
 export class Guidance {
-  private current: GuidanceState = ACTIVE;
+  private current: LiveGuidance = ACTIVE_GUIDANCE;
   private resumableSinceMs: number | null = null;
 
-  get state(): GuidanceState {
+  get state(): LiveGuidance {
     return this.current;
   }
 
@@ -32,7 +28,7 @@ export class Guidance {
     }
     this.resumableSinceMs ??= nowMonoMs;
     if (nowMonoMs - this.resumableSinceMs < resumeAfterMs) return null;
-    this.current = ACTIVE;
+    this.current = ACTIVE_GUIDANCE;
     this.resumableSinceMs = null;
     return 'resumed';
   }
@@ -43,7 +39,7 @@ export class Guidance {
   }
 
   reset(): void {
-    this.current = ACTIVE;
+    this.current = ACTIVE_GUIDANCE;
     this.resumableSinceMs = null;
   }
 }

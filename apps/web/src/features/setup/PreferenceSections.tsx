@@ -1,10 +1,11 @@
-import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { STATE_RATES, type StateRate } from '@gt7/contracts';
-import { useLive } from '../../api/live.tsx';
+import { useLiveConnection } from '../../api/live.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
 import { api } from '../../api/client.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { setStateRate, stateRate } from '../../app/state-rate.ts';
+import { RadioGroup, type RadioOption } from '../../app/RadioGroup.tsx';
 import { ThemeSwitch } from '../../app/ThemeSwitch.tsx';
 
 function GameVersionRow() {
@@ -68,21 +69,15 @@ function GameVersionRow() {
   );
 }
 
+const RATE_OPTIONS: RadioOption<StateRate>[] = STATE_RATES.map(rate => ({ value: rate, ariaLabel: `${rate} per second`, content: `${rate}/s` }));
+
 function StateRateRow() {
-  const { send } = useLive();
+  const { send } = useLiveConnection();
   const [rate, setRate] = useState<StateRate>(stateRate);
   const select = (next: StateRate) => {
     setRate(next);
     setStateRate(next);
     send({ type: 'state-rate', perSecond: next });
-  };
-  const move = (event: KeyboardEvent<HTMLDivElement>) => {
-    const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
-    if (step === 0) return;
-    event.preventDefault();
-    const next = STATE_RATES[(STATE_RATES.indexOf(rate) + step + STATE_RATES.length) % STATE_RATES.length]!;
-    select(next);
-    event.currentTarget.querySelector<HTMLButtonElement>(`[data-rate="${next}"]`)?.focus();
   };
   return (
     <div className="pref">
@@ -96,22 +91,7 @@ function StateRateRow() {
         </span>
       </span>
       <div className="pref-control">
-        <div className="theme-switch" role="radiogroup" aria-labelledby="state-rate-title" onKeyDown={move}>
-          {STATE_RATES.map(option => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={rate === option}
-              aria-label={`${option} per second`}
-              tabIndex={rate === option ? 0 : -1}
-              data-rate={option}
-              onClick={() => select(option)}
-            >
-              {option}/s
-            </button>
-          ))}
-        </div>
+        <RadioGroup className="theme-switch" labelledBy="state-rate-title" options={RATE_OPTIONS} value={rate} onChange={select} />
       </div>
     </div>
   );

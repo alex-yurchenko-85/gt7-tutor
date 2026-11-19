@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { consoleState, voiceState } from '../src/features/setup/readiness.ts';
+import { consoleState, voiceState } from '../src/app/status.ts';
 import { liveState } from './support.tsx';
 
 describe('readiness', () => {

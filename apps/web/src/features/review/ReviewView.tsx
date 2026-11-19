@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import type { AttemptReaction, AttemptReview, AttemptSummary, CornerReview, Difference, Exercise, ReferenceInfo, ReviewSeries, TurnLossInfo } from '@gt7/contracts';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { KPH_PER_MPS, WIDE_APEX_M, eventKeyPlace, type AttemptReaction, type AttemptReview, type AttemptSummary, type CornerReview, type Difference, type Exercise, type ReferenceInfo, type ReviewSeries, type TurnLossInfo } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
-import { ChannelChart, type ChartBand, type ChartTick } from '../../charts/ChannelChart.tsx';
+import { ChannelChart, type ChartBand, type ChartSeries, type ChartTick } from '../../charts/ChannelChart.tsx';
 import { signedTickLabel, tickLabel, tickStep, valueTicks } from '../../charts/ticks.ts';
 import { TrackMap, type TrackLine } from '../../charts/TrackMap.tsx';
 import { DangerRow } from '../../app/DangerRow.tsx';
@@ -18,8 +18,6 @@ import { DeleteAttemptsDialog } from '../attempts/DeleteAttemptsDialog.tsx';
 import { groupByTurn, type TurnGroup, type TurnOrder } from './turn-groups.ts';
 import './review.css';
 
-const KPH_PER_MPS = 3.6;
-const WIDE_APEX_M = 2;
 
 function line(review: AttemptReview, series: ReviewSeries): TrackLine {
   return { gridM: review.gridM, x: series.x, z: series.z };
@@ -79,74 +77,65 @@ function ticksOf(min: number, max: number, label: (value: number, step: number) 
   return values.map(value => ({ value, label: label(value, step) }));
 }
 
-type ChartsProps = { review: AttemptReview; cursorSM: number; onCursor(sM: number): void };
+type ChartsProps = { review: AttemptReview; cursorSM: number; onCursor(sM: number): void; onScrub(sM: number): void };
 
-function Charts({ review, cursorSM, onCursor }: ChartsProps) {
-  const index = Math.min(review.reference.v.length - 1, Math.round(cursorSM / review.gridM));
+type Channel = { id: string; label: string; series: ChartSeries[]; min: number; max: number; ticks: ChartTick[]; turnLabels?: boolean };
+
+type Derived = { refSpeed: (number | null)[]; youSpeed: (number | null)[]; loss: (number | null)[]; bands: ChartBand[]; channels: Channel[] };
+
+function derive(review: AttemptReview): Derived {
   const refSpeed = scaled(review.reference.v, KPH_PER_MPS);
   const youSpeed = scaled(review.attempt.v, KPH_PER_MPS);
   const speeds = finite([refSpeed, youSpeed]);
   const loss = timeLossS(review);
   const lossLimit = Math.max(0.1, ...finite([loss]).map(Math.abs)) * 1.1;
+  const speedMin = Math.min(...speeds) * 0.9;
+  const speedMax = Math.max(...speeds) * 1.05;
+  const pair = (ref: (number | null)[], you: (number | null)[]): ChartSeries[] => [
+    { name: 'ref', values: ref },
+    { name: 'you', values: you }
+  ];
+  return {
+    refSpeed,
+    youSpeed,
+    loss,
+    bands: turnBands(review),
+    channels: [
+      { id: 'speed', label: 'Speed, km/h', series: pair(refSpeed, youSpeed), min: speedMin, max: speedMax, ticks: ticksOf(speedMin, speedMax, tickLabel), turnLabels: true },
+      { id: 'throttle', label: 'Throttle', series: pair(review.reference.th, review.attempt.th), min: 0, max: 1, ticks: SHARE_TICKS },
+      { id: 'brake', label: 'Brake', series: pair(review.reference.br, review.attempt.br), min: 0, max: 1, ticks: SHARE_TICKS },
+      { id: 'time', label: 'Time lost to the reference, s', series: [{ name: 'ink', values: loss }], min: -lossLimit, max: lossLimit, ticks: ticksOf(-lossLimit, lossLimit, signedTickLabel) }
+    ]
+  };
+}
+
+function Charts({ review, cursorSM, onCursor, onScrub }: ChartsProps) {
+  const index = Math.min(review.reference.v.length - 1, Math.round(cursorSM / review.gridM));
+  const { refSpeed, youSpeed, loss, bands, channels } = useMemo(() => derive(review), [review]);
   const kph = (value: number | null) => (value === null ? 'no data' : `${Math.round(value)}`);
   const lossAt = at(loss, index);
   const lateral = at(review.attempt.lat, index);
-  const bands = turnBands(review);
-  const common = { gridM: review.gridM, lengthM: review.lengthM, cursorSM, onCursor, bands };
-  const speedMin = Math.min(...speeds) * 0.9;
-  const speedMax = Math.max(...speeds) * 1.05;
+  const readouts: Record<string, string> = {
+    speed: both(kph(at(refSpeed, index)), kph(at(youSpeed, index))),
+    throttle: both(percent(at(review.reference.th, index)), percent(at(review.attempt.th, index))),
+    brake: both(percent(at(review.reference.br, index)), percent(at(review.attempt.br, index))),
+    time: lossAt === null ? 'no match here' : `${lossAt >= 0 ? '+' : ''}${lossAt.toFixed(2)} s${lateral === null ? '' : `, ${Math.abs(lateral).toFixed(1)} m from the line`}`
+  };
   return (
     <div className="charts">
-      <ChannelChart
-        {...common}
-        id="speed"
-        label="Speed, km/h"
-        series={[
-          { name: 'ref', values: refSpeed },
-          { name: 'you', values: youSpeed }
-        ]}
-        min={speedMin}
-        max={speedMax}
-        ticks={ticksOf(speedMin, speedMax, tickLabel)}
-        turnLabels
-        readout={both(kph(at(refSpeed, index)), kph(at(youSpeed, index)))}
-      />
-      <ChannelChart
-        {...common}
-        id="throttle"
-        label="Throttle"
-        series={[
-          { name: 'ref', values: review.reference.th },
-          { name: 'you', values: review.attempt.th }
-        ]}
-        min={0}
-        max={1}
-        ticks={SHARE_TICKS}
-        readout={both(percent(at(review.reference.th, index)), percent(at(review.attempt.th, index)))}
-      />
-      <ChannelChart
-        {...common}
-        id="brake"
-        label="Brake"
-        series={[
-          { name: 'ref', values: review.reference.br },
-          { name: 'you', values: review.attempt.br }
-        ]}
-        min={0}
-        max={1}
-        ticks={SHARE_TICKS}
-        readout={both(percent(at(review.reference.br, index)), percent(at(review.attempt.br, index)))}
-      />
-      <ChannelChart
-        {...common}
-        id="time"
-        label="Time lost to the reference, s"
-        series={[{ name: 'ink', values: loss }]}
-        min={-lossLimit}
-        max={lossLimit}
-        ticks={ticksOf(-lossLimit, lossLimit, signedTickLabel)}
-        readout={lossAt === null ? 'no match here' : `${lossAt >= 0 ? '+' : ''}${lossAt.toFixed(2)} s${lateral === null ? '' : `, ${Math.abs(lateral).toFixed(1)} m from the line`}`}
-      />
+      {channels.map(channel => (
+        <ChannelChart
+          key={channel.id}
+          gridM={review.gridM}
+          lengthM={review.lengthM}
+          cursorSM={cursorSM}
+          onCursor={onCursor}
+          onScrub={onScrub}
+          bands={bands}
+          {...channel}
+          readout={readouts[channel.id]!}
+        />
+      ))}
       <p className="cursor-line" aria-live="polite">
         Cursor at {Math.round(cursorSM)} m of {Math.round(review.lengthM)} m
       </p>
@@ -209,7 +198,7 @@ function OrderSwitch({ order, onOrder }: { order: TurnOrder; onOrder(order: Turn
   );
 }
 
-function Differences({ findings, losses, selected, onSelect }: DifferencesProps) {
+const Differences = memo(function Differences({ findings, losses, selected, onSelect }: DifferencesProps) {
   const [order, setOrder] = useState<TurnOrder>('track');
   const groups = groupByTurn(findings, losses, order);
   return (
@@ -223,9 +212,9 @@ function Differences({ findings, losses, selected, onSelect }: DifferencesProps)
       ))}
     </section>
   );
-}
+});
 
-function Corners({ corners }: { corners: CornerReview[] }) {
+const Corners = memo(function Corners({ corners }: { corners: CornerReview[] }) {
   if (corners.length === 0) return null;
   return (
     <section aria-labelledby="corners-title" className="corners">
@@ -249,9 +238,9 @@ function Corners({ corners }: { corners: CornerReview[] }) {
       </ol>
     </section>
   );
-}
+});
 
-function Reactions({ reactions }: { reactions: AttemptReaction[] }) {
+const Reactions = memo(function Reactions({ reactions }: { reactions: AttemptReaction[] }) {
   if (reactions.length === 0) return null;
   return (
     <section aria-labelledby="reaction-title" className="reactions">
@@ -259,35 +248,36 @@ function Reactions({ reactions }: { reactions: AttemptReaction[] }) {
       <ul>
         {reactions.map(reaction => (
           <li key={reaction.eventKey}>
-            {metres(Number(reaction.eventKey.slice(reaction.eventKey.indexOf('@') + 1)))}: you started to brake {reactionText(reaction.reactionMs)}
+            {metres(eventKeyPlace(reaction.eventKey) ?? 0)}: you started to brake {reactionText(reaction.reactionMs)}
           </li>
         ))}
       </ul>
       <p className="sub">Measured from the start of the spoken phrase to brake pressure above 10%. Move a cue in the cue list if it comes too late.</p>
     </section>
   );
-}
+});
 
 function ReviewMap({ review, cursorSM, selected, onSelect }: { review: AttemptReview; cursorSM: number; selected: number | null; onSelect(index: number): void }) {
+  const reference = useMemo(() => line(review, review.reference), [review]);
+  const attempt = useMemo(() => line(review, review.attempt), [review]);
+  const corners = useMemo(() => cornerMarks(review.corners), [review.corners]);
+  const marks = useMemo(
+    () => [
+      ...corners,
+      ...review.findings.map((finding, index) => ({
+        sM: finding.sM,
+        selected: selected === index,
+        onAttempt: true,
+        title: `${metres(finding.sM)}. ${differenceText(finding)}`,
+        onSelect: () => onSelect(index)
+      }))
+    ],
+    [corners, review.findings, selected, onSelect]
+  );
   return (
     <div className="review-map">
       <div className="plot">
-        <TrackMap
-          label="Map of the reference line and your line"
-          reference={line(review, review.reference)}
-          attempt={line(review, review.attempt)}
-          cursorSM={cursorSM}
-          marks={[
-            ...cornerMarks(review.corners),
-            ...review.findings.map((finding, index) => ({
-              sM: finding.sM,
-              selected: selected === index,
-              onAttempt: true,
-              title: `${metres(finding.sM)}. ${differenceText(finding)}`,
-              onSelect: () => onSelect(index)
-            }))
-          ]}
-        />
+        <TrackMap label="Map of the reference line and your line" reference={reference} attempt={attempt} cursorSM={cursorSM} marks={marks} />
       </div>
       <div className="legend">
         <span>
@@ -314,7 +304,7 @@ function promoteProblem(error: unknown): string {
 function AttemptFacts({ attempt }: { attempt: AttemptSummary }) {
   const [message, setMessage] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
-  const promotable = attempt.completion === 'complete' && attempt.gameMs !== null;
+  const promotable = attempt.completion === 'complete' && attempt.timeMs !== null;
   const promote = async () => {
     setProblem(null);
     try {
@@ -357,18 +347,48 @@ function AttemptFacts({ attempt }: { attempt: AttemptSummary }) {
   );
 }
 
+function useFrameCursor(): [number, (sM: number) => void, (sM: number) => void] {
+  const [cursorSM, setCursorSM] = useState(0);
+  const frame = useRef<number | null>(null);
+  const pending = useRef(0);
+  const cancel = useCallback(() => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+  }, []);
+  const setNow = useCallback(
+    (sM: number) => {
+      cancel();
+      setCursorSM(sM);
+    },
+    [cancel]
+  );
+  const scrub = useCallback((sM: number) => {
+    pending.current = sM;
+    if (frame.current !== null) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      setCursorSM(pending.current);
+    });
+  }, []);
+  useEffect(() => cancel, [cancel]);
+  return [cursorSM, setNow, scrub];
+}
+
 function ReviewBody({ attempt, review, references }: { attempt: AttemptSummary; review: AttemptReview; references: ReferenceInfo[] }) {
   const wide = useWideLayout();
   const { navigate } = useRouter();
-  const [cursorSM, setCursorSM] = useState(0);
+  const [cursorSM, setCursorNow, scrub] = useFrameCursor();
   const [selected, setSelected] = useState<number | null>(null);
-  const select = (index: number) => {
-    setSelected(index);
-    setCursorSM(review.findings[index]!.sM);
-  };
+  const select = useCallback(
+    (index: number) => {
+      setSelected(index);
+      setCursorNow(review.findings[index]!.sM);
+    },
+    [review.findings, setCursorNow]
+  );
   const switchReference = (referenceId: string) => navigate(paths.review(attempt.id, referenceId === attempt.referenceId ? undefined : referenceId));
   const map = <ReviewMap review={review} cursorSM={cursorSM} selected={selected} onSelect={select} />;
-  const charts = <Charts review={review} cursorSM={cursorSM} onCursor={setCursorSM} />;
+  const charts = <Charts review={review} cursorSM={cursorSM} onCursor={setCursorNow} onScrub={scrub} />;
   const differences = (
     <>
       <Differences findings={review.findings} losses={review.turnLosses} selected={selected} onSelect={select} />
@@ -418,7 +438,7 @@ function ReviewBody({ attempt, review, references }: { attempt: AttemptSummary; 
 
 function ReviewHeader({ attempt, exercise, review }: { attempt: AttemptSummary; exercise: Exercise | null; review: AttemptReview | null }) {
   const { user } = useSession();
-  const gapMs = attempt.completion === 'complete' && attempt.gameMs !== null && review ? attempt.gameMs - review.referenceTimeMs : null;
+  const gapMs = attempt.completion === 'complete' && attempt.timeMs !== null && review ? attempt.timeMs - review.referenceTimeMs : null;
   const time = attempt.completion === 'complete' ? formatTime(attempt.timeMs) : 'no time';
   const timed = attempt.completion === 'complete' && attempt.timeMs !== null;
   return (

@@ -27,35 +27,29 @@ describe('access', () => {
     expect(sockets.sockets).toHaveLength(1);
   });
 
-  it('repeated_4401_closes_reconnect_with_growing_delays', async () => {
+  it('close_4401_ends_the_session_and_does_not_reconnect', async () => {
     setViewportWidth(1280);
-    const api = new ApiStub().on('GET /api/auth/state', { hasUsers: true, user: USER }).on('GET /api/exercises', []).install();
-    const reloads = () => api.calls.filter(call => call.path === '/api/auth/state').length;
+    let reloads = 0;
+    const api = new ApiStub()
+      .on('GET /api/auth/state', () => (++reloads === 1 ? { hasUsers: true, user: USER } : new Promise(() => undefined)))
+      .on('GET /api/exercises', [])
+      .install();
     const { sockets } = renderApp();
     await waitFor(() => expect(sockets.sockets).toHaveLength(1));
     act(() => sockets.latest.close(4401));
-    expect(reloads()).toBe(2);
-    await new Promise(resolve => setTimeout(resolve, 700));
-    expect(sockets.sockets).toHaveLength(1);
-    await waitFor(() => expect(sockets.sockets).toHaveLength(2), { timeout: 1000 });
-    act(() => sockets.latest.close(4401));
-    expect(reloads()).toBe(3);
+    expect(api.calls.filter(call => call.path === '/api/auth/state')).toHaveLength(2);
     await new Promise(resolve => setTimeout(resolve, 1500));
-    expect(sockets.sockets).toHaveLength(2);
-    await waitFor(() => expect(sockets.sockets).toHaveLength(3), { timeout: 1000 });
-  }, 10000);
+    expect(sockets.sockets).toHaveLength(1);
+  });
 
-  it('a_successful_open_resets_the_reconnect_delay', async () => {
+  it('new_sign_in_of_the_same_user_opens_a_new_socket', async () => {
     setViewportWidth(1280);
     new ApiStub().on('GET /api/auth/state', { hasUsers: true, user: USER }).on('GET /api/exercises', []).install();
     const { sockets } = renderApp();
     await waitFor(() => expect(sockets.sockets).toHaveLength(1));
     act(() => sockets.latest.close(4401));
-    await waitFor(() => expect(sockets.sockets).toHaveLength(2), { timeout: 1500 });
-    act(() => sockets.latest.open());
-    act(() => sockets.latest.close(1006));
-    await waitFor(() => expect(sockets.sockets).toHaveLength(3), { timeout: 1300 });
-  }, 10000);
+    await waitFor(() => expect(sockets.sockets).toHaveLength(2), { timeout: 500 });
+  });
 
   it('first_visit_shows_create_profile', async () => {
     setViewportWidth(1280);

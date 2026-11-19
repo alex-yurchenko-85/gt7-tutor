@@ -1,3 +1,5 @@
+import { memo, useMemo } from 'react';
+import { WIDTH, finitePoints, lineSegments, projection, type Point } from './geometry.ts';
 import './charts.css';
 
 export type TrackLine = { gridM: number; x: (number | null)[]; z: (number | null)[] };
@@ -22,51 +24,6 @@ type TrackMapProps = {
   label: string;
 };
 
-const WIDTH = 800;
-const PAD = 30;
-const MIN_HEIGHT = 220;
-
-type Point = [number, number];
-
-function finitePoints(line: TrackLine): Point[] {
-  return line.x.flatMap((x, index) => {
-    const z = line.z[index];
-    return x === null || z === null || z === undefined ? [] : [[x, z] as Point];
-  });
-}
-
-function projection(lines: TrackLine[]) {
-  const points = lines.flatMap(finitePoints);
-  const xs = points.map(point => point[0]);
-  const zs = points.map(point => point[1]);
-  const x0 = Math.min(...xs);
-  const x1 = Math.max(...xs);
-  const z0 = Math.min(...zs);
-  const z1 = Math.max(...zs);
-  const scale = (WIDTH - 2 * PAD) / Math.max(1, x1 - x0, (z1 - z0) * 1.6);
-  const height = Math.max(MIN_HEIGHT, Math.round((z1 - z0) * scale) + 2 * PAD);
-  const offsetX = (WIDTH - (x1 - x0) * scale) / 2;
-  const offsetY = (height - (z1 - z0) * scale) / 2;
-  const project = (x: number, z: number): Point => [Number((offsetX + (x - x0) * scale).toFixed(1)), Number((offsetY + (z - z0) * scale).toFixed(1))];
-  return { height, project };
-}
-
-export function lineSegments(line: TrackLine, project: (x: number, z: number) => Point): string[] {
-  const segments: string[] = [];
-  let current: string[] = [];
-  line.x.forEach((x, index) => {
-    const z = line.z[index];
-    if (x === null || z === null || z === undefined) {
-      if (current.length > 1) segments.push(current.join(' '));
-      current = [];
-      return;
-    }
-    current.push(project(x, z).join(','));
-  });
-  if (current.length > 1) segments.push(current.join(' '));
-  return segments;
-}
-
 function pointOn(line: TrackLine, sM: number): Point | null {
   const last = line.x.length - 1;
   const target = Math.max(0, Math.min(last, Math.round(sM / line.gridM)));
@@ -79,6 +36,8 @@ function pointOn(line: TrackLine, sM: number): Point | null {
   }
   return null;
 }
+
+const NO_MARKS: TrackMark[] = [];
 
 const TICK_HALF_PX = 9;
 const APEX_OFFSET_PX = 30;
@@ -129,26 +88,37 @@ function ApexMark({ mark, reference, project }: MarkProps) {
   );
 }
 
-export function TrackMap({ reference, attempt, marks = [], cursorSM, dark = false, label }: TrackMapProps) {
-  const lines = attempt ? [reference, attempt] : [reference];
+type Geometry = {
+  height: number;
+  project: (x: number, z: number) => Point;
+  referenceSegments: string[];
+  attemptSegments: string[] | null;
+  startPoint: Point | null;
+  endPoint: Point | null;
+};
+
+function geometryOf(reference: TrackLine, attempt: TrackLine | null | undefined): Geometry | null {
   if (finitePoints(reference).length < 2) return null;
-  const { height, project } = projection(lines);
-  const start = pointOn(reference, 0);
-  const end = pointOn(reference, (reference.x.length - 1) * reference.gridM);
-  const cursorLine = attempt ?? reference;
-  const cursor = cursorSM === null || cursorSM === undefined ? null : pointOn(cursorLine, cursorSM);
+  const { height, project } = projection(attempt ? [reference, attempt] : [reference]);
   const projected = (point: Point | null) => (point ? project(point[0], point[1]) : null);
-  const startPoint = projected(start);
-  const endPoint = projected(end);
-  const cursorPoint = projected(cursor);
+  return {
+    height,
+    project,
+    referenceSegments: lineSegments(reference, project),
+    attemptSegments: attempt ? lineSegments(attempt, project) : null,
+    startPoint: projected(pointOn(reference, 0)),
+    endPoint: projected(pointOn(reference, (reference.x.length - 1) * reference.gridM))
+  };
+}
+
+const LinesLayer = memo(function LinesLayer({ geometry }: { geometry: Geometry }) {
+  const { referenceSegments, attemptSegments, startPoint, endPoint } = geometry;
   return (
-    <svg className={`track-map${dark ? ' dark' : ''}`} viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-label={label}>
-      {lineSegments(reference, project).map((points, index) => (
+    <>
+      {referenceSegments.map((points, index) => (
         <polyline key={`r${index}`} className="track-reference" points={points} />
       ))}
-      {attempt
-        ? lineSegments(attempt, project).map((points, index) => <polyline key={`a${index}`} className="track-attempt" data-segment="attempt" points={points} />)
-        : null}
+      {attemptSegments ? attemptSegments.map((points, index) => <polyline key={`a${index}`} className="track-attempt" data-segment="attempt" points={points} />) : null}
       {startPoint ? (
         <text className="track-label" x={startPoint[0]} y={startPoint[1] - 16} textAnchor="end">
           start
@@ -159,6 +129,16 @@ export function TrackMap({ reference, attempt, marks = [], cursorSM, dark = fals
           finish
         </text>
       ) : null}
+    </>
+  );
+});
+
+type MarksLayerProps = { marks: TrackMark[]; reference: TrackLine; attempt: TrackLine | null | undefined; project: (x: number, z: number) => Point };
+
+const MarksLayer = memo(function MarksLayer({ marks, reference, attempt, project }: MarksLayerProps) {
+  const projected = (point: Point | null) => (point ? project(point[0], point[1]) : null);
+  return (
+    <>
       {marks.map((mark, index) => {
         if (mark.kind === 'turn-in') return <TurnInTick key={index} mark={mark} reference={reference} project={project} />;
         if (mark.kind === 'apex') return <ApexMark key={index} mark={mark} reference={reference} project={project} />;
@@ -200,6 +180,21 @@ export function TrackMap({ reference, attempt, marks = [], cursorSM, dark = fals
           </g>
         );
       })}
+    </>
+  );
+});
+
+export function TrackMap({ reference, attempt, marks = NO_MARKS, cursorSM, dark = false, label }: TrackMapProps) {
+  const geometry = useMemo(() => geometryOf(reference, attempt), [reference, attempt]);
+  if (!geometry) return null;
+  const { height, project } = geometry;
+  const cursorLine = attempt ?? reference;
+  const cursor = cursorSM === null || cursorSM === undefined ? null : pointOn(cursorLine, cursorSM);
+  const cursorPoint = cursor ? project(cursor[0], cursor[1]) : null;
+  return (
+    <svg className={`track-map${dark ? ' dark' : ''}`} viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-label={label}>
+      <LinesLayer geometry={geometry} />
+      <MarksLayer marks={marks} reference={reference} attempt={attempt} project={project} />
       {cursorPoint ? <circle className="track-cursor" cx={cursorPoint[0]} cy={cursorPoint[1]} r={8} /> : null}
     </svg>
   );

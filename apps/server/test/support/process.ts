@@ -1,15 +1,8 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
 import { createServer } from 'node:net';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const builtMain = fileURLToPath(new URL('../../dist/main.js', import.meta.url));
-
-export function tempDir(): string {
-  return mkdtempSync(join(process.env.GT7_TEST_TEMP_ROOT ?? tmpdir(), 'gt7-server-'));
-}
 
 export function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {

@@ -1,4 +1,8 @@
 import type { Sample, Vec3 } from '@gt7/contracts';
+import { DEFAULT_CONFIG, type CoreConfig } from '../src/config.ts';
+import { findCorners } from '../src/corners.ts';
+import { buildCueEvents, type ReferenceCueEvent } from '../src/cue-events.ts';
+import type { ReferenceAnalysis } from '../src/reference-analysis.ts';
 import { buildReference, type ReferencePath } from '../src/reference.ts';
 import { between, samplesOf } from './fixtures.ts';
 import { drive, FRAME_MS, type Waypoint } from './synthetic.ts';
@@ -8,6 +12,18 @@ let interlagos: ReferencePath | null = null;
 export function interlagosReference(): ReferencePath {
   interlagos ??= buildReference(between(samplesOf('demo-a'), 457, 1422), 'flying');
   return interlagos;
+}
+
+export function analysisOf(path: ReferencePath, events: ReferenceCueEvent[] = buildCueEvents(path, DEFAULT_CONFIG), config: CoreConfig = DEFAULT_CONFIG): ReferenceAnalysis {
+  const sorted = [...events].sort((a, b) => a.sM - b.sM);
+  return { path, events, corners: findCorners(path, sorted, config), timeMs: path.points.at(-1)!.timerMs };
+}
+
+let interlagosAnalysisValue: ReferenceAnalysis | null = null;
+
+export function interlagosAnalysis(): ReferenceAnalysis {
+  interlagosAnalysisValue ??= analysisOf(interlagosReference());
+  return interlagosAnalysisValue;
 }
 
 export function polyline(corners: Vec3[], speedMps: number, stepM = 0.5): Waypoint[] {

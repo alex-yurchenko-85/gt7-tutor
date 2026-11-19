@@ -3,12 +3,14 @@ import { buildReview, type Review, type Series } from '../src/compare.ts';
 import { DEFAULT_CONFIG } from '../src/config.ts';
 import { findDifferences, recurring, type Finding } from '../src/findings.ts';
 import { between, samplesOf } from './fixtures.ts';
-import { interlagosReference } from './paths.ts';
+import { interlagosAnalysis } from './paths.ts';
 import { event } from './coaching.ts';
 import type { Corner } from '../src/corners.ts';
+import { kph } from '../src/units.ts';
+import { KPH_PER_MPS } from '@gt7/contracts';
 
 function syntheticCorner(number: number, apexSM: number, insideSign: 1 | -1 = 1): Corner {
-  return { number, zoneStartSM: apexSM - 60, turnInSM: apexSM - 30, apexSM, radiusM: 50, apexSpeedKph: 100, insideSign };
+  return { number, zoneStartSM: apexSM - 60, turnInSM: apexSM - 30, apexSM, radiusM: 50, apexSpeedMps: kph(100), insideSign };
 }
 
 const GRID = 2;
@@ -43,13 +45,12 @@ function review(o: Partial<Review>): Review {
 }
 
 function finding(kind: Finding['kind'], eventKey: string | null, size: number, sM = 100): Finding {
-  return { kind, eventKey, sM, size, unit: kind === 'slow-corner' ? 'km/h' : 'm' };
+  return { kind, eventKey, sM, size, unit: kind === 'slow-corner' ? 'm/s' : 'm' };
 }
 
 describe('findDifferences', () => {
   it('pause_run_first_brake_is_early', () => {
-    const path = interlagosReference();
-    const findings = findDifferences(buildReview(between(samplesOf('ce-pause'), 11564, 13309), path, DEFAULT_CONFIG), DEFAULT_CONFIG);
+    const findings = findDifferences(buildReview(between(samplesOf('ce-pause'), 11564, 13309), interlagosAnalysis(), DEFAULT_CONFIG), DEFAULT_CONFIG);
     const early = findings.find(entry => entry.kind === 'brake-early' && entry.eventKey === 'brake@291')!;
     expect(early).toBeDefined();
     expect(early.size).toBeGreaterThanOrEqual(30);
@@ -60,8 +61,7 @@ describe('findDifferences', () => {
   });
 
   it('slow_run_first_brake_is_late', () => {
-    const path = interlagosReference();
-    const findings = findDifferences(buildReview(between(samplesOf('ce-slow'), 5491, 6624), path, DEFAULT_CONFIG), DEFAULT_CONFIG);
+    const findings = findDifferences(buildReview(between(samplesOf('ce-slow'), 5491, 6624), interlagosAnalysis(), DEFAULT_CONFIG), DEFAULT_CONFIG);
     const late = findings.find(entry => entry.kind === 'brake-late' && entry.eventKey === 'brake@291')!;
     expect(late.size).toBeGreaterThanOrEqual(30);
     expect(late.size).toBeLessThanOrEqual(45);
@@ -118,8 +118,8 @@ describe('findDifferences', () => {
     expect(findDifferences(review({ reference, attempt: slower(8), referenceEvents: brake }), DEFAULT_CONFIG)).toEqual([]);
     const found = findDifferences(review({ reference, attempt: slower(9), referenceEvents: brake }), DEFAULT_CONFIG);
     expect(found).toHaveLength(1);
-    expect(found[0]).toMatchObject({ kind: 'slow-corner', eventKey: 'brake@100', unit: 'km/h' });
-    expect(found[0]!.size).toBeCloseTo(9, 6);
+    expect(found[0]).toMatchObject({ kind: 'slow-corner', eventKey: 'brake@100', unit: 'm/s' });
+    expect(found[0]!.size * KPH_PER_MPS).toBeCloseTo(9, 6);
   });
 
   it('missing_attempt_event_gives_no_brake_finding', () => {
@@ -155,7 +155,7 @@ describe('recurring', () => {
 
 describe('wide apex', () => {
   it('wide_apex_on_the_clean_run', () => {
-    const findings = findDifferences(buildReview(between(samplesOf('ce-clean'), 8451, 9479), interlagosReference(), DEFAULT_CONFIG), DEFAULT_CONFIG);
+    const findings = findDifferences(buildReview(between(samplesOf('ce-clean'), 8451, 9479), interlagosAnalysis(), DEFAULT_CONFIG), DEFAULT_CONFIG);
     const wide = findings.filter(entry => entry.kind === 'wide-apex');
     expect(wide.map(entry => entry.eventKey)).toEqual(['corner-1']);
     expect(Math.abs(wide[0]!.size - 3.0)).toBeLessThanOrEqual(0.5);
@@ -164,12 +164,12 @@ describe('wide apex', () => {
   });
 
   it('slow_run_has_no_wide_apex', () => {
-    const findings = findDifferences(buildReview(between(samplesOf('ce-slow'), 5491, 6624), interlagosReference(), DEFAULT_CONFIG), DEFAULT_CONFIG);
+    const findings = findDifferences(buildReview(between(samplesOf('ce-slow'), 5491, 6624), interlagosAnalysis(), DEFAULT_CONFIG), DEFAULT_CONFIG);
     expect(findings.filter(entry => entry.kind === 'wide-apex')).toEqual([]);
   });
 
   it('review_lists_the_corners', () => {
-    const corners = buildReview(between(samplesOf('ce-clean'), 8451, 9479), interlagosReference(), DEFAULT_CONFIG).corners;
+    const corners = buildReview(between(samplesOf('ce-clean'), 8451, 9479), interlagosAnalysis(), DEFAULT_CONFIG).corners;
     expect(corners.map(corner => corner.number)).toEqual([1]);
   });
 

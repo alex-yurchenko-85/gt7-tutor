@@ -1,6 +1,10 @@
+import { median as medianOrNull } from '@gt7/contracts';
+
 export function median(values: number[]): number {
-  if (values.length === 0) return Number.NaN;
+  return medianOrNull(values) ?? Number.NaN;
+}
+
+export function percentile95(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 1 ? sorted[middle]! : (sorted[middle - 1]! + sorted[middle]!) / 2;
+  return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] ?? Number.POSITIVE_INFINITY;
 }

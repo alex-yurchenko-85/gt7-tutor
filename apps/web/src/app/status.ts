@@ -10,8 +10,30 @@ export function telemetryStatus(state: LiveState | null, connected: boolean, dem
   return { tone: 'off', text: demo ? 'Recorded attempt ended' : 'No packets. Check the console address' };
 }
 
+export type ConsoleState = 'recorded-data' | 'no-address' | 'receiving' | 'address-saved';
+
+export type VoiceState = 'none' | 'elsewhere' | 'here' | 'here-not-ready';
+
+export function consoleState(ps5Ip: string | null | undefined, state: LiveState | null, connected: boolean, recordedData: boolean): ConsoleState {
+  if (recordedData) return 'recorded-data';
+  if (ps5Ip === null) return 'no-address';
+  if (connected && state?.connection === 'connected') return 'receiving';
+  return 'address-saved';
+}
+
+export function voiceState(state: LiveState | null, deviceId: string): VoiceState {
+  if (!state || state.voiceDeviceId === null) return 'none';
+  if (state.voiceDeviceId !== deviceId) return 'elsewhere';
+  return state.voiceReady ? 'here' : 'here-not-ready';
+}
+
+const VOICE_STATUS: Record<VoiceState, Status> = {
+  none: { tone: 'off', text: 'Voice not ready' },
+  elsewhere: { tone: 'idle', text: 'Voice on another device' },
+  here: { tone: 'on', text: 'Voice on this device' },
+  'here-not-ready': { tone: 'warn', text: 'Voice not ready on this device' }
+};
+
 export function voiceStatus(state: LiveState | null, deviceId: string): Status {
-  if (!state || state.voiceDeviceId === null) return { tone: 'off', text: 'Voice not ready' };
-  if (state.voiceDeviceId !== deviceId) return { tone: 'idle', text: 'Voice on another device' };
-  return state.voiceReady ? { tone: 'on', text: 'Voice on this device' } : { tone: 'warn', text: 'Voice not ready on this device' };
+  return VOICE_STATUS[voiceState(state, deviceId)];
 }

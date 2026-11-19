@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CatalogueListEntry, Exercise, Progress, ProgressCollection, Settings } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
-import { useLive } from '../../api/live.tsx';
+import { useLiveState } from '../../api/live.tsx';
 import { currentExercise } from '../../app/current-exercise.ts';
 import { useDemo } from '../../app/demo.tsx';
 import { formatTime } from '../../app/format.ts';
@@ -316,7 +316,7 @@ function useDriveRedirect(target: string | null) {
 
 export function ExercisesHome() {
   const { user } = useSession();
-  const { state } = useLive();
+  const { state } = useLiveState(snapshot => snapshot);
   const demo = useDemo() !== null;
   const wide = useWideLayout();
   const data = useResource<HomeData>(

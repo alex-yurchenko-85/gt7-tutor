@@ -1,17 +1,19 @@
+import { KPH_PER_MPS, type FindingKindName } from '@gt7/contracts';
 import type { Review } from './compare.ts';
 import type { CoreConfig } from './config.ts';
 import { outsideM, type Corner } from './corners.ts';
 import type { ReferenceCueEvent } from './cue-events.ts';
 import { median } from './statistics.ts';
-import { KPH_PER_MPS } from './units.ts';
 
-export type FindingKind = 'brake-early' | 'brake-late' | 'slow-corner' | 'throttle-late' | 'off-line' | 'wide-apex';
-
-export type Finding = { kind: FindingKind; eventKey: string | null; sM: number; size: number; unit: 'm' | 'km/h' };
+export type Finding = { kind: FindingKindName; eventKey: string | null; sM: number; size: number; unit: 'm' | 'm/s' };
 
 export type Recurring = Finding & { count: number; of: number; medianSize: number };
 
 const EPSILON = 1e-9;
+
+export function comparableSize(size: number, unit: Finding['unit']): number {
+  return unit === 'm/s' ? size * KPH_PER_MPS : size;
+}
 
 function exceeds(value: number, limit: number): boolean {
   return value > limit + EPSILON;
@@ -33,7 +35,7 @@ function brakeFindings(review: Review, config: CoreConfig): Finding[] {
     if (!attempt) return [];
     const differenceM = attempt.sM - reference.sM;
     if (!exceeds(Math.abs(differenceM), config.findings.brakeM)) return [];
-    const kind: FindingKind = differenceM < 0 ? 'brake-early' : 'brake-late';
+    const kind: FindingKindName = differenceM < 0 ? 'brake-early' : 'brake-late';
     return [{ kind, eventKey: reference.key, sM: reference.sM, size: Math.abs(differenceM), unit: 'm' as const }];
   });
 }
@@ -69,9 +71,9 @@ function slowCornerFindings(review: Review, config: CoreConfig): Finding[] {
     const reference = minimumIn(review.reference.v, fromCell, toCell);
     const attempt = minimumIn(review.attempt.v, fromCell, toCell);
     if (!reference || !attempt) return [];
-    const slowerKph = (reference.value - attempt.value) * KPH_PER_MPS;
-    if (!exceeds(slowerKph, config.findings.slowCornerKph)) return [];
-    return [{ kind: 'slow-corner' as const, eventKey: brake.key, sM: reference.cell * review.gridM, size: slowerKph, unit: 'km/h' as const }];
+    const slowerMps = reference.value - attempt.value;
+    if (!exceeds(slowerMps, config.findings.slowCornerMps)) return [];
+    return [{ kind: 'slow-corner' as const, eventKey: brake.key, sM: reference.cell * review.gridM, size: slowerMps, unit: 'm/s' as const }];
   });
 }
 
@@ -135,7 +137,7 @@ export function findDifferences(review: Review, config: CoreConfig): Finding[] {
   ].sort((a, b) => a.sM - b.sM);
 }
 
-type Group = { kind: FindingKind; eventKey: string | null; unit: Finding['unit']; sMs: number[]; sizes: number[]; attempts: Set<number> };
+type Group = { kind: FindingKindName; eventKey: string | null; unit: Finding['unit']; sMs: number[]; sizes: number[]; attempts: Set<number> };
 
 function belongs(group: Group, finding: Finding, placeWithinM: number): boolean {
   if (group.kind !== finding.kind || group.eventKey !== finding.eventKey) return false;

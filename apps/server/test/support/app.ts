@@ -3,7 +3,7 @@ import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module.js';
 import { configureApp } from '../../src/app.setup.js';
 import { parseAppConfig } from '../../src/config/app-config.js';
-import { tempDir } from './process.js';
+import { testTempDir } from '../../../../tools/testing/temp-root.js';
 
 export type TestAppOptions = {
   env?: Record<string, string>;
@@ -11,7 +11,7 @@ export type TestAppOptions = {
 };
 
 export async function createTestApp(databaseUrl: string, options: TestAppOptions = {}): Promise<INestApplication> {
-  const config = parseAppConfig({ DATABASE_URL: databaseUrl, DATA_DIR: tempDir(), ...options.env });
+  const config = parseAppConfig({ DATABASE_URL: databaseUrl, DATA_DIR: testTempDir('gt7-server-'), ...options.env });
   const builder = Test.createTestingModule({ imports: [AppModule.register(config)] });
   const moduleRef = await (options.override ? options.override(builder) : builder).compile();
   const app = moduleRef.createNestApplication();

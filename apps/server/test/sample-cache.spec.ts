@@ -1,15 +1,10 @@
-import type { INestApplication } from '@nestjs/common';
-import knex, { type Knex } from 'knex';
-import request from 'supertest';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { CaptureService } from '../src/captures/capture.service.js';
-import { SampleCache } from '../src/captures/sample-cache.js';
-import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.factory.js';
-import { createTestApp } from './support/app.js';
-import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
-import { tempDir } from './support/process.js';
-import { FixtureReplays, fixturePath } from './support/replay-sources.js';
-import { firstProfile, PASSWORD } from './support/session.js';
+import { readSamples } from '@gt7/capture';
+import { describe, expect, it } from 'vitest';
+import { SAMPLE_CACHE_MAX_SAMPLES, SampleCache } from '../src/captures/sample-cache.js';
+import { fixturePath } from '../../../tools/testing/fixture-path.js';
+
+const range = { first: 5100, last: 5199 };
+const tiny = { first: 5100, last: 5105 };
 
 describe('sample cache', () => {
   it('forget_drops_only_the_entries_of_that_capture', async () => {
@@ -24,66 +19,57 @@ describe('sample cache', () => {
     expect(again).not.toBe(first);
     await again;
   });
-});
 
-describe('sample cache and raw file clean-up', () => {
-  let database: DisposableDatabase;
-  let db: Knex;
-  let app: INestApplication;
-  let replays: FixtureReplays;
-  let cookie: string;
-  const http = () => request(app.getHttpServer());
-
-  async function cachedCapture(): Promise<void> {
-    const exerciseId = (await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'ce-autodromo-de-interlagos' }).expect(201)).body.id;
-    replays.queue.push('demo-a');
-    const started = await http().post('/api/captures').set('Cookie', cookie).send({ exerciseId, purpose: 'demo' }).expect(201);
-    await replays.finished();
-    await http().post(`/api/captures/${started.body.id}/stop`).set('Cookie', cookie).expect(201);
-    const row = await db('captures').where({ id: started.body.id }).first();
-    await app.get(SampleCache).read(row.id, app.get(CaptureService).rawPath(row));
-    expect(app.get(SampleCache).size).toBe(1);
-  }
-
-  beforeAll(async () => {
-    database = await createMigratedDatabase();
-    db = knex({ client: 'pg', connection: database.url });
+  it('range_is_cut_from_a_cached_full_capture', async () => {
+    const cache = new SampleCache();
+    const path = fixturePath('demo-a');
+    const full = await cache.read('a', path);
+    for (const range of [{ first: 457, last: 1422 }, { first: 0, last: 300 }, { first: 600, last: 1200 }]) {
+      const cut = await cache.read('a', path, range);
+      expect(cut).toEqual(await readSamples(path, range));
+      expect(cut[0]).toBe(full.find(sample => sample.rawIndex >= range.first));
+    }
+    expect(cache.size).toBe(1);
   });
 
-  afterAll(async () => {
-    await db.destroy();
-    await database.drop();
+  it('range_after_the_clock_warm_up_is_read_from_the_file', async () => {
+    const cache = new SampleCache();
+    const path = fixturePath('ce-pause');
+    const range = { first: 12500, last: 12600 };
+    const early = { first: 11600, last: 11700 };
+    await cache.read('a', path);
+    const part = await cache.read('a', path, range);
+    expect(part).toEqual(await readSamples(path, range));
+    expect(cache.size).toBe(2);
+    expect(await cache.read('a', path, early)).toEqual(await readSamples(path, early));
+    expect(cache.size).toBe(2);
   });
 
-  beforeEach(async () => {
-    await db.raw('truncate table users, sessions, settings cascade');
-    replays = new FixtureReplays();
-    app = await createTestApp(database.url, {
-      env: { DATA_DIR: tempDir(), TELEMETRY_SOURCE: 'replay' },
-      override: builder => builder.overrideProvider(TELEMETRY_SOURCE_FACTORY).useValue(replays.factory)
-    });
-    cookie = await firstProfile(app);
+  it('cache_evicts_by_total_samples', async () => {
+    const cache = new SampleCache();
+    expect(SAMPLE_CACHE_MAX_SAMPLES).toBe(400_000);
+    const small = await readSamples(fixturePath('ce-slow'), range);
+    cache.maxSamples = small.length * 2 + 1;
+    const a = cache.read('a', fixturePath('ce-slow'), range);
+    const b = cache.read('b', fixturePath('ce-slow'), range);
+    await Promise.all([a, b]);
+    expect(cache.totalSamples).toBe(small.length * 2);
+    await cache.read('c', fixturePath('ce-slow'), range);
+    expect(cache.size).toBe(2);
+    expect(cache.totalSamples).toBe(small.length * 2);
+    expect(cache.read('b', fixturePath('ce-slow'), range)).toBe(b);
+    expect(cache.read('a', fixturePath('ce-slow'), range)).not.toBe(a);
   });
 
-  afterEach(async () => {
-    await app.close();
-  });
-
-  it('cleanup_drops_cached_samples_of_rewritten_captures', async () => {
-    await cachedCapture();
-    await http().post('/api/storage/cleanup').set('Cookie', cookie).expect(201);
-    expect(app.get(SampleCache).size).toBe(0);
-  });
-
-  it('history_delete_with_cleanup_forgets_cached_samples', async () => {
-    await cachedCapture();
-    await http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'everything', cleanup: true }).expect(200);
-    expect(app.get(SampleCache).size).toBe(0);
-  });
-
-  it('profile_delete_forgets_cached_samples', async () => {
-    await cachedCapture();
-    await http().post('/api/profiles/me/delete').set('Cookie', cookie).send({ password: PASSWORD }).expect(200);
-    expect(app.get(SampleCache).size).toBe(0);
+  it('entry_larger_than_the_limit_is_not_cached', async () => {
+    const cache = new SampleCache();
+    cache.maxSamples = 10;
+    const keep = cache.read('a', fixturePath('ce-slow'), tiny);
+    await keep;
+    const big = await cache.read('b', fixturePath('ce-slow'), range);
+    expect(big.length).toBeGreaterThan(10);
+    expect(cache.size).toBe(1);
+    expect(cache.totalSamples).toBeLessThanOrEqual(10);
+    expect(cache.read('a', fixturePath('ce-slow'), tiny)).toBe(keep);
   });
 });

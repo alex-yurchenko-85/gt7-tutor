@@ -1,30 +1,13 @@
-import type { CornerInfo, LiveCue, LiveGuidance, LiveState, ReferenceCue } from '@gt7/contracts';
+import { CUE_WORDS, type CornerInfo, type LiveCue, type LiveGuidance, type LiveState, type ReferenceCue, type WordedCueKind } from '@gt7/contracts';
 
 export type CueWords = { words: string; number: string | null };
 
-type ShownKind = Exclude<LiveCue['kind'], 'focus' | 'countdown'>;
-
-const ACTION_WORDS: Record<ShownKind, string> = {
-  'hard-brake': 'Hard brake',
-  brake: 'Brake',
-  'light-brake': 'Light brake',
-  'ease-off': 'Ease off',
-  throttle: 'Throttle',
-  'full-throttle': 'Full throttle',
-  'keep-left': 'Keep left',
-  'keep-right': 'Keep right',
-  tighter: 'Tighter',
-  'big-stop': 'Big stop',
-  'guidance-paused': 'Guidance paused',
-  'guidance-resumed': 'Guidance resumed'
-};
-
-export function shownOnDrive(cue: LiveCue | null): cue is LiveCue & { kind: ShownKind } {
+export function shownOnDrive(cue: LiveCue | null): cue is LiveCue & { kind: WordedCueKind } {
   return cue !== null && cue.kind !== 'focus' && cue.kind !== 'countdown';
 }
 
-export function cueWords(cue: LiveCue & { kind: ShownKind }): CueWords {
-  return { words: ACTION_WORDS[cue.kind], number: cue.targetSpeedKph === null ? null : String(cue.targetSpeedKph) };
+export function cueWords(cue: LiveCue & { kind: WordedCueKind }): CueWords {
+  return { words: CUE_WORDS[cue.kind], number: cue.targetSpeedKph === null ? null : String(cue.targetSpeedKph) };
 }
 
 export function guidanceText(guidance: LiveGuidance): string | null {
@@ -35,10 +18,6 @@ export function guidanceText(guidance: LiveGuidance): string | null {
       return 'Guidance paused: your position is too far from the reference line.';
     case 'target-incompatible':
       return 'Guidance paused: the next target does not fit your speed here.';
-    case 'model-uncertain':
-      return 'Guidance paused: GT7 Tutor is not sure where you are on the section.';
-    case 'awaiting-restart':
-      return 'Guidance stopped for this attempt. Restart the attempt to get cues again.';
     default:
       return 'Guidance paused.';
   }

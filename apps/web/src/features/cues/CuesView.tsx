@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
+  CUE_OFFSET_MAX_MS,
+  CUE_OFFSET_MIN_MS,
+  CUE_OFFSET_STEP_MS,
+  KPH_PER_MPS,
   SIDE_CUE_DISTANCES_M,
   type BrakeReactionSummary,
   type CornerInfo,
@@ -9,7 +13,7 @@ import {
   type ReferenceTrace
 } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
-import { useLive } from '../../api/live.tsx';
+import { useLiveConnection } from '../../api/live.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { TrackMap } from '../../charts/TrackMap.tsx';
 import { LoadProblem } from '../../app/NotFound.tsx';
@@ -19,11 +23,6 @@ import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
 import { useExercise } from '../exercise/use-exercise.ts';
 import {
   attemptsText,
-  clipOf,
-  followClipOf,
-  OFFSET_MAX_MS,
-  OFFSET_MIN_MS,
-  OFFSET_STEP_MS,
   offsetText,
   reactionText,
   recurringText
@@ -51,8 +50,8 @@ function Glyph({ kind }: { kind: GlyphKind }) {
   );
 }
 
-const SLIDER_MIN = -OFFSET_MAX_MS;
-const SLIDER_MAX = -OFFSET_MIN_MS;
+const SLIDER_MIN = -CUE_OFFSET_MAX_MS;
+const SLIDER_MAX = -CUE_OFFSET_MIN_MS;
 const ZERO_SHARE = -SLIDER_MIN / (SLIDER_MAX - SLIDER_MIN);
 
 type OffsetSliderProps = { number: number; offsetMs: number; onChange(next: number): void };
@@ -78,7 +77,7 @@ function OffsetSlider({ number, offsetMs, onChange }: OffsetSliderProps) {
           type="range"
           min={SLIDER_MIN}
           max={SLIDER_MAX}
-          step={OFFSET_STEP_MS}
+          step={CUE_OFFSET_STEP_MS}
           value={-offsetMs}
           style={range}
           aria-label={`Move cue ${number} earlier or later`}
@@ -171,7 +170,7 @@ function TurnRow({ corner }: { corner: CornerInfo }) {
         </small>
       </span>
       <span className="target">
-        <b>{Math.round(corner.apexSpeedKph)}</b> km/h at the apex
+        <b>{Math.round(corner.apexSpeedMps * KPH_PER_MPS)}</b> km/h at the apex
       </span>
     </li>
   );
@@ -244,7 +243,7 @@ function SideCueDistance({ distanceM, onChange }: SideDistanceProps) {
 type CueData = [ReferenceCue[], ReferenceTrace, RecurringDifference[], CornerInfo[], BrakeReactionSummary[]];
 
 function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: string }) {
-  const { player } = useLive();
+  const { player } = useLiveConnection();
   const data = useResource(
     (): Promise<CueData> =>
       Promise.all([
@@ -256,10 +255,9 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
       ]),
     [referenceId, exercise.id]
   );
-  const [muted, setMuted] = useState<string[]>(exercise.mutedCues);
-  const [speakTargets, setSpeakTargets] = useState(exercise.speakTargets);
-  const [sideDistanceM, setSideDistanceM] = useState(exercise.sideCueDistanceM);
-  const [offsets, setOffsets] = useState<Record<string, number>>(exercise.cueOffsetsMs);
+  const [settings, setSettings] = useState(exercise);
+  const { mutedCues: muted, speakTargets, sideCueDistanceM: sideDistanceM, cueOffsetsMs: offsets } = settings;
+  const change = (changes: Partial<Exercise>) => setSettings(current => ({ ...current, ...changes }));
   const [problem, setProblem] = useState<string | null>(null);
   const pendingOffsets = useRef<PendingOffsets | null>(null);
   useEffect(
@@ -280,10 +278,12 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
     setProblem(null);
     try {
       const updated = await api.updateExercise(exercise.id, body);
-      if (body.mutedCues !== undefined) setMuted(updated.mutedCues);
-      if (body.speakTargets !== undefined) setSpeakTargets(updated.speakTargets);
-      if (body.sideCueDistanceM !== undefined) setSideDistanceM(updated.sideCueDistanceM);
-      if (body.cueOffsetsMs !== undefined && pendingOffsets.current === null) setOffsets(updated.cueOffsetsMs);
+      change({
+        ...(body.mutedCues !== undefined ? { mutedCues: updated.mutedCues } : {}),
+        ...(body.speakTargets !== undefined ? { speakTargets: updated.speakTargets } : {}),
+        ...(body.sideCueDistanceM !== undefined ? { sideCueDistanceM: updated.sideCueDistanceM } : {}),
+        ...(body.cueOffsetsMs !== undefined && pendingOffsets.current === null ? { cueOffsetsMs: updated.cueOffsetsMs } : {})
+      });
     } catch (error) {
       setProblem(errorText(error));
     }
@@ -294,7 +294,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
   };
   const changeOffset = (key: string, value: number) => {
     const next = withoutZeros({ ...offsets, [key]: value });
-    setOffsets(next);
+    change({ cueOffsetsMs: next });
     clearTimeout(pendingOffsets.current?.timer);
     const timer = setTimeout(() => {
       pendingOffsets.current = null;
@@ -303,16 +303,15 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
     pendingOffsets.current = { timer, offsets: next };
   };
   const changeSpeak = (next: boolean) => {
-    setSpeakTargets(next);
+    change({ speakTargets: next });
     void save({ speakTargets: next });
   };
   const changeSideDistance = (next: number | null) => {
-    setSideDistanceM(next);
+    change({ sideCueDistanceM: next });
     void save({ sideCueDistanceM: next });
   };
   const hear = (cue: ReferenceCue) => {
-    const follow = followClipOf(cue, speakTargets);
-    const clips = follow ? [clipOf(cue), follow] : [clipOf(cue)];
+    const clips = speakTargets && cue.followClip ? [cue.clip, cue.followClip] : [cue.clip];
     player.preview(...clips).catch((error: unknown) => setProblem(`The phrase did not play: ${errorText(error)}`));
   };
 

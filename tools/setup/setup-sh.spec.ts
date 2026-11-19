@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { testTempDir } from '../testing/temp-root.ts';
 
-const script = fileURLToPath(new URL('../../scripts/setup.sh', import.meta.url));
+const script = fileURLToPath(new URL('setup.sh', import.meta.url));
 
 type Machine = {
   system: string;
@@ -52,7 +52,7 @@ function runSetup(machine: Machine, ...args: string[]) {
   return { code: result.status, output: `${result.stdout}${result.stderr}`, calls: existsSync(log) ? readFileSync(log, 'utf8') : '' };
 }
 
-describe.skipIf(process.platform === 'win32')('scripts/setup.sh', () => {
+describe.skipIf(process.platform === 'win32')('tools/setup/setup.sh', () => {
   it('dry_run_changes_nothing', () => {
     const run = runSetup({ ...READY_MAC, node: null, pnpm: false }, '--dry-run');
     expect(run.code).toBe(0);

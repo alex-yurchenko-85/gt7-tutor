@@ -64,6 +64,11 @@ export class ReferencesController {
     return this.references.cues(user.id, id);
   }
 
+  @Get('references/:id/clips')
+  clips(@CurrentUser() user: ProfileUser, @Param('id', ParseUUIDPipe) id: string): Promise<string[]> {
+    return this.references.clips(user.id, id);
+  }
+
   @Get('references/:id/corners')
   corners(@CurrentUser() user: ProfileUser, @Param('id', ParseUUIDPipe) id: string): Promise<CornerInfo[]> {
     return this.references.corners(user.id, id);

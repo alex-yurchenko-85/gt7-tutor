@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import type { ExerciseStep, RecurringDifference } from '@gt7/contracts';
+import { KPH_PER_MPS, type ExerciseStep, type RecurringDifference } from '@gt7/contracts';
 import { exercise, exerciseApi, exerciseAtStep, rememberExercise, TRACE } from './fixtures.ts';
 import { renderApp, setViewportWidth, USER } from './support.tsx';
 
@@ -84,7 +84,7 @@ describe('exercise overview', () => {
     setViewportWidth(1440);
     const recurring: RecurringDifference[] = [
       { kind: 'brake-early', eventKey: 'brake@677', sM: 677, size: 31, unit: 'm', turn: 2, count: 4, of: 4, medianSize: 31 },
-      { kind: 'slow-corner', eventKey: 'brake@677', sM: 700, size: 16, unit: 'km/h', turn: 2, count: 4, of: 4, medianSize: 16 },
+      { kind: 'slow-corner', eventKey: 'brake@677', sM: 700, size: 16 / KPH_PER_MPS, unit: 'm/s', turn: 2, count: 4, of: 4, medianSize: 16 / KPH_PER_MPS },
       { kind: 'wide-apex', eventKey: 'corner-1', sM: 519, size: 4, unit: 'm', turn: 1, count: 3, of: 4, medianSize: 4 },
       { kind: 'throttle-late', eventKey: 'throttle@760', sM: 760, size: 12, unit: 'm', turn: 2, count: 2, of: 4, medianSize: 12 }
     ];

@@ -21,7 +21,7 @@ The console sends packets only while it receives heartbeats.
 Only one program can bind port 33740 at a time.
 The receiver drops a datagram that does not come from the configured console address.
 
-Code: `packages/capture/src/udp-source.ts`. Settings: `DEFAULT_CONFIG.udp` in `packages/core/src/config.ts`.
+Code: `packages/capture/src/udp-source.ts`. Settings: `CAPTURE_CONFIG.udp` in `packages/capture/src/config.ts`.
 
 ## Packet formats
 
@@ -106,11 +106,11 @@ The column `Sample field` names the field of the `Sample` type in `packages/cont
 
 | Offset | Type | Content | Sample field |
 | --- | --- | --- | --- |
-| 0x128 | f32 | Steering input in radians. Full lock is ±π. Positive is a turn to the left. | `extension.wheelRotationRad` |
+| 0x128 | f32 | Steering input in radians. Full lock is ±π. Positive is a turn to the left. | |
 | 0x12C | f32 | Filler | |
-| 0x130 | f32 | Sway | `extension.sway` |
-| 0x134 | f32 | Heave | `extension.heave` |
-| 0x138 | f32 | Surge | `extension.surge` |
+| 0x130 | f32 | Sway | |
+| 0x134 | f32 | Heave | |
+| 0x138 | f32 | Surge | |
 
 ### Format `~` adds (344 bytes)
 
@@ -159,7 +159,7 @@ The field 0x15C is in format `C` only. In licence tests and in Circuit Experienc
 **What an exercise needs.** The application starts and finishes an attempt only by the game timer. It cuts each reference to a run of the demonstration timer. So an exercise works only when two facts are true for it:
 
 1. **Demonstration timer.** The demonstration runs the value at 0x15C with bit 0 false. The value starts at 0 and stops at a final value inside the demonstration.
-2. **Player start.** The player's run gives a step from 0 to a value from 1 to 50 ms in one packet (`GAME_TIMER_START_MAX_MS`).
+2. **Player start.** The player's run gives a step from 0 to a value from 1 to 50 ms in one packet (`gameTimer.startMaxMs`).
 
 Without fact 1, an exercise cannot get a reference. The proposals API gives no proposal. The server refuses a range set by hand with `no-timer-run`. A training needs an active reference, so no attempt can start either. Without fact 2, no attempt starts: the tracker sees no start. After 10 s of driving, the Drive screen shows the prompt `The game timer did not start`.
 
@@ -206,6 +206,16 @@ The code depends on these facts.
 - More than 600 ahead: a discontinuity.
 - Other cases: the difference minus 1 is the number of lost packets.
 
+`SampleStream` (`packages/capture/src/sample-stream.ts`) makes the samples. The live path and `readSamples` (`packages/capture/src/read-samples.ts`), which reads a raw file, use it, so a file gives the same samples as the live path. For each datagram, `SampleStream` does these steps in this sequence:
+
+1. Decode the payload. A datagram that does not decode gives no sample.
+2. Drop a duplicate (`SequenceTracker`). A reordered packet that arrives after a newer packet is a duplicate.
+3. Give the packet time (`PacketClock`).
+
+A duplicate keeps its `rawIndex` in the raw file, but it gives no sample.
+
+Each capture has its own `SampleStream`. Inside one capture the stream never resets its `SequenceTracker`. If the console starts its counter again at an ID up to 64 behind the last ID, the stream drops these packets until the ID is past the last ID (at most 65 packets, about 1 s). A new ID more than 64 behind the last ID is a discontinuity, and the stream keeps it.
+
 The packet ID also gives the packet time (`clockMs`, `packages/core/src/packet-clock.ts`). The arrival time has network bursts; the packet ID does not. The packet rate is not exactly 60 per second and it changes during a capture (about 59.2 to 59.94 packets per second), so the packet time follows the earliest arrivals and not a fixed rate.
 
 ## Raw capture file
@@ -224,12 +234,13 @@ A capture is a text file with one JSON object per line (`.ndjson`). It holds the
 
 Rules:
 
-- A raw file is never edited in place. A range of a file is given as `first` and `last` raw index, both inclusive.
-- The live path never waits for a file write. The writer has a queue of 8 MiB. If the queue is full or a write fails, the capture is marked incomplete and coaching continues.
+- A raw file is never edited in place. A range of a file is given as `first` and `last` raw index, both inclusive. A range read skips the rows before `clockWarmupStart(first)` by their `rawIndex` alone, without a full parse. The rows from there to `last` are parsed and give the packet clock its warm-up. The sample cache cuts a range from a cached full read only when the clock warm-up starts at or before the first sample of the file. Then both reads run the clock over the same rows and give equal samples.
+- The live path never waits for a file write. The writer has a queue of 8 MiB (`CAPTURE_CONFIG.rawQueueBytes`). If the queue is full or a write fails, the capture is marked incomplete and coaching continues.
+- `RawWriter.append` gives the `rawIndex` of the datagram, also when the datagram is not written. The live sample gets this `rawIndex`.
 - A reader stops with an error on a broken line, except on the last line, which can be cut after a crash.
 - At 60 packets per second, a capture needs about 127 MB per hour.
 
-Code: `packages/capture/src/raw-file.ts`, `toSample` in `packages/core/src/decode.ts`.
+Code: `packages/capture/src/raw-file.ts`, `packages/capture/src/read-samples.ts`, `packages/capture/src/sample-stream.ts`.
 
 ## Tools
 

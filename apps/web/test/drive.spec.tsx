@@ -1,16 +1,13 @@
 import { act, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { AttemptSummary, LiveState } from '@gt7/contracts';
+import { KPH_PER_MPS, type AttemptSummary, type LiveState } from '@gt7/contracts';
 import { MISSED_START_AFTER_MS, useMissedStart } from '../src/features/drive/missed-start.ts';
 import { voiceDeviceId } from '../src/voice/device.ts';
-import { exercise, exerciseApi, rememberExercise } from './fixtures.ts';
+import { exercise, exerciseApi, REFERENCE_CLIPS, rememberExercise } from './fixtures.ts';
 import { cue, liveState, playerRig, renderApp, setViewportWidth, type ApiStub, type FakeSocket } from './support.tsx';
 
-const FOCUS_CLIPS = ['brake-early', 'brake-late', 'slow-corner', 'throttle-late', 'off-line', 'wide-apex'].flatMap(kind =>
-  [1, 2, 3].map(turn => `focus-${kind}-${turn}`)
-);
-const ARMED_CLIPS = ['hard-brake', 'speed-85', 'full-throttle', 'ease-off', 'big-stop', 'tighter', 'keep-left', 'keep-right', 'guidance-paused', 'guidance-resumed', ...FOCUS_CLIPS];
+const ARMED_CLIPS = REFERENCE_CLIPS;
 
 const ARMED = { captureId: 'cap-9', exerciseId: 'e0000000-0000-4000-8000-000000000001', referenceId: 'ref-demo' };
 
@@ -28,7 +25,7 @@ function driving(overrides: Partial<LiveState> = {}): LiveState {
     exerciseId: 'e0000000-0000-4000-8000-000000000001',
     attemptNumber: 2,
     sM: 300,
-    speedKph: 142,
+    speedMps: 142 / KPH_PER_MPS,
     trainingMode: 'guided',
     referenceId: 'ref-demo',
     ...overrides
@@ -60,6 +57,13 @@ describe('drive', () => {
     expect(screen.getAllByRole('status', { name: 'Current cue' })).toHaveLength(1);
     expect(screen.getByText('Next: Full throttle')).toBeInTheDocument();
     expect(screen.getByText('in 120 m')).toBeInTheDocument();
+    expect(screen.getByText('142')).toBeInTheDocument();
+  });
+
+  it('drive_shows_the_live_speed_in_kmh', async () => {
+    setViewportWidth(390);
+    driveApi().install();
+    await openDrive('/drive', driving({ speedMps: 141.6 / KPH_PER_MPS }));
     expect(screen.getByText('142')).toBeInTheDocument();
   });
 
@@ -107,8 +111,9 @@ describe('drive', () => {
     expect(preload).toHaveBeenCalledTimes(1);
     expect(order[0]).toBe(`preload:${[...ARMED_CLIPS].sort().join(',')}`);
     const armIndex = api.calls.findIndex(call => call.path === '/api/training/arm');
-    const cuesIndex = api.calls.findIndex(call => call.path === '/api/references/ref-demo/cues');
-    expect(cuesIndex).toBeLessThan(armIndex);
+    const clipsIndex = api.calls.findIndex(call => call.path === '/api/references/ref-demo/clips');
+    expect(clipsIndex).toBeGreaterThanOrEqual(0);
+    expect(clipsIndex).toBeLessThan(armIndex);
     expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'e0000000-0000-4000-8000-000000000001', mode: 'guided' });
   });
 
@@ -180,6 +185,25 @@ describe('drive', () => {
     await waitFor(() => expect(preload).toHaveBeenCalledWith(ARMED_CLIPS));
   });
 
+  it('voice_player_preloads_the_reference_clips', async () => {
+    setViewportWidth(1280);
+    const api = driveApi().on('GET /api/references/ref-demo/clips', ['hard-brake', 'speed-85', 'voice-check']).install();
+    const rig = playerRig();
+    const view = renderApp({ path: '/setup', player: rig.player });
+    await screen.findByRole('heading', { name: 'Setup' });
+    await waitFor(() => view.sockets.latest);
+    act(() => {
+      view.sockets.latest.open();
+      view.sockets.latest.receive({
+        type: 'state',
+        state: liveState({ mode: 'armed', exerciseId: 'e0000000-0000-4000-8000-000000000001', trainingMode: 'guided', referenceId: 'ref-demo', voiceDeviceId: voiceDeviceId(), voiceReady: true })
+      });
+    });
+    await waitFor(() => expect(['hard-brake', 'speed-85', 'voice-check'].every(clip => rig.player.hasClip(clip))).toBe(true));
+    expect(api.called('GET /api/references/ref-demo/clips')).toBe(true);
+    expect(api.called('GET /api/references/ref-demo/cues')).toBe(false);
+  });
+
   it('baseline_mode_shows_no_cue_area_text', async () => {
     setViewportWidth(390);
     driveApi().install();
@@ -202,9 +226,6 @@ const ATTEMPT: AttemptSummary = {
   mode: 'guided',
   completion: 'complete',
   reason: null,
-  measuredMs: 27100,
-  gameMs: 27100,
-  medal: null,
   timeMs: 27100,
   gapToBestMs: 350,
   largestDifference: { kind: 'brake-early', eventKey: 'brake@332', sM: 332, size: 14.2, unit: 'm', turn: 1 },
@@ -291,7 +312,7 @@ describe('attempt summary', () => {
   it('aborted_summary_names_the_reason_in_plain_words', async () => {
     setViewportWidth(390);
     driveApi()
-      .on('GET /api/attempts/a0000000-0000-4000-8000-000000000001', { ...ATTEMPT, completion: 'aborted', reason: 'left-track', timeMs: null, gameMs: null, measuredMs: null, gapToBestMs: null })
+      .on('GET /api/attempts/a0000000-0000-4000-8000-000000000001', { ...ATTEMPT, completion: 'aborted', reason: 'left-track', timeMs: null, gapToBestMs: null })
       .install();
     await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000001' }));
     const summary = await screen.findByRole('region', { name: 'Attempt 2' });
@@ -319,7 +340,7 @@ function armed(overrides: Partial<LiveState> = {}): LiveState {
     referenceId: 'ref-demo',
     voiceDeviceId: voiceDeviceId(),
     voiceReady: true,
-    speedKph: 0,
+    speedMps: 0,
     ...overrides
   });
 }
@@ -389,9 +410,9 @@ describe('drive mode', () => {
     driveApi().install();
     const { socket } = await openDrive('/drive', armed());
     vi.useFakeTimers();
-    send(socket, armed({ seq: 2, speedKph: 40 }));
+    send(socket, armed({ seq: 2, speedMps: 40 / KPH_PER_MPS }));
     act(() => vi.advanceTimersByTime(5000));
-    send(socket, armed({ seq: 3, speedKph: 42 }));
+    send(socket, armed({ seq: 3, speedMps: 42 / KPH_PER_MPS }));
     act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS - 5000 - 1));
     expect(screen.queryByRole('alert', { name: 'The game timer did not start' })).not.toBeInTheDocument();
     act(() => vi.advanceTimersByTime(1));
@@ -402,11 +423,11 @@ describe('drive mode', () => {
 
   it('missed_start_timer_restarts_when_the_car_stops', () => {
     vi.useFakeTimers();
-    const { result, rerender } = renderHook(({ state }) => useMissedStart(state), { initialProps: { state: armed({ speedKph: 40 }) } });
+    const { result, rerender } = renderHook(({ state }) => useMissedStart(state), { initialProps: { state: armed({ speedMps: 40 / KPH_PER_MPS }) } });
     act(() => vi.advanceTimersByTime(6000));
-    rerender({ state: armed({ seq: 2, speedKph: 0 }) });
+    rerender({ state: armed({ seq: 2, speedMps: 0 }) });
     act(() => vi.advanceTimersByTime(1000));
-    rerender({ state: armed({ seq: 3, speedKph: 40 }) });
+    rerender({ state: armed({ seq: 3, speedMps: 40 / KPH_PER_MPS }) });
     act(() => vi.advanceTimersByTime(6000));
     expect(result.current.missed).toBe(false);
     act(() => vi.advanceTimersByTime(4000));
@@ -418,7 +439,7 @@ describe('drive mode', () => {
     driveApi().install();
     const { socket } = await openDrive('/drive', armed());
     vi.useFakeTimers();
-    send(socket, armed({ seq: 2, speedKph: 40 }));
+    send(socket, armed({ seq: 2, speedMps: 40 / KPH_PER_MPS }));
     act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS));
     const prompt = screen.getByRole('alert', { name: 'The game timer did not start' });
     vi.useRealTimers();
@@ -429,7 +450,7 @@ describe('drive mode', () => {
 
   it('missed_start_prompt_hidden_when_driving_starts', () => {
     vi.useFakeTimers();
-    const { result, rerender } = renderHook(({ state }) => useMissedStart(state), { initialProps: { state: armed({ speedKph: 40 }) } });
+    const { result, rerender } = renderHook(({ state }) => useMissedStart(state), { initialProps: { state: armed({ speedMps: 40 / KPH_PER_MPS }) } });
     act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS));
     expect(result.current.missed).toBe(true);
     rerender({ state: driving({ seq: 2 }) });
@@ -438,15 +459,15 @@ describe('drive mode', () => {
 
   it('dismissed_prompt_stays_hidden_until_the_mode_changes', () => {
     vi.useFakeTimers();
-    const { result, rerender } = renderHook(({ state }) => useMissedStart(state), { initialProps: { state: armed({ speedKph: 40 }) } });
+    const { result, rerender } = renderHook(({ state }) => useMissedStart(state), { initialProps: { state: armed({ speedMps: 40 / KPH_PER_MPS }) } });
     act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS));
     act(() => result.current.dismiss());
     expect(result.current.missed).toBe(false);
-    rerender({ state: armed({ seq: 2, speedKph: 50 }) });
+    rerender({ state: armed({ seq: 2, speedMps: 50 / KPH_PER_MPS }) });
     act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS * 2));
     expect(result.current.missed).toBe(false);
     rerender({ state: driving({ seq: 3 }) });
-    rerender({ state: armed({ seq: 4, speedKph: 40 }) });
+    rerender({ state: armed({ seq: 4, speedMps: 40 / KPH_PER_MPS }) });
     act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS));
     expect(result.current.missed).toBe(true);
   });

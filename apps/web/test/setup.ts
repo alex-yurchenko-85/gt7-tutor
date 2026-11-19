@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
+import { forgetSharedRequests } from '../src/api/client.ts';
 
 window.scrollTo = () => undefined;
 
@@ -16,6 +17,7 @@ if (typeof HTMLDialogElement.prototype.showModal !== 'function') {
 
 afterEach(() => {
   cleanup();
+  forgetSharedRequests();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   window.localStorage.clear();

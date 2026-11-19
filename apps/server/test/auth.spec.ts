@@ -3,24 +3,14 @@ import knex, { type Knex } from 'knex';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../src/auth/auth.service.js';
-import { SESSION_LIFETIME_MS } from '../src/auth/session-cookie.js';
-import { LiveHub } from '../src/live/live-hub.service.js';
+import { SESSION_COOKIE, readCookie } from '../src/auth/session-cookie.js';
+import { PING_INTERVAL_MS } from '../src/live/live-hub.service.js';
 import { createTestApp } from './support/app.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
-import { eventually, openLive } from './support/live.js';
+import { openLive } from './support/live.js';
+import { cookiePair, sessionCookie } from './support/session.js';
 
 const credentials = { name: 'Driver', password: 'correct horse' };
-
-function sessionCookie(response: request.Response): string {
-  const header = response.headers['set-cookie'] as unknown as string[] | undefined;
-  const cookie = header?.find(value => value.startsWith('gt7_session='));
-  if (!cookie) throw new Error('No gt7_session cookie');
-  return cookie;
-}
-
-function cookiePair(setCookie: string): string {
-  return setCookie.split(';')[0]!;
-}
 
 describe('profiles and sessions', () => {
   let database: DisposableDatabase;
@@ -101,7 +91,7 @@ describe('profiles and sessions', () => {
     expect(cookie).toMatch(/Path=\//i);
     expect(cookie).toMatch(/Max-Age=2592000/i);
     expect(response.body).toEqual({ user: { id: expect.any(String), name: 'Driver' } });
-    const token = cookiePair(cookie).split('=')[1]!;
+    const token = readCookie(cookiePair(cookie), SESSION_COOKIE)!;
     const stored = await db('sessions').select('token_hash');
     expect(stored.map(row => row.token_hash)).not.toContain(token);
   });
@@ -210,33 +200,11 @@ describe('profiles and sessions', () => {
     await theirs.close();
   });
 
-  it('sign_out_during_the_live_handshake_closes_the_new_connection', async () => {
-    const cookie = await firstProfile();
-    await app.listen(0, '127.0.0.1');
-    const port = (app.getHttpServer().address() as { port: number }).port;
-    const auth = app.get(AuthService);
-    const original = auth.sessionFor.bind(auth);
-    let openGate: () => void = () => undefined;
-    const gate = new Promise<void>(resolve => (openGate = resolve));
-    let waiting = false;
-    vi.spyOn(auth, 'sessionFor').mockImplementationOnce(async token => {
-      const session = await original(token);
-      waiting = true;
-      await gate;
-      return session;
-    });
-    const mine = await openLive(port, cookie);
-    await eventually(() => waiting);
-    await http().post('/api/auth/sign-out').set('Cookie', cookie).expect(204);
-    openGate();
-    expect(await mine.closed).toEqual({ code: 4401, reason: 'Session ended' });
-  });
-
   it('handshake_database_failure_closes_the_socket', async () => {
     const cookie = await firstProfile();
     await app.listen(0, '127.0.0.1');
     const port = (app.getHttpServer().address() as { port: number }).port;
-    vi.spyOn(app.get(AuthService), 'sessionFor').mockRejectedValueOnce(new Error('database down'));
+    vi.spyOn(app.get(AuthService), 'userForToken').mockRejectedValueOnce(new Error('database down'));
     const mine = await openLive(port, cookie);
     expect((await mine.closed).code).toBe(1011);
     const next = await openLive(port, cookie);
@@ -244,54 +212,28 @@ describe('profiles and sessions', () => {
     await next.close();
   });
 
-  it('expired_clients_are_closed_once_and_get_no_more_messages', () => {
-    const hub = app.get(LiveHub);
-    let closes = 0;
-    let sends = 0;
-    hub.attach({ id: 'old', userId: 'u', sessionKey: 'k', expiresAtMs: 1, bufferedAmount: 0, send: () => void sends++, close: () => void closes++ });
-    const sentOnAttach = sends;
-    hub.closeExpired(Date.now());
-    hub.closeExpired(Date.now());
-    hub.changed();
-    expect(closes).toBe(1);
-    expect(sends).toBe(sentOnAttach);
-  });
-
-  it('session_lifetime_comes_from_the_database_clock', async () => {
-    const cookie = await firstProfile();
-    const token = cookie.slice(cookie.indexOf('=') + 1);
-    await db('sessions').update({ expires_at: db.raw("now() + interval '2 seconds'") });
-    vi.useFakeTimers({ toFake: ['Date'] });
-    try {
-      vi.setSystemTime(Date.now() + 60 * 60 * 1000);
-      const session = await app.get(AuthService).sessionFor(token);
-      expect(session).not.toBeNull();
-      expect(Math.abs(session!.expiresAtMs - (Date.now() + 2000))).toBeLessThan(2000);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('new_session_lifetime_uses_the_database_clock', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    try {
-      vi.setSystemTime(Date.now() + 60 * 60 * 1000);
-      await firstProfile();
-    } finally {
-      vi.useRealTimers();
-    }
-    const row = await db('sessions').first(db.raw('extract(epoch from (expires_at - now())) * 1000 as "remainingMs"'));
-    expect(Math.abs(Number(row.remainingMs) - SESSION_LIFETIME_MS)).toBeLessThan(60 * 1000);
-  });
-
-  it('expired_session_closes_its_live_connection', async () => {
+  it('signed_out_session_closes_its_live_connection_within_one_ping', async () => {
     const cookie = await firstProfile();
     await app.listen(0, '127.0.0.1');
     const port = (app.getHttpServer().address() as { port: number }).port;
     const mine = await openLive(port, cookie);
     await mine.waitFor('state');
-    app.get(LiveHub).closeExpired(Date.now() + SESSION_LIFETIME_MS + 1000);
-    expect((await mine.closed).code).toBe(4401);
+    const signedOutAt = Date.now();
+    await app.get(AuthService).signOut(readCookie(cookie, SESSION_COOKIE));
+    expect(await mine.closed).toEqual({ code: 4401, reason: 'Session ended' });
+    expect(Date.now() - signedOutAt).toBeLessThan(PING_INTERVAL_MS + 500);
+  });
+
+  it('expired_session_closes_its_live_connection_within_one_ping', async () => {
+    const cookie = await firstProfile();
+    await app.listen(0, '127.0.0.1');
+    const port = (app.getHttpServer().address() as { port: number }).port;
+    const mine = await openLive(port, cookie);
+    await mine.waitFor('state');
+    const expiredAt = Date.now();
+    await db('sessions').update({ expires_at: db.raw("now() - interval '1 second'") });
+    expect(await mine.closed).toEqual({ code: 4401, reason: 'Session ended' });
+    expect(Date.now() - expiredAt).toBeLessThan(PING_INTERVAL_MS + 500);
   });
 
   it('change_password_signs_out_other_sessions', async () => {

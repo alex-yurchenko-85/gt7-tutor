@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import type { LiveState, Settings } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
-import { useLive } from '../../api/live.tsx';
+import { useLiveConnection, useLiveState } from '../../api/live.tsx';
 import { useDemo } from '../../app/demo.tsx';
 import { useWideLayout } from '../../app/layout.ts';
 import { useResource } from '../../app/resource.ts';
@@ -55,7 +55,8 @@ export function SetupView() {
   const { hash, route } = useRouter();
   const deleting = route.name === 'delete-history';
   const settings = useResource(() => api.settings(), []);
-  const { state, connected, deviceId } = useLive();
+  const { deviceId } = useLiveConnection();
+  const { state, connected } = useLiveState(snapshot => snapshot);
   const consoleStatus = consoleReadiness(settings.data?.ps5Ip ?? null, state, connected, demo);
   const voiceStatus = voiceReadiness(state, deviceId);
   const first = useFirstSection(settings.data ?? null, settings.error !== null, state, demo);

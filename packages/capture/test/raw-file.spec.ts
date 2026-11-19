@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { Writable } from 'node:stream';
 import { describe, expect, it } from 'vitest';
 import { RawWriter, readRaw, type Datagram } from '../src/index.ts';
-import { collect, tempDir } from './helpers.ts';
+import { collect } from './helpers.ts';
+import { testTempDir } from '../../../tools/testing/temp-root.ts';
 
 function datagram(bytes: number[], receivedMonoMs: number): Datagram {
   return { payload: Uint8Array.from(bytes), receivedMonoMs, receivedUnixMs: 1_800_000_000_000 + receivedMonoMs, peerIp: '0.0.0.0' };
@@ -20,11 +21,33 @@ class BlockedStream extends Writable {
 }
 
 describe('raw files', () => {
+  it('raw_file_bytes_are_the_json_rows', async () => {
+    const path = join(testTempDir('gt7-capture-'), 'capture.ndjson');
+    const writer = new RawWriter(path, 'capture-1');
+    const written = [datagram([0, 1, 2, 255], 1.5), { ...datagram([7, 8], 18.25), peerIp: '192.0.2.1' }, datagram([], 1e21)];
+    for (const d of written) writer.append(d);
+    await writer.close();
+    const expected = written
+      .map((d, rawIndex) =>
+        JSON.stringify({
+          schemaVersion: 1,
+          captureId: 'capture-1',
+          rawIndex,
+          receivedMonoMs: d.receivedMonoMs,
+          receivedUnixMs: d.receivedUnixMs,
+          peerIp: d.peerIp,
+          payloadBase64: Buffer.from(d.payload).toString('base64')
+        }) + '\n'
+      )
+      .join('');
+    expect(readFileSync(path, 'utf8')).toBe(expected);
+  });
+
   it('raw_round_trip_is_exact', async () => {
-    const path = join(tempDir(), 'capture.ndjson');
+    const path = join(testTempDir('gt7-capture-'), 'capture.ndjson');
     const writer = new RawWriter(path, 'capture-1');
     const written = [datagram([0, 1, 2, 255], 1.5), datagram([7], 18.25), datagram([], 33)];
-    for (const d of written) expect(writer.append(d)).toBe(true);
+    for (const d of written) writer.append(d);
     expect(await writer.close()).toEqual({ complete: true, reason: null, packets: 3 });
     const rows = await collect(readRaw(path));
     expect(rows.map(row => row.rawIndex)).toEqual([0, 1, 2]);
@@ -34,7 +57,7 @@ describe('raw files', () => {
   });
 
   it('range_is_inclusive', async () => {
-    const path = join(tempDir(), 'capture.ndjson');
+    const path = join(testTempDir('gt7-capture-'), 'capture.ndjson');
     const writer = new RawWriter(path, 'capture-1');
     for (let i = 0; i < 6; i++) writer.append(datagram([i], i));
     await writer.close();
@@ -44,9 +67,12 @@ describe('raw files', () => {
 
   it('full_queue_reports_incomplete', async () => {
     const stream = new BlockedStream();
-    const writer = new RawWriter('unused', 'capture-1', 1024, () => stream);
+    const writer = new RawWriter('unused', 'capture-1', { maxQueueBytes: 1024, open: () => stream });
     const results: boolean[] = [];
-    for (let i = 0; i < 20; i++) results.push(writer.append(datagram(new Array(296).fill(i), i)));
+    for (let i = 0; i < 20; i++) {
+      writer.append(datagram(new Array(296).fill(i), i));
+      results.push(writer.incompleteReason === null);
+    }
     expect(results[0]).toBe(true);
     expect(results.at(-1)).toBe(false);
     stream.release();
@@ -58,8 +84,23 @@ describe('raw files', () => {
     expect(result.packets).toBe(results.filter(Boolean).length);
   });
 
+  it('append_returns_consecutive_raw_indexes', async () => {
+    const stream = new BlockedStream();
+    const writer = new RawWriter('unused', 'capture-1', { maxQueueBytes: 1024, open: () => stream });
+    const indexes: number[] = [];
+    for (let i = 0; i < 6; i++) indexes.push(writer.append(datagram(new Array(296).fill(i), i)));
+    expect(writer.incompleteReason).toBe('queue-full');
+    expect(indexes).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(writer.appended).toBe(6);
+    stream.release();
+    const closing = writer.close();
+    stream.release();
+    await closing;
+    expect(writer.append(datagram([1], 99))).toBe(6);
+  });
+
   it('write_error_never_throws_and_reports_incomplete', async () => {
-    const path = join(tempDir(), 'missing-dir', 'capture.ndjson');
+    const path = join(testTempDir('gt7-capture-'), 'missing-dir', 'capture.ndjson');
     const writer = new RawWriter(path, 'capture-1');
     expect(() => writer.append(datagram([1], 1))).not.toThrow();
     const result = await writer.close();
@@ -68,7 +109,7 @@ describe('raw files', () => {
   });
 
   it('truncated_last_row_keeps_earlier_rows', async () => {
-    const path = join(tempDir(), 'capture.ndjson');
+    const path = join(testTempDir('gt7-capture-'), 'capture.ndjson');
     const writer = new RawWriter(path, 'capture-1');
     for (let i = 0; i < 4; i++) writer.append(datagram([i], i));
     await writer.close();
@@ -79,7 +120,7 @@ describe('raw files', () => {
   });
 
   it('corrupt_middle_row_is_an_error', async () => {
-    const path = join(tempDir(), 'capture.ndjson');
+    const path = join(testTempDir('gt7-capture-'), 'capture.ndjson');
     const writer = new RawWriter(path, 'capture-1');
     writer.append(datagram([1], 1));
     await writer.close();

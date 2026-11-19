@@ -4,7 +4,7 @@ import { parseArgs } from 'node:util';
 import { diffCatalogue, fetchCatalogue, slug, validateCatalogue } from '@gt7/catalogue';
 import type { Catalogue } from '@gt7/contracts';
 
-const catalogueDir = resolve('catalogue');
+const catalogueDir = resolve('content/catalogue');
 const cataloguePath = join(catalogueDir, 'catalogue.json');
 const aliasesPath = join(catalogueDir, 'aliases.json');
 

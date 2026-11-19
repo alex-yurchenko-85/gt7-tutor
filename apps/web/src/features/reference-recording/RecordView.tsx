@@ -1,17 +1,16 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { CaptureInfo, ReferenceCheckResult, ReferenceProposal, StartKindName } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
-import { useLive } from '../../api/live.tsx';
+import { useLiveConnection, useLiveState } from '../../api/live.tsx';
 import { Icon } from '../../app/icons.tsx';
 import { useImmersive } from '../../app/immersive.tsx';
 import { useWideLayout } from '../../app/layout.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
-import type { Status } from '../../app/status.ts';
+import { consoleState, voiceState, type ConsoleState, type Status, type VoiceState } from '../../app/status.ts';
 import { COUNTDOWN_CLIPS } from '../../voice/clips.ts';
 import { useExercise } from '../exercise/use-exercise.ts';
-import { consoleState, voiceState, type ConsoleState, type VoiceState } from '../setup/readiness.ts';
 import { ReadinessChip } from '../setup/SetupView.tsx';
 import './record.css';
 
@@ -319,7 +318,8 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
   const exercise = useExercise(exerciseId);
   const wide = useWideLayout();
   const { search } = useRouter();
-  const { state, connected, deviceId, player } = useLive();
+  const { deviceId, player } = useLiveConnection();
+  const { state, connected } = useLiveState(snapshot => snapshot);
   const settings = useResource(() => api.settings(), []);
   const info = useResource(() => api.appInfo(), []);
   const checkId = search.get('check');

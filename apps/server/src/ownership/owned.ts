@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import type { CapturePurpose, ReferenceOrigin, StartKindName, TrainingMode } from '@gt7/contracts';
 import type { Knex } from 'knex';
 
 export type ExerciseRow = {
@@ -8,7 +9,6 @@ export type ExerciseRow = {
   family: string;
   name: string;
   car_id: number | null;
-  conditions: Record<string, string>;
   targets: Record<string, number>;
   muted_cues: string[];
   speak_targets: boolean;
@@ -22,7 +22,7 @@ export type CaptureRow = {
   id: string;
   user_id: string;
   exercise_id: string | null;
-  purpose: 'demo' | 'player';
+  purpose: CapturePurpose;
   raw_path: string;
   started_at: Date;
   ended_at: Date | null;
@@ -38,10 +38,11 @@ export type ReferenceRow = {
   capture_id: string;
   first_raw_index: number;
   last_raw_index: number;
-  origin: 'demo' | 'attempt';
-  start_kind: 'standing' | 'flying';
+  origin: ReferenceOrigin;
+  start_kind: StartKindName;
   game_version: string | null;
   needs_check: boolean;
+  timer_ms: number | null;
   created_at: Date;
 };
 
@@ -52,12 +53,10 @@ export type AttemptRow = {
   reference_id: string;
   first_raw_index: number;
   last_raw_index: number;
-  mode: 'baseline' | 'guided';
+  mode: TrainingMode;
   completion: 'complete' | 'aborted';
   reason: string | null;
-  measured_ms: number | null;
   game_ms: number | null;
-  medal: 'bronze' | 'silver' | 'gold' | null;
   started_at: Date;
   created_at: Date;
 };

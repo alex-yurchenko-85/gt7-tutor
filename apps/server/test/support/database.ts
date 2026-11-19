@@ -1,11 +1,12 @@
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { DEFAULT_DATABASE_URL } from '../../../../tools/demo/demo-plan.js';
 import knex, { type Knex } from 'knex';
 
-export const migrationsDirectory = fileURLToPath(new URL('../../../../migrations', import.meta.url));
+export const migrationsDirectory = fileURLToPath(new URL('../../db/migrations', import.meta.url));
 
 export function adminDatabaseUrl(): string {
-  return process.env.DATABASE_URL ?? 'postgres://gt7:gt7@127.0.0.1:5432/gt7_tutor';
+  return process.env.DATABASE_URL ?? DEFAULT_DATABASE_URL;
 }
 
 export function migrationConfig(): Knex.MigratorConfig {

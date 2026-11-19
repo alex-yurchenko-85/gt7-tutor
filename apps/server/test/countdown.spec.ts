@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { COUNTDOWN_PRIORITY, countdownSteps, timerScheduler } from '../src/captures/countdown.js';
+import { countdownSteps, timerScheduler } from '../src/captures/countdown.js';
 
 describe('recording countdown', () => {
   beforeEach(() => {
@@ -36,6 +36,5 @@ describe('recording countdown', () => {
     ]);
     expect(countdownSteps(0)).toEqual([{ count: 0, clip: 'countdown-start', atMs: 0 }]);
     expect(countdownSteps(2.5).map(step => step.atMs)).toEqual([500, 1500, 2500]);
-    expect(COUNTDOWN_PRIORITY).toBe(101);
   });
 });

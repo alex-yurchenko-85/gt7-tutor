@@ -61,12 +61,11 @@ async function main() {
   const stats = new TelemetryStats();
   const source = new UdpSource({ ps5Ip: args.ip, now: sinceStart });
   let startCueMonoMs: number | null = null;
-  let rejectedWrites = 0;
   const timers: ReturnType<typeof setTimeout>[] = [];
 
   const onDatagram = (datagram: Datagram) => {
     if (stats.result().datagrams === 0) console.log(`First datagram: ${datagram.payload.byteLength} bytes.`);
-    if (!writer.append(datagram)) rejectedWrites++;
+    writer.append(datagram);
     stats.add(datagram);
   };
 
@@ -90,7 +89,7 @@ async function main() {
       complete: written.complete,
       incompleteReason: written.reason,
       packetsWritten: written.packets,
-      rejectedWrites,
+      rejectedWrites: writer.appended - written.packets,
       foreignDatagramsIgnored: source.foreignDatagrams,
       heartbeatErrors: source.heartbeatErrors,
       telemetry: stats.result(),

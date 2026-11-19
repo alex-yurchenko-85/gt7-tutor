@@ -1,40 +1,43 @@
-import type { LiveGuidance, Sample, TrainingMode } from '@gt7/contracts';
+import { KPH_PER_MPS, type CueEventKind, type CueOutcome, type LiveCueKind, type LiveGuidance, type Sample, type TrainingMode } from '@gt7/contracts';
 import {
-  AttemptTracker,
-  Coach,
-  KPH_PER_MPS,
-  Matcher,
-  SequenceTracker,
-  cueText,
-  gapToReferenceMs,
+  ACTIVE_GUIDANCE,
+  TrainingRun,
   type AttemptEvent,
+  type CoachSettings,
   type CoreConfig,
+  type SuppressReason,
   type Cue,
-  type Match,
-  type ReferenceCueEvent,
-  type ReferencePath
+  type CueTarget,
+  type NextCue,
+  type ReferenceAnalysis,
+  type RunStep
 } from '@gt7/core';
 
-export type TrainingSnapshot = {
+export type TrainingSnapshot = CoachSettings & {
   userId: string;
   exerciseId: string;
   referenceId: string;
   mode: TrainingMode;
-  path: ReferencePath;
-  events: ReferenceCueEvent[];
-  mutedKeys: ReadonlySet<string>;
-  speakTargets: boolean;
-  offsetsMs: ReadonlyMap<string, number>;
-  sideCueDistanceM: number | null;
+  analysis: ReferenceAnalysis;
 };
+
+export type CueRecordOutcome =
+  | CueOutcome
+  | 'pending'
+  | 'sent'
+  | 'no-device'
+  | 'suppressed-during-attempt'
+  | `suppressed-${SuppressReason}`;
 
 export type CueRecord = {
   cueId: string | null;
   eventKey: string;
-  kind: string;
+  kind: LiveCueKind | CueEventKind;
+  eventKind: CueEventKind;
+  sM: number | null;
   targetKph: number | null;
   decidedMonoMs: number;
-  outcome: string;
+  outcome: CueRecordOutcome;
   startDelayMs: number | null;
   deviceDelayMs: number | null;
 };
@@ -69,30 +72,33 @@ export type SessionView = {
   attemptNumber: number | null;
   guidance: LiveGuidance;
   sM: number | null;
-  speedKph: number | null;
+  speedMps: number | null;
   lastCue: Cue | null;
-  nextCue: { text: string; inM: number } | null;
+  nextCue: NextCue | null;
   gapMs: number | null;
 };
 
-type OpenAttempt = { generation: number; startedAt: Date; samples: Sample[]; cues: CueRecord[] };
+const GAP_STEP_MS = 100;
 
-const ACTIVE_GUIDANCE: LiveGuidance = { mode: 'active', reason: null };
-
-function speakable(event: ReferenceCueEvent): string {
-  return cueText(event.voice);
+function shownKey(view: SessionView): string {
+  const { guidance, nextCue } = view;
+  const speed = view.speedMps === null ? '' : Math.round(view.speedMps * KPH_PER_MPS);
+  const place = view.sM === null ? '' : Math.round(view.sM);
+  const gap = view.gapMs === null ? '' : Math.round(view.gapMs / GAP_STEP_MS) || 0;
+  const next = nextCue === null ? '' : `${nextCue.text}@${Math.round(nextCue.inM)}`;
+  return [view.mode, view.generation, view.attemptNumber, guidance.mode, guidance.reason, speed, place, gap, next, view.lastCue?.id].join('|');
 }
+
+type OpenAttempt = { generation: number; startedAt: Date; samples: Sample[]; cues: CueRecord[] };
 
 export class TrainingSession {
   readonly snapshot: TrainingSnapshot;
   private readonly effects: TrainingEffects;
-  private readonly tracker: AttemptTracker;
-  private readonly matcher: Matcher;
-  private readonly coach: Coach;
-  private readonly sequence = new SequenceTracker();
-  private readonly eventKinds: Map<string, string>;
-  private readonly cuesById = new Map<string, CueRecord>();
-  private previous: Sample | null = null;
+  private readonly run: TrainingRun;
+  private cuesById = new Map<string, CueRecord>();
+  private previousCuesById = new Map<string, CueRecord>();
+  private shown = '';
+  private readonly phraseMs = (clip: string): number => this.effects.phraseMs(clip);
   private attempt: OpenAttempt | null = null;
   private attempts = 0;
   private view: SessionView = {
@@ -101,7 +107,7 @@ export class TrainingSession {
     attemptNumber: null,
     guidance: ACTIVE_GUIDANCE,
     sM: null,
-    speedKph: null,
+    speedMps: null,
     lastCue: null,
     nextCue: null,
     gapMs: null
@@ -110,10 +116,10 @@ export class TrainingSession {
   constructor(snapshot: TrainingSnapshot, config: CoreConfig, effects: TrainingEffects) {
     this.snapshot = snapshot;
     this.effects = effects;
-    this.tracker = new AttemptTracker(config);
-    this.matcher = new Matcher(snapshot.path, config);
-    this.coach = new Coach(snapshot.path, snapshot.events, config);
-    this.eventKinds = new Map(snapshot.events.map(event => [event.key, event.kind]));
+    this.run = new TrainingRun(snapshot.analysis, config, snapshot, {
+      guided: snapshot.mode === 'guided',
+      nextGeneration: () => effects.nextGeneration()
+    });
   }
 
   get state(): SessionView {
@@ -125,53 +131,59 @@ export class TrainingSession {
   }
 
   onSample(sample: Sample): void {
-    if (this.sequence.accept(sample).duplicate) return;
     this.attempt?.samples.push(sample);
-    this.handle(this.tracker.step(sample), sample);
-    if (this.attempt && (this.tracker.state === 'driving' || this.tracker.state === 'paused')) this.guide(sample);
-    else this.view = { ...this.view, sM: null, speedKph: sample.speedMps * KPH_PER_MPS, nextCue: null, gapMs: null };
-    this.previous = sample;
-    this.effects.changed();
+    const deviceDelayMs = this.effects.deviceDelayMs();
+    const step = this.run.step(sample, { deviceDelayMs, phraseMs: this.phraseMs });
+    this.handle(step.attemptEvents, step.startSamples);
+    this.view = { ...this.view, sM: step.match?.sM ?? null, speedMps: sample.speedMps, nextCue: step.nextCue, gapMs: step.gapMs, guidance: step.guidance };
+    this.recordCues(step, sample, deviceDelayMs);
+    this.notify();
   }
 
   tick(nowMonoMs: number): void {
-    const events = this.tracker.tick(nowMonoMs);
+    const events = this.run.tick(nowMonoMs);
     if (events.length === 0) return;
-    this.handle(events, null);
-    this.effects.changed();
+    this.handle(events, []);
+    this.notify();
   }
 
   abortByUser(nowMonoMs: number): void {
-    this.handle(this.tracker.abortByUser(nowMonoMs), null);
-    this.effects.changed();
+    this.handle(this.run.abortByUser(nowMonoMs), []);
+    this.notify();
   }
 
-  recordOutcome(cueId: string, outcome: string, startDelayMs: number | null): CueRecord | null {
-    const record = this.cuesById.get(cueId);
+  recordOutcome(cueId: string, outcome: CueOutcome, startDelayMs: number | null): CueRecord | null {
+    const record = this.cuesById.get(cueId) ?? this.previousCuesById.get(cueId);
     if (!record) return null;
     record.outcome = outcome;
     record.startDelayMs = startDelayMs;
     return record;
   }
 
-  private handle(events: AttemptEvent[], sample: Sample | null): void {
+  private notify(): void {
+    const key = shownKey(this.view);
+    if (key === this.shown) return;
+    this.shown = key;
+    this.effects.changed();
+  }
+
+  private handle(events: AttemptEvent[], startSamples: Sample[]): void {
     for (const event of events) {
-      if (event.type === 'started') this.start(event, sample);
+      if (event.type === 'started') this.start(startSamples);
       else if (event.type === 'paused') this.pause();
       else if (event.type === 'resumed') this.view = { ...this.view, mode: 'driving' };
       else this.end(event);
     }
   }
 
-  private start(event: AttemptEvent, sample: Sample | null): void {
+  private start(samples: Sample[]): void {
     if (this.view.generation > 0) this.effects.cancel(this.view.generation);
-    const generation = this.effects.nextGeneration();
-    this.matcher.reset();
-    this.coach.reset(generation);
-    const samples = [this.previous, sample].filter((item): item is Sample => item !== null);
+    const { generation } = this.run;
+    this.previousCuesById = this.cuesById;
+    this.cuesById = new Map();
     this.attempt = { generation, startedAt: new Date(), samples, cues: [] };
     this.attempts++;
-    this.view = { ...this.view, mode: 'driving', generation, attemptNumber: this.attempts, guidance: ACTIVE_GUIDANCE, lastCue: null };
+    this.view = { ...this.view, mode: 'driving', generation, attemptNumber: this.attempts, lastCue: null };
   }
 
   private pause(): void {
@@ -202,29 +214,14 @@ export class TrainingSession {
     });
   }
 
-  private guide(sample: Sample): void {
-    const match = this.matcher.step(sample);
-    const gapMs = match && sample.gameTimerMs > 0 ? gapToReferenceMs(this.snapshot.path, match.sM, sample.gameTimerMs) : null;
-    this.view = { ...this.view, sM: match?.sM ?? null, speedKph: sample.speedMps * KPH_PER_MPS, nextCue: this.nextCue(match), gapMs };
-    if (this.snapshot.mode !== 'guided') return;
-    const output = this.coach.step({
-      sample,
-      match,
-      nowMonoMs: sample.receivedMonoMs,
-      generation: this.view.generation,
-      deviceDelayMs: this.effects.deviceDelayMs(),
-      phraseMs: clip => this.effects.phraseMs(clip),
-      mutedKeys: this.snapshot.mutedKeys,
-      speakTargets: this.snapshot.speakTargets,
-      offsetsMs: this.snapshot.offsetsMs,
-      sideCueDistanceM: this.snapshot.sideCueDistanceM
-    });
-    this.view = { ...this.view, guidance: output.guidance };
-    for (const entry of output.suppressed) {
+  private recordCues(step: RunStep, sample: Sample, deviceDelayMs: number): void {
+    for (const entry of step.suppressed) {
       this.attempt?.cues.push({
         cueId: null,
         eventKey: entry.eventKey,
-        kind: this.eventKinds.get(entry.eventKey) ?? entry.eventKey.split('@')[0]!,
+        kind: entry.target.eventKind,
+        eventKind: entry.target.eventKind,
+        sM: entry.target.sM,
         targetKph: null,
         decidedMonoMs: sample.receivedMonoMs,
         outcome: `suppressed-${entry.why}`,
@@ -232,33 +229,25 @@ export class TrainingSession {
         deviceDelayMs: null
       });
     }
-    if (output.cue) this.voice(output.cue);
+    if (step.cue && step.target) this.voice(step.cue, step.target, deviceDelayMs);
   }
 
-  private voice(cue: Cue): void {
+  private voice(cue: Cue, target: CueTarget, deviceDelayMs: number): void {
     const record: CueRecord = {
       cueId: cue.id,
       eventKey: cue.eventKey,
       kind: cue.kind,
+      eventKind: target.eventKind,
+      sM: target.sM,
       targetKph: cue.targetSpeedKph,
       decidedMonoMs: cue.decidedMonoMs,
       outcome: 'pending',
       startDelayMs: null,
-      deviceDelayMs: this.effects.deviceDelayMs()
+      deviceDelayMs
     };
     this.attempt?.cues.push(record);
     this.cuesById.set(cue.id, record);
     record.outcome = this.effects.sendCue(cue) ? 'sent' : 'no-device';
     this.view = { ...this.view, lastCue: cue };
-  }
-
-  private nextCue(match: Match | null): { text: string; inM: number } | null {
-    if (!match) return null;
-    for (const event of this.snapshot.events) {
-      if (event.sM <= match.sM || this.snapshot.mutedKeys.has(event.key)) continue;
-      const text = speakable(event);
-      if (text) return { text, inM: event.sM - match.sM };
-    }
-    return null;
   }
 }

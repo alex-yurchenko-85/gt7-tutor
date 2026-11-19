@@ -1,4 +1,5 @@
 import type { ClientMsg, CueOutcome, LiveCue, ServerMsg } from '@gt7/contracts';
+import { VOICE_CHECK_CLIP } from './clips.ts';
 
 export type VoiceSource = {
   buffer: unknown;
@@ -31,8 +32,6 @@ export type VoicePlayerOptions = {
 type Manifest = { clips: Record<string, { file: string; durationMs: number }> };
 
 type Playing = { sources: VoiceSource[]; cueId: string | null; generation: number };
-
-export const VOICE_CHECK_CLIP = 'voice-check';
 
 const CLOCK_SAMPLES = 30;
 

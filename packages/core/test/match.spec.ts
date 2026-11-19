@@ -125,6 +125,17 @@ describe('Matcher', () => {
     expect(match.velocityErrorDeg).toBeNull();
   });
 
+  it('car_without_planar_velocity_has_no_velocity_error', () => {
+    const path = pathFromCorners([{ x: 0, y: 0, z: 0 }, { x: 200, y: 0, z: 0 }]);
+    const matcher = new Matcher(path, DEFAULT_CONFIG);
+    const car = drive(straightLine({ fromX: 0.5, toX: 20, speedMps: 10 }));
+    const last = car.at(-1)!;
+    car.slice(0, -1).forEach(sample => matcher.step(sample));
+    const match = matcher.step({ ...last, velocity: { x: 0, y: 10, z: 0 } })!;
+    expect(match.trusted).toBe(true);
+    expect(match.velocityErrorDeg).toBeNull();
+  });
+
   it('lateral_within_8_m_is_trusted_and_beyond_is_null', () => {
     const path = pathFromCorners([{ x: 0, y: 0, z: 0 }, { x: 200, y: 0, z: 0 }]);
     const wide = new Matcher(path, DEFAULT_CONFIG);

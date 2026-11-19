@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { connectionSettingsSchema, type ReceptionCheck } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
-import { useLive } from '../../api/live.tsx';
+import { useLiveState } from '../../api/live.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
+import { formatClock } from '../../app/format.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { StatusDot } from '../../app/Shell.tsx';
 import { telemetryStatus, type Status } from '../../app/status.ts';
@@ -30,10 +31,6 @@ function carText(check: ReceptionCheck, carName: string | null): string | null {
   return check.carId !== null ? `Car ID ${check.carId}` : null;
 }
 
-function clockText(at: Date): string {
-  return at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
 type Reception = { status: Status; car: string | null; at: Date };
 
 function receptionNotice(reception: Reception): string {
@@ -45,7 +42,7 @@ type ConsoleFormProps = { layout: 'rows' | 'inline'; onChecked?(receiving: boole
 
 export function ConsoleForm({ layout, onChecked, onSaved }: ConsoleFormProps) {
   const settings = useResource(() => api.settings(), []);
-  const { state, connected } = useLive();
+  const { state, connected } = useLiveState(snapshot => snapshot);
   const [address, setAddress] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
@@ -135,7 +132,7 @@ export function ConsoleForm({ layout, onChecked, onSaved }: ConsoleFormProps) {
   }
 
   const status = reception?.status ?? telemetryStatus(state, connected);
-  const caption = reception ? [reception.car, `checked ${clockText(reception.at)}`].filter(Boolean).join(' · ') : null;
+  const caption = reception ? [reception.car, `checked ${formatClock(reception.at)}`].filter(Boolean).join(' · ') : null;
   return (
     <>
       <form className="pref" onSubmit={save} noValidate>

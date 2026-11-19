@@ -26,10 +26,6 @@ function widen(range: Range, value: number): Range {
   return range === null ? [value, value] : [Math.min(range[0], value), Math.max(range[1], value)];
 }
 
-function wheelRotationText(radians: number | null): string {
-  return radians === null ? '' : `, wheel rotation ${radians.toFixed(3)} rad`;
-}
-
 export class TelemetryStats {
   private readonly sequence = new SequenceTracker();
   private readonly carIds = new Set<number>();
@@ -52,7 +48,7 @@ export class TelemetryStats {
     throttle: null,
     brake: null
   };
-  latest: { speedKph: number; throttle: number; brake: number; lap: number; flags: number; wheelRotationRad: number | null } | null = null;
+  latest: { speedKph: number; throttle: number; brake: number; lap: number; flags: number } | null = null;
 
   add(datagram: Datagram): void {
     const s = this.summary;
@@ -84,8 +80,7 @@ export class TelemetryStats {
       throttle: sample.throttle,
       brake: sample.brake,
       lap: sample.lap,
-      flags: sample.flags,
-      wheelRotationRad: sample.extension?.wheelRotationRad ?? null
+      flags: sample.flags
     };
   }
 
@@ -103,6 +98,6 @@ export class TelemetryStats {
   statusLine(): string {
     const latest = this.latest;
     if (!latest) return `Datagrams ${this.summary.datagrams}; waiting for telemetry...`;
-    return `Datagrams ${this.summary.datagrams}, decoded ${this.summary.decoded}, ${latest.speedKph.toFixed(1)} km/h, throttle ${(latest.throttle * 100).toFixed(0)}%, brake ${(latest.brake * 100).toFixed(0)}%, lap ${latest.lap}, flags ${latest.flags}${wheelRotationText(latest.wheelRotationRad)}`;
+    return `Datagrams ${this.summary.datagrams}, decoded ${this.summary.decoded}, ${latest.speedKph.toFixed(1)} km/h, throttle ${(latest.throttle * 100).toFixed(0)}%, brake ${(latest.brake * 100).toFixed(0)}%, lap ${latest.lap}, flags ${latest.flags}`;
   }
 }

@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import type { ExerciseStatusName } from './catalogue.ts';
+import { medalTargetsSchema, type ExerciseStatusName } from './catalogue.ts';
+import { CUE_OFFSET_MAX_MS, CUE_OFFSET_MIN_MS, CUE_OFFSET_STEP_MS, RECURRING_DEFAULT_LAST } from './constants.ts';
 
 export const capturePurposeSchema = z.enum(['demo', 'player']);
 
@@ -9,23 +10,42 @@ export const startKindSchema = z.enum(['standing', 'flying']);
 
 export type StartKindName = z.infer<typeof startKindSchema>;
 
-export const exerciseTargetsSchema = z
-  .object({
-    bronzeMs: z.number().int().positive(),
-    silverMs: z.number().int().positive(),
-    goldMs: z.number().int().positive()
-  })
-  .partial();
+export const exerciseTargetsSchema = medalTargetsSchema.partial();
 
 export type ExerciseTargets = z.infer<typeof exerciseTargetsSchema>;
 
-const conditionsSchema = z.record(z.string().trim().min(1).max(40), z.string().trim().max(200));
+export type RawRange = { first: number; last: number };
+
+export type EventKind = 'brake' | 'ease-off' | 'throttle';
+
+const PLACED_KINDS = ['brake', 'ease-off', 'throttle', 'big-stop', 'keep-left', 'keep-right'] as const;
+
+export type PlacedKind = (typeof PLACED_KINDS)[number];
+
+export type CueEventKind = PlacedKind | 'tighter' | 'guidance' | 'countdown' | 'focus';
+
+function isPlacedKind(kind: string | null): kind is PlacedKind {
+  return PLACED_KINDS.some(placed => placed === kind);
+}
+
+export function eventKey(kind: PlacedKind, sM: number): string {
+  return `${kind}@${Math.round(sM)}`;
+}
+
+export function eventKeyKind(key: string): CueEventKind | null {
+  if (key === 'focus') return 'focus';
+  if (key.startsWith('countdown-')) return 'countdown';
+  if (key.startsWith('guidance-')) return 'guidance';
+  const at = key.indexOf('@');
+  const kind = at > 0 ? key.slice(0, at) : null;
+  return kind === 'tighter' || isPlacedKind(kind) ? kind : null;
+}
+
+export function eventKeyPlace(key: string): number | null {
+  return isPlacedKind(eventKeyKind(key)) ? Number(key.slice(key.indexOf('@') + 1)) : null;
+}
 
 const eventKeySchema = z.string().min(1).max(60);
-
-export const CUE_OFFSET_MIN_MS = -500;
-export const CUE_OFFSET_MAX_MS = 1000;
-export const CUE_OFFSET_STEP_MS = 100;
 
 const cueOffsetMsSchema = z.number().int().min(CUE_OFFSET_MIN_MS).max(CUE_OFFSET_MAX_MS).multipleOf(CUE_OFFSET_STEP_MS);
 
@@ -34,8 +54,7 @@ export const createExerciseSchema = z.union([
   z
     .object({
       family: z.string().trim().min(1).max(60),
-      name: z.string().trim().min(1).max(120),
-      conditions: conditionsSchema.default({})
+      name: z.string().trim().min(1).max(120)
     })
     .strict()
 ]);
@@ -48,9 +67,6 @@ export const sideCueDistanceSchema = z.union([z.null(), z.number().refine(value 
 
 export const updateExerciseSchema = z
   .object({
-    name: z.string().trim().min(1).max(120),
-    conditions: conditionsSchema,
-    targets: exerciseTargetsSchema,
     mutedCues: z.array(eventKeySchema).max(500),
     speakTargets: z.boolean(),
     cueOffsetsMs: z.record(eventKeySchema, cueOffsetMsSchema),
@@ -69,7 +85,6 @@ export type Exercise = {
   family: string;
   name: string;
   carId: number | null;
-  conditions: Record<string, string>;
   targets: ExerciseTargets;
   mutedCues: string[];
   speakTargets: boolean;
@@ -167,7 +182,7 @@ export type ReferenceCheckResult = { matched: boolean; range: { first: number; l
 
 export type ReferenceCue = {
   key: string;
-  kind: 'brake' | 'ease-off' | 'throttle';
+  kind: EventKind;
   sM: number;
   endSM: number | null;
   targetSpeedKph: number | null;
@@ -175,11 +190,14 @@ export type ReferenceCue = {
   voice: string;
   bigStop: boolean;
   muted: boolean;
+  clip: string;
+  followClip: string | null;
+  text: string;
 };
 
-export type CornerInfo = { number: number; turnInSM: number; apexSM: number; radiusM: number; apexSpeedKph: number };
+export type CornerInfo = { number: number; turnInSM: number; apexSM: number; radiusM: number; apexSpeedMps: number };
 
-export type CornerReview = CornerInfo & { outsideM: number | null; speedKph: number | null };
+export type CornerReview = CornerInfo & { outsideM: number | null; speedMps: number | null };
 
 export type BrakeReactionSummary = { eventKey: string; medianMs: number; count: number };
 
@@ -218,15 +236,17 @@ export const medalSchema = z.enum(['bronze', 'silver', 'gold']);
 
 export type MedalName = z.infer<typeof medalSchema>;
 
-export type FindingKindName = 'brake-early' | 'brake-late' | 'slow-corner' | 'throttle-late' | 'off-line' | 'wide-apex';
+export const findingKindSchema = z.enum(['brake-early', 'brake-late', 'slow-corner', 'throttle-late', 'off-line', 'wide-apex']);
 
-export type Difference = { kind: FindingKindName; eventKey: string | null; sM: number; size: number; unit: 'm' | 'km/h'; turn: number | null };
+export type FindingKindName = z.infer<typeof findingKindSchema>;
+
+export type Difference = { kind: FindingKindName; eventKey: string | null; sM: number; size: number; unit: 'm' | 'm/s'; turn: number | null };
 
 export type TurnLossInfo = { turn: number; fromSM: number; toSM: number; lostMs: number | null };
 
 export type RecurringDifference = Difference & { count: number; of: number; medianSize: number };
 
-export type AttemptSummary = {
+type AttemptSummaryBase = {
   id: string;
   exerciseId: string;
   number: number;
@@ -235,28 +255,18 @@ export type AttemptSummary = {
   first: number;
   last: number;
   mode: 'baseline' | 'guided';
-  completion: 'complete' | 'aborted';
   reason: string | null;
-  measuredMs: number | null;
-  gameMs: number | null;
-  medal: MedalName | null;
-  timeMs: number | null;
   gapToBestMs: number | null;
   largestDifference: Difference | null;
   focus: FocusSummary | null;
   startedAt: string;
 };
 
+export type AttemptSummary = AttemptSummaryBase & ({ completion: 'complete'; timeMs: number } | { completion: 'aborted'; timeMs: null });
+
 export type AttemptDay = { date: string; bestMs: number | null; attempts: AttemptSummary[] };
 
 export type AttemptList = { bestMs: number | null; days: AttemptDay[] };
-
-export const updateAttemptSchema = z
-  .object({ medal: medalSchema.nullable() })
-  .partial()
-  .strict();
-
-export type UpdateAttemptRequest = z.infer<typeof updateAttemptSchema>;
 
 export type StoredCueEvent = {
   eventKey: string;
@@ -277,7 +287,7 @@ export type ReviewSeries = {
   lat: (number | null)[];
 };
 
-export type ReviewEvent = { key: string; kind: 'brake' | 'ease-off' | 'throttle'; sM: number; endSM: number | null; targetSpeedKph: number | null };
+export type ReviewEvent = { key: string; kind: EventKind; sM: number; endSM: number | null; targetSpeedKph: number | null };
 
 export type AttemptReview = {
   referenceId: string;
@@ -299,7 +309,7 @@ export const reviewQuerySchema = z.object({ referenceId: z.uuid().optional() });
 
 export type ReviewQuery = z.infer<typeof reviewQuerySchema>;
 
-export const recurringQuerySchema = z.object({ last: z.coerce.number().int().min(1).max(100).default(8) });
+export const recurringQuerySchema = z.object({ last: z.coerce.number().int().min(1).max(100).default(RECURRING_DEFAULT_LAST) });
 
 export type RecurringQuery = z.infer<typeof recurringQuerySchema>;
 
@@ -319,4 +329,4 @@ export type Progress = { collections: ProgressCollection[]; exercises: ProgressE
 
 export type ReceptionCheck = { packets: number; decoded: number; durationMs: number; carId: number | null };
 
-export type ReferenceTrace = { gridM: number; lengthM: number; timeMs: number; x: number[]; z: number[]; speedKph: number[] };
+export type ReferenceTrace = { gridM: number; lengthM: number; timeMs: number; x: number[]; z: number[]; speedMps: number[] };

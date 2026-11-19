@@ -1,10 +1,10 @@
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { lanAddresses, readyMessage } from './addresses.ts';
-import { DEMO_DATABASE, demoDatabaseUrl, demoPlan, type DemoPlanEnv } from './demo-plan.ts';
+import { DEFAULT_DATABASE_URL, DEMO_DATABASE, demoDatabaseUrl, demoPlan, type DemoPlanEnv } from './demo-plan.ts';
 
 const repoRoot = '/repo';
-const baseEnv: DemoPlanEnv = { repoRoot, databaseUrl: 'postgres://gt7:gt7@127.0.0.1:5432/gt7_tutor', built: false, demoFilesPresent: true };
+const baseEnv: DemoPlanEnv = { repoRoot, databaseUrl: DEFAULT_DATABASE_URL, built: false, demoFilesPresent: true };
 const options = { reset: false, check: false, port: 3001 };
 
 describe('pnpm demo plan', () => {

@@ -1,6 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import type { CreateExerciseRequest, Exercise, UpdateExerciseRequest } from '@gt7/contracts';
-import { DEFAULT_SIDE_CUE_DISTANCE_M } from '@gt7/core';
+import type { CreateExerciseRequest, Exercise, ExerciseTargets, UpdateExerciseRequest } from '@gt7/contracts';
 import type { Knex } from 'knex';
 import { CatalogueService } from '../catalogue/catalogue.service.js';
 import { ownedExercise, type ExerciseRow } from '../ownership/owned.js';
@@ -13,7 +12,6 @@ type NewExercise = {
   family: string;
   name: string;
   car_id: number | null;
-  conditions: Record<string, string>;
   targets: object;
 };
 
@@ -28,7 +26,6 @@ function exerciseView(row: ExerciseRow, summary: ExerciseStatusSummary): Exercis
     family: row.family,
     name: row.name,
     carId: row.car_id,
-    conditions: row.conditions,
     targets: row.targets,
     mutedCues: row.muted_cues,
     speakTargets: row.speak_targets,
@@ -71,15 +68,13 @@ export class ExercisesService {
   async create(userId: string, body: CreateExerciseRequest): Promise<Exercise> {
     const values: NewExercise =
       'catalogueId' in body
-        ? await this.fromCatalogue(body.catalogueId)
-        : { catalogue_id: null, family: body.family, name: body.name, car_id: null, conditions: body.conditions, targets: {} };
+        ? this.fromCatalogue(body.catalogueId)
+        : { catalogue_id: null, family: body.family, name: body.name, car_id: null, targets: {} };
     const [row] = await this.db('exercises')
       .insert({
         ...values,
         user_id: userId,
-        conditions: JSON.stringify(values.conditions),
-        targets: JSON.stringify(values.targets),
-        side_cue_distance_m: DEFAULT_SIDE_CUE_DISTANCE_M
+        targets: JSON.stringify(values.targets)
       })
       .returning<{ id: string }[]>('id');
     return this.get(userId, row!.id);
@@ -88,9 +83,6 @@ export class ExercisesService {
   async update(userId: string, id: string, body: UpdateExerciseRequest): Promise<Exercise> {
     await ownedExercise(this.db, userId, id);
     const changes: Record<string, unknown> = {};
-    if (body.name !== undefined) changes.name = body.name;
-    if (body.conditions !== undefined) changes.conditions = JSON.stringify(body.conditions);
-    if (body.targets !== undefined) changes.targets = JSON.stringify(body.targets);
     if (body.mutedCues !== undefined) changes.muted_cues = JSON.stringify([...new Set(body.mutedCues)]);
     if (body.speakTargets !== undefined) changes.speak_targets = body.speakTargets;
     if (body.sideCueDistanceM !== undefined) changes.side_cue_distance_m = body.sideCueDistanceM;
@@ -99,16 +91,20 @@ export class ExercisesService {
     return this.get(userId, id);
   }
 
-  private async fromCatalogue(catalogueId: string): Promise<NewExercise> {
-    const entry = await this.db('catalogue_entries').where({ id: catalogueId }).first();
+  async setTargets(userId: string, id: string, targets: ExerciseTargets): Promise<void> {
+    await ownedExercise(this.db, userId, id);
+    await this.db('exercises').where({ id, user_id: userId }).update({ targets: JSON.stringify(targets) });
+  }
+
+  private fromCatalogue(catalogueId: string): NewExercise {
+    const entry = this.catalogue.entry(catalogueId);
     if (!entry) throw new NotFoundException(`Catalogue entry ${catalogueId} not found`);
     return {
-      catalogue_id: entry.id as string,
-      family: entry.family as string,
-      name: entry.name as string,
-      car_id: this.catalogue.carIdByName(entry.car as string | null),
-      conditions: {},
-      targets: (entry.targets as object | null) ?? {}
+      catalogue_id: entry.id,
+      family: entry.family,
+      name: entry.name,
+      car_id: this.catalogue.carIdByName(entry.car),
+      targets: entry.targets ?? {}
     };
   }
 }

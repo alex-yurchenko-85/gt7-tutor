@@ -2,8 +2,8 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
-const committedCatalogueDir = fileURLToPath(new URL('../../../../catalogue', import.meta.url));
-const committedAudioDir = fileURLToPath(new URL('../../../../audio', import.meta.url));
+const committedCatalogueDir = fileURLToPath(new URL('../../../../content/catalogue', import.meta.url));
+const committedAudioDir = fileURLToPath(new URL('../../../../content/audio', import.meta.url));
 const committedWebDir = fileURLToPath(new URL('../../../../apps/web/dist', import.meta.url));
 const fixturesDir = fileURLToPath(new URL('../../../../fixtures', import.meta.url));
 

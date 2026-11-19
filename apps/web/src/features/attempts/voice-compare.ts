@@ -1,18 +1,11 @@
-import type { AttemptSummary } from '@gt7/contracts';
+import { median, type AttemptSummary } from '@gt7/contracts';
 
 export type VoiceGroup = { medianMs: number | null; count: number };
 
 export type VoiceComparison = { baseline: VoiceGroup; guided: VoiceGroup; changeMs: number | null };
 
-function median(values: number[]): number | null {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 1 ? sorted[middle]! : (sorted[middle - 1]! + sorted[middle]!) / 2;
-}
-
 function group(attempts: AttemptSummary[], mode: AttemptSummary['mode']): VoiceGroup {
-  const times = attempts.filter(attempt => attempt.mode === mode && attempt.completion === 'complete' && attempt.gameMs !== null).map(attempt => attempt.gameMs!);
+  const times = attempts.filter(attempt => attempt.mode === mode && attempt.completion === 'complete' && attempt.timeMs !== null).map(attempt => attempt.timeMs!);
   return { medianMs: median(times), count: times.length };
 }
 

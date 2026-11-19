@@ -1,20 +1,39 @@
 import { z } from 'zod';
+import { MAX_OUTPUT_LATENCY_MS } from './constants.ts';
 
-export type LiveCueKind =
-  | 'hard-brake'
-  | 'brake'
-  | 'light-brake'
-  | 'ease-off'
-  | 'throttle'
-  | 'full-throttle'
-  | 'keep-left'
-  | 'keep-right'
-  | 'tighter'
-  | 'big-stop'
-  | 'guidance-paused'
-  | 'guidance-resumed'
-  | 'focus'
-  | 'countdown';
+export const cueKindSchema = z.enum([
+  'hard-brake',
+  'brake',
+  'light-brake',
+  'ease-off',
+  'throttle',
+  'full-throttle',
+  'keep-left',
+  'keep-right',
+  'tighter',
+  'big-stop'
+]);
+
+export type CueKind = z.infer<typeof cueKindSchema>;
+
+export type LiveCueKind = CueKind | 'guidance-paused' | 'guidance-resumed' | 'focus' | 'countdown';
+
+export type WordedCueKind = Exclude<LiveCueKind, 'focus' | 'countdown'>;
+
+export const CUE_WORDS: Record<WordedCueKind, string> = {
+  'hard-brake': 'Hard brake',
+  brake: 'Brake',
+  'light-brake': 'Light brake',
+  'ease-off': 'Ease off',
+  throttle: 'Throttle',
+  'full-throttle': 'Full throttle',
+  'keep-left': 'Keep left',
+  'keep-right': 'Keep right',
+  tighter: 'Tighter',
+  'big-stop': 'Big stop',
+  'guidance-paused': 'Guidance paused',
+  'guidance-resumed': 'Guidance resumed'
+};
 
 export type LiveCue = {
   id: string;
@@ -29,10 +48,11 @@ export type LiveCue = {
   ttlMs: number;
 };
 
-export type LiveGuidance = {
-  mode: 'active' | 'suspended' | 'waiting-for-restart';
-  reason: 'untrusted-position' | 'target-incompatible' | 'model-uncertain' | 'awaiting-restart' | null;
-};
+export type GuidanceMode = 'active' | 'suspended' | 'waiting-for-restart';
+
+export type GuidanceReason = 'untrusted-position' | 'target-incompatible' | 'awaiting-restart' | null;
+
+export type LiveGuidance = { mode: GuidanceMode; reason: GuidanceReason };
 
 export type ConnectionState = 'connected' | 'stale' | 'disconnected';
 
@@ -51,7 +71,7 @@ export type LiveState = {
   recordingComplete: boolean;
   storageError: string | null;
   sM: number | null;
-  speedKph: number | null;
+  speedMps: number | null;
   lastCue: LiveCue | null;
   nextCue: { text: string; inM: number } | null;
   lastAttemptId: string | null;
@@ -75,10 +95,10 @@ export const STATE_RATES = [15, 30, 60] as const;
 export type StateRate = (typeof STATE_RATES)[number];
 
 export const clientMsgSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('pong'), id: z.number().int().nonnegative(), outputLatencyMs: z.number().min(0).max(2000) }),
+  z.object({ type: z.literal('pong'), id: z.number().int().nonnegative(), outputLatencyMs: z.number().min(0).max(MAX_OUTPUT_LATENCY_MS) }),
   z.object({ type: z.literal('claim-voice'), deviceId: z.string().min(1).max(100), ready: z.boolean() }),
   z.object({ type: z.literal('release-voice') }),
-  z.object({ type: z.literal('state-rate'), perSecond: z.union([z.literal(15), z.literal(30), z.literal(60)]) }),
+  z.object({ type: z.literal('state-rate'), perSecond: z.literal(STATE_RATES) }),
   z.object({
     type: z.literal('cue-outcome'),
     cueId: z.string().min(1).max(200),

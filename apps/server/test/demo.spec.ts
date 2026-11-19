@@ -5,9 +5,9 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestApp } from './support/app.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
-import { eventually } from './support/live.js';
-import { tempDir } from './support/process.js';
-import { firstProfile } from './support/session.js';
+import { eventually } from '../../../tools/testing/eventually.js';
+import { testTempDir } from '../../../tools/testing/temp-root.js';
+import { cookiePair, firstProfile, sessionCookie } from './support/session.js';
 
 const SEED_TIMEOUT_MS = 90000;
 
@@ -16,11 +16,6 @@ const OFFLINE_ATTEMPT_ROWS = [
   { first_raw_index: 391, last_raw_index: 1524 },
   { first_raw_index: 24, last_raw_index: 1769 }
 ];
-
-function cookieOf(response: request.Response): string {
-  const header = response.headers['set-cookie'] as unknown as string[];
-  return header.find(value => value.startsWith('gt7_session='))!.split(';')[0]!;
-}
 
 async function demoApp(databaseUrl: string, dataDir: string): Promise<INestApplication> {
   const app = await createTestApp(databaseUrl, { env: { DATA_DIR: dataDir, DEMO_MODE: '1', TELEMETRY_SOURCE: 'replay' } });
@@ -32,7 +27,7 @@ async function demoApp(databaseUrl: string, dataDir: string): Promise<INestAppli
 }
 
 async function signInDemo(app: INestApplication): Promise<string> {
-  return cookieOf(await request(app.getHttpServer()).post('/api/auth/sign-in').send({ name: 'demo', password: 'demodemo' }).expect(200));
+  return cookiePair(sessionCookie(await request(app.getHttpServer()).post('/api/auth/sign-in').send({ name: 'demo', password: 'demodemo' }).expect(200)));
 }
 
 function bindsUdp(port: number): Promise<boolean> {
@@ -55,7 +50,7 @@ describe('demo mode', () => {
   beforeAll(async () => {
     database = await createMigratedDatabase();
     db = knex({ client: 'pg', connection: database.url });
-    dataDir = tempDir();
+    dataDir = testTempDir('gt7-server-');
     app = await demoApp(database.url, dataDir);
     cookie = await signInDemo(app);
     exerciseId = (await http().get('/api/exercises').set('Cookie', cookie).expect(200)).body[0].id;

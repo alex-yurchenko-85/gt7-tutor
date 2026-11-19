@@ -1,0 +1,15 @@
+{
+  "name": "@gt7/tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@gt7/capture": "workspace:*",
+    "@gt7/catalogue": "workspace:*",
+    "@gt7/contracts": "workspace:*",
+    "@gt7/core": "workspace:*",
+    "uqr": "0.1.3"
+  }
+}

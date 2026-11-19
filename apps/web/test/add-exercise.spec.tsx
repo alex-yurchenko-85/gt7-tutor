@@ -22,7 +22,6 @@ const ENTRIES = [
 function catalogueApi(): ApiStub {
   return signedIn(new ApiStub())
     .on('GET /api/catalogue', ENTRIES)
-    .on('GET /api/catalogue/circuits', [])
     .on('GET /api/exercises', [])
     .install();
 }

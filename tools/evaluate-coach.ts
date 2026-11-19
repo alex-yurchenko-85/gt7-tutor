@@ -2,17 +2,14 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import type { Sample } from '@gt7/contracts';
-import { readRaw } from '@gt7/capture';
+import { readSamples } from '@gt7/capture';
 import {
-  buildCueEvents,
-  buildReference,
-  cueText,
+  analyseReference,
   DEFAULT_CONFIG,
   DEFAULT_SIDE_CUE_DISTANCE_M,
   estimatedPhraseMs,
-  replayCoach,
-  toSample,
-  withPacketClock
+  cueText,
+  replayCoach
 } from '@gt7/core';
 
 function sideDistanceOf(text: string): number | null {
@@ -53,22 +50,15 @@ function fixtureFile(name: string): string {
   return path;
 }
 
-async function samplesOf(name: string, range?: { first: number; last: number }): Promise<Sample[]> {
-  const samples: Sample[] = [];
-  const fromStart = range === undefined ? undefined : { first: 0, last: range.last };
-  for await (const raw of readRaw(fixtureFile(name), fromStart)) {
-    const sample = toSample(raw);
-    if (sample) samples.push(sample);
-  }
-  const clocked = withPacketClock(samples);
-  return range === undefined ? clocked : clocked.filter(sample => sample.rawIndex >= range.first);
+function samplesOf(name: string, range?: { first: number; last: number }): Promise<Sample[]> {
+  return readSamples(fixtureFile(name), range);
 }
 
 async function main() {
   const options = readArguments();
-  const path = buildReference(await samplesOf(options.reference, options), 'flying');
-  const events = buildCueEvents(path, DEFAULT_CONFIG);
-  const trace = replayCoach(await samplesOf(options.attempt), path, events, DEFAULT_CONFIG, {
+  const analysis = analyseReference(await samplesOf(options.reference, options), 'flying', DEFAULT_CONFIG);
+  const { path, events } = analysis;
+  const trace = replayCoach(await samplesOf(options.attempt), analysis, DEFAULT_CONFIG, {
     deviceDelayMs: options.deviceDelayMs,
     phraseMs: estimatedPhraseMs,
     mutedKeys: new Set(),

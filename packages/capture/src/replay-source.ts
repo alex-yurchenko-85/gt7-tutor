@@ -1,7 +1,7 @@
 import { setImmediate as yieldToEventLoop, setTimeout as delay } from 'node:timers/promises';
-import type { RawDatagram } from '@gt7/contracts';
+import type { RawDatagram, RawRange } from '@gt7/contracts';
 import type { Datagram, DatagramHandler, TelemetrySource } from './datagram.ts';
-import { readRaw, type RawRange } from './raw-file.ts';
+import { readRaw } from './raw-file.ts';
 
 export type ReplaySourceOptions = { path: string; speed: number; range?: RawRange };
 

@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import { useLive } from '../../api/live.tsx';
+import { useLiveConnection, useLiveState } from '../../api/live.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
 import { Link, paths } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
+import { readStored, writeStored } from '../../app/storage.ts';
 import { useVoiceClaim } from '../../voice/use-voice-claim.ts';
 import { ConsoleForm } from '../setup/ConsoleForm.tsx';
 import './get-ready.css';
@@ -23,19 +24,11 @@ function voiceLaterKey(userId: string): string {
 }
 
 function storedVoiceLater(userId: string): boolean {
-  try {
-    return window.localStorage.getItem(voiceLaterKey(userId)) === '1';
-  } catch {
-    return false;
-  }
+  return readStored(voiceLaterKey(userId)) === '1';
 }
 
 function storeVoiceLater(userId: string): void {
-  try {
-    window.localStorage.setItem(voiceLaterKey(userId), '1');
-  } catch {
-    return;
-  }
+  writeStored(voiceLaterKey(userId), '1');
 }
 
 type StepProps = { number: number; title: string; state: StepState; summary: string | null; action?: ReactNode; children: ReactNode };
@@ -80,7 +73,7 @@ function VoiceStep({ onLater }: { onLater(): void }) {
 }
 
 function VoiceTest() {
-  const { player } = useLive();
+  const { player } = useLiveConnection();
   const [problem, setProblem] = useState<string | null>(null);
   const run = async () => {
     setProblem(null);
@@ -104,7 +97,8 @@ function VoiceTest() {
 
 export function GetReady({ ps5Ip, exerciseCount }: { ps5Ip: string | null; exerciseCount: number }) {
   const { user } = useSession();
-  const { state, deviceId } = useLive();
+  const { deviceId } = useLiveConnection();
+  const { state } = useLiveState(snapshot => snapshot);
   const [consoleState, setConsoleState] = useState<ConsoleState>(ps5Ip === null ? 'missing' : 'saved');
   const [voiceLater, setVoiceLater] = useState(() => storedVoiceLater(user.id));
 

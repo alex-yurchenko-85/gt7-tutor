@@ -96,8 +96,8 @@
         "followClip": null,
         "priority": 95,
         "rawIndex": 5639,
-        "sM": 153.31508546593668,
-        "decidedMonoMs": 94716.964375,
+        "sM": 153.32,
+        "decidedMonoMs": 94717,
         "ttlMs": 210
       },
       {
@@ -108,8 +108,8 @@
         "followClip": "speed-115",
         "priority": 100,
         "rawIndex": 5743,
-        "sM": 262.2525585966993,
-        "decidedMonoMs": 96451.964458,
+        "sM": 262.25,
+        "decidedMonoMs": 96452,
         "ttlMs": 210
       },
       {
@@ -120,8 +120,8 @@
         "followClip": null,
         "priority": 20,
         "rawIndex": 5991,
-        "sM": 395.94715814102483,
-        "decidedMonoMs": 100589.182958,
+        "sM": 395.95,
+        "decidedMonoMs": 100589,
         "ttlMs": 210
       },
       {
@@ -132,8 +132,8 @@
         "followClip": null,
         "priority": 50,
         "rawIndex": 6121,
-        "sM": 456.22724799266734,
-        "decidedMonoMs": 102758.164583,
+        "sM": 456.23,
+        "decidedMonoMs": 102758,
         "ttlMs": 210
       },
       {
@@ -144,8 +144,8 @@
         "followClip": null,
         "priority": 90,
         "rawIndex": 6260,
-        "sM": 541.9723936573871,
-        "decidedMonoMs": 105077.336833,
+        "sM": 541.97,
+        "decidedMonoMs": 105077,
         "ttlMs": 210
       },
       {
@@ -156,8 +156,8 @@
         "followClip": null,
         "priority": 50,
         "rawIndex": 6509,
-        "sM": 720.4519263362835,
-        "decidedMonoMs": 109231.354083,
+        "sM": 720.45,
+        "decidedMonoMs": 109231,
         "ttlMs": 210
       },
       {
@@ -168,8 +168,8 @@
         "followClip": null,
         "priority": 90,
         "rawIndex": 6558,
-        "sM": 762.080525174663,
-        "decidedMonoMs": 110049.15354099999,
+        "sM": 762.08,
+        "decidedMonoMs": 110049,
         "ttlMs": 210
       }
     ],
