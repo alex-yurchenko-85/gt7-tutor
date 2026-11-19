@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.4.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.3.1...v1.4.0) (2026-11-19)
+
+### Features
+
+* start GT7 Tutor with one command ([c6137ed](https://github.com/alex-yurchenko-85/gt7-tutor/commit/c6137edc711f4b3fcb90047b58702fff2bcbe9e8))
+* three steps, one recording and side distance in Review ([398e75f](https://github.com/alex-yurchenko-85/gt7-tutor/commit/398e75fdc5edada593c8d1dd025d79ec259533fd))
+
 ## [1.3.1](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.3.0...v1.3.1) (2026-11-19)
 
 ### Bug Fixes
