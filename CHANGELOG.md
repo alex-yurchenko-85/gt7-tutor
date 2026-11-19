@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.4.0...v1.4.1) (2026-11-19)
+
+### Bug Fixes
+
+* align the controls on Exercises and Attempts and add Hide failed ([711e2ac](https://github.com/alex-yurchenko-85/gt7-tutor/commit/711e2aca389f6d13f4d045b7e76d8dc17d13b252))
+* keep the apex mark inside the map ([9fe2d01](https://github.com/alex-yurchenko-85/gt7-tutor/commit/9fe2d01357b2e4173533636a4f1d66722463b1d8))
+
 # [1.4.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.3.1...v1.4.0) (2026-11-19)
 
 ### Features
