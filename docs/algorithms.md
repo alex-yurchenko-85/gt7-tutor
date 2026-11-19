@@ -9,7 +9,7 @@ Rules of the core:
 - It is pure TypeScript. It imports nothing from Node, NestJS, storage or audio, and it reads no clock. Time enters as an argument (`receivedMonoMs`, `clockMs`, `nowMonoMs`).
 - The same samples and the same configuration give the same decisions. `replayCoach` and the golden traces in `fixtures/golden/` depend on this.
 - Units: metres, m/s, milliseconds, pedals 0 to 1. km/h only on the screen and in speech.
-- Every threshold is in `DEFAULT_CONFIG` (`packages/core/src/config.ts`). The values are calibration values from one exercise, not physical limits.
+- Every threshold is in `DEFAULT_CONFIG` (`packages/core/src/config.ts`). The values are calibration values, not physical limits.
 
 ## Data flow
 
@@ -53,9 +53,7 @@ The arrival time of a packet (`receivedMonoMs`) has network bursts: a packet can
 3. The same ID, or an ID up to 64 behind, adds nothing.
 4. Any other step adds the arrival difference (not below 0) and starts a new envelope.
 
-Live, the server counts `clockMs` from the first packet of a capture. When it reads a range of a capture file, it starts the clock 600 packets (`CLOCK_WARMUP_PACKETS`, 10 s) before the first row of the range (`clockWarmupStart`). The storage cleanup keeps these 600 rows before each range. After 600 packets the envelope does not depend on where the clock started, so the times inside the range are the same as live, also after a cleanup. On `ce-pause`, `ce-slow` and `demo-c` the difference is below 0.01 ms. Without the warmup, a range that starts in the middle of the capture had up to 1.1 ms difference. Measured times use `clockMs`: the time of the reference points, the time series of a review and the measured time of an attempt. The live gap uses the game timer on both sides. Real-time rules use `receivedMonoMs`: silence, the freshness of cues, the decisions of the coach, the extrapolation of the matcher and the demonstration countdown. `clockOf(sample)` gives `clockMs`, or `receivedMonoMs` when a sample has no `clockMs`.
-
-On `ce-slow` against `demo-a` the packet time removed most spikes of the time series (grid points with a second difference above 25 ms: 45 before, 16 after). The measured time changed from 18851.3 ms to 18852.1 ms; the game time is 18 824 ms. This is a software check on recorded data.
+Live, the server counts `clockMs` from the first packet of a capture. When it reads a range of a capture file, it starts the clock 600 packets (`CLOCK_WARMUP_PACKETS`, 10 s) before the first row of the range (`clockWarmupStart`). The storage cleanup keeps these 600 rows before each range. After 600 packets the envelope does not depend on where the clock started, so the times inside the range are the same as live, also after a cleanup. Measured times use `clockMs`: the time of the reference points, the time series of a review and the measured time of an attempt. The live gap uses the game timer on both sides. Real-time rules use `receivedMonoMs`: silence, the freshness of cues, the decisions of the coach, the extrapolation of the matcher and the demonstration countdown. `clockOf(sample)` gives `clockMs`, or `receivedMonoMs` when a sample has no `clockMs`.
 
 ## Continuity
 
@@ -171,13 +169,13 @@ Only the game timer starts and finishes an attempt. The user has no action that 
 **Attempt times** (`measureAttemptTimes`): the function gives two values.
 
 - `gameMs` is the `gameTimeMs` of the `finished` event. It is the official time of the game or one packet more (`docs/protocol.md`, Game timer).
-- `measuredMs` is the packet time (`atClockMs`) of the `finished` event minus the packet time of the `started` event minus the paused time. It is a measured time. On the five format `C` fixtures with a finish, `measuredMs` is 17 to 39 ms more than `gameMs` (software check on recorded data).
+- `measuredMs` is the packet time (`atClockMs`) of the `finished` event minus the packet time of the `started` event minus the paused time. It is a measured time.
 
 Both values are `null` when the samples have no finished attempt.
 
 **Stored times:** the server stores two times for a complete attempt. `attempts.game_ms` is the `gameTimeMs` of the live `finished` event. It is the time of the attempt (`AttemptSummary.timeMs` and `gameMs`). The best time of an exercise (`bestMs`), the gap to the best time, the best time of a day and the medal from the targets use it. `attempts.measured_ms` is `measuredMs` of the stored raw range (`AttemptSummary.measuredMs`). The interface shows no measured attempt time. The gap to the reference and the gap to the next medal use the game time. An aborted attempt has no stored time: `game_ms` and `measured_ms` are `null`. There is no manual official time (migration 008 removes `official_ms`).
 
-**Live gap** (`gapToReferenceMs`): the game timer of the running attempt minus the demonstration timer at the matched position. The attempt side is the game timer of the current sample (`gameTimerMs`). The reference side is `timerMs` of the reference at that position (`pointAt`). A positive gap means that the attempt is slower than the reference at this position. The server sends the gap as `gapMs` in the live state. During a pause the game timer and the position do not change, so the gap keeps its value from before the pause. The gap is `null` when no attempt runs, when the matcher gives no position, or when the timer is 0 or -1. On `ce-pause` with the `demo-a` reference, the gap has a value up to packet 13306. That packet has the final timer value 17 412 ms, and its gap is 1330 ms. The still packets 13307 and 13308 come after the end of the reference path. The matcher gives no position for them, so their gap is `null`. The attempt ends at packet 13309, and the gap stays `null`. The reference time is 16 082 ms. So the last live gap is the Review gap (software check on recorded data).
+**Live gap** (`gapToReferenceMs`): the game timer of the running attempt minus the demonstration timer at the matched position. The attempt side is the game timer of the current sample (`gameTimerMs`). The reference side is `timerMs` of the reference at that position (`pointAt`). A positive gap means that the attempt is slower than the reference at this position. The server sends the gap as `gapMs` in the live state. During a pause the game timer and the position do not change, so the gap keeps its value from before the pause. The gap is `null` when no attempt runs, when the matcher gives no position, or when the timer is 0 or -1. On `ce-pause` with the `demo-a` reference, the gap has a value up to packet 13306. That packet has the final timer value 17 412 ms, and its gap is 1330 ms. The still packets 13307 and 13308 come after the end of the reference path. The matcher gives no position for them, so their gap is `null`. The attempt ends at packet 13309, and the gap stays `null`. The reference time is 16 082 ms. So the last live gap is the Review gap.
 
 **Review gap:** the game time of a complete attempt (`AttemptSummary.gameMs`) minus the reference time (`AttemptReview.referenceTimeMs`). Both are game times. On `ce-pause` with the `demo-a` reference, the Review gap is 17 412 − 16 082 = 1330 ms. The time lost by distance and the time lost per turn stay measured times on both sides (`timeMs` of the attempt and of the reference).
 
@@ -197,7 +195,7 @@ Both values are `null` when the samples have no finished attempt.
 
 **Finished:** the sample is not paused. The value did not increase for 3 packets in a row (`GAME_TIMER_STILL_PACKETS`). Each of these packets is a newer packet, as in the rule above. The event has the `rawIndex` of the first packet with the final value. Its game time is that value. The watch becomes inactive. A packet with `paused` set clears the count of still packets.
 
-After an event, the watch needs the full start rule again. `docs/protocol.md`, Game timer, gives the hardware facts.
+After an event, the watch needs the full start rule again. `docs/protocol.md`, Game timer, gives the facts.
 
 **Session:** the default session `player` needs `playerSession` for a start. The session `demonstration` needs `playerSession` false. Only the demonstration-range finder uses it. The attempt tracker always uses `player`.
 
