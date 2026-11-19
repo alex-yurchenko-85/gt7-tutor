@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.2](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.4.1...v1.4.2) (2026-11-19)
+
+### Bug Fixes
+
+* name ./start.sh in the demo console text ([9588dd8](https://github.com/alex-yurchenko-85/gt7-tutor/commit/9588dd8e999cf62296f7ba9addc994ad57118c10))
+
 ## [1.4.1](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.4.0...v1.4.1) (2026-11-19)
 
 ### Bug Fixes
