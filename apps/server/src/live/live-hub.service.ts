@@ -1,8 +1,10 @@
 import { Inject, Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
-import type { ClientMsg, CueOutcome, LiveCue, LiveState, ServerMsg } from '@gt7/contracts';
+import type { ClientMsg, CueOutcome, LiveCue, LiveState, ServerMsg, StateRate } from '@gt7/contracts';
 import { MONO_CLOCK, type MonoClock } from '../clock/mono-clock.js';
 
-export const STATE_INTERVAL_MS = 1000 / 15;
+export const STATE_TICKS_PER_SECOND = 60;
+export const STATE_TICK_MS = 1000 / STATE_TICKS_PER_SECOND;
+export const DEFAULT_STATE_RATE: StateRate = 15;
 export const PING_INTERVAL_MS = 1000;
 export const MAX_PENDING_BYTES = 256 * 1024;
 export const UNMEASURED_DEVICE_DELAY_MS = 60;
@@ -12,15 +14,28 @@ const PENDING_PING_LIMIT = 10;
 export type LiveClient = {
   readonly id: string;
   readonly userId: string;
+  readonly sessionKey: string;
   readonly bufferedAmount: number;
   send(text: string): void;
+  close(): void;
 };
 
 export type ProfileState = Omit<LiveState, 'seq' | 'voiceDeviceId' | 'voiceReady'>;
 
 export type OutcomeHandler = (userId: string, cueId: string, outcome: CueOutcome, startDelayMs: number | null) => void;
 
-type ClientEntry = { client: LiveClient; sentVersion: number; pings: Map<number, number>; delays: number[] };
+type ClientEntry = {
+  client: LiveClient;
+  sentVersion: number;
+  ticksPerState: number;
+  ticksSinceState: number;
+  pings: Map<number, number>;
+  delays: number[];
+};
+
+function ticksPerState(rate: StateRate): number {
+  return STATE_TICKS_PER_SECOND / rate;
+}
 
 type VoiceDevice = { clientId: string; deviceId: string; ready: boolean };
 
@@ -44,9 +59,10 @@ export class LiveHub implements OnModuleDestroy {
   private version = 1;
   private seq = 0;
   private nextPingId = 1;
+  private generation = Date.now();
 
   constructor(@Inject(MONO_CLOCK) private readonly clock: MonoClock) {
-    this.stateTimer = setInterval(() => this.flush(), STATE_INTERVAL_MS);
+    this.stateTimer = setInterval(() => this.flush(), STATE_TICK_MS);
     this.pingTimer = setInterval(() => this.pingAll(), PING_INTERVAL_MS);
   }
 
@@ -64,7 +80,14 @@ export class LiveHub implements OnModuleDestroy {
   }
 
   attach(client: LiveClient): void {
-    const entry: ClientEntry = { client, sentVersion: 0, pings: new Map(), delays: [] };
+    const entry: ClientEntry = {
+      client,
+      sentVersion: 0,
+      ticksPerState: ticksPerState(DEFAULT_STATE_RATE),
+      ticksSinceState: 0,
+      pings: new Map(),
+      delays: []
+    };
     this.clients.set(client.id, entry);
     this.sendState(entry);
   }
@@ -84,7 +107,17 @@ export class LiveHub implements OnModuleDestroy {
     if (message.type === 'pong') this.recordPong(entry, message.id, message.outputLatencyMs);
     else if (message.type === 'claim-voice') this.claimVoice(entry, message.deviceId, message.ready);
     else if (message.type === 'release-voice') this.releaseVoice(entry);
+    else if (message.type === 'state-rate') entry.ticksPerState = ticksPerState(message.perSecond);
     else this.outcomeHandler(client.userId, message.cueId, message.outcome, message.startDelayMs);
+  }
+
+  closeOtherSessions(userId: string, keptSessionKey: string): void {
+    for (const entry of this.clientsOf(userId)) if (entry.client.sessionKey !== keptSessionKey) entry.client.close();
+  }
+
+  dropProfile(userId: string): void {
+    this.voices.delete(userId);
+    for (const entry of this.clientsOf(userId)) entry.client.close();
   }
 
   voiceReady(userId: string): boolean {
@@ -104,6 +137,10 @@ export class LiveHub implements OnModuleDestroy {
     return this.deliver(entry, { type: 'cue', cue, sentMs: this.clock.now() });
   }
 
+  nextGeneration(): number {
+    return ++this.generation;
+  }
+
   cancel(userId: string, generation: number): void {
     for (const entry of this.clientsOf(userId)) this.deliver(entry, { type: 'cancel', generation });
   }
@@ -114,6 +151,8 @@ export class LiveHub implements OnModuleDestroy {
 
   flush(): void {
     for (const entry of this.clients.values()) {
+      entry.ticksSinceState++;
+      if (entry.ticksSinceState < entry.ticksPerState) continue;
       if (entry.sentVersion >= this.version || entry.client.bufferedAmount > MAX_PENDING_BYTES) continue;
       this.sendState(entry);
     }
@@ -135,6 +174,7 @@ export class LiveHub implements OnModuleDestroy {
     }
     const state: LiveState = { ...profile, seq: ++this.seq, voiceDeviceId: voice?.deviceId ?? null, voiceReady: voice?.ready === true };
     entry.sentVersion = this.version;
+    entry.ticksSinceState = 0;
     this.deliver(entry, { type: 'state', state });
   }
 

@@ -10,6 +10,7 @@ const REAL_TIME = 1;
 export class DemoService implements OnApplicationBootstrap, BeforeApplicationShutdown {
   private readonly logger = new Logger(DemoService.name);
   private readonly enabled: boolean;
+  private readonly consoleRequired: boolean;
   private ready = false;
   private turn = 0;
   private seeding: Promise<void> = Promise.resolve();
@@ -20,6 +21,7 @@ export class DemoService implements OnApplicationBootstrap, BeforeApplicationShu
     private readonly replayFiles: ReplayFileSelection
   ) {
     this.enabled = config.getOrThrow<boolean>('DEMO_MODE');
+    this.consoleRequired = config.getOrThrow<string>('TELEMETRY_SOURCE') === 'udp';
   }
 
   onApplicationBootstrap(): void {
@@ -38,8 +40,9 @@ export class DemoService implements OnApplicationBootstrap, BeforeApplicationShu
   }
 
   info(): AppInfo {
-    if (!this.enabled) return { demo: null };
-    return { demo: { profileName: DEMO_PROFILE.name, password: DEMO_PROFILE.password, ready: this.ready } };
+    const consoleRequired = this.consoleRequired;
+    if (!this.enabled) return { demo: null, consoleRequired };
+    return { demo: { profileName: DEMO_PROFILE.name, password: DEMO_PROFILE.password, ready: this.ready }, consoleRequired };
   }
 
   nextAttempt(): DemoAttemptResponse {

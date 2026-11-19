@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ReferenceInfo } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { formatDay } from '../../app/format.ts';
+import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
@@ -80,7 +81,7 @@ export function ReferencesView({ exerciseId }: { exerciseId: string }) {
     }
   };
 
-  if (exercise.error) return <p className="error">{errorText(exercise.error)}</p>;
+  if (exercise.error) return <LoadProblem error={exercise.error} kind="exercise" />;
   if (!exercise.data) return <p className="sub">Reading the exercise…</p>;
   const list = [...(references.data ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (

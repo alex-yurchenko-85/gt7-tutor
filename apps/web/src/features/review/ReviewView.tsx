@@ -1,14 +1,21 @@
 import { useState } from 'react';
-import type { AttemptReaction, AttemptReview, AttemptSummary, CornerReview, Difference, ReferenceInfo, ReviewSeries } from '@gt7/contracts';
-import { api } from '../../api/client.ts';
-import { ChannelChart } from '../../charts/ChannelChart.tsx';
+import type { AttemptReaction, AttemptReview, AttemptSummary, CornerReview, Difference, Exercise, ReferenceInfo, ReviewSeries, TurnLossInfo } from '@gt7/contracts';
+import { api, ApiError } from '../../api/client.ts';
+import { ChannelChart, type ChartBand, type ChartTick } from '../../charts/ChannelChart.tsx';
+import { signedTickLabel, tickLabel, tickStep, valueTicks } from '../../charts/ticks.ts';
 import { TrackMap, type TrackLine } from '../../charts/TrackMap.tsx';
+import { DangerRow } from '../../app/DangerRow.tsx';
 import { useWideLayout } from '../../app/layout.ts';
-import { formatAttemptTime, formatDay, metres } from '../../app/format.ts';
+import { formatDateTime, formatDay, formatTime, metres, signedSeconds } from '../../app/format.ts';
+import { rememberedExerciseId, rememberExercise } from '../../app/current-exercise.ts';
+import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
+import { useSession } from '../../app/session.tsx';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { apexPlaceText, apexSpeedText, differenceText, reactionText } from '../cues/cue-format.ts';
+import { DeleteAttemptsDialog } from '../attempts/DeleteAttemptsDialog.tsx';
+import { groupByTurn, type TurnGroup, type TurnOrder } from './turn-groups.ts';
 import './review.css';
 
 const KPH_PER_MPS = 3.6;
@@ -37,6 +44,15 @@ function timeLossS(review: AttemptReview): (number | null)[] {
   });
 }
 
+
+function turnBands(review: AttemptReview): ChartBand[] {
+  return review.corners.map((corner, index) => {
+    const nextTurnInSM = review.corners[index + 1]?.turnInSM ?? review.lengthM;
+    const toSM = Math.min(corner.apexSM + (corner.apexSM - corner.turnInSM), nextTurnInSM, review.lengthM);
+    return { fromSM: corner.turnInSM, toSM, label: `T${corner.number}` };
+  });
+}
+
 function percent(value: number | null): string {
   return value === null ? 'no data' : `${Math.round(value * 100)}%`;
 }
@@ -47,6 +63,20 @@ function both(reference: string, you: string): string {
 
 function referenceName(reference: ReferenceInfo): string {
   return `${reference.origin === 'demo' ? 'Demonstration' : 'Your attempt'}, ${formatDay(reference.createdAt)}${reference.active ? ', active' : ''}`;
+}
+
+const SHARE_TICKS: ChartTick[] = [
+  { value: 0, label: '0%' },
+  { value: 0.5, label: '50%' },
+  { value: 1, label: '100%' }
+];
+
+const VALUE_TICK_COUNT = 3;
+
+function ticksOf(min: number, max: number, label: (value: number, step: number) => string): ChartTick[] {
+  const values = valueTicks(min, max, VALUE_TICK_COUNT);
+  const step = tickStep(values);
+  return values.map(value => ({ value, label: label(value, step) }));
 }
 
 type ChartsProps = { review: AttemptReview; cursorSM: number; onCursor(sM: number): void };
@@ -61,7 +91,10 @@ function Charts({ review, cursorSM, onCursor }: ChartsProps) {
   const kph = (value: number | null) => (value === null ? 'no data' : `${Math.round(value)}`);
   const lossAt = at(loss, index);
   const lateral = at(review.attempt.lat, index);
-  const common = { gridM: review.gridM, lengthM: review.lengthM, cursorSM, onCursor };
+  const bands = turnBands(review);
+  const common = { gridM: review.gridM, lengthM: review.lengthM, cursorSM, onCursor, bands };
+  const speedMin = Math.min(...speeds) * 0.9;
+  const speedMax = Math.max(...speeds) * 1.05;
   return (
     <div className="charts">
       <ChannelChart
@@ -72,9 +105,10 @@ function Charts({ review, cursorSM, onCursor }: ChartsProps) {
           { name: 'ref', values: refSpeed },
           { name: 'you', values: youSpeed }
         ]}
-        min={Math.min(...speeds) * 0.9}
-        max={Math.max(...speeds) * 1.05}
-        height={130}
+        min={speedMin}
+        max={speedMax}
+        ticks={ticksOf(speedMin, speedMax, tickLabel)}
+        turnLabels
         readout={both(kph(at(refSpeed, index)), kph(at(youSpeed, index)))}
       />
       <ChannelChart
@@ -87,7 +121,7 @@ function Charts({ review, cursorSM, onCursor }: ChartsProps) {
         ]}
         min={0}
         max={1}
-        height={56}
+        ticks={SHARE_TICKS}
         readout={both(percent(at(review.reference.th, index)), percent(at(review.attempt.th, index)))}
       />
       <ChannelChart
@@ -100,7 +134,7 @@ function Charts({ review, cursorSM, onCursor }: ChartsProps) {
         ]}
         min={0}
         max={1}
-        height={56}
+        ticks={SHARE_TICKS}
         readout={both(percent(at(review.reference.br, index)), percent(at(review.attempt.br, index)))}
       />
       <ChannelChart
@@ -110,7 +144,7 @@ function Charts({ review, cursorSM, onCursor }: ChartsProps) {
         series={[{ name: 'ink', values: loss }]}
         min={-lossLimit}
         max={lossLimit}
-        height={70}
+        ticks={ticksOf(-lossLimit, lossLimit, signedTickLabel)}
         readout={lossAt === null ? 'no match here' : `${lossAt >= 0 ? '+' : ''}${lossAt.toFixed(2)} s${lateral === null ? '' : `, ${Math.abs(lateral).toFixed(1)} m from the line`}`}
       />
       <p className="cursor-line" aria-live="polite">
@@ -121,21 +155,71 @@ function Charts({ review, cursorSM, onCursor }: ChartsProps) {
   );
 }
 
-type DifferencesProps = { findings: Difference[]; selected: number | null; onSelect(index: number): void };
+type DifferencesProps = { findings: Difference[]; losses: TurnLossInfo[]; selected: number | null; onSelect(index: number): void };
 
-function Differences({ findings, selected, onSelect }: DifferencesProps) {
+function lostText(lostMs: number | null): string | null {
+  if (lostMs === null || lostMs === 0) return null;
+  return `${(Math.abs(lostMs) / 1000).toFixed(2)} s ${lostMs > 0 ? 'lost' : 'gained'}`;
+}
+
+function TurnGroupList({ group, selected, onSelect }: { group: TurnGroup; selected: number | null; onSelect(index: number): void }) {
+  const badge = group.turn === null ? 'Whole section' : `T${group.turn}`;
+  const range = group.fromSM === null || group.toSM === null ? null : `${Math.round(group.fromSM)}–${Math.round(group.toSM)} m`;
+  const lost = lostText(group.lostMs);
+  return (
+    <div className="turn-group" role="group" aria-label={[badge, range, lost].filter(Boolean).join(' ')}>
+      <div className="turn-head" aria-hidden="true">
+        <span className="turn-badge">{badge}</span>
+        <span className="turn-range">{range}</span>
+        {lost ? <b className={group.lostMs! > 0 ? 'turn-lost' : 'turn-gained'}>{lost}</b> : null}
+      </div>
+      {group.items.map(({ difference, index }) => (
+        <button key={`${difference.kind}-${difference.sM}`} type="button" className="diff" aria-pressed={selected === index} onClick={() => onSelect(index)}>
+          <span className="diff-at">
+            {metres(difference.sM)}
+            <span className="visually-hidden">.</span>
+          </span>{' '}
+          <span className="diff-text">{differenceText(difference)}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const ORDER_TEXT: Record<TurnOrder, string> = {
+  track: 'Turns in the order of the section.',
+  'time-lost': 'Largest time lost first.'
+};
+
+function OrderSwitch({ order, onOrder }: { order: TurnOrder; onOrder(order: TurnOrder): void }) {
+  return (
+    <fieldset className="plain turn-order">
+      <legend className="visually-hidden">Order of the turns</legend>
+      <div className="segmented">
+        <label>
+          <input type="radio" name="turn-order" checked={order === 'track'} onChange={() => onOrder('track')} />
+          Track
+        </label>
+        <label>
+          <input type="radio" name="turn-order" checked={order === 'time-lost'} onChange={() => onOrder('time-lost')} />
+          Time lost
+        </label>
+      </div>
+    </fieldset>
+  );
+}
+
+function Differences({ findings, losses, selected, onSelect }: DifferencesProps) {
+  const [order, setOrder] = useState<TurnOrder>('track');
+  const groups = groupByTurn(findings, losses, order);
   return (
     <section aria-labelledby="differences-title" className="differences">
-      <h2 id="differences-title">Differences from the reference</h2>
-      <p className="sub">A difference is not always a mistake: the reference is one recorded drive, not the best possible line.</p>
+      <h2 id="differences-title">Differences by turn</h2>
+      {groups.length > 1 ? <OrderSwitch order={order} onOrder={setOrder} /> : null}
+      <p className="sub">{ORDER_TEXT[order]} Time lost is measured from telemetry. Select a difference to put the cursor there. The reference is one recorded drive, not the best possible line.</p>
       {findings.length === 0 ? <p className="notice">No differences above the limits in this attempt.</p> : null}
-      {findings.map((finding, index) => (
-        <button key={`${finding.kind}-${finding.sM}`} type="button" className="diff" aria-pressed={selected === index} onClick={() => onSelect(index)}>
-          <b>
-            {metres(finding.sM)}. {differenceText(finding)}
-          </b>
-          <small>in this attempt</small>
-        </button>
+      {groups.map(group => (
+        <TurnGroupList key={group.turn ?? 'whole'} group={group} selected={selected} onSelect={onSelect} />
       ))}
     </section>
   );
@@ -221,14 +305,23 @@ function ReviewMap({ review, cursorSM, selected, onSelect }: { review: AttemptRe
   );
 }
 
+const NO_GAME_TIME_TEXT = 'This attempt has no time from the game. Only a complete attempt with a time from the game can become a reference.';
+
+function promoteProblem(error: unknown): string {
+  return error instanceof ApiError && error.code === 'no-game-time' ? NO_GAME_TIME_TEXT : errorText(error);
+}
+
 function AttemptFacts({ attempt }: { attempt: AttemptSummary }) {
   const [message, setMessage] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const promotable = attempt.completion === 'complete' && attempt.gameMs !== null;
   const promote = async () => {
+    setProblem(null);
     try {
       await api.promoteAttempt(attempt.id);
       setMessage('This attempt is now the active reference. The demonstration stays in the reference history.');
     } catch (error) {
-      setMessage(errorText(error));
+      setProblem(promoteProblem(error));
     }
   };
   return (
@@ -243,10 +336,17 @@ function AttemptFacts({ attempt }: { attempt: AttemptSummary }) {
         <span>Voice</span>
         <b>{attempt.mode === 'guided' ? 'with voice' : 'without voice'}</b>
       </div>
-      {attempt.completion === 'complete' ? (
+      {promotable ? (
         <button className="btn ghost" type="button" onClick={() => void promote()}>
           Use this attempt as a reference
         </button>
+      ) : (
+        <p className="sub">Only a complete attempt with a time from the game can become a reference.</p>
+      )}
+      {problem ? (
+        <p className="error" role="alert">
+          {problem}
+        </p>
       ) : null}
       {message ? (
         <p className="sub" role="status">
@@ -271,7 +371,7 @@ function ReviewBody({ attempt, review, references }: { attempt: AttemptSummary; 
   const charts = <Charts review={review} cursorSM={cursorSM} onCursor={setCursorSM} />;
   const differences = (
     <>
-      <Differences findings={review.findings} selected={selected} onSelect={select} />
+      <Differences findings={review.findings} losses={review.turnLosses} selected={selected} onSelect={select} />
       <Corners corners={review.corners} />
       <Reactions reactions={review.reactions} />
     </>
@@ -316,6 +416,66 @@ function ReviewBody({ attempt, review, references }: { attempt: AttemptSummary; 
   );
 }
 
+function ReviewHeader({ attempt, exercise, review }: { attempt: AttemptSummary; exercise: Exercise | null; review: AttemptReview | null }) {
+  const { user } = useSession();
+  const gapMs = attempt.completion === 'complete' && attempt.gameMs !== null && review ? attempt.gameMs - review.referenceTimeMs : null;
+  const time = attempt.completion === 'complete' ? formatTime(attempt.timeMs) : 'no time';
+  const timed = attempt.completion === 'complete' && attempt.timeMs !== null;
+  return (
+    <header className="review-header">
+      <nav className="breadcrumb" aria-label="Breadcrumb">
+        <Link to={paths.exercises()}>Exercises</Link> /{' '}
+        {exercise ? (
+          <>
+            <Link to={paths.exercise(exercise.id)}>{exercise.name}</Link> /{' '}
+          </>
+        ) : null}
+        <Link to={paths.attempts(attempt.exerciseId)}>Attempts</Link> / Attempt {attempt.number}
+      </nav>
+      <div className="review-title">
+        <div>
+          <h1>
+            Attempt {attempt.number} · {time}
+            {gapMs === null ? null : (
+              <>
+                {' '}
+                <span className={gapMs > 0 ? 'review-gap slower' : 'review-gap'}>{signedSeconds(gapMs)} s</span>
+              </>
+            )}
+          </h1>
+          <p className="lede">
+            {attempt.mode === 'guided' ? 'With voice' : 'Without voice'}, {formatDateTime(attempt.startedAt)}.{' '}
+            {attempt.completion !== 'complete' ? 'The attempt did not finish.' : timed ? 'Times from the game.' : 'No time from the game.'}
+            {gapMs === null ? '' : ' Gap to the compared reference.'}
+          </p>
+        </div>
+        <Link to={paths.drive(attempt.mode)} className="btn inline" onNavigate={() => rememberExercise(user.id, attempt.exerciseId)}>
+          Drive again
+        </Link>
+      </div>
+    </header>
+  );
+}
+
+function DeleteThisAttempt({ attempt }: { attempt: AttemptSummary }) {
+  const { navigate } = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const list = useResource(() => (confirming ? api.attempts(attempt.exerciseId) : Promise.resolve(null)), [attempt.exerciseId, confirming]);
+  return (
+    <>
+      <DangerRow title="Delete this attempt" hint="Removes the attempt with its cue events and differences." action="Delete this attempt…" onAction={() => setConfirming(true)} />
+      {confirming ? (
+        <DeleteAttemptsDialog
+          selected={[attempt]}
+          all={list.data ? list.data.days.flatMap(day => day.attempts) : null}
+          onKeep={() => setConfirming(false)}
+          onDeleted={() => navigate(paths.attempts(attempt.exerciseId))}
+        />
+      ) : null}
+    </>
+  );
+}
+
 export function ReviewView({ attemptId }: { attemptId: string }) {
   const { search } = useRouter();
   const referenceId = search.get('reference') ?? undefined;
@@ -323,26 +483,18 @@ export function ReviewView({ attemptId }: { attemptId: string }) {
   const review = useResource(() => api.review(attemptId, referenceId), [attemptId, referenceId]);
   const exerciseId = attempt.data?.exerciseId;
   const references = useResource(() => (exerciseId ? api.references(exerciseId) : Promise.resolve([])), [exerciseId]);
+  const exercise = useResource(() => (exerciseId ? api.exercise(exerciseId) : Promise.resolve(null)), [exerciseId]);
+  const { user } = useSession();
   const error = attempt.error ?? review.error;
-  if (error) return <p className="error">{errorText(error)}</p>;
+  const remembered = rememberedExerciseId(user.id);
+  if (error) return <LoadProblem error={error} kind="attempt" {...(remembered ? { exerciseId: remembered } : {})} />;
   if (!attempt.data) return <p className="sub">Reading the attempt…</p>;
   const data = attempt.data;
-  const title = `Attempt ${data.number}, ${data.completion === 'complete' ? formatAttemptTime(data) : 'no time'}`;
   return (
     <section>
-      <p className="sub">
-        <Link to={paths.attempts(data.exerciseId)}>All attempts</Link>
-      </p>
-      <h1>{title}</h1>
-      <p className="lede">
-        {data.mode === 'guided' ? 'With voice' : 'Without voice'}, {formatDay(data.startedAt)}.{' '}
-        {data.completion === 'complete'
-          ? data.officialMs !== null
-            ? 'Official time from the game.'
-            : 'Time measured from telemetry.'
-          : 'The attempt did not finish.'}
-      </p>
+      <ReviewHeader attempt={data} exercise={exercise.data ?? null} review={review.data ?? null} />
       {review.data ? <ReviewBody key={review.data.referenceId} attempt={data} review={review.data} references={references.data ?? []} /> : <p className="sub">Comparing with the reference…</p>}
+      <DeleteThisAttempt attempt={data} />
     </section>
   );
 }

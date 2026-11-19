@@ -13,7 +13,8 @@ export type LiveCueKind =
   | 'big-stop'
   | 'guidance-paused'
   | 'guidance-resumed'
-  | 'focus';
+  | 'focus'
+  | 'countdown';
 
 export type LiveCue = {
   id: string;
@@ -56,6 +57,7 @@ export type LiveState = {
   lastAttemptId: string | null;
   trainingMode: TrainingMode | null;
   referenceId: string | null;
+  gapMs: number | null;
 };
 
 export type ServerMsg =
@@ -68,10 +70,15 @@ export const cueOutcomeSchema = z.enum(['played', 'expired', 'cancelled', 'faile
 
 export type CueOutcome = z.infer<typeof cueOutcomeSchema>;
 
+export const STATE_RATES = [15, 30, 60] as const;
+
+export type StateRate = (typeof STATE_RATES)[number];
+
 export const clientMsgSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('pong'), id: z.number().int().nonnegative(), outputLatencyMs: z.number().min(0).max(2000) }),
   z.object({ type: z.literal('claim-voice'), deviceId: z.string().min(1).max(100), ready: z.boolean() }),
   z.object({ type: z.literal('release-voice') }),
+  z.object({ type: z.literal('state-rate'), perSecond: z.union([z.literal(15), z.literal(30), z.literal(60)]) }),
   z.object({
     type: z.literal('cue-outcome'),
     cueId: z.string().min(1).max(200),
@@ -91,10 +98,6 @@ export const armTrainingSchema = z
   .strict();
 
 export type ArmTrainingRequest = z.infer<typeof armTrainingSchema>;
-
-export const manualActionSchema = z.object({ action: z.enum(['start', 'finish', 'abort']) }).strict();
-
-export type ManualActionRequest = z.infer<typeof manualActionSchema>;
 
 export const devReplaySchema = z.object({ fixture: z.string().regex(/^[a-z0-9-]+$/).max(100) }).strict();
 

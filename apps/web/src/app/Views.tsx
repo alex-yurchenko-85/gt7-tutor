@@ -1,36 +1,37 @@
 import { AttemptsView } from '../features/attempts/AttemptsView.tsx';
-import { CatalogueView } from '../features/catalogue/CatalogueView.tsx';
+import { AddExerciseView } from '../features/catalogue/AddExerciseView.tsx';
 import { CuesView } from '../features/cues/CuesView.tsx';
 import { DriveView } from '../features/drive/DriveView.tsx';
-import { NowView } from '../features/now/NowView.tsx';
-import { ProgressView } from '../features/progress/ProgressView.tsx';
+import { ExerciseOverview } from '../features/exercise/ExerciseOverview.tsx';
+import { ExercisesHome } from '../features/exercises/ExercisesHome.tsx';
 import { RecordView } from '../features/reference-recording/RecordView.tsx';
 import { ReferencesView } from '../features/references/ReferencesView.tsx';
 import { ReviewView } from '../features/review/ReviewView.tsx';
 import { SetupView } from '../features/setup/SetupView.tsx';
-import { Link, paths, useRouter } from './router.tsx';
+import { isUuid } from './ids.ts';
+import { NotFound } from './NotFound.tsx';
+import { useRouter, type Route } from './router.tsx';
 
-function NotFound() {
-  return (
-    <section>
-      <h1>This page does not exist</h1>
-      <p className="lede">The address does not match a view of GT7 Tutor.</p>
-      <Link to={paths.now()} className="btn inline">
-        Open Now
-      </Link>
-    </section>
-  );
+function badId(route: Route): 'exercise' | 'attempt' | null {
+  if ('exerciseId' in route && !isUuid(route.exerciseId)) return 'exercise';
+  if ('attemptId' in route && !isUuid(route.attemptId)) return 'attempt';
+  return null;
 }
 
 export function Views() {
   const { route } = useRouter();
+  const bad = badId(route);
+  if (bad) return <NotFound kind={bad} />;
   switch (route.name) {
     case 'setup':
+    case 'delete-history':
       return <SetupView />;
-    case 'now':
-      return <NowView />;
-    case 'catalogue':
-      return <CatalogueView />;
+    case 'exercises':
+      return <ExercisesHome />;
+    case 'exercise':
+      return <ExerciseOverview key={route.exerciseId} exerciseId={route.exerciseId} />;
+    case 'add-exercise':
+      return <AddExerciseView />;
     case 'cues':
       return <CuesView key={route.exerciseId} exerciseId={route.exerciseId} />;
     case 'references':
@@ -39,13 +40,11 @@ export function Views() {
       return <RecordView key={route.exerciseId} exerciseId={route.exerciseId} />;
     case 'drive':
       return <DriveView />;
-    case 'progress':
-      return <ProgressView />;
     case 'attempts':
       return <AttemptsView key={route.exerciseId} exerciseId={route.exerciseId} />;
     case 'review':
       return <ReviewView key={route.attemptId} attemptId={route.attemptId} />;
     case 'not-found':
-      return <NotFound />;
+      return <NotFound kind="page" />;
   }
 }

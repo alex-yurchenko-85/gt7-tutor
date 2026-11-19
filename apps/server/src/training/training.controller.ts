@@ -5,11 +5,9 @@ import { ConfigService } from '@nestjs/config';
 import {
   armTrainingSchema,
   devReplaySchema,
-  manualActionSchema,
   type ArmResponse,
   type ArmTrainingRequest,
   type DevReplayRequest,
-  type ManualActionRequest,
   type ProfileUser
 } from '@gt7/contracts';
 import { CurrentUser } from '../auth/current-user.decorator.js';
@@ -32,11 +30,6 @@ export class TrainingController {
   @Post('training/disarm')
   disarm(@CurrentUser() user: ProfileUser): Promise<{ ok: true }> {
     return this.training.disarm(user.id);
-  }
-
-  @Post('training/manual')
-  manual(@CurrentUser() user: ProfileUser, @Body({ schema: manualActionSchema }) body: ManualActionRequest): { ok: true } {
-    return this.training.manual(user.id, body);
   }
 
   @Post('dev/replay')

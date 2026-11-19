@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
-import { profileCredentialsSchema, type AuthState, type ProfileCredentials, type ProfileResponse } from '@gt7/contracts';
+import { profileCredentialsSchema, type AuthState, type ProfileCard, type ProfileCredentials, type ProfileResponse } from '@gt7/contracts';
 import type { Request, Response } from 'express';
 import { AuthService, type IssuedSession } from './auth.service.js';
 import { Public } from './public.decorator.js';
@@ -18,6 +18,11 @@ export class AuthController {
   @Get('state')
   state(@Req() request: Request): Promise<AuthState> {
     return this.auth.state(sessionTokenOf(request));
+  }
+
+  @Get('profiles')
+  profiles(): Promise<ProfileCard[]> {
+    return this.auth.profileCards();
   }
 
   @Post('first-profile')

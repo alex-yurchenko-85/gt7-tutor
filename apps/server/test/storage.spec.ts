@@ -35,20 +35,55 @@ describe('database schema', () => {
   it('brand_experience_exercises_move_to_brand_central', async () => {
     const database = await createDisposableDatabase();
     const db = knex({ client: 'pg', connection: database.url });
+    const brandCentral = { ...migrationConfig(), name: '006-brand-central-family.cjs' };
     try {
       await db.migrate.latest(migrationConfig());
-      await db.migrate.down(migrationConfig());
+      await db.migrate.down(brandCentral);
       const [user] = await db('users').insert({ name: 'driver', password_hash: 'x' }).returning('id');
       await db('catalogue_entries').insert({ id: 'brand-yangwang-racing-lines', family: 'Brand Experience', collection: 'Yangwang', name: 'Racing Lines', source: 'Manual entry' });
       await db('exercises').insert([
         { user_id: user.id, catalogue_id: 'brand-yangwang-racing-lines', family: 'Brand Experience', name: 'Racing Lines' },
         { user_id: user.id, family: 'Time Trial', name: 'Own' }
       ]);
-      await db.migrate.up(migrationConfig());
+      await db.migrate.up(brandCentral);
       expect((await db('exercises').orderBy('name').select('family')).map(row => row.family)).toEqual(['Time Trial', 'Brand Central']);
       expect((await db('catalogue_entries').first()).family).toBe('Brand Central');
-      await db.migrate.down(migrationConfig());
+      await db.migrate.down(brandCentral);
       expect((await db('exercises').orderBy('name').select('family')).map(row => row.family)).toEqual(['Time Trial', 'Brand Experience']);
+    } finally {
+      await db.destroy();
+      await database.drop();
+    }
+  });
+
+  it('official_time_column_is_dropped_and_restored', async () => {
+    const database = await createDisposableDatabase();
+    const db = knex({ client: 'pg', connection: database.url });
+    const dropOfficialTime = { ...migrationConfig(), name: '008-drop-official-time.cjs' };
+    try {
+      await db.migrate.latest(migrationConfig());
+      expect(await db.schema.hasColumn('attempts', 'official_ms')).toBe(false);
+      await db.migrate.down(dropOfficialTime);
+      expect(await db.schema.hasColumn('attempts', 'official_ms')).toBe(true);
+      await db.migrate.up(dropOfficialTime);
+      expect(await db.schema.hasColumn('attempts', 'official_ms')).toBe(false);
+    } finally {
+      await db.destroy();
+      await database.drop();
+    }
+  });
+
+  it('game_time_column_is_added_and_removed', async () => {
+    const database = await createDisposableDatabase();
+    const db = knex({ client: 'pg', connection: database.url });
+    const gameTime = { ...migrationConfig(), name: '007-game-time.cjs' };
+    try {
+      await db.migrate.latest(migrationConfig());
+      expect(await db.schema.hasColumn('attempts', 'game_ms')).toBe(true);
+      await db.migrate.down(gameTime);
+      expect(await db.schema.hasColumn('attempts', 'game_ms')).toBe(false);
+      await db.migrate.up(gameTime);
+      expect(await db.schema.hasColumn('attempts', 'game_ms')).toBe(true);
     } finally {
       await db.destroy();
       await database.drop();

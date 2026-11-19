@@ -28,7 +28,7 @@ export class CatalogueController {
   }
 
   @Get('info')
-  info(): CatalogueInfo {
+  info(): Promise<CatalogueInfo> {
     return this.catalogue.info();
   }
 

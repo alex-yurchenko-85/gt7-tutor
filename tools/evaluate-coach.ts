@@ -11,7 +11,8 @@ import {
   DEFAULT_SIDE_CUE_DISTANCE_M,
   estimatedPhraseMs,
   replayCoach,
-  toSample
+  toSample,
+  withPacketClock
 } from '@gt7/core';
 
 function sideDistanceOf(text: string): number | null {
@@ -54,11 +55,13 @@ function fixtureFile(name: string): string {
 
 async function samplesOf(name: string, range?: { first: number; last: number }): Promise<Sample[]> {
   const samples: Sample[] = [];
-  for await (const raw of readRaw(fixtureFile(name), range)) {
+  const fromStart = range === undefined ? undefined : { first: 0, last: range.last };
+  for await (const raw of readRaw(fixtureFile(name), fromStart)) {
     const sample = toSample(raw);
     if (sample) samples.push(sample);
   }
-  return samples;
+  const clocked = withPacketClock(samples);
+  return range === undefined ? clocked : clocked.filter(sample => sample.rawIndex >= range.first);
 }
 
 async function main() {

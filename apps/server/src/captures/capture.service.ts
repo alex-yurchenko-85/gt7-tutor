@@ -13,13 +13,14 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { RawWriter, type Datagram, type OpenStream, type TelemetrySource } from '@gt7/capture';
 import type { CaptureInfo, CapturePurpose, ReceptionCheck, Sample } from '@gt7/contracts';
-import { decode } from '@gt7/core';
+import { decode, PacketClock } from '@gt7/core';
 import type { Knex } from 'knex';
 import { MONO_CLOCK, type MonoClock } from '../clock/mono-clock.js';
 import { ownedCapture, ownedExercise, type CaptureRow } from '../ownership/owned.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { countRows } from './capture-samples.js';
+import { CountdownService } from './countdown.js';
 import { TELEMETRY_SOURCE_FACTORY, type TelemetrySourceFactory } from './telemetry-source.factory.js';
 
 export type SampleListener = (sample: Sample) => void;
@@ -44,6 +45,7 @@ type ActiveCapture = {
   writer: RawWriter;
   startedMono: number;
   nextRawIndex: number;
+  clock: PacketClock;
 };
 
 export function captureInfo(row: CaptureRow, activeId: string | null): CaptureInfo {
@@ -84,6 +86,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     private readonly settings: SettingsService,
     @Inject(MONO_CLOCK) private readonly clock: MonoClock,
     @Inject(RAW_STREAM_OPENER) private readonly openStream: OpenStream | null,
+    private readonly countdown: CountdownService,
     config: ConfigService
   ) {
     this.dataDir = config.getOrThrow<string>('DATA_DIR');
@@ -259,7 +262,8 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
         source,
         writer,
         startedMono,
-        nextRawIndex: 0
+        nextRawIndex: 0,
+        clock: new PacketClock()
       };
       this.current = active;
       await source.start(datagram => this.receive(active, datagram));
@@ -269,6 +273,9 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
       await writer.close();
       await this.db('captures').where({ id }).update({ ended_at: this.db.fn.now(), complete: false, error_reason: `source-failed: ${reason}` });
       throw conflict('source-failed', reason);
+    }
+    if (request.purpose === 'demo' && request.startAfterS !== null) {
+      this.countdown.start({ userId: request.userId, captureId: id, startAfterS: request.startAfterS });
     }
     return captureInfo(row!, id);
   }
@@ -280,7 +287,12 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     active.writer.append(datagram);
     const decoded = decode(datagram.payload);
     if (!decoded.ok) return;
-    const sample: Sample = { ...decoded.sample, rawIndex, receivedMonoMs: datagram.receivedMonoMs };
+    const sample: Sample = {
+      ...decoded.sample,
+      rawIndex,
+      receivedMonoMs: datagram.receivedMonoMs,
+      clockMs: active.clock.next(decoded.sample.packetId, datagram.receivedMonoMs)
+    };
     for (const listener of this.listeners) {
       try {
         listener(sample);
@@ -291,6 +303,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
   }
 
   private async finish(active: ActiveCapture): Promise<CaptureRow> {
+    this.countdown.cancel(active.id);
     await active.source.stop();
     const result = await active.writer.close();
     if (this.current === active) this.current = null;

@@ -3,7 +3,7 @@ import knex, { type Knex } from 'knex';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { Sample } from '@gt7/contracts';
-import { DEFAULT_CONFIG, buildReference, buildReview, findDifferences, toSample } from '@gt7/core';
+import { DEFAULT_CONFIG, buildReference, buildReview, clockWarmupStart, findDifferences, toSample, turnLosses, turnOf, withPacketClock, type Review } from '@gt7/core';
 import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.factory.js';
 import { createTestApp } from './support/app.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
@@ -13,11 +13,17 @@ import { FixtureReplays } from './support/replay-sources.js';
 import { anotherProfile, firstProfile } from './support/session.js';
 
 async function fixtureSamples(name: string, first: number, last: number): Promise<Sample[]> {
-  return (await fixtureRows(name))
-    .filter(row => row.rawIndex >= first && row.rawIndex <= last)
-    .map(toSample)
-    .filter((sample): sample is Sample => sample !== null);
+  const samples = (await fixtureRows(name)).map(toSample).filter((sample): sample is Sample => sample !== null);
+  return withPacketClock(samples.filter(sample => sample.rawIndex >= clockWarmupStart(first))).filter(sample => sample.rawIndex >= first && sample.rawIndex <= last);
 }
+
+function differencesOf(review: Review): object[] {
+  return JSON.parse(JSON.stringify(findDifferences(review, DEFAULT_CONFIG).map(finding => ({ ...finding, turn: turnOf(review.corners, finding.sM) }))));
+}
+
+const INTERLAGOS_TARGETS = { goldMs: 16400, silverMs: 16700, bronzeMs: 17800 };
+
+const CLEAN_ATTEMPT = { first: 381, last: 1409 };
 
 function localDate(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -53,7 +59,13 @@ describe('attempts, review and statistics', () => {
     return response.body.id as string;
   }
 
-  type AttemptOptions = { completion?: string; measuredMs?: number | null; startedAt?: Date; mode?: string; exercise?: string; reference?: string };
+  async function interlagos(): Promise<string> {
+    const id = (await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'ce-autodromo-de-interlagos' }).expect(201)).body.id as string;
+    await http().patch(`/api/exercises/${id}`).set('Cookie', cookie).send({ targets: INTERLAGOS_TARGETS }).expect(200);
+    return id;
+  }
+
+  type AttemptOptions = { completion?: string; gameMs?: number | null; startedAt?: Date; mode?: string; exercise?: string; reference?: string };
 
   async function attempt(options: AttemptOptions = {}): Promise<string> {
     const completion = options.completion ?? 'complete';
@@ -62,12 +74,13 @@ describe('attempts, review and statistics', () => {
         exercise_id: options.exercise ?? exerciseId,
         capture_id: playerCapture,
         reference_id: options.reference ?? referenceId,
-        first_raw_index: 1162,
-        last_raw_index: 2786,
+        first_raw_index: CLEAN_ATTEMPT.first,
+        last_raw_index: CLEAN_ATTEMPT.last,
         mode: options.mode ?? 'baseline',
         completion,
-        reason: completion === 'complete' ? 'end-gate' : 'player-session-ended',
-        measured_ms: options.measuredMs === undefined ? (completion === 'complete' ? 27100 : null) : options.measuredMs,
+        reason: completion === 'complete' ? 'game-timer' : 'left-track',
+        measured_ms: completion === 'complete' ? 17100 : null,
+        game_ms: options.gameMs === undefined ? (completion === 'complete' ? 17071 : null) : options.gameMs,
         started_at: options.startedAt ?? new Date()
       })
       .returning('id');
@@ -92,10 +105,10 @@ describe('attempts, review and statistics', () => {
       override: builder => builder.overrideProvider(TELEMETRY_SOURCE_FACTORY).useValue(replays.factory)
     });
     cookie = await firstProfile(app);
-    exerciseId = (await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'brand-yangwang-racing-lines' }).expect(201)).body.id;
-    demoCapture = await capture('demo-wait05', 'demo');
-    playerCapture = await capture('player-run', 'player');
-    referenceId = await reference(demoCapture, 352, 1897);
+    exerciseId = await interlagos();
+    demoCapture = await capture('demo-a', 'demo');
+    playerCapture = await capture('ce-clean', 'player');
+    referenceId = await reference(demoCapture, 457, 1422);
   });
 
   afterEach(async () => {
@@ -104,59 +117,67 @@ describe('attempts, review and statistics', () => {
 
   it('review_matches_core_output', async () => {
     const attemptId = await attempt();
-    const path = buildReference(await fixtureSamples('demo-wait05', 352, 1897), 'flying');
-    const expected = buildReview(await fixtureSamples('player-run', 1162, 2786), path, DEFAULT_CONFIG);
+    const path = buildReference(await fixtureSamples('demo-a', 457, 1422), 'flying');
+    const expected = buildReview(await fixtureSamples('ce-clean', 8451, 9479), path, DEFAULT_CONFIG);
     const response = await http().get(`/api/attempts/${attemptId}/review`).set('Cookie', cookie).expect(200);
     const { corners, ...comparable } = expected;
     expect(response.body).toMatchObject(JSON.parse(JSON.stringify({ ...comparable, referenceId })));
     expect(response.body.corners.map((corner: { apexSM: number }) => corner.apexSM)).toEqual(corners.map(corner => corner.apexSM));
-    expect(response.body.findings).toEqual(JSON.parse(JSON.stringify(findDifferences(expected, DEFAULT_CONFIG))));
+    expect(response.body.findings).toEqual(differencesOf(expected));
+    expect(response.body.turnLosses).toEqual(turnLosses(corners, expected.lengthM, expected.gridM, expected.attempt.t, expected.reference.t));
     expect(response.body.cues).toEqual([]);
+    expect(response.body.referenceTimeMs).toBe(16082);
     const stored = await db('attempt_findings').where({ attempt_id: attemptId, reference_id: referenceId });
     expect(stored).toHaveLength(response.body.findings.length);
   });
 
   it('review_with_other_reference_recomputes', async () => {
     const attemptId = await attempt();
-    const otherReference = await reference(await capture('demo-wait10', 'demo'), 655, 2200);
-    const path = buildReference(await fixtureSamples('demo-wait10', 655, 2200), 'flying');
-    const expected = buildReview(await fixtureSamples('player-run', 1162, 2786), path, DEFAULT_CONFIG);
+    const otherReference = await reference(await capture('demo-b', 'demo'), 738, 1703);
+    const path = buildReference(await fixtureSamples('demo-b', 738, 1703), 'flying');
+    const expected = buildReview(await fixtureSamples('ce-clean', 8451, 9479), path, DEFAULT_CONFIG);
     const response = await http().get(`/api/attempts/${attemptId}/review?referenceId=${otherReference}`).set('Cookie', cookie).expect(200);
     expect(response.body.referenceId).toBe(otherReference);
     expect(response.body.reference).toEqual(JSON.parse(JSON.stringify(expected.reference)));
-    expect(response.body.findings).toEqual(JSON.parse(JSON.stringify(findDifferences(expected, DEFAULT_CONFIG))));
+    expect(response.body.findings).toEqual(differencesOf(expected));
     expect(await db('attempt_findings').where({ attempt_id: attemptId, reference_id: otherReference })).toHaveLength(response.body.findings.length);
-    const otherExercise = (await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'brand-yangwang-racing-lines' }).expect(201)).body.id;
-    const foreignReference = await reference(demoCapture, 352, 1897, otherExercise);
+    const otherExercise = await interlagos();
+    const foreignReference = await reference(demoCapture, 457, 1422, otherExercise);
     await http().get(`/api/attempts/${attemptId}/review?referenceId=${foreignReference}`).set('Cookie', cookie).expect(404);
   });
 
-  it('official_time_is_stored_separately_from_measured', async () => {
+  it('medal_is_stored_and_cleared', async () => {
     const attemptId = await attempt();
-    const patched = await http().patch(`/api/attempts/${attemptId}`).set('Cookie', cookie).send({ officialMs: 26950, medal: 'silver' }).expect(200);
-    expect(patched.body).toMatchObject({ measuredMs: 27100, officialMs: 26950, medal: 'silver', timeMs: 26950 });
-    const stored = await db('attempts').where({ id: attemptId }).first();
-    expect(stored).toMatchObject({ measured_ms: 27100, official_ms: 26950, medal: 'silver' });
+    const patched = await http().patch(`/api/attempts/${attemptId}`).set('Cookie', cookie).send({ medal: 'bronze' }).expect(200);
+    expect(patched.body).toMatchObject({ measuredMs: 17100, gameMs: 17071, medal: 'bronze', timeMs: 17071 });
+    expect(patched.body).not.toHaveProperty('officialMs');
+    expect(await db('attempts').where({ id: attemptId }).first()).toMatchObject({ game_ms: 17071, medal: 'bronze' });
     const exercise = await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200);
-    expect(exercise.body.status).toBe('silver');
-    const cleared = await http().patch(`/api/attempts/${attemptId}`).set('Cookie', cookie).send({ officialMs: null, medal: null }).expect(200);
-    expect(cleared.body).toMatchObject({ measuredMs: 27100, officialMs: null, medal: null, timeMs: 27100 });
+    expect(exercise.body.status).toBe('bronze');
+    const cleared = await http().patch(`/api/attempts/${attemptId}`).set('Cookie', cookie).send({ medal: null }).expect(200);
+    expect(cleared.body).toMatchObject({ medal: null, timeMs: 17071 });
     await http().patch(`/api/attempts/${attemptId}`).set('Cookie', cookie).send({ medal: 'platinum' }).expect(400);
   });
 
+  it('official_time_is_not_accepted', async () => {
+    const attemptId = await attempt();
+    await http().patch(`/api/attempts/${attemptId}`).set('Cookie', cookie).send({ officialMs: 16900 }).expect(400);
+    await http().patch(`/api/attempts/${attemptId}`).set('Cookie', cookie).send({ officialMs: null, medal: 'gold' }).expect(400);
+    expect((await db('attempts').where({ id: attemptId }).first()).medal).toBeNull();
+  });
+
   it('incomplete_attempt_has_no_time', async () => {
-    await attempt({ measuredMs: 27500 });
+    await attempt({ gameMs: 17500 });
     const aborted = await attempt({ completion: 'aborted' });
     const detail = await http().get(`/api/attempts/${aborted}`).set('Cookie', cookie).expect(200);
-    expect(detail.body).toMatchObject({ completion: 'aborted', measuredMs: null, timeMs: null, gapToBestMs: null });
-    await http().patch(`/api/attempts/${aborted}`).set('Cookie', cookie).send({ officialMs: 30000 }).expect(409);
+    expect(detail.body).toMatchObject({ completion: 'aborted', measuredMs: null, gameMs: null, timeMs: null, gapToBestMs: null });
     const list = await http().get(`/api/exercises/${exerciseId}/attempts`).set('Cookie', cookie).expect(200);
-    expect(list.body.bestMs).toBe(27500);
+    expect(list.body.bestMs).toBe(17500);
   });
 
   it('attempt_list_has_gap_to_best_and_largest_difference', async () => {
-    const slower = await attempt({ measuredMs: 27600, startedAt: new Date(Date.now() - 60000) });
-    const faster = await attempt({ measuredMs: 27100 });
+    const slower = await attempt({ gameMs: 17571, startedAt: new Date(Date.now() - 60000) });
+    const faster = await attempt({ gameMs: 17071 });
     await http().get(`/api/attempts/${slower}/review`).set('Cookie', cookie).expect(200);
     const list = await http().get(`/api/exercises/${exerciseId}/attempts`).set('Cookie', cookie).expect(200);
     const attempts = list.body.days.flatMap((day: { attempts: object[] }) => day.attempts);
@@ -164,7 +185,7 @@ describe('attempts, review and statistics', () => {
       [faster, 2, 0],
       [slower, 1, 500]
     ]);
-    expect(attempts[1].largestDifference).toMatchObject({ kind: 'brake-early', eventKey: 'brake@332' });
+    expect(attempts[1].largestDifference).toMatchObject({ kind: 'brake-early', eventKey: 'brake@291' });
   });
 
   it('recurring_uses_last_complete_attempts_only', async () => {
@@ -174,7 +195,7 @@ describe('attempts, review and statistics', () => {
     const lastThree = await http().get(`/api/exercises/${exerciseId}/recurring?last=3`).set('Cookie', cookie).expect(200);
     expect(lastThree.body.length).toBeGreaterThan(0);
     expect(lastThree.body.every((item: { count: number; of: number }) => item.of === 3 && item.count === 3)).toBe(true);
-    expect(lastThree.body.find((item: { eventKey: string }) => item.eventKey === 'brake@332')).toMatchObject({ kind: 'brake-early', unit: 'm' });
+    expect(lastThree.body.find((item: { eventKey: string }) => item.eventKey === 'brake@291')).toMatchObject({ kind: 'brake-early', unit: 'm' });
     const lastTwo = await http().get(`/api/exercises/${exerciseId}/recurring?last=2`).set('Cookie', cookie).expect(200);
     expect(lastTwo.body).toEqual([]);
     const defaults = await http().get(`/api/exercises/${exerciseId}/recurring`).set('Cookie', cookie).expect(200);
@@ -186,46 +207,45 @@ describe('attempts, review and statistics', () => {
     const create = async (body: object) => (await http().post('/api/exercises').set('Cookie', cookie).send(body).expect(201)).body.id as string;
     await create({ catalogueId: 'licence-b-1' });
     await create({ family: 'Time Trial', name: 'Tsukuba lap', conditions: {} });
-    const ready = await create({ catalogueId: 'brand-yangwang-racing-lines' });
-    await reference(demoCapture, 352, 1897, ready);
-    const gold = await create({ catalogueId: 'brand-yangwang-racing-lines' });
-    const goldReference = await reference(demoCapture, 352, 1897, gold);
-    await http().patch(`/api/exercises/${gold}`).set('Cookie', cookie).send({ targets: { goldMs: 30000, silverMs: 32000, bronzeMs: 34000 } }).expect(200);
-    await attempt({ exercise: gold, reference: goldReference });
+    const ready = await interlagos();
+    await reference(demoCapture, 457, 1422, ready);
+    const gold = await interlagos();
+    const goldReference = await reference(demoCapture, 457, 1422, gold);
+    await attempt({ exercise: gold, reference: goldReference, gameMs: 16300 });
     const progress = await http().get('/api/progress').set('Cookie', cookie).expect(200);
     const counts = (family: string, collection: string) =>
       progress.body.collections.find((item: { family: string; collection: string }) => item.family === family && item.collection === collection)?.counts;
-    expect(counts('Brand Central', 'Yangwang')).toEqual({ new: 0, ready: 1, practising: 1, bronze: 0, silver: 0, gold: 1 });
+    expect(counts('Circuit Experience', 'Americas')).toEqual({ new: 0, ready: 1, practising: 0, bronze: 1, silver: 0, gold: 1 });
     expect(counts('Licence', 'National B')).toEqual({ new: 1, ready: 0, practising: 0, bronze: 0, silver: 0, gold: 0 });
     expect(counts('Time Trial', 'Own exercises')).toEqual({ new: 1, ready: 0, practising: 0, bronze: 0, silver: 0, gold: 0 });
-    expect(progress.body.exercises.find((item: { id: string }) => item.id === exerciseId)).toMatchObject({ status: 'practising', bestMs: 27100 });
+    expect(progress.body.exercises.find((item: { id: string }) => item.id === exerciseId)).toMatchObject({ status: 'bronze', bestMs: 17071 });
   });
 
   it('best_by_day_groups_local_dates', async () => {
     const lateEvening = new Date(2026, 10, 14, 23, 30);
     const nextMorning = new Date(2026, 10, 15, 0, 30);
-    await attempt({ measuredMs: 28000, startedAt: new Date(2026, 10, 14, 20, 0) });
-    await attempt({ measuredMs: 27500, startedAt: lateEvening });
-    await attempt({ measuredMs: 27900, startedAt: nextMorning });
+    await attempt({ gameMs: 18000, startedAt: new Date(2026, 10, 14, 20, 0) });
+    await attempt({ gameMs: 17500, startedAt: lateEvening });
+    await attempt({ gameMs: 17900, startedAt: nextMorning });
     await attempt({ completion: 'aborted', startedAt: new Date(2026, 10, 16, 10, 0) });
     const progress = await http().get('/api/progress').set('Cookie', cookie).expect(200);
     const exercise = progress.body.exercises.find((item: { id: string }) => item.id === exerciseId);
     expect(exercise.bestByDay).toEqual([
-      { date: localDate(lateEvening), bestMs: 27500 },
-      { date: localDate(nextMorning), bestMs: 27900 }
+      { date: localDate(lateEvening), bestMs: 17500 },
+      { date: localDate(nextMorning), bestMs: 17900 }
     ]);
     const list = await http().get(`/api/exercises/${exerciseId}/attempts`).set('Cookie', cookie).expect(200);
     expect(list.body.days.map((day: { date: string; bestMs: number | null; attempts: unknown[] }) => [day.date, day.bestMs, day.attempts.length])).toEqual([
       [localDate(new Date(2026, 10, 16, 10, 0)), null, 1],
-      [localDate(nextMorning), 27900, 1],
-      [localDate(lateEvening), 27500, 2]
+      [localDate(nextMorning), 17900, 1],
+      [localDate(lateEvening), 17500, 2]
     ]);
   });
 
   it('review_lists_corners_with_outside_distance', async () => {
     const attemptId = await attempt();
     const response = await http().get(`/api/attempts/${attemptId}/review`).set('Cookie', cookie).expect(200);
-    expect(response.body.corners).toHaveLength(3);
+    expect(response.body.corners).toHaveLength(1);
     for (const corner of response.body.corners) {
       expect(corner).toEqual({
         number: expect.any(Number),
@@ -246,6 +266,55 @@ describe('attempts, review and statistics', () => {
     expect(response.body.reactions).toEqual([]);
   });
 
+  it('review_reports_turns_and_turn_losses', async () => {
+    const attemptId = await attempt();
+    const response = await http().get(`/api/attempts/${attemptId}/review`).set('Cookie', cookie).expect(200);
+    const { corners, findings, turnLosses, lengthM } = response.body;
+    expect(corners.length).toBeGreaterThan(0);
+    expect(findings.length).toBeGreaterThan(0);
+    for (const finding of findings) {
+      expect(Number.isInteger(finding.turn)).toBe(true);
+      expect(finding.turn).toBeGreaterThanOrEqual(1);
+    }
+    expect(turnLosses).toHaveLength(corners.length);
+    expect(turnLosses[0].fromSM).toBe(0);
+    expect(turnLosses.at(-1).toSM).toBe(lengthM);
+    for (let index = 0; index + 1 < turnLosses.length; index++) expect(turnLosses[index].toSM).toBe(turnLosses[index + 1].fromSM);
+    expect(turnLosses.map((loss: { turn: number }) => loss.turn)).toEqual(corners.map((corner: { number: number }) => corner.number));
+    expect(turnLosses.some((loss: { lostMs: number | null }) => typeof loss.lostMs === 'number')).toBe(true);
+  });
+
+  it('review_time_series_has_no_arrival_bursts', async () => {
+    const attemptId = await attempt();
+    const response = await http().get(`/api/attempts/${attemptId}/review`).set('Cookie', cookie).expect(200);
+    const { attempt: you, reference, gridM } = response.body as { attempt: { t: (number | null)[] }; reference: { t: (number | null)[] }; gridM: number };
+    const gaps = you.t.map((t, index) => (t === null || reference.t[index] === null ? null : t - reference.t[index]!));
+    const bursts: number[] = [];
+    for (let index = 2; index < gaps.length; index++) {
+      const [a, b, c] = [gaps[index - 2], gaps[index - 1], gaps[index]];
+      if (a !== null && b !== null && c !== null && Math.abs(c - 2 * b + a) > 25) bursts.push(index * gridM);
+    }
+    expect(bursts.filter(sM => sM < 300)).toEqual([]);
+    expect(bursts.length).toBeLessThan(30);
+  });
+
+  it('recurring_differences_carry_turns', async () => {
+    const base = Date.now() - 3600000;
+    for (let index = 0; index < 3; index++) await attempt({ startedAt: new Date(base + index * 60000) });
+    const recurring = await http().get(`/api/exercises/${exerciseId}/recurring`).set('Cookie', cookie).expect(200);
+    expect(recurring.body.length).toBeGreaterThan(0);
+    for (const item of recurring.body) expect(Number.isInteger(item.turn)).toBe(true);
+    expect(recurring.body.find((item: { eventKey: string }) => item.eventKey === 'brake@291')).toMatchObject({ turn: 1 });
+  });
+
+  it('attempt_list_largest_difference_has_turn', async () => {
+    const attemptId = await attempt();
+    await http().get(`/api/attempts/${attemptId}/review`).set('Cookie', cookie).expect(200);
+    const list = await http().get(`/api/exercises/${exerciseId}/attempts`).set('Cookie', cookie).expect(200);
+    const [summary] = list.body.days.flatMap((day: { attempts: object[] }) => day.attempts);
+    expect(summary.largestDifference).toMatchObject({ kind: 'brake-early', eventKey: 'brake@291', turn: 1 });
+  });
+
   it('summary_has_focus_sentence', async () => {
     const attemptId = await attempt();
     await http().get(`/api/attempts/${attemptId}/review`).set('Cookie', cookie).expect(200);
@@ -262,11 +331,11 @@ describe('attempts, review and statistics', () => {
     const as = (call: request.Test) => call.set('Cookie', other).expect(404);
     await as(http().get(`/api/exercises/${exerciseId}/attempts`));
     await as(http().get(`/api/attempts/${attemptId}`));
-    await as(http().patch(`/api/attempts/${attemptId}`).send({ officialMs: 1000 }));
+    await as(http().patch(`/api/attempts/${attemptId}`).send({ medal: 'gold' }));
     await as(http().get(`/api/attempts/${attemptId}/review`));
     await as(http().get(`/api/exercises/${exerciseId}/recurring`));
     const progress = await http().get('/api/progress').set('Cookie', other).expect(200);
     expect(progress.body).toEqual({ collections: [], exercises: [] });
-    expect((await db('attempts').where({ id: attemptId }).first()).official_ms).toBeNull();
+    expect((await db('attempts').where({ id: attemptId }).first()).medal).toBeNull();
   });
 });

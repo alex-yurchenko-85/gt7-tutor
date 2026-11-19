@@ -9,11 +9,11 @@ describe('cue list', () => {
   it('cue_list_rows_show_distance_phrase_and_recurring_difference', async () => {
     setViewportWidth(1280);
     exerciseApi()
-      .on('GET /api/exercises/ex-1/recurring', [
+      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/recurring', [
         { kind: 'brake-early', eventKey: 'brake@332', sM: 332, size: 15, unit: 'm', count: 6, of: 8, medianSize: 14 }
       ])
       .install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const rows = await screen.findAllByRole('listitem', { name: /^Cue \d/ });
     expect(rows).toHaveLength(3);
     expect(rows[0]).toHaveTextContent('332 m');
@@ -27,13 +27,13 @@ describe('cue list', () => {
     setViewportWidth(1280);
     let current: Exercise = exercise({ mutedCues: ['ease-off@600'] });
     const api = exerciseApi(current)
-      .on('GET /api/exercises/ex-1', () => current)
-      .on('PATCH /api/exercises/ex-1', (body: unknown) => {
+      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001', () => current)
+      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', (body: unknown) => {
         current = { ...current, mutedCues: (body as { mutedCues: string[] }).mutedCues };
         return current;
       })
       .install();
-    const view = renderApp({ path: '/exercises/ex-1/cues' });
+    const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const user = userEvent.setup();
     const row = await screen.findByRole('listitem', { name: 'Cue 2' });
     await user.click(within(row).getByRole('button', { name: 'Mute' }));
@@ -42,7 +42,7 @@ describe('cue list', () => {
     expect(row).toHaveTextContent('Muted');
     view.unmount();
 
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const again = await screen.findByRole('listitem', { name: 'Cue 2' });
     expect(within(again).getByRole('button', { name: 'Unmute' })).toBeInTheDocument();
   });
@@ -50,8 +50,8 @@ describe('cue list', () => {
   function patchingApi(start: Exercise = exercise()) {
     let current = start;
     return exerciseApi(current)
-      .on('GET /api/exercises/ex-1', () => current)
-      .on('PATCH /api/exercises/ex-1', (body: unknown) => {
+      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001', () => current)
+      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', (body: unknown) => {
         current = { ...current, ...(body as Partial<Exercise>) };
         return current;
       });
@@ -60,7 +60,7 @@ describe('cue list', () => {
   it('cue_list_has_phrase_and_target_columns', async () => {
     setViewportWidth(1280);
     exerciseApi().install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
     expect(within(row).getByText('Hard brake. Eighty five')).toBeInTheDocument();
     expect(within(row).getByLabelText('Target speed')).toHaveTextContent('85 km/h');
@@ -73,7 +73,7 @@ describe('cue list', () => {
   it('cue_list_has_speak_targets_switch', async () => {
     setViewportWidth(1280);
     const api = patchingApi().install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const toggle = await screen.findByRole('switch', { name: 'Speak target speeds' });
     expect(toggle).toHaveAttribute('aria-checked', 'true');
     await userEvent.setup().click(toggle);
@@ -84,7 +84,7 @@ describe('cue list', () => {
   it('side_cue_distance_control_saves_the_value', async () => {
     setViewportWidth(1280);
     const api = patchingApi().install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const control = await screen.findByRole('combobox', { name: 'Side cue distance' });
     expect(within(control).getAllByRole('option').map(option => option.textContent)).toEqual(['Off', '0.5 m', '1 m', '1.5 m', '2 m', '2.5 m', '3 m']);
     expect(control).toHaveDisplayValue('2 m');
@@ -96,7 +96,7 @@ describe('cue list', () => {
   it('side_cue_distance_off_is_shown_as_off', async () => {
     setViewportWidth(1280);
     const api = patchingApi(exercise({ sideCueDistanceM: null })).install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const control = await screen.findByRole('combobox', { name: 'Side cue distance' });
     expect(control).toHaveDisplayValue('Off');
     expect(screen.getByText('The voice does not say “Keep left” or “Keep right”.')).toBeInTheDocument();
@@ -111,7 +111,7 @@ describe('cue list', () => {
   it('cue_offset_slider_per_cue', async () => {
     setViewportWidth(1280);
     const api = patchingApi(exercise({ cueOffsetsMs: { 'brake@332': 200 } })).install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
     const slider = within(row).getByRole('slider', { name: 'Move cue 1 earlier or later' });
     expect(slider).toHaveAttribute('aria-valuetext', '0.2 s earlier');
@@ -135,7 +135,7 @@ describe('cue list', () => {
   it('cue_offset_is_saved_when_leaving_the_view_at_once', async () => {
     setViewportWidth(1280);
     const api = patchingApi().install();
-    const view = renderApp({ path: '/exercises/ex-1/cues' });
+    const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const slider = await screen.findByRole('slider', { name: 'Move cue 1 earlier or later' });
     fireEvent.change(slider, { target: { value: '-300' } });
     view.unmount();
@@ -146,9 +146,9 @@ describe('cue list', () => {
     setViewportWidth(1280);
     const stale = exercise();
     exerciseApi(stale)
-      .on('PATCH /api/exercises/ex-1', (body: unknown) => ({ ...stale, ...(body as Partial<Exercise>) }))
+      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', (body: unknown) => ({ ...stale, ...(body as Partial<Exercise>) }))
       .install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
     fireEvent.change(within(row).getByRole('slider', { name: 'Move cue 1 earlier or later' }), { target: { value: '-300' } });
     await userEvent.setup().click(within(screen.getByRole('listitem', { name: 'Cue 2' })).getByRole('button', { name: 'Mute' }));
@@ -159,7 +159,7 @@ describe('cue list', () => {
   it('cue_offset_slider_covers_one_second_earlier_to_half_a_second_later', async () => {
     setViewportWidth(1280);
     patchingApi().install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const slider = await screen.findByRole('slider', { name: 'Move cue 1 earlier or later' });
     expect(slider).toHaveAttribute('min', '-1000');
     expect(slider).toHaveAttribute('max', '500');
@@ -170,9 +170,9 @@ describe('cue list', () => {
   it('cue_list_shows_brake_reaction', async () => {
     setViewportWidth(1280);
     exerciseApi()
-      .on('GET /api/exercises/ex-1/reactions', [{ eventKey: 'brake@332', medianMs: 690, count: 3 }])
+      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/reactions', [{ eventKey: 'brake@332', medianMs: 690, count: 3 }])
       .install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
     await waitFor(() => expect(row).toHaveTextContent('You start to brake 0.7 s after the cue here (3 guided attempts)'));
     expect(screen.getByRole('listitem', { name: 'Cue 2' })).not.toHaveTextContent('You start to brake');
@@ -181,9 +181,9 @@ describe('cue list', () => {
   it('cue_list_shows_braking_before_the_cue', async () => {
     setViewportWidth(1280);
     exerciseApi()
-      .on('GET /api/exercises/ex-1/reactions', [{ eventKey: 'brake@332', medianMs: -420, count: 1 }])
+      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/reactions', [{ eventKey: 'brake@332', medianMs: -420, count: 1 }])
       .install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
     await waitFor(() => expect(row).toHaveTextContent('You start to brake 0.4 s before the cue here (1 guided attempt)'));
   });
@@ -191,7 +191,7 @@ describe('cue list', () => {
   it('cue_list_without_guided_attempts_shows_no_reaction', async () => {
     setViewportWidth(1280);
     exerciseApi().install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     await screen.findByRole('listitem', { name: 'Cue 1' });
     expect(screen.queryByText(/You start to brake/)).not.toBeInTheDocument();
   });
@@ -199,7 +199,7 @@ describe('cue list', () => {
   it('cue_list_shows_corner_rows', async () => {
     setViewportWidth(1280);
     exerciseApi().install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const turns = await screen.findAllByRole('listitem', { name: /^Turn \d/ });
     expect(turns.map(turn => turn.getAttribute('aria-label'))).toEqual(['Turn 1', 'Turn 2', 'Turn 3']);
     expect(turns[0]).toHaveTextContent('Turn-in 461 m');
@@ -214,7 +214,7 @@ describe('cue list', () => {
   it('maps_mark_turn_in_and_apex', async () => {
     setViewportWidth(1280);
     exerciseApi().install();
-    renderApp({ path: '/exercises/ex-1/cues' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     await screen.findByRole('listitem', { name: 'Turn 1' });
     const apexes = [...document.querySelectorAll('.track-map .track-mark.apex')];
     expect(apexes.map(mark => mark.textContent)).toEqual(['Apex of turn 1T1', 'Apex of turn 2T2', 'Apex of turn 3T3']);

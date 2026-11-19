@@ -3,6 +3,7 @@ import {
   allClipKeys,
   clipKey,
   clipText,
+  COUNTDOWN_CLIPS,
   cueText,
   focusClipKey,
   focusText,
@@ -71,11 +72,18 @@ describe('cue text', () => {
   it('clip_keys_cover_all_phrases', () => {
     expect(SUPPORTED_TARGETS_KPH).toHaveLength(65);
     const keys = allClipKeys();
-    expect(keys).toHaveLength(138);
-    expect(new Set(keys).size).toBe(138);
+    expect(keys).toHaveLength(142);
+    expect(new Set(keys).size).toBe(142);
     expect(keys.filter(key => key.startsWith('speed-'))).toHaveLength(65);
     expect(keys.filter(key => key.startsWith('focus-'))).toHaveLength(60);
     expect(keys.filter(key => /^(brake|throttle)-\d+$/.test(key))).toEqual([]);
     for (const key of keys) expect(clipText(key).length).toBeGreaterThan(0);
+  });
+
+  it('countdown_clips_are_listed', () => {
+    expect(COUNTDOWN_CLIPS).toEqual(['countdown-three', 'countdown-two', 'countdown-one', 'countdown-start']);
+    expect(COUNTDOWN_CLIPS.map(clipText)).toEqual(['Three', 'Two', 'One', 'Start']);
+    const keys = allClipKeys();
+    for (const clip of COUNTDOWN_CLIPS) expect(keys).toContain(clip);
   });
 });

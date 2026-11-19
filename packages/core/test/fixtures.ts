@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { RawDatagram, Sample } from '@gt7/contracts';
 import { toSample } from '../src/decode.ts';
+import { withPacketClock } from '../src/packet-clock.ts';
 
-export type FixtureName = 'demo-wait05' | 'demo-wait10' | 'demo-wait15' | 'player-run' | 'player-pause' | 'h3-wide-finish' | 'h3-wide-apex';
+export type FixtureName = 'b3-run' | 'b1-run' | 'ce-clean' | 'ce-slow' | 'ce-pause' | 'ce-off-track-reset' | 'ce-off-track-end' | 'demo-a' | 'demo-b' | 'demo-c';
 
 export function fixturePath(name: FixtureName): string {
   return fileURLToPath(new URL(`../../../fixtures/${name}.ndjson`, import.meta.url));
@@ -30,8 +31,9 @@ export function samplesOf(name: FixtureName): Sample[] {
     if (!sample) throw new Error(`${name} row ${raw.rawIndex} does not decode`);
     return sample;
   });
-  sampleCache.set(name, samples);
-  return samples;
+  const clocked = withPacketClock(samples);
+  sampleCache.set(name, clocked);
+  return clocked;
 }
 
 export function between(samples: Sample[], first: number, last: number): Sample[] {

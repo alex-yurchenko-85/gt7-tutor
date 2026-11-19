@@ -1,46 +1,66 @@
+import type { TrainingMode } from '@gt7/contracts';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
 
+export type SetupSection = 'console' | 'voice' | 'profiles' | 'preferences' | 'catalogue' | 'data';
+
 export type Route =
-  | { name: 'now' }
-  | { name: 'catalogue' }
+  | { name: 'exercises' }
+  | { name: 'exercise'; exerciseId: string }
+  | { name: 'add-exercise' }
   | { name: 'drive' }
-  | { name: 'progress' }
   | { name: 'setup' }
+  | { name: 'delete-history' }
   | { name: 'cues'; exerciseId: string }
   | { name: 'references'; exerciseId: string }
   | { name: 'record'; exerciseId: string }
   | { name: 'attempts'; exerciseId: string }
   | { name: 'review'; attemptId: string }
-  | { name: 'not-found' };
+  | { name: 'not-found'; kind: 'page' };
 
 const SIMPLE: Record<string, Route> = {
-  '/': { name: 'now' },
-  '/catalogue': { name: 'catalogue' },
+  '/': { name: 'exercises' },
+  '/exercises/add': { name: 'add-exercise' },
   '/drive': { name: 'drive' },
-  '/progress': { name: 'progress' },
-  '/setup': { name: 'setup' }
+  '/setup': { name: 'setup' },
+  '/setup/delete-history': { name: 'delete-history' }
+};
+
+const LEGACY: Record<string, string> = {
+  '/catalogue': '/exercises/add',
+  '/progress': '/'
 };
 
 const EXERCISE_VIEWS = ['cues', 'references', 'record', 'attempts'] as const;
 
+function cleanPath(path: string): string {
+  return path.replace(/\/+$/, '') || '/';
+}
+
+export function legacyRedirect(path: string): string | null {
+  return LEGACY[cleanPath(path)] ?? null;
+}
+
 export function parseRoute(path: string): Route {
-  const clean = path.replace(/\/+$/, '') || '/';
+  const clean = cleanPath(path);
   const simple = SIMPLE[clean];
   if (simple) return simple;
+  const page = /^\/exercises\/([^/]+)$/.exec(clean);
+  if (page) return { name: 'exercise', exerciseId: decodeURIComponent(page[1]!) };
   const exercise = /^\/exercises\/([^/]+)\/([a-z]+)$/.exec(clean);
   const view = EXERCISE_VIEWS.find(name => name === exercise?.[2]);
   if (exercise && view) return { name: view, exerciseId: decodeURIComponent(exercise[1]!) };
   const review = /^\/attempts\/([^/]+)\/review$/.exec(clean);
   if (review) return { name: 'review', attemptId: decodeURIComponent(review[1]!) };
-  return { name: 'not-found' };
+  return { name: 'not-found', kind: 'page' };
 }
 
 export const paths = {
-  now: () => '/',
-  catalogue: () => '/catalogue',
-  drive: () => '/drive',
-  progress: () => '/progress',
-  setup: () => '/setup',
+  exercises: () => '/',
+  exercise: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}`,
+  addExercise: () => '/exercises/add',
+  drive: (mode?: TrainingMode) => (mode ? `/drive?mode=${mode}` : '/drive'),
+  setup: (section?: SetupSection) => (section ? `/setup#${section}` : '/setup'),
+  deleteHistory: () => '/setup/delete-history',
   cues: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}/cues`,
   references: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}/references`,
   record: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}/record`,
@@ -49,12 +69,20 @@ export const paths = {
     `/attempts/${encodeURIComponent(attemptId)}/review${referenceId ? `?reference=${encodeURIComponent(referenceId)}` : ''}`
 };
 
-type Navigation = { route: Route; search: URLSearchParams; navigate(path: string): void };
+type NavigateOptions = { replace?: boolean };
+
+type Navigation = { route: Route; search: URLSearchParams; hash: string; navigate(path: string, options?: NavigateOptions): void };
 
 const RouterContext = createContext<Navigation | null>(null);
 
+function replaceLegacyAddress(): void {
+  const target = legacyRedirect(window.location.pathname);
+  if (target) window.history.replaceState(null, '', `${target}${window.location.search}${window.location.hash}`);
+}
+
 function currentLocation() {
-  return { route: parseRoute(window.location.pathname), search: new URLSearchParams(window.location.search) };
+  replaceLegacyAddress();
+  return { route: parseRoute(window.location.pathname), search: new URLSearchParams(window.location.search), hash: window.location.hash.slice(1) };
 }
 
 export function RouterProvider({ children }: { children: ReactNode }) {
@@ -62,10 +90,15 @@ export function RouterProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const onPop = () => setLocation(currentLocation());
     window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
+    window.addEventListener('hashchange', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      window.removeEventListener('hashchange', onPop);
+    };
   }, []);
-  const navigate = useCallback((path: string) => {
-    window.history.pushState(null, '', path);
+  const navigate = useCallback((path: string, options: NavigateOptions = {}) => {
+    if (options.replace) window.history.replaceState(null, '', path);
+    else window.history.pushState(null, '', path);
     setLocation(currentLocation());
     window.scrollTo?.(0, 0);
   }, []);
@@ -79,9 +112,18 @@ export function useRouter(): Navigation {
   return navigation;
 }
 
-type LinkProps = { to: string; children: ReactNode; className?: string; current?: boolean; primary?: boolean; onNavigate?: () => void };
+type LinkProps = {
+  to: string;
+  children: ReactNode;
+  className?: string;
+  current?: boolean;
+  primary?: boolean;
+  onNavigate?: () => void;
+  role?: 'menuitem';
+  label?: string;
+};
 
-export function Link({ to, children, className, current, primary, onNavigate }: LinkProps) {
+export function Link({ to, children, className, current, primary, onNavigate, role, label }: LinkProps) {
   const { navigate } = useRouter();
   const follow = (event: MouseEvent<HTMLAnchorElement>) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -90,7 +132,15 @@ export function Link({ to, children, className, current, primary, onNavigate }: 
     navigate(to);
   };
   return (
-    <a href={to} className={className} aria-current={current ? 'page' : undefined} data-primary={primary ? 'true' : undefined} onClick={follow}>
+    <a
+      href={to}
+      className={className}
+      role={role}
+      aria-label={label}
+      aria-current={current ? 'page' : undefined}
+      data-primary={primary ? 'true' : undefined}
+      onClick={follow}
+    >
       {children}
     </a>
   );

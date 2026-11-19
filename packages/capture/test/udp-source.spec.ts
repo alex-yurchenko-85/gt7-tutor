@@ -11,7 +11,7 @@ afterEach(async () => {
   for (const socket of sockets.splice(0)) socket.close();
 });
 
-function bindFakeConsole(onHeartbeat: (socket: Socket, port: number) => void, letter = 'A'): Promise<number> {
+function bindFakeConsole(onHeartbeat: (socket: Socket, port: number) => void, letter = 'C'): Promise<number> {
   const socket = createSocket('udp4');
   sockets.push(socket);
   socket.on('message', (message, peer) => {
@@ -43,18 +43,18 @@ describe('UdpSource', () => {
     expect(received[0]!.peerIp).toBe('127.0.0.1');
   });
 
-  it('heartbeat_letter_selects_the_packet_format', async () => {
+  it('heartbeat_asks_for_format_c', async () => {
     let answered = false;
     const consolePort = await bindFakeConsole((socket, port) => {
       if (answered) return;
       answered = true;
-      socket.send(Buffer.alloc(316), port, '127.0.0.1');
-    }, 'B');
+      socket.send(Buffer.alloc(368), port, '127.0.0.1');
+    });
     const received: Datagram[] = [];
-    const source = track(new UdpSource({ ps5Ip: '127.0.0.1', bindPort: 0, heartbeatPort: consolePort, heartbeatMs: 50, packetFormat: 'B' }));
+    const source = track(new UdpSource({ ps5Ip: '127.0.0.1', bindPort: 0, heartbeatPort: consolePort, heartbeatMs: 50 }));
     await source.start(datagram => received.push(datagram));
     await waitFor(() => received.length > 0);
-    expect(received[0]!.payload.byteLength).toBe(316);
+    expect(received[0]!.payload.byteLength).toBe(368);
   });
 
   it('busy_port_names_33740', async () => {

@@ -8,9 +8,10 @@ type ProfileFormProps = {
   initial?: ProfileCredentials;
   onSubmit(credentials: ProfileCredentials): Promise<void>;
   describeError(error: unknown): string;
+  onCancel?(): void;
 };
 
-export function ProfileForm({ submitLabel, passwordHint, initial, onSubmit, describeError }: ProfileFormProps) {
+export function ProfileForm({ submitLabel, passwordHint, initial, onSubmit, describeError, onCancel }: ProfileFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [password, setPassword] = useState(initial?.password ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -52,9 +53,20 @@ export function ProfileForm({ submitLabel, passwordHint, initial, onSubmit, desc
           {error}
         </p>
       ) : null}
-      <button className="btn" type="submit" disabled={busy}>
-        {submitLabel}
-      </button>
+      {onCancel ? (
+        <div className="form-actions">
+          <button className="btn" type="submit" disabled={busy}>
+            {submitLabel}
+          </button>
+          <button className="btn ghost" type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button className="btn" type="submit" disabled={busy}>
+          {submitLabel}
+        </button>
+      )}
     </form>
   );
 }
@@ -70,7 +82,7 @@ export function validateCredentials(credentials: ProfileCredentials): string | n
 export function signInError(error: unknown): string {
   if (error instanceof InputProblem) return error.message;
   if (error instanceof ApiError) {
-    if (error.status === 401) return 'The name or the password is wrong. Check both and try again.';
+    if (error.status === 401) return 'The password is wrong. Check it and try again.';
     if (error.status === 429) return 'Too many failed sign-ins for this name. Wait 15 minutes, then try again.';
     if (error.status === 400) return 'Enter a name and a password of at least 8 characters.';
     return error.message;

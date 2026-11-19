@@ -28,6 +28,7 @@ export class CatalogueFiles {
   readonly savedPath: string;
   readonly previousPath: string;
   private readonly savedDir: string;
+  private knownPreviousRetrieved: { value: string | null } | null = null;
 
   constructor(catalogueDir: string, dataDir: string) {
     this.committedPath = join(catalogueDir, 'catalogue.json');
@@ -58,9 +59,15 @@ export class CatalogueFiles {
     return existsSync(this.previousPath);
   }
 
+  async previousRetrieved(): Promise<string | null> {
+    this.knownPreviousRetrieved ??= { value: this.hasPrevious() ? (await this.previous()).retrieved : null };
+    return this.knownPreviousRetrieved.value;
+  }
+
   async save(next: Catalogue, current: Catalogue): Promise<void> {
     await mkdir(this.savedDir, { recursive: true });
     await writeAtomically(this.previousPath, current);
+    this.knownPreviousRetrieved = { value: current.retrieved };
     await writeAtomically(this.savedPath, next);
   }
 
@@ -71,5 +78,6 @@ export class CatalogueFiles {
   async restore(previous: Catalogue): Promise<void> {
     await writeAtomically(this.savedPath, previous);
     await rm(this.previousPath);
+    this.knownPreviousRetrieved = { value: null };
   }
 }

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ExerciseStatusName, Progress, ProgressCollection, ProgressExercise, RecurringDifference } from '@gt7/contracts';
-import { DEFAULT_CONFIG, recurring } from '@gt7/core';
+import { DEFAULT_CONFIG, recurring, turnOf } from '@gt7/core';
 import type { Knex } from 'knex';
 import { AttemptsService, attemptTimeMs } from '../attempts/attempts.service.js';
 import { localDate } from '../attempts/local-date.js';
@@ -46,7 +46,10 @@ export class StatsService {
       .limit(last);
     const perAttempt = [];
     for (const attempt of recent) perAttempt.push(await this.attempts.findingsAgainst(attempt, reference));
-    return recurring(perAttempt, DEFAULT_CONFIG);
+    const found = recurring(perAttempt, DEFAULT_CONFIG);
+    if (found.length === 0) return [];
+    const corners = await this.attempts.cornersOfReference(reference);
+    return found.map(item => ({ ...item, turn: turnOf(corners, item.sM) }));
   }
 
   async progress(userId: string): Promise<Progress> {

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { LiveCue, ServerMsg } from '@gt7/contracts';
+import { COUNTDOWN_CLIPS } from '../src/voice/clips.ts';
+import { shownOnDrive } from '../src/features/drive/cue-display.ts';
 import { cue, liveState, playerRig, type PlayerRig } from './support.tsx';
 
 async function readyRig() {
@@ -117,5 +119,15 @@ describe('voice player', () => {
     expect(rig.audio.played()).toHaveLength(0);
     expect(outcomes(rig)).toEqual([['missing', 'failed']]);
   });
-});
 
+  it('countdown_cue_plays_its_clip', async () => {
+    const rig = playerRig();
+    await rig.player.unlock();
+    await rig.player.preload(COUNTDOWN_CLIPS);
+    const countdown = cue({ id: 'countdown-c-3', eventKey: 'countdown-c-3', kind: 'countdown', targetSpeedKph: null, clip: 'countdown-three', priority: 101, ttlMs: 800 });
+    rig.player.handle({ type: 'cue', cue: countdown, sentMs: 0 });
+    expect(rig.audio.played()).toHaveLength(1);
+    expect(outcomes(rig)).toEqual([['countdown-c-3', 'played']]);
+    expect(shownOnDrive(countdown)).toBe(false);
+  });
+});

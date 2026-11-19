@@ -2,14 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { PACKET_FORMATS, RawWriter, UdpSource, type Datagram, type PacketFormat } from '@gt7/capture';
+import { RawWriter, UdpSource, type Datagram } from '@gt7/capture';
 import { TelemetryStats } from './telemetry-stats.ts';
 
 type Purpose = 'demo' | 'player';
 
-type CaptureArguments = { ip: string; seconds: number; purpose: Purpose; startAfterS: number | null; format: PacketFormat };
+type CaptureArguments = { ip: string; seconds: number; purpose: Purpose; startAfterS: number | null };
 
-const usage = 'Usage: pnpm capture --ip <PS5 IPv4> --purpose demo|player [--seconds 90] [--start-after <s>] [--format A|B|~|C]';
+const usage = 'Usage: pnpm capture --ip <PS5 IPv4> --purpose demo|player [--seconds 90] [--start-after <s>]';
 
 export function isIPv4(text: string): boolean {
   const parts = text.split('.');
@@ -23,7 +23,6 @@ function readArguments(): CaptureArguments {
       seconds: { type: 'string', default: '90' },
       purpose: { type: 'string' },
       'start-after': { type: 'string' },
-      format: { type: 'string', default: 'A' },
       help: { type: 'boolean', default: false }
     }
   });
@@ -39,9 +38,7 @@ function readArguments(): CaptureArguments {
   if (startAfterS !== null && (!Number.isFinite(startAfterS) || startAfterS < 0 || startAfterS >= seconds)) {
     throw new Error('--start-after must be 0 or more and less than --seconds');
   }
-  const format = PACKET_FORMATS.find(candidate => candidate === values.format);
-  if (format === undefined) throw new Error(`--format must be one of ${PACKET_FORMATS.join(', ')}. ${usage}`);
-  return { ip: values.ip, seconds, purpose: values.purpose, startAfterS, format };
+  return { ip: values.ip, seconds, purpose: values.purpose, startAfterS };
 }
 
 function instruction(purpose: Purpose): string {
@@ -62,7 +59,7 @@ async function main() {
   const sinceStart = () => performance.now() - startedMono;
   const writer = new RawWriter(rawPath, captureId);
   const stats = new TelemetryStats();
-  const source = new UdpSource({ ps5Ip: args.ip, now: sinceStart, packetFormat: args.format });
+  const source = new UdpSource({ ps5Ip: args.ip, now: sinceStart });
   let startCueMonoMs: number | null = null;
   let rejectedWrites = 0;
   const timers: ReturnType<typeof setTimeout>[] = [];
@@ -109,7 +106,7 @@ async function main() {
     clearInterval(status);
     throw error;
   });
-  console.log(`Listening on UDP 33740 for ${args.ip}, ${args.seconds} s, purpose ${args.purpose}, packet format ${args.format}.`);
+  console.log(`Listening on UDP 33740 for ${args.ip}, ${args.seconds} s, purpose ${args.purpose}, packet format C.`);
   console.log(`Raw output: ${relative(process.cwd(), rawPath)}`);
   if (args.startAfterS === null) {
     console.log(instruction(args.purpose));

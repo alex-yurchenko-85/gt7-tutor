@@ -17,13 +17,16 @@ import {
   buildCueEvents,
   buildReference,
   cueText,
+  cutToTimerRun,
   findCorners,
   findDemoRangeCandidates,
   KPH_PER_MPS,
   matchesReference,
   pointAt,
+  referenceTimeMs,
   speedWords,
   type Corner,
+  type GameTimerSession,
   type ReferenceCueEvent,
   type ReferencePath
 } from '@gt7/core';
@@ -54,6 +57,10 @@ type ReferenceListRow = ReferenceRow & { attempt_count: number; active: boolean 
 
 function conflict(code: string, reason: string): ConflictException {
   return new ConflictException({ code, reason });
+}
+
+function badRequest(code: string, reason: string): BadRequestException {
+  return new BadRequestException({ code, reason });
 }
 
 function referenceInfo(row: ReferenceListRow): ReferenceInfo {
@@ -124,7 +131,7 @@ export class ReferencesService {
       samples,
       captures.map(capture => capture.start_cue_mono_ms)
     );
-    return candidates.map(candidate => ({
+    return candidates.filter(candidate => candidate.timed).map(candidate => ({
       ranges: candidate.ranges.map((range, index) => ({ captureId: captures[index]!.id, first: range.first, last: range.last })),
       sampleCount: candidate.sampleCount,
       ambiguous: candidate.ambiguous,
@@ -135,22 +142,20 @@ export class ReferencesService {
   async create(userId: string, body: CreateReferenceRequest): Promise<ReferenceInfo> {
     const exercise = await ownedExercise(this.db, userId, body.exerciseId);
     const capture = await this.finishedCapture(userId, body.captureId);
-    return this.store({ exercise, capture, range: { first: body.first, last: body.last }, startKind: body.startKind, origin: 'demo' });
+    const range = await this.timerRunOf(capture, { first: body.first, last: body.last }, 'demonstration');
+    return this.store({ exercise, capture, range, startKind: body.startKind, origin: 'demo' });
   }
 
   async promote(userId: string, attemptId: string): Promise<ReferenceInfo> {
     const attempt = await ownedAttempt(this.db, userId, attemptId);
-    if (attempt.completion !== 'complete') throw conflict('attempt-incomplete', 'Only a complete attempt can become a reference.');
+    if (attempt.completion !== 'complete' || attempt.game_ms === null) {
+      throw conflict('no-game-time', 'Only a complete attempt with a game time can become a reference.');
+    }
     const exercise = await ownedExercise(this.db, userId, attempt.exercise_id);
     const capture = await this.finishedCapture(userId, attempt.capture_id);
     const used = await this.db<ReferenceRow>('references').where({ id: attempt.reference_id }).first();
-    return this.store({
-      exercise,
-      capture,
-      range: { first: attempt.first_raw_index, last: attempt.last_raw_index },
-      startKind: used!.start_kind,
-      origin: 'attempt'
-    });
+    const range = await this.timerRunOf(capture, { first: attempt.first_raw_index, last: attempt.last_raw_index }, 'player');
+    return this.store({ exercise, capture, range, startKind: used!.start_kind, origin: 'attempt' });
   }
 
   async history(userId: string, exerciseId: string): Promise<ReferenceInfo[]> {
@@ -216,7 +221,7 @@ export class ReferencesService {
     return {
       gridM,
       lengthM: path.lengthM,
-      timeMs: Math.round(path.points.at(-1)!.timeMs - path.points[0]!.timeMs),
+      timeMs: referenceTimeMs(path),
       x: points.map(point => round(point.position.x, 2)),
       z: points.map(point => round(point.position.z, 2)),
       speedKph: points.map(point => round(point.speedMps * KPH_PER_MPS, 1))
@@ -254,6 +259,12 @@ export class ReferencesService {
       return row!.id;
     });
     return this.info(id);
+  }
+
+  private async timerRunOf(capture: CaptureRow, range: RawRange, session: GameTimerSession): Promise<RawRange> {
+    const run = cutToTimerRun(await this.samplesOf(capture), range, session);
+    if (!run) throw badRequest('no-timer-run', 'The range has no complete game timer run.');
+    return { first: run.first, last: run.last };
   }
 
   private async finishedCapture(userId: string, captureId: string): Promise<CaptureRow> {

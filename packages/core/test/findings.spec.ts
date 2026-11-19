@@ -3,7 +3,7 @@ import { buildReview, type Review, type Series } from '../src/compare.ts';
 import { DEFAULT_CONFIG } from '../src/config.ts';
 import { findDifferences, recurring, type Finding } from '../src/findings.ts';
 import { between, samplesOf } from './fixtures.ts';
-import { yangwangReference } from './paths.ts';
+import { interlagosReference } from './paths.ts';
 import { event } from './coaching.ts';
 import type { Corner } from '../src/corners.ts';
 
@@ -47,16 +47,25 @@ function finding(kind: Finding['kind'], eventKey: string | null, size: number, s
 }
 
 describe('findDifferences', () => {
-  it('player_run_first_brake_is_early', () => {
-    const path = yangwangReference();
-    const findings = findDifferences(buildReview(between(samplesOf('player-run'), 1163, 2787), path, DEFAULT_CONFIG), DEFAULT_CONFIG);
-    const early = findings.find(entry => entry.kind === 'brake-early' && entry.eventKey === 'brake@332')!;
+  it('pause_run_first_brake_is_early', () => {
+    const path = interlagosReference();
+    const findings = findDifferences(buildReview(between(samplesOf('ce-pause'), 11564, 13309), path, DEFAULT_CONFIG), DEFAULT_CONFIG);
+    const early = findings.find(entry => entry.kind === 'brake-early' && entry.eventKey === 'brake@291')!;
     expect(early).toBeDefined();
     expect(early.size).toBeGreaterThanOrEqual(30);
-    expect(early.size).toBeLessThanOrEqual(50);
+    expect(early.size).toBeLessThanOrEqual(40);
     expect(early.unit).toBe('m');
-    expect(early.sM).toBe(332);
-    expect(findings.some(entry => entry.kind === 'off-line' && entry.sM >= 490 && entry.sM <= 530)).toBe(true);
+    expect(early.sM).toBe(291);
+    expect(findings.some(entry => entry.kind === 'off-line' && entry.sM >= 340 && entry.sM <= 440)).toBe(true);
+  });
+
+  it('slow_run_first_brake_is_late', () => {
+    const path = interlagosReference();
+    const findings = findDifferences(buildReview(between(samplesOf('ce-slow'), 5491, 6624), path, DEFAULT_CONFIG), DEFAULT_CONFIG);
+    const late = findings.find(entry => entry.kind === 'brake-late' && entry.eventKey === 'brake@291')!;
+    expect(late.size).toBeGreaterThanOrEqual(30);
+    expect(late.size).toBeLessThanOrEqual(45);
+    expect(findings.some(entry => entry.kind === 'slow-corner' && entry.eventKey === 'brake@291')).toBe(true);
   });
 
   it('finding_limits', () => {
@@ -145,19 +154,23 @@ describe('recurring', () => {
 });
 
 describe('wide apex', () => {
-  it('wide_apex_on_the_h3_attempt', () => {
-    const findings = findDifferences(buildReview(samplesOf('h3-wide-apex'), yangwangReference(), DEFAULT_CONFIG), DEFAULT_CONFIG);
+  it('wide_apex_on_the_clean_run', () => {
+    const findings = findDifferences(buildReview(between(samplesOf('ce-clean'), 8451, 9479), interlagosReference(), DEFAULT_CONFIG), DEFAULT_CONFIG);
     const wide = findings.filter(entry => entry.kind === 'wide-apex');
-    expect(wide.map(entry => entry.eventKey)).toEqual(['corner-1', 'corner-2']);
-    expect(Math.abs(wide[0]!.size - 4.8)).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(wide[1]!.size - 2.1)).toBeLessThanOrEqual(0.5);
+    expect(wide.map(entry => entry.eventKey)).toEqual(['corner-1']);
+    expect(Math.abs(wide[0]!.size - 3.0)).toBeLessThanOrEqual(0.5);
     expect(wide[0]!.unit).toBe('m');
-    expect(Math.abs(wide[0]!.sM - 519)).toBeLessThanOrEqual(5);
+    expect(Math.abs(wide[0]!.sM - 404)).toBeLessThanOrEqual(5);
+  });
+
+  it('slow_run_has_no_wide_apex', () => {
+    const findings = findDifferences(buildReview(between(samplesOf('ce-slow'), 5491, 6624), interlagosReference(), DEFAULT_CONFIG), DEFAULT_CONFIG);
+    expect(findings.filter(entry => entry.kind === 'wide-apex')).toEqual([]);
   });
 
   it('review_lists_the_corners', () => {
-    const corners = buildReview(samplesOf('h3-wide-apex'), yangwangReference(), DEFAULT_CONFIG).corners;
-    expect(corners.map(corner => corner.number)).toEqual([1, 2, 3]);
+    const corners = buildReview(between(samplesOf('ce-clean'), 8451, 9479), interlagosReference(), DEFAULT_CONFIG).corners;
+    expect(corners.map(corner => corner.number)).toEqual([1]);
   });
 
   it('wide_apex_limit', () => {

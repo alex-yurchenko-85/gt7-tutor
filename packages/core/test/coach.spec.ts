@@ -8,7 +8,7 @@ import { buildCueEvents } from '../src/cue-events.ts';
 import { estimatedPhraseMs } from '../src/cue-text.ts';
 import { Matcher } from '../src/match.ts';
 import { between, samplesOf } from './fixtures.ts';
-import { bendPath, bendWaypoints, yangwangReference } from './paths.ts';
+import { bendPath, bendWaypoints, interlagosReference } from './paths.ts';
 import { drive } from './synthetic.ts';
 import { findCorners, type Corner } from '../src/corners.ts';
 import type { ReferenceCueEvent } from '../src/cue-events.ts';
@@ -25,12 +25,12 @@ function followReference(lateralM = 0) {
 }
 
 describe('Coach', () => {
-  const playerRun = samplesOf('player-run');
-  const path = yangwangReference();
+  const slowRun = samplesOf('ce-slow');
+  const path = interlagosReference();
   const events = buildCueEvents(path, DEFAULT_CONFIG);
-  const attempt = between(playerRun, 1100, 2800);
+  const attempt = between(slowRun, 5491, 6624);
 
-  it('player_run_gets_each_brake_cue_once_before_its_event', () => {
+  it('slow_run_gets_each_brake_cue_once_before_its_event', () => {
     const run = runCoach(path, events, attempt, { deviceDelayMs: 60 });
     const matcher = new Matcher(path, DEFAULT_CONFIG);
     const progress = attempt.map(sample => ({ sample, match: matcher.step(sample) }));
@@ -383,9 +383,9 @@ describe('Coach', () => {
 
   it('golden_trace_is_stable', () => {
     const golden = JSON.parse(
-      readFileSync(fileURLToPath(new URL('../../../fixtures/golden/player-run-cues.json', import.meta.url)), 'utf8')
+      readFileSync(fileURLToPath(new URL('../../../fixtures/golden/ce-slow-cues.json', import.meta.url)), 'utf8')
     );
-    const trace = replayCoach(playerRun, path, events, DEFAULT_CONFIG, {
+    const trace = replayCoach(slowRun, path, events, DEFAULT_CONFIG, {
       deviceDelayMs: 60,
       phraseMs: estimatedPhraseMs,
       mutedKeys: new Set(),
@@ -398,9 +398,9 @@ describe('Coach', () => {
 
   it('golden_trace_at_1_m_speaks_side_cues', () => {
     const golden = JSON.parse(
-      readFileSync(fileURLToPath(new URL('../../../fixtures/golden/player-run-cues-side-1m.json', import.meta.url)), 'utf8')
+      readFileSync(fileURLToPath(new URL('../../../fixtures/golden/ce-slow-cues-side-1m.json', import.meta.url)), 'utf8')
     );
-    const trace = replayCoach(playerRun, path, events, DEFAULT_CONFIG, {
+    const trace = replayCoach(slowRun, path, events, DEFAULT_CONFIG, {
       deviceDelayMs: 60,
       phraseMs: estimatedPhraseMs,
       mutedKeys: new Set(),
@@ -409,19 +409,17 @@ describe('Coach', () => {
       sideCueDistanceM: 1
     });
     expect(golden.sideCueDistanceM).toBe(1);
-    expect(trace.cues.filter(cue => cue.kind === 'keep-left' || cue.kind === 'keep-right').length).toBeGreaterThanOrEqual(3);
+    expect(trace.cues.filter(cue => cue.kind === 'keep-left' || cue.kind === 'keep-right').map(cue => cue.id)).toEqual([
+      '1:keep-left@406',
+      '1:keep-right@685'
+    ]);
     expect(JSON.parse(JSON.stringify(trace))).toEqual(golden.trace);
   });
 
-  it('player_run_speaks_action_phrases', () => {
+  it('slow_run_speaks_action_phrases', () => {
     const run = runCoach(path, events, attempt, { deviceDelayMs: 60 });
     const brakes = run.cues.filter(decision => decision.cue.eventKey.startsWith('brake@')).map(decision => decision.cue);
-    expect(brakes.map(cue => [cue.kind, cue.clip, cue.followClip])).toEqual([
-      ['hard-brake', 'hard-brake', 'speed-85'],
-      ['brake', 'brake', 'speed-110'],
-      ['light-brake', 'light-brake', 'speed-120'],
-      ['light-brake', 'light-brake', 'speed-145']
-    ]);
+    expect(brakes.map(cue => [cue.kind, cue.clip, cue.followClip])).toEqual([['hard-brake', 'hard-brake', 'speed-115']]);
     const throttles = run.cues.filter(decision => decision.cue.eventKey.startsWith('throttle@')).map(decision => decision.cue);
     expect(throttles.every(cue => cue.followClip === null)).toBe(true);
     expect(throttles.every(cue => cue.clip === 'full-throttle' || cue.clip === 'throttle')).toBe(true);
@@ -430,9 +428,9 @@ describe('Coach', () => {
   it('speak_targets_off_gives_no_follow_clip', () => {
     const run = runCoach(path, events, attempt, { deviceDelayMs: 60, speakTargets: false });
     const brakes = run.cues.filter(decision => decision.cue.eventKey.startsWith('brake@'));
-    expect(brakes).toHaveLength(4);
+    expect(brakes).toHaveLength(1);
     expect(brakes.every(decision => decision.cue.followClip === null)).toBe(true);
-    expect(brakes.map(decision => decision.cue.targetSpeedKph)).toEqual([85, 110, 120, 145]);
+    expect(brakes.map(decision => decision.cue.targetSpeedKph)).toEqual([115]);
   });
 
   describe('timing offset', () => {
@@ -471,7 +469,7 @@ describe('Coach', () => {
     const reachMs = cruising.find(sample => sample.position.x >= 1200)!.receivedMonoMs;
 
     it('big_stop_comes_about_2_s_before_the_first_brake', () => {
-      const trace = replayCoach(playerRun, path, events, DEFAULT_CONFIG, {
+      const trace = replayCoach(slowRun, path, events, DEFAULT_CONFIG, {
         deviceDelayMs: 60,
         phraseMs: estimatedPhraseMs,
         mutedKeys: new Set(),
@@ -480,13 +478,14 @@ describe('Coach', () => {
         sideCueDistanceM: DEFAULT_SIDE_CUE_DISTANCE_M
       });
       const keys = trace.cues.map(cue => cue.id.split(':')[1]);
-      expect(keys.indexOf('big-stop@332')).toBeGreaterThanOrEqual(0);
-      expect(keys.indexOf('big-stop@332')).toBeLessThan(keys.indexOf('brake@332'));
-      const bigStop = trace.cues.find(cue => cue.id.endsWith(':big-stop@332'))!;
+      expect(keys.indexOf('big-stop@291')).toBeGreaterThanOrEqual(0);
+      expect(keys.indexOf('big-stop@291')).toBeLessThan(keys.indexOf('brake@291'));
+      const bigStop = trace.cues.find(cue => cue.id.endsWith(':big-stop@291'))!;
       expect(bigStop).toMatchObject({ kind: 'big-stop', clip: 'big-stop', followClip: null, priority: 95 });
-      const run = runCoach(path, events, attempt, { deviceDelayMs: 60 });
-      const decided = run.cues.find(decision => decision.cue.eventKey === 'big-stop@332')!;
-      const reached = attempt.find((_, index) => (run.matches[index]?.sM ?? 0) >= 332)!;
+      const cleanAttempt = between(samplesOf('ce-clean'), 8451, 9479);
+      const run = runCoach(path, events, cleanAttempt, { deviceDelayMs: 60 });
+      const decided = run.cues.find(decision => decision.cue.eventKey === 'big-stop@291')!;
+      const reached = cleanAttempt.find((_, index) => (run.matches[index]?.sM ?? 0) >= 291)!;
       const leadMs = reached.receivedMonoMs - decided.cue.decidedMonoMs;
       expect(leadMs).toBeGreaterThanOrEqual(1900 + 60);
       expect(leadMs).toBeLessThanOrEqual(2100 + 60);

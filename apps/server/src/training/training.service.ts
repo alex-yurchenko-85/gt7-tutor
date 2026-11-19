@@ -1,6 +1,6 @@
 import { ConflictException, Inject, Injectable, Logger, ServiceUnavailableException, type BeforeApplicationShutdown, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { ArmResponse, ArmTrainingRequest, ConnectionState, CueOutcome, LiveMode, ManualActionRequest } from '@gt7/contracts';
+import type { ArmResponse, ArmTrainingRequest, ConnectionState, CueOutcome, LiveMode } from '@gt7/contracts';
 import type { LiveCue } from '@gt7/contracts';
 import { DEFAULT_CONFIG, buildCueEvents, findCorners, type Cue, type Finding, type Focus } from '@gt7/core';
 import type { Knex } from 'knex';
@@ -54,7 +54,6 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
   private training: Training | null = null;
   private pendingArm: PendingArm | null = null;
   private stopping = false;
-  private generation = Date.now();
   private storing: Promise<void> = Promise.resolve();
   private lastSignature = '';
 
@@ -135,7 +134,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
       const session = new TrainingSession(snapshot, DEFAULT_CONFIG, {
         deviceDelayMs: () => this.hub.deviceDelayMs(userId),
         phraseMs: clip => this.phraseMs(clip),
-        nextGeneration: () => ++this.generation,
+        nextGeneration: () => this.hub.nextGeneration(),
         sendCue: (cue: Cue) => this.hub.sendCue(userId, cue),
         cancel: generation => this.hub.cancel(userId, generation),
         attemptEnded: record => this.attemptEnded(snapshot, record),
@@ -157,24 +156,21 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     }
   }
 
+  busyFor(userId: string): boolean {
+    return this.training?.userId === userId || this.pendingArm?.userId === userId || this.captures.activeCapture?.userId === userId;
+  }
+
   async disarm(userId: string): Promise<{ ok: true }> {
     const pending = this.pendingArm;
     if (pending?.userId === userId) await pending.done.catch(() => undefined);
     const training = this.ownTraining(userId);
     const now = this.captures.monoNow();
-    if (training.session.attemptActive && now !== null) training.session.manual('abort', now);
+    if (training.session.attemptActive && now !== null) training.session.abortByUser(now);
     training.unsubscribe();
     this.training = null;
     const capture = this.captures.activeCapture;
     if (capture) await this.captures.stop(userId, capture.id);
     this.hub.changed();
-    return { ok: true };
-  }
-
-  manual(userId: string, request: ManualActionRequest): { ok: true } {
-    const training = this.ownTraining(userId);
-    const now = this.captures.monoNow();
-    if (now !== null) training.session.manual(request.action, now);
     return { ok: true };
   }
 
@@ -196,7 +192,8 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
       nextCue: null,
       lastAttemptId: this.lastAttemptIds.get(userId) ?? null,
       trainingMode: null,
-      referenceId: null
+      referenceId: null,
+      gapMs: null
     };
     if (owner !== userId) return neutral;
     const storageError = this.captures.incompleteReason();
@@ -215,12 +212,13 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
       sM: view.sM,
       speedKph: view.speedKph,
       lastCue: view.lastCue,
-      nextCue: view.nextCue
+      nextCue: view.nextCue,
+      gapMs: view.gapMs
     };
   }
 
   private ownTraining(userId: string): Training {
-    if (!this.training || this.training.userId !== userId) throw conflict('not-armed', 'No training is armed for this profile.');
+    if (!this.training || this.training.userId !== userId) throw conflict('not-armed', 'No training runs for this profile.');
     return this.training;
   }
 

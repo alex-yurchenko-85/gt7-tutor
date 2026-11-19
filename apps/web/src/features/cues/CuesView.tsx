@@ -12,6 +12,7 @@ import { api } from '../../api/client.ts';
 import { useLive } from '../../api/live.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { TrackMap } from '../../charts/TrackMap.tsx';
+import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths } from '../../app/router.tsx';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
@@ -397,7 +398,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
 
 export function CuesView({ exerciseId }: { exerciseId: string }) {
   const exercise = useExercise(exerciseId);
-  if (exercise.error) return <p className="error">{errorText(exercise.error)}</p>;
+  if (exercise.error) return <LoadProblem error={exercise.error} kind="exercise" />;
   if (!exercise.data) return <p className="sub">Reading the exercise…</p>;
   return (
     <section>

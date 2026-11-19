@@ -1,10 +1,10 @@
 import { decode } from '@gt7/core';
 
-const YANGWANG_PACKET_BASE64 =
-  'sYsDxsgRy8UGoGMdF7MpHQN2eRC3E7IFcN27zHkEbyCyIYZgTXQc5cNT59OvOeMDZkAuNQx6eCvzQddCGpr+v2rDEXNyagIqfQrVySnDL8R3qZRbx+IG6qQFeAEiD4bJdWhZg0LxvG0lMYbbOrkT7uY8YyAeYdmtIomG25FdX4/rJlhfZGJzxqnaJns5c11xzVUGfEsLuLSALMhn+d7fsskxfF9sUcp8/J5QtwG2iqClAjdhI+BMgpEGBOuPwvJNNG7QO5DlndkVLZcYYmXdG0g6zhCG9J0scz1B3zk8VmRT154PUbjCD36luRaqZ2lh3U6hRu4wh+oaMdCmLEtgeatLJMPhRhmAA9sGTcMmNTqbn7FU0LJODJlgnE9xKCIRzGsgpKhGtOI=';
-const YANGWANG_CAR_ID = 3602;
+const INTERLAGOS_PACKET_BASE64 =
+  '1/PzZ3ygZEwNdjvzRhT9sQlZOgWhHiHjQUZZDMGklz1JbtWPzgNPk+xbhli2EaDVaIgVbDZuwiCG00TaFv0XBOnVGqx5btmc07pp5cXwdWwsE+VOndnxmFB7Fh8iWzrPyoRuvalsjQH5GXfW7y/nc6gd2KxxUqNrcFA2vsgcbmxcWFDVF2dMVztKI17JN99GD6QvzfoqgofXvTxcwHb16F6CfyxW+g8eSCsCG3Z6uaK3xP9KO9Ap4zNmo0Lul5xH6hMyZMbXSENsU0TvPkEDK4PITV2Jk9X2hW/ZFZgu3BtgnRotif3DOPNEiAPe19yTpST8qr7mwIdTdTWBYJrB00SjPLLiiHWJN0LENDlUYHOzfZLZqiUOHW3xd4D1UMJDKdq8YVvmP4gdlLbWJobchl5b2OAgJ+L7/4JMES/HcxJOSuxpJULSutreej80Ym+sDD74Tt2wKxljfzWTvfSJgxDBgtKo/4V8lpkLvxadyn4=';
+const INTERLAGOS_CAR_ID = 1905;
 
 export function decoderWorks(): boolean {
-  const result = decode(new Uint8Array(Buffer.from(YANGWANG_PACKET_BASE64, 'base64')));
-  return result.ok && result.sample.carId === YANGWANG_CAR_ID;
+  const result = decode(new Uint8Array(Buffer.from(INTERLAGOS_PACKET_BASE64, 'base64')));
+  return result.ok && result.sample.carId === INTERLAGOS_CAR_ID;
 }

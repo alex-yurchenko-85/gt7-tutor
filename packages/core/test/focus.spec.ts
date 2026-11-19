@@ -5,7 +5,7 @@ import type { Corner } from '../src/corners.ts';
 import { findDifferences, type Finding, type Recurring } from '../src/findings.ts';
 import { brakeReactions, focusSentence } from '../src/focus.ts';
 import { between, samplesOf } from './fixtures.ts';
-import { yangwangReference } from './paths.ts';
+import { interlagosReference } from './paths.ts';
 import { FRAME_MS, syntheticSample } from './synthetic.ts';
 
 function corner(number: number): Corner {
@@ -43,8 +43,8 @@ describe('focus sentence', () => {
     const latest = [finding('off-line', 120, 3), finding('brake-late', 210, 14)];
     expect(focusSentence([], latest, corners)).toMatchObject({ kind: 'brake-late', turn: 2, text: 'Turn two. Brake earlier.' });
 
-    const path = yangwangReference();
-    const review = buildReview(between(samplesOf('player-run'), 1163, 2787), path, DEFAULT_CONFIG);
+    const path = interlagosReference();
+    const review = buildReview(between(samplesOf('ce-pause'), 11564, 13309), path, DEFAULT_CONFIG);
     const focus = focusSentence([], findDifferences(review, DEFAULT_CONFIG), review.corners);
     expect(focus).toEqual({ kind: 'brake-early', turn: 1, text: 'Turn one. Brake later.', clip: 'focus-brake-early-1' });
   });

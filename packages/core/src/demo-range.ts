@@ -1,6 +1,7 @@
 import type { Sample } from '@gt7/contracts';
 import { continuityBreak } from './attempts.ts';
 import { DEFAULT_CONFIG, type CoreConfig } from './config.ts';
+import { GameTimerWatch, type GameTimerSession } from './game-timer.ts';
 import { distance } from './geometry.ts';
 import { Matcher, type Match } from './match.ts';
 import type { ReferencePath } from './reference.ts';
@@ -8,9 +9,12 @@ import { median } from './statistics.ts';
 
 export type RawRange = { first: number; last: number };
 
+export type TimerRunRange = RawRange & { gameTimeMs: number };
+
 export type DemoRangeCandidate = {
   ranges: RawRange[];
   sampleCount: number;
+  timed: boolean;
   ambiguous: boolean;
   evidence: string[];
 };
@@ -29,6 +33,7 @@ type Ranked = {
   followsCue: boolean;
   entersScene: boolean;
   moves: boolean;
+  timed: boolean;
   evidence: string[];
 };
 
@@ -157,7 +162,7 @@ function describe(
   cues: (number | null)[],
   sampleSpans: Span[],
   config: CoreConfig
-): Omit<Ranked, 'spans' | 'sampleCount'> {
+): Omit<Ranked, 'spans' | 'sampleCount' | 'timed'> {
   const evidence: string[] = [];
   let cueChecks = 0;
   let cueFailures = 0;
@@ -202,7 +207,45 @@ function score(candidate: Ranked): number {
 }
 
 function isEligible(candidate: Ranked): boolean {
-  return candidate.followsCue && candidate.entersScene && candidate.moves;
+  return candidate.followsCue && candidate.entersScene && candidate.moves && candidate.timed;
+}
+
+type TimerRun = { span: Span; gameTimeMs: number };
+
+function timerRun(capture: Sample[], span: Span, session: GameTimerSession): TimerRun | null {
+  const watch = new GameTimerWatch({ session });
+  let startIndex: number | null = null;
+  for (let index = span.from; index < capture.length; index++) {
+    if (index > span.to && !watch.active) return null;
+    const event = watch.step(capture[index]!);
+    if (!event) continue;
+    if (event.type === 'started') startIndex = index - 1;
+    else if (event.type === 'finished' && startIndex !== null) {
+      const finishIndex = capture.findIndex(sample => sample.rawIndex === event.rawIndex);
+      return finishIndex <= span.to ? { span: { from: startIndex, to: finishIndex }, gameTimeMs: event.gameTimeMs } : null;
+    } else startIndex = null;
+  }
+  return null;
+}
+
+export function cutToTimerRun(capture: Sample[], range: RawRange, session: GameTimerSession): TimerRunRange | null {
+  const from = capture.findIndex(sample => sample.rawIndex >= range.first);
+  const to = capture.findLastIndex(sample => sample.rawIndex <= range.last);
+  if (from < 0 || to < from) return null;
+  const run = timerRun(capture, { from, to }, session);
+  if (!run) return null;
+  return { first: capture[run.span.from]!.rawIndex, last: capture[run.span.to]!.rawIndex, gameTimeMs: run.gameTimeMs };
+}
+
+function cutToTimer(captures: Sample[][], candidate: Ranked): Ranked {
+  const runs = candidate.spans.map((span, index) => timerRun(captures[index]!, span, 'demonstration'));
+  const timerEvidence = runs.map((run, index) =>
+    run ? `Capture ${index + 1}: timer runs ${round(run.gameTimeMs / 1000, 3)} s` : `Capture ${index + 1}: no complete timer run`
+  );
+  const evidence = [...candidate.evidence, ...timerEvidence];
+  if (runs.some(run => run === null)) return { ...candidate, timed: false, evidence };
+  const spans = runs.map(run => run!.span);
+  return { ...candidate, spans, sampleCount: spans[0]!.to - spans[0]!.from + 1, timed: true, evidence };
 }
 
 function overlapsMostly(a: Span, b: Span): boolean {
@@ -216,6 +259,14 @@ function withoutDuplicates(candidates: Ranked[]): Ranked[] {
     if (!kept.some(other => overlapsMostly(candidate.spans[0]!, other.spans[0]!))) kept.push(candidate);
   }
   return kept;
+}
+
+function sameSpan(a: Span, b: Span): boolean {
+  return a.from === b.from && a.to === b.to;
+}
+
+function withoutEqualCuts(ranked: Ranked[]): Ranked[] {
+  return ranked.filter((candidate, index) => !ranked.slice(0, index).some(better => sameSpan(better.spans[0]!, candidate.spans[0]!)));
 }
 
 export function findDemoRangeCandidates(
@@ -237,12 +288,16 @@ export function findDemoRangeCandidates(
     return {
       spans: sampleSpans,
       sampleCount: sampleSpans[0]!.to - sampleSpans[0]!.from + 1,
-      ...describe(captures, startCueMonoMs, sampleSpans, config)
+      ...describe(captures, startCueMonoMs, sampleSpans, config),
+      timed: false
     };
   });
-  const unique = withoutDuplicates(ranked).sort(
-    (x, y) => score(y) - score(x) || y.sampleCount - x.sampleCount || x.spans[0]!.from - y.spans[0]!.from
+  const cut = withoutDuplicates(ranked)
+    .map(candidate => cutToTimer(captures, candidate))
+    .sort(
+    (x, y) => Number(y.timed) - Number(x.timed) || score(y) - score(x) || y.sampleCount - x.sampleCount || x.spans[0]!.from - y.spans[0]!.from
   );
+  const unique = withoutEqualCuts(cut);
   const eligible = unique.filter(isEligible);
   const confirmable = captures.length >= 3 && eligible.length === 1 ? eligible[0] : null;
   return unique.map(candidate => ({
@@ -251,6 +306,7 @@ export function findDemoRangeCandidates(
       last: captures[index]![span.to]!.rawIndex
     })),
     sampleCount: candidate.sampleCount,
+    timed: candidate.timed,
     ambiguous: candidate !== confirmable,
     evidence: candidate.evidence
   }));

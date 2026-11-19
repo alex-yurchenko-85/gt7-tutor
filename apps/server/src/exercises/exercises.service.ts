@@ -41,6 +41,8 @@ function exerciseView(row: ExerciseRow, summary: ExerciseStatusSummary): Exercis
       baselineAttempts: summary.baselineAttempts,
       guidedAttempts: summary.guidedAttempts
     }),
+    attemptCount: summary.attemptCount,
+    referenceCount: summary.referenceCount,
     completeAttempts: summary.completeAttempts,
     bestMs: summary.bestMs,
     createdAt: row.created_at.toISOString()

@@ -1,11 +1,12 @@
 import { createWriteStream, existsSync, statSync } from 'node:fs';
-import { readdir, rename, stat } from 'node:fs/promises';
+import { readdir, rename, stat, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { once } from 'node:events';
 import { finished } from 'node:stream/promises';
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readRaw, type RawRange } from '@gt7/capture';
+import { clockWarmupStart } from '@gt7/core';
 import type { CleanupResult, StorageUse } from '@gt7/contracts';
 import type { Knex } from 'knex';
 import type { CaptureRow } from '../ownership/owned.js';
@@ -17,7 +18,7 @@ function fileSize(path: string): number {
 }
 
 function inside(ranges: RawRange[], rawIndex: number): boolean {
-  return ranges.some(range => rawIndex >= range.first && rawIndex <= range.last);
+  return ranges.some(range => rawIndex >= clockWarmupStart(range.first) && rawIndex <= range.last);
 }
 
 async function rewriteKeeping(path: string, ranges: RawRange[]): Promise<void> {
@@ -60,6 +61,18 @@ export class StorageService {
       result.bytesBefore += fileSize(path);
       await rewriteKeeping(path, await this.usedRanges(row.id));
       result.bytesAfter += fileSize(path);
+      result.captures++;
+    }
+    return result;
+  }
+
+  async removeFiles(rows: Pick<CaptureRow, 'raw_path'>[]): Promise<CleanupResult> {
+    const result: CleanupResult = { captures: 0, bytesBefore: 0, bytesAfter: 0 };
+    for (const row of rows) {
+      const path = this.captures.rawPath(row);
+      if (!existsSync(path)) continue;
+      result.bytesBefore += fileSize(path);
+      await unlink(path);
       result.captures++;
     }
     return result;

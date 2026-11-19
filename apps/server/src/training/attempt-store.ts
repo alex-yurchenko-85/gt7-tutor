@@ -1,4 +1,4 @@
-import { buildReview, findDifferences, measureAttemptMs, type CoreConfig, type Finding } from '@gt7/core';
+import { buildReview, findDifferences, measureAttemptTimes, type CoreConfig, type Finding } from '@gt7/core';
 import type { Knex } from 'knex';
 import type { AttemptRecord, CueRecord, TrainingSnapshot } from './training-session.js';
 
@@ -29,7 +29,8 @@ export async function storeAttempt(
   findings: Finding[],
   config: CoreConfig
 ): Promise<StoredAttempt> {
-  const measuredMs = record.completion === 'complete' ? measureAttemptMs(record.samples, snapshot.path, config) : null;
+  const complete = record.completion === 'complete';
+  const measuredMs = complete ? measureAttemptTimes(record.samples, config).measuredMs : null;
   const storedOutcomes = new Map(record.cues.map(cue => [cue, cue.outcome]));
   const id = await db.transaction(async trx => {
     const [row] = await trx('attempts')
@@ -43,6 +44,7 @@ export async function storeAttempt(
         completion: record.completion,
         reason: record.reason,
         measured_ms: measuredMs,
+        game_ms: complete ? record.gameTimeMs : null,
         started_at: record.startedAt
       })
       .returning<{ id: string }[]>('id');

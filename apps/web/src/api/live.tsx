@@ -3,6 +3,7 @@ import type { ClientMsg, LiveState, ServerMsg } from '@gt7/contracts';
 import { clipsForCues } from '../voice/clips.ts';
 import { browserVoicePlayer, type VoicePlayer } from '../voice/VoicePlayer.ts';
 import { api } from './client.ts';
+import { stateRate } from '../app/state-rate.ts';
 import { delayCorrectionMs, setWantsVoice, voiceDeviceId, wantsVoice } from '../voice/device.ts';
 
 export type LiveSocket = {
@@ -69,7 +70,10 @@ export function LiveProvider({ children, socketFactory = browserSocket, player: 
     const connect = () => {
       const socket = socketFactory(liveUrl());
       socketRef.current = socket;
-      socket.onopen = () => setConnected(true);
+      socket.onopen = () => {
+        socket.send(JSON.stringify({ type: 'state-rate', perSecond: stateRate() }));
+        setConnected(true);
+      };
       socket.onclose = event => {
         if (socketRef.current === socket) socketRef.current = null;
         setConnected(false);

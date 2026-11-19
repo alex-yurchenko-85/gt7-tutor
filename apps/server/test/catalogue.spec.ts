@@ -5,6 +5,7 @@ import knex, { type Knex } from 'knex';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Catalogue } from '@gt7/contracts';
+import { CatalogueService } from '../src/catalogue/catalogue.service.js';
 import { CATALOGUE_FETCH } from '../src/catalogue/catalogue.tokens.js';
 import { createTestApp } from './support/app.js';
 import { keepFirstTests, recordedSources, withExtraTest, type SourceStub } from './support/catalogue-sources.js';
@@ -180,7 +181,7 @@ describe('catalogue', () => {
       const response = await http().get('/api/catalogue').set('Cookie', cookie).expect(200);
       expect(response.body).toHaveLength(committed.entries.length);
       const info = await http().get('/api/catalogue/info').set('Cookie', cookie).expect(200);
-      expect(info.body).toMatchObject({ retrieved: committed.retrieved, hasPrevious: false, counts: { cars: committed.cars.length } });
+      expect(info.body).toMatchObject({ retrieved: committed.retrieved, hasPrevious: false, previousRetrieved: null, counts: { cars: committed.cars.length } });
       expect(info.body.counts.entries.Licence).toBe(100);
       expect(info.body.sources).toHaveLength(2);
       expect(globalFetch).not.toHaveBeenCalled();
@@ -214,10 +215,31 @@ describe('catalogue', () => {
     const previous = JSON.parse(readFileSync(join(dataDir, 'catalogue', 'catalogue.previous.json'), 'utf8')) as Catalogue;
     expect(previous.retrieved).toBe(committed.retrieved);
     const info = await http().get('/api/catalogue/info').set('Cookie', cookie).expect(200);
-    expect(info.body).toMatchObject({ retrieved: saved.retrieved, hasPrevious: true });
+    expect(info.body).toMatchObject({ retrieved: saved.retrieved, hasPrevious: true, previousRetrieved: committed.retrieved });
     await http().post('/api/catalogue/update/apply').set('Cookie', cookie).send({ token }).expect(409);
     await start(sources);
     expect(await db('catalogue_entries').where({ id: 'licence-b-11' }).first()).toBeDefined();
+  });
+
+  it('catalogue_info_reads_the_previous_file_at_most_once', async () => {
+    const sources = recordedSources((page, text) => (page === 'GT7 B-License' ? withExtraTest(text, 'B-11') : text));
+    await start(sources);
+    const cookie = await signIn();
+    const { token } = (await http().post('/api/catalogue/update/check').set('Cookie', cookie).expect(201)).body;
+    await http().post('/api/catalogue/update/apply').set('Cookie', cookie).send({ token }).expect(201);
+    const afterApply = vi.spyOn(app!.get(CatalogueService).files, 'previous');
+    for (let index = 0; index < 2; index++) {
+      const info = await http().get('/api/catalogue/info').set('Cookie', cookie).expect(200);
+      expect(info.body.previousRetrieved).toBe(committed.retrieved);
+    }
+    expect(afterApply).not.toHaveBeenCalled();
+    await start(sources);
+    const afterStart = vi.spyOn(app!.get(CatalogueService).files, 'previous');
+    for (let index = 0; index < 2; index++) {
+      const info = await http().get('/api/catalogue/info').set('Cookie', cookie).expect(200);
+      expect(info.body.previousRetrieved).toBe(committed.retrieved);
+    }
+    expect(afterStart).toHaveBeenCalledTimes(1);
   });
 
   it('restore_brings_previous_back', async () => {
@@ -229,7 +251,7 @@ describe('catalogue', () => {
     await http().post('/api/catalogue/update/restore').set('Cookie', cookie).expect(201);
     expect(await db('catalogue_entries').where({ id: 'licence-b-11' }).first()).toBeUndefined();
     const info = await http().get('/api/catalogue/info').set('Cookie', cookie).expect(200);
-    expect(info.body).toMatchObject({ retrieved: committed.retrieved, hasPrevious: false });
+    expect(info.body).toMatchObject({ retrieved: committed.retrieved, hasPrevious: false, previousRetrieved: null });
     await http().post('/api/catalogue/update/restore').set('Cookie', cookie).expect(409);
     await start(sources);
     expect(await db('catalogue_entries').where({ id: 'licence-b-11' }).first()).toBeUndefined();

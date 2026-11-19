@@ -10,7 +10,9 @@ export type CueKind =
   | 'tighter'
   | 'big-stop';
 
-export type ClipKind = CueKind | 'guidance-paused' | 'guidance-resumed' | 'voice-check';
+export type CountdownKind = 'countdown-three' | 'countdown-two' | 'countdown-one' | 'countdown-start';
+
+export type ClipKind = CueKind | 'guidance-paused' | 'guidance-resumed' | 'voice-check' | CountdownKind;
 
 export type FocusKind = 'brake-early' | 'brake-late' | 'slow-corner' | 'throttle-late' | 'off-line' | 'wide-apex';
 
@@ -37,8 +39,14 @@ const PHRASES: Record<ClipKind, string> = {
   'big-stop': 'Big stop',
   'guidance-paused': 'Guidance paused',
   'guidance-resumed': 'Guidance resumed',
-  'voice-check': 'Voice check'
+  'voice-check': 'Voice check',
+  'countdown-three': 'Three',
+  'countdown-two': 'Two',
+  'countdown-one': 'One',
+  'countdown-start': 'Start'
 };
+
+const COUNTDOWN_KINDS: readonly CountdownKind[] = ['countdown-three', 'countdown-two', 'countdown-one', 'countdown-start'];
 
 const FOCUS_ACTIONS: Record<FocusKind, string> = {
   'brake-early': 'Brake later.',
@@ -78,6 +86,8 @@ export function isSupportedTarget(kph: number): boolean {
 export function clipKey(kind: ClipKind): string {
   return kind;
 }
+
+export const COUNTDOWN_CLIPS: string[] = COUNTDOWN_KINDS.map(clipKey);
 
 export function cueText(kind: ClipKind): string {
   return PHRASES[kind];

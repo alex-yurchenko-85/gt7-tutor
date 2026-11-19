@@ -152,7 +152,11 @@ export const MANIFEST = {
     'brake-80': { file: 'clips/brake-80.wav', durationMs: 1000 },
     'throttle-120': { file: 'clips/throttle-120.wav', durationMs: 1200 },
     'hard-brake': { file: 'clips/hard-brake.wav', durationMs: 766 },
-    'speed-85': { file: 'clips/speed-85.wav', durationMs: 700 }
+    'speed-85': { file: 'clips/speed-85.wav', durationMs: 700 },
+    'countdown-three': { file: 'clips/countdown-three.wav', durationMs: 512 },
+    'countdown-two': { file: 'clips/countdown-two.wav', durationMs: 470 },
+    'countdown-one': { file: 'clips/countdown-one.wav', durationMs: 440 },
+    'countdown-start': { file: 'clips/countdown-start.wav', durationMs: 581 }
   }
 };
 
@@ -210,6 +214,7 @@ export function liveState(overrides: Partial<LiveState> = {}): LiveState {
     lastAttemptId: null,
     trainingMode: null,
     referenceId: null,
+    gapMs: null,
     ...overrides
   };
 }

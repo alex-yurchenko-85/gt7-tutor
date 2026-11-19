@@ -3,7 +3,7 @@ import type { Match } from '../src/match.ts';
 import { Matcher } from '../src/match.ts';
 import { DEFAULT_CONFIG } from '../src/config.ts';
 import { between, samplesOf } from './fixtures.ts';
-import { hairpinCorners, pathFromCorners, shift, yangwangReference } from './paths.ts';
+import { hairpinCorners, pathFromCorners, shift, interlagosReference } from './paths.ts';
 import { drive, straightLine } from './synthetic.ts';
 
 function median(values: number[]): number {
@@ -12,26 +12,33 @@ function median(values: number[]): number {
 }
 
 describe('Matcher', () => {
-  const playerRun = samplesOf('player-run');
+  const cleanRun = samplesOf('ce-clean');
 
-  it('player_run_matches_end_to_end', () => {
-    const matcher = new Matcher(yangwangReference(), DEFAULT_CONFIG);
+  it('clean_run_matches_end_to_end', () => {
+    const matcher = new Matcher(interlagosReference(), DEFAULT_CONFIG);
     const matches = new Map<number, Match | null>();
-    for (const sample of playerRun) matches.set(sample.rawIndex, matcher.step(sample));
-    const samples = between(playerRun, 1162, 2786);
+    for (const sample of cleanRun) matches.set(sample.rawIndex, matcher.step(sample));
+    const samples = between(cleanRun, 8452, 9476);
     const section = samples.map(sample => matches.get(sample.rawIndex) ?? null);
     expect(section.every(match => match !== null)).toBe(true);
     expect(section.every(match => match!.trusted)).toBe(true);
-    expect(Math.max(...section.map(match => Math.abs(match!.lateralM)))).toBeGreaterThan(4.5);
+    expect(Math.max(...section.map(match => Math.abs(match!.lateralM)))).toBeGreaterThan(2.5);
     const progress = section.map(match => match!.sM);
     expect(progress.slice(1).every((sM, index) => sM - progress[index]! >= -5)).toBe(true);
     expect(median(section.map(match => Math.abs(match!.lateralM)))).toBeLessThan(1);
-    expect(progress.at(-1)!).toBeGreaterThan(yangwangReference().lengthM - 3);
+    expect(progress.at(-1)!).toBeGreaterThan(interlagosReference().lengthM - 3);
+  });
+
+  it('attempt_from_the_timer_start_matches_from_the_path_start', () => {
+    const matcher = new Matcher(interlagosReference(), DEFAULT_CONFIG);
+    const matches = between(cleanRun, 8451, 9476).map(sample => matcher.step(sample));
+    expect(matches.every(match => match !== null)).toBe(true);
+    expect(matches[0]!.sM).toBeLessThan(1);
   });
 
   it('no_match_outside_section', () => {
-    const matcher = new Matcher(yangwangReference(), DEFAULT_CONFIG);
-    const before = between(playerRun, 0, 1099).map(sample => matcher.step(sample));
+    const matcher = new Matcher(interlagosReference(), DEFAULT_CONFIG);
+    const before = between(cleanRun, 8070, 8449).map(sample => matcher.step(sample));
     expect(before.every(match => match === null)).toBe(true);
   });
 

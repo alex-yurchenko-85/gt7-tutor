@@ -49,7 +49,7 @@ export function replayCoach(
   config: CoreConfig,
   options: ReplayOptions
 ): CoachTrace {
-  const tracker = new AttemptTracker({ start: path.start, end: path.end, startKind: path.startKind }, config);
+  const tracker = new AttemptTracker(config);
   const matcher = new Matcher(path, config);
   const coach = new Coach(path, events, config);
   const trace: CoachTrace = { attemptEvents: [], cues: [], suppressed: [], guidance: [] };

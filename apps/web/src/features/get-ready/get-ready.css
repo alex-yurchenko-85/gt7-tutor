@@ -1,0 +1,159 @@
+.get-ready {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.get-ready h1 {
+  font-size: 44px;
+}
+
+.get-ready .lede {
+  font-size: 18px;
+  margin-top: 8px;
+}
+
+.get-ready-welcome {
+  font-size: 15px;
+}
+
+.ready-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.ready-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--line);
+}
+
+.ready-bar span {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+}
+
+.ready-steps {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.ready-step {
+  background: var(--paper);
+  padding: 22px 24px;
+}
+
+.ready-step.now {
+  box-shadow: inset 6px 0 0 var(--yellow);
+}
+
+.ready-step-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.ready-step-head h2 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.ready-step-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font: 800 22px/1 var(--font-display);
+  background: var(--bg);
+  color: var(--mute);
+}
+
+.ready-step.now .ready-step-mark {
+  background: var(--yellow);
+  color: #14181f;
+}
+
+.ready-step.done .ready-step-mark {
+  background: var(--ok);
+  color: #ffffff;
+}
+
+.ready-step-summary {
+  margin-left: auto;
+  color: var(--mute);
+  font-size: 15px;
+}
+
+.ready-step-body {
+  margin: 14px 0 0 54px;
+  font-size: 16px;
+}
+
+.ready-step-body > p:first-child {
+  margin-bottom: 8px;
+}
+
+.ready-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 300px;
+  max-width: 100%;
+  margin-top: 6px;
+}
+
+.ready-actions .btn {
+  margin-top: 0;
+}
+
+.ready-step-head .icon-button-wrap {
+  margin-left: 4px;
+}
+
+.ready-step-problem {
+  flex-basis: 100%;
+  margin: 4px 0 0 54px;
+}
+
+@media (max-width: 899px) {
+  .get-ready h1 {
+    font-size: 30px;
+  }
+
+  .ready-step {
+    padding: 16px;
+  }
+
+  .ready-step-head h2 {
+    font-size: 21px;
+  }
+
+  .ready-step-body {
+    margin-left: 0;
+  }
+
+  .ready-step-head h2 {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .ready-step-summary {
+    order: 3;
+    margin-left: 54px;
+    width: calc(100% - 54px);
+  }
+
+  .ready-actions {
+    width: auto;
+  }
+
+  .ready-step-problem {
+    order: 4;
+  }
+}

@@ -2,44 +2,37 @@ import { useState } from 'react';
 import { useLive } from '../../api/live.tsx';
 import { errorText } from '../../app/resource.ts';
 import { StatusDot } from '../../app/Shell.tsx';
+import { IconButton } from '../../app/IconButton.tsx';
 import { voiceStatus } from '../../app/status.ts';
-import { clampCorrection, delayCorrectionMs, MAX_CORRECTION_MS, MIN_CORRECTION_MS, setDelayCorrectionMs, setWantsVoice } from '../../voice/device.ts';
+import { clampCorrection, delayCorrectionMs, MAX_CORRECTION_MS, MIN_CORRECTION_MS, setDelayCorrectionMs } from '../../voice/device.ts';
+import { useVoiceClaim } from '../../voice/use-voice-claim.ts';
 
 function signed(ms: number): string {
   return `${ms > 0 ? '+' : ''}${ms} ms`;
 }
 
 export function VoiceSection() {
-  const { state, send, player, deviceId } = useLive();
+  const { state, player, deviceId } = useLive();
+  const voice = useVoiceClaim();
   const [message, setMessage] = useState<string | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [correction, setCorrection] = useState(delayCorrectionMs);
   const [movedFromOther, setMovedFromOther] = useState(false);
 
   const holder = state?.voiceDeviceId ?? null;
-  const here = holder === deviceId;
+  const here = voice.here;
   const status = voiceStatus(state, deviceId);
+  const playing = here && state?.voiceReady === true;
 
   const enable = async () => {
-    setProblem(null);
     setMessage(null);
-    try {
-      await player.unlock();
-      await player.preload(['voice-check']);
-    } catch (error) {
-      setProblem(`The browser did not start audio: ${errorText(error)}`);
-      return;
-    }
     setMovedFromOther(holder !== null && holder !== deviceId);
-    setWantsVoice(true);
-    send({ type: 'claim-voice', deviceId, ready: player.ready });
+    await voice.claim();
   };
 
   const disable = () => {
-    setWantsVoice(false);
     setMovedFromOther(false);
-    send({ type: 'release-voice' });
+    voice.release();
     setMessage('Voice is off on this device. Cues are recorded but not played.');
   };
 
@@ -62,65 +55,80 @@ export function VoiceSection() {
   };
 
   return (
-    <section className="panel" aria-labelledby="voice-title">
+    <section className="panel setup-section" id="setup-voice" aria-labelledby="voice-title">
       <h2 id="voice-title">Voice</h2>
-      <p className="sub">One device plays the cues. Use the browser on this computer, or a phone with auto-lock turned off during a session.</p>
-      <p className="voice-state" role="status">
-        <StatusDot status={status} />
-        {here
-          ? movedFromOther
-            ? 'This device plays the voice. The other device no longer plays cues.'
-            : 'This device plays the voice.'
-          : holder !== null
-            ? 'Voice is on another device. This device stays silent.'
-            : 'No device plays the voice.'}
-      </p>
-      {here && !state?.voiceReady ? (
-        <p className="notice bad">The browser has not started audio on this device. Select Use this device for voice again.</p>
-      ) : null}
-      <div className="btn-row" style={{ marginTop: 12 }}>
-        {here && state?.voiceReady ? null : (
-          <button className="btn inline" type="button" onClick={enable}>
-            Use this device for voice
-          </button>
-        )}
-        {here ? (
-          <button className="btn inline ghost" type="button" onClick={disable}>
-            Turn voice off here
-          </button>
-        ) : null}
-        <button className="btn inline ghost" type="button" onClick={runTest} disabled={!here}>
-          Run voice test
-        </button>
-      </div>
-      {problem ? (
-        <p className="error" role="alert">
-          {problem}
-        </p>
-      ) : null}
-      {message ? <p className="sub">{message}</p> : null}
-      {testResult ? (
-        <p className="notice" role="status">
-          {testResult}
-        </p>
-      ) : null}
-      <div className="field">
-        <label htmlFor="delay-correction">
-          Delay correction <span className="correction-value">{signed(correction)}</span>
-        </label>
-        <input
-          id="delay-correction"
-          type="range"
-          min={MIN_CORRECTION_MS}
-          max={MAX_CORRECTION_MS}
-          step={10}
-          value={correction}
-          onChange={event => changeCorrection(Number(event.target.value))}
-        />
-        <span className="sub">
-          Wireless headphones add delay that the browser does not report. Add it here, and cues start earlier by the same amount. This setting
-          belongs to this device.
+      <p className="sub">One device plays the cues: this device, or another one with GT7 Tutor open. A phone must stay unlocked during an attempt.</p>
+      <div className="pref">
+        <span className="pref-text">
+          <span>Voice device</span>
+          {playing ? null : (
+            <span className="voice-state" role="status">
+              <StatusDot status={status} />
+              {here ? 'This device has the voice, but the browser has not started audio.' : holder !== null ? 'Voice is on another device. This device stays silent.' : 'No device plays the voice.'}
+            </span>
+          )}
+          {here && !state?.voiceReady ? (
+            <span className="notice bad">The browser has not started audio on this device. Select Use this device for voice again.</span>
+          ) : null}
         </span>
+        <div className="pref-control">
+          {playing ? (
+            <>
+              <div className="field-pair">
+                <span className="voice-state playing" role="status">
+                  <StatusDot status={status} />
+                  {movedFromOther ? 'This device plays the voice. The other device no longer plays cues.' : 'This device plays the voice.'}
+                </span>
+                <IconButton icon="speaker" label="Test" onClick={() => void runTest()} />
+              </div>
+              <button className="btn ghost" type="button" onClick={disable}>
+                Turn voice off here
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="btn" type="button" onClick={enable}>
+                Use this device for voice
+              </button>
+              {here ? (
+                <button className="btn ghost" type="button" onClick={disable}>
+                  Turn voice off here
+                </button>
+              ) : null}
+              <p className="sub">The test appears here when this device plays the voice.</p>
+            </>
+          )}
+          {voice.problem ? (
+            <p className="error" role="alert">
+              {voice.problem}
+            </p>
+          ) : null}
+          {message ? <p className="sub">{message}</p> : null}
+          {testResult ? (
+            <p className="notice" role="status">
+              {testResult}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div className="pref">
+        <span className="pref-text">
+          <label htmlFor="delay-correction">Delay correction for wireless headphones</label>
+          <span className="sub">Wireless headphones add delay that the browser does not report. Cues start earlier by this amount.</span>
+          <span className="device-tag">On this device</span>
+        </span>
+        <div className="pref-control">
+          <span className="correction-value">{signed(correction)}</span>
+          <input
+            id="delay-correction"
+            type="range"
+            min={MIN_CORRECTION_MS}
+            max={MAX_CORRECTION_MS}
+            step={10}
+            value={correction}
+            onChange={event => changeCorrection(Number(event.target.value))}
+          />
+        </div>
       </div>
     </section>
   );

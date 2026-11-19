@@ -82,6 +82,37 @@ describe('web interface and reception check', () => {
     expect(view.text).toContain('<div id="root">');
   });
 
+  it('web_serves_brand_logo', async () => {
+    await start();
+    for (const name of ['logo-light-600.png', 'logo-dark-600.png']) {
+      const logo = await http().get(`/brand/${name}`).expect(200);
+      expect(logo.headers['content-type']).toBe('image/png');
+    }
+  });
+
+  it('web_serves_icons_and_manifest', async () => {
+    await start();
+    expect((await http().get('/favicon.svg').expect(200)).headers['content-type']).toContain('image/svg+xml');
+    for (const path of ['/apple-touch-icon.png', '/icon-192.png', '/icon-512.png']) {
+      expect((await http().get(path).expect(200)).headers['content-type']).toBe('image/png');
+    }
+    const manifest = await http().get('/manifest.webmanifest').expect(200).buffer(true).parse((response, done) => {
+      let text = '';
+      response.on('data', (chunk: Buffer) => (text += chunk.toString()));
+      response.on('end', () => done(null, text));
+    });
+    const parsed = JSON.parse(manifest.body as string) as { name: string; icons: { src: string; sizes: string }[] };
+    expect(parsed.name).toBe('GT7 Tutor');
+    expect(parsed.icons.map(icon => [icon.src, icon.sizes])).toEqual([
+      ['/icon-192.png', '192x192'],
+      ['/icon-512.png', '512x512']
+    ]);
+    const index = await http().get('/').expect(200);
+    expect(index.text).toContain('<link rel="icon" href="/favicon.svg" type="image/svg+xml"');
+    expect(index.text).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png"');
+    expect(index.text).toContain('<link rel="manifest" href="/manifest.webmanifest"');
+  });
+
   it('serves_the_audio_manifest_and_clips', async () => {
     await start();
     const manifest = await http().get('/audio/manifest.json').expect(200);
@@ -93,11 +124,11 @@ describe('web interface and reception check', () => {
   it('reception_check_counts_packets_and_reports_the_car', async () => {
     await start();
     const cookie = await firstProfile(app!);
-    replays.queue.push(new StartingSource((await fixtureRows('player-run')).slice(1200, 1300)));
+    replays.queue.push(new StartingSource((await fixtureRows('ce-clean')).slice(500, 600)));
     const response = await http().post('/api/settings/connection/check').set('Cookie', cookie).expect(200);
     expect(response.body.packets).toBeGreaterThanOrEqual(30);
     expect(response.body.decoded).toBe(response.body.packets);
-    expect(response.body.carId).toBe(3602);
+    expect(response.body.carId).toBe(1905);
   });
 
   it('reception_check_without_packets_reports_zero', async () => {

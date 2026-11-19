@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildCueEvents } from '../src/cue-events.ts';
 import { DEFAULT_CONFIG } from '../src/config.ts';
-import { inZone, profiledPath, yangwangReference, type ProfilePoint } from './paths.ts';
+import { inZone, profiledPath, interlagosReference, type ProfilePoint } from './paths.ts';
 
 const cruise: ProfilePoint = { speedKph: 200, throttle: 1, brake: 0 };
 
@@ -28,16 +28,15 @@ function brakeOf(entryKph: number, endKph: number) {
 }
 
 describe('phrase strength', () => {
-  it('yangwang_phrases', () => {
-    const events = buildCueEvents(yangwangReference(), DEFAULT_CONFIG);
+  it('interlagos_phrases', () => {
+    const events = buildCueEvents(interlagosReference(), DEFAULT_CONFIG);
     expect(events.map(event => [event.key, event.voice, event.bigStop])).toEqual([
-      ['brake@332', 'hard-brake', true],
-      ['throttle@491', 'full-throttle', false],
-      ['brake@677', 'brake', false],
-      ['throttle@737', 'full-throttle', false],
-      ['brake@832', 'light-brake', false],
-      ['throttle@859', 'full-throttle', false],
-      ['brake@1044', 'light-brake', false]
+      ['brake@291', 'hard-brake', true],
+      ['throttle@411', 'full-throttle', false],
+      ['ease-off@564', 'ease-off', false],
+      ['throttle@568', 'full-throttle', false],
+      ['ease-off@792', 'ease-off', false],
+      ['throttle@796', 'full-throttle', false]
     ]);
   });
 
@@ -69,28 +68,27 @@ describe('phrase strength', () => {
   });
 
   it('event_keys_do_not_change', () => {
-    expect(buildCueEvents(yangwangReference(), DEFAULT_CONFIG).map(event => event.key)).toEqual([
-      'brake@332',
-      'throttle@491',
-      'brake@677',
-      'throttle@737',
-      'brake@832',
-      'throttle@859',
-      'brake@1044'
+    expect(buildCueEvents(interlagosReference(), DEFAULT_CONFIG).map(event => event.key)).toEqual([
+      'brake@291',
+      'throttle@411',
+      'ease-off@564',
+      'throttle@568',
+      'ease-off@792',
+      'throttle@796'
     ]);
   });
 });
 
 describe('buildCueEvents', () => {
-  it('yangwang_reference_events', () => {
-    const path = yangwangReference();
+  it('interlagos_reference_events', () => {
+    const path = interlagosReference();
     const events = buildCueEvents(path, DEFAULT_CONFIG);
     const first = events[0]!;
     expect(first.kind).toBe('brake');
-    expect(Math.abs(first.sM - 332)).toBeLessThanOrEqual(10);
-    expect(first.targetSpeedKph).toBe(85);
+    expect(Math.abs(first.sM - 291)).toBeLessThanOrEqual(10);
+    expect(first.targetSpeedKph).toBe(115);
     expect(first.endSM).not.toBeNull();
-    expect(events.slice(0, 4).map(event => event.kind)).toEqual(['brake', 'throttle', 'brake', 'throttle']);
+    expect(events.slice(0, 4).map(event => event.kind)).toEqual(['brake', 'throttle', 'ease-off', 'throttle']);
     expect(events.every(event => event.sM <= path.lengthM - 20)).toBe(true);
     expect(events.every(event => event.key === `${event.kind}@${Math.round(event.sM)}`)).toBe(true);
     expect(new Set(events.map(event => event.key)).size).toBe(events.length);

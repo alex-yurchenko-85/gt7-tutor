@@ -13,14 +13,14 @@ type AppProps = { socketFactory?: SocketFactory; player?: VoicePlayer };
 
 export function App({ socketFactory, player }: AppProps) {
   const auth = useResource(() => api.authState(), []);
-  const info = useResource(() => api.appInfo().catch(() => ({ demo: null })), []);
+  const info = useResource(() => api.appInfo().catch(() => ({ demo: null, consoleRequired: false })), []);
   const demo = info.data?.demo ?? null;
   const reload = auth.reload;
   const signOut = useCallback(async () => {
     await api.signOut();
     reload();
   }, [reload]);
-  const session = useMemo<Session | null>(() => (auth.data?.user ? { user: auth.data.user, signOut } : null), [auth.data, signOut]);
+  const session = useMemo<Session | null>(() => (auth.data?.user ? { user: auth.data.user, signOut, ended: reload } : null), [auth.data, signOut, reload]);
 
   if (auth.error) {
     return (

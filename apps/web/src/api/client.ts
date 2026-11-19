@@ -16,11 +16,19 @@ import type {
   CreateCaptureRequest,
   CreateExerciseRequest,
   CreateReferenceRequest,
+  DeleteAttemptsResult,
+  DeleteHistoryRequest,
+  DeleteHistoryResult,
+  RemoveExercisesRequest,
+  RemoveExercisesResult,
   DemoAttemptResponse,
   Exercise,
   ArmResponse,
   ArmTrainingRequest,
-  ManualActionRequest,
+  ChangePasswordRequest,
+  DeleteProfileRequest,
+  DeleteProfileResult,
+  ProfileCard,
   ProfileCredentials,
   ProfileResponse,
   Progress,
@@ -33,7 +41,6 @@ import type {
   ReferenceTrace,
   Settings,
   StorageUse,
-  UpdateAttemptRequest,
   UpdateExerciseRequest
 } from '@gt7/contracts';
 
@@ -80,12 +87,15 @@ function query(params: Record<string, string | number | undefined>): string {
 
 export const api = {
   authState: () => request<AuthState>('GET', '/auth/state'),
+  authProfiles: () => request<ProfileCard[]>('GET', '/auth/profiles'),
   appInfo: () => request<AppInfo>('GET', '/app-info'),
   demoAttempt: () => request<DemoAttemptResponse>('POST', '/demo/attempt'),
   createFirstProfile: (credentials: ProfileCredentials) => request<ProfileResponse>('POST', '/auth/first-profile', credentials),
   signIn: (credentials: ProfileCredentials) => request<ProfileResponse>('POST', '/auth/sign-in', credentials),
   signOut: () => request<void>('POST', '/auth/sign-out'),
   createProfile: (credentials: ProfileCredentials) => request<ProfileResponse>('POST', '/profiles', credentials),
+  changePassword: (body: ChangePasswordRequest) => request<void>('PUT', '/profiles/me/password', body),
+  deleteProfile: (body: DeleteProfileRequest) => request<DeleteProfileResult>('POST', '/profiles/me/delete', body),
 
   settings: () => request<Settings>('GET', '/settings'),
   setConsoleAddress: (ps5Ip: string) => request<Settings>('PUT', '/settings/connection', { ps5Ip }),
@@ -128,14 +138,15 @@ export const api = {
 
   arm: (body: ArmTrainingRequest) => request<ArmResponse>('POST', '/training/arm', body),
   disarm: () => request<unknown>('POST', '/training/disarm'),
-  manual: (action: ManualActionRequest['action']) => request<unknown>('POST', '/training/manual', { action }),
   devReplay: (fixture: string) => request<unknown>('POST', '/dev/replay', { fixture }),
 
   attempts: (exerciseId: string) => request<AttemptList>('GET', `/exercises/${exerciseId}/attempts`),
   attempt: (id: string) => request<AttemptSummary>('GET', `/attempts/${id}`),
-  updateAttempt: (id: string, body: UpdateAttemptRequest) => request<AttemptSummary>('PATCH', `/attempts/${id}`, body),
   review: (id: string, referenceId?: string) => request<AttemptReview>('GET', `/attempts/${id}/review${query({ referenceId })}`),
   recurring: (exerciseId: string, last = 8) => request<RecurringDifference[]>('GET', `/exercises/${exerciseId}/recurring${query({ last })}`),
+  deleteAttempts: (ids: string[]) => request<DeleteAttemptsResult>('POST', '/attempts/delete', { ids }),
+  deleteHistory: (body: DeleteHistoryRequest) => request<DeleteHistoryResult>('POST', '/history/delete', body),
+  removeExercises: (body: RemoveExercisesRequest) => request<RemoveExercisesResult>('POST', '/exercises/remove', body),
   progress: () => request<Progress>('GET', '/progress')
 };
 

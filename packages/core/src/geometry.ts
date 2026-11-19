@@ -1,7 +1,5 @@
 import type { Vec3 } from '@gt7/contracts';
 
-export type Gate = { position: Vec3; tangent: Vec3 };
-
 export function sub(a: Vec3, b: Vec3): Vec3 {
   return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
 }
@@ -38,26 +36,4 @@ export function normalize(a: Vec3): Vec3 {
 
 export function isFiniteVec(a: Vec3): boolean {
   return Number.isFinite(a.x) && Number.isFinite(a.y) && Number.isFinite(a.z);
-}
-
-export type GateOffset = { along: number; lateral: number; height: number };
-
-export function gateOffset(gate: Gate, point: Vec3): GateOffset {
-  const offset = sub(point, gate.position);
-  const along = dot(offset, gate.tangent);
-  const across = sub(offset, scale(gate.tangent, along));
-  return { along, lateral: Math.hypot(across.x, across.z), height: Math.abs(across.y) };
-}
-
-export function gateAt(points: Vec3[], index: number, direction: 'forward' | 'backward', minSpanM = 1): Gate {
-  const position = points[index];
-  if (!position) throw new RangeError(`no point at index ${index}`);
-  const step = direction === 'forward' ? 1 : -1;
-  for (let other = index + step; other >= 0 && other < points.length; other += step) {
-    const candidate = points[other]!;
-    if (distance(candidate, position) < minSpanM) continue;
-    const travel = direction === 'forward' ? sub(candidate, position) : sub(position, candidate);
-    return { position, tangent: normalize(travel) };
-  }
-  throw new RangeError(`no point ${minSpanM} m away from index ${index}`);
 }

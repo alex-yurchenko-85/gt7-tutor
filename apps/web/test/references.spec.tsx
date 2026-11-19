@@ -13,13 +13,13 @@ describe('reference history', () => {
       reference({ id: 'ref-attempt', origin: 'attempt', active: true, createdAt: '2026-11-17T10:00:00.000Z', attemptCount: 0 })
     ];
     const api = exerciseApi()
-      .on('GET /api/exercises/ex-1/references', () => references)
+      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/references', () => references)
       .on('POST /api/references/ref-demo/activate', () => {
         references = references.map(item => ({ ...item, active: item.id === 'ref-demo' }));
         return references[0];
       })
       .install();
-    renderApp({ path: '/exercises/ex-1/references' });
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/references' });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Return to the demonstration' }));
     await waitFor(() => expect(api.called('POST /api/references/ref-demo/activate')).toBe(true));

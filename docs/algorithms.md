@@ -6,7 +6,7 @@ Read it before you change a file in `packages/core/src`. The protocol is in `doc
 
 Rules of the core:
 
-- It is pure TypeScript. It imports nothing from Node, NestJS, storage or audio, and it reads no clock. Time enters as an argument (`receivedMonoMs`, `nowMonoMs`).
+- It is pure TypeScript. It imports nothing from Node, NestJS, storage or audio, and it reads no clock. Time enters as an argument (`receivedMonoMs`, `clockMs`, `nowMonoMs`).
 - The same samples and the same configuration give the same decisions. `replayCoach` and the golden traces in `fixtures/golden/` depend on this.
 - Units: metres, m/s, milliseconds, pedals 0 to 1. km/h only on the screen and in speech.
 - Every threshold is in `DEFAULT_CONFIG` (`packages/core/src/config.ts`). The values are calibration values from one exercise, not physical limits.
@@ -26,7 +26,7 @@ attempt samples + reference → buildReview → findDifferences → recurring �
 | Decode a datagram | `decode.ts` |
 | Packet order | `sequence.ts` |
 | Attempt start, pause and end | `attempts.ts` |
-| Measured attempt time | `timing.ts` |
+| Measured attempt time and live gap | `timing.ts` |
 | Reference path | `reference.ts` |
 | Demonstration range in a capture | `demo-range.ts` |
 | Position on the reference | `match.ts` |
@@ -36,16 +36,26 @@ attempt samples + reference → buildReview → findDifferences → recurring �
 | Phrases and clip keys | `cue-text.ts` |
 | Comparison of an attempt with the reference | `compare.ts` |
 | Differences and recurring differences | `findings.ts` |
+| Turn of a position and time lost per turn | `turns.ts` |
+| Packet time (`clockMs`) | `packet-clock.ts` |
 | Focus sentence and brake reaction | `focus.ts` |
 | Exercise status and medal | `progress.ts` |
-| Vector helpers and gates | `geometry.ts` |
+| Vector helpers | `geometry.ts` |
 
-## Geometry
+## Packet time
 
-- A **gate** is a position and a unit direction of travel (`tangent`).
-- `gateOffset(gate, point)` gives `along` (distance along the tangent, negative before the gate), `lateral` (horizontal distance from the gate line) and `height` (vertical distance).
-- A **crossing** happens between two samples when `along` goes from below 0 to 0 or more. The crossing point is interpolated. It counts only when it lies within 8 m of the gate position sideways and within 3 m in height.
-- The crossing time is interpolated between the two samples. If the samples are more than 100 ms apart, the time of the second sample is used.
+The arrival time of a packet (`receivedMonoMs`) has network bursts: a packet can arrive late, and the packets after it then arrive almost together. On the home network about 5 % of the packets arrive 0 to 3 ms after the packet before them. A late packet can be 60 to 80 ms late. The packet ID increases by 1 per packet, but the packet rate is not constant: in one capture it changed between about 59.2 and 59.9 packets per second.
+
+`PacketClock` (`packet-clock.ts`) gives each sample a packet time `clockMs`:
+
+1. The first packet gets its arrival time.
+2. A packet that is 1 to 600 IDs after the last one adds `steps × 1000 / 60` ms, plus the change of the arrival envelope. The envelope is the arrival time minus the nominal time of the packet number. A packet that arrives earlier than the envelope moves the envelope to its arrival at once, because a packet cannot arrive before it is sent. A later packet moves the envelope by 2 % of the difference (`ENVELOPE_RISE`). So a late packet changes the time very little, and a slower or faster packet rate moves the time with the computer clock. The time never goes back: one packet adds at least 0 ms. This applies when the first packet of a run arrived late and the next packet moves the envelope down.
+3. The same ID, or an ID up to 64 behind, adds nothing.
+4. Any other step adds the arrival difference (not below 0) and starts a new envelope.
+
+Live, the server counts `clockMs` from the first packet of a capture. When it reads a range of a capture file, it starts the clock 600 packets (`CLOCK_WARMUP_PACKETS`, 10 s) before the first row of the range (`clockWarmupStart`). The storage cleanup keeps these 600 rows before each range. After 600 packets the envelope does not depend on where the clock started, so the times inside the range are the same as live, also after a cleanup. On `ce-pause`, `ce-slow` and `demo-c` the difference is below 0.01 ms. Without the warmup, a range that starts in the middle of the capture had up to 1.1 ms difference. Measured times use `clockMs`: the time of the reference points, the time series of a review and the measured time of an attempt. The live gap uses the game timer on both sides. Real-time rules use `receivedMonoMs`: silence, the freshness of cues, the decisions of the coach, the extrapolation of the matcher and the demonstration countdown. `clockOf(sample)` gives `clockMs`, or `receivedMonoMs` when a sample has no `clockMs`.
+
+On `ce-slow` against `demo-a` the packet time removed most spikes of the time series (grid points with a second difference above 25 ms: 45 before, 16 after). The measured time changed from 18851.3 ms to 18852.1 ms; the game time is 18 824 ms. This is a software check on recorded data.
 
 ## Continuity
 
@@ -66,12 +76,12 @@ A sample is **driven** when it is not paused and not loading. The player **has c
 1. Reject a sample with a field that is not finite, and a range with a break.
 2. Keep the driven samples. Remove repeated identical positions at both ends.
 3. Add up the straight distances between the samples. The total is the length `lengthM`.
-4. Resample to one point per metre of travel, plus the end point. Each point has `sM` (distance from the start), position, speed, throttle, brake and `timeMs`.
-5. `timeMs` is active time from the start: paused and loading time is not counted.
-6. The tangent of a point is the direction from the point before it to the point after it.
-7. The start gate and the end gate are the first and the last point with their tangents.
+4. Resample to one point per metre of travel, plus the end point. Each point has `sM` (distance from the start), position, speed, throttle, brake, `timeMs` and `timerMs`.
+5. `timeMs` is active time from the start, in packet time (`clockOf`): paused and loading time is not counted. It is a measured time.
+6. `timerMs` is the game timer of the samples (`gameTimerMs`), interpolated like the other values. It is not relative to the first point.
+7. The tangent of a point is the direction from the point before it to the point after it.
 
-`pointAt(path, sM)` interpolates between two points. `startKind` is `flying` (the car crosses the start gate at speed) or `standing`.
+`pointAt(path, sM)` interpolates between two points. `startKind` is `flying` or `standing`. The attempt tracker does not use `startKind`.
 A reference is never changed after it is built. Each exercise keeps a history of references with one active reference.
 
 ## Demonstration range
@@ -83,9 +93,19 @@ The demonstration is the same in every run and the background is not, so three c
 
 1. Collapse repeated samples with the same physical state (position within 0.05 m, speed within 0.1 m/s, pedals within 0.02, same gear and car).
 2. Find the pieces that the first capture shares with each other capture, at least 10 samples long. Join pieces that follow each other with a gap of at most 2 samples.
-3. Keep the runs that all captures share, at least 60 samples long.
+3. Keep the runs that all captures share, at least 60 samples long. If more than half of a run in the first capture is also in a longer run, remove the shorter run.
 4. Describe each run with three checks. It starts 0 to 5 s after the START cue of its capture. A position jump comes before it. It moves more than 10 m.
-5. A run that passes all three checks is eligible. With three or more captures and exactly one eligible run, that run is not ambiguous. In every other case the user must choose.
+5. Cut each run to the run of the demonstration timer inside it (`cutToTimerRun(capture, range, 'demonstration')`). A `GameTimerWatch` with the session `demonstration` reads the run from its first sample. The cut starts at the last sample with the value 0 before the start, as the stored first sample of an attempt. The cut ends at the `rawIndex` of the `finished` event: the first packet with the final value. The watch can read packets after the end of the run to see that the value stays the same. But the first packet with the final value must be inside the run. A timer that runs before the run starts, for example a background timer, does not count. The evidence gives the game time of each cut, or says that a capture has no complete timer run.
+6. A run that passes all three checks and has a complete timer run in every capture is eligible. With three or more captures and exactly one eligible run, that run is not ambiguous. In every other case the user must choose. A run without a complete timer run keeps its uncut ranges and has `timed` false.
+7. Order: timed runs first. Then the score of the checks in step 4: 4 for the START cue, 2 for the position jump, 1 for the movement. So a run that passes only the START cue check comes before a run that passes only the other two checks. Then the number of samples in the first capture, more first. Then the earlier start in the first capture. The proposals API (`POST /api/exercises/:id/reference-proposals`) gives only timed runs. Without a timed run it gives an empty list.
+8. After the cut, two runs can have the same range in the first capture: their uncut ranges are different, but they hold the same timer run. Only the first of these runs in the order of step 7 stays. The reference comes from the range in the first capture, so the other run gives the same reference. Without this step, the same range shows twice. If both runs are eligible, step 6 also marks them as ambiguous.
+
+The reference time (`referenceTimeMs(path)`) is the run of the demonstration timer. It is `timerMs` of the last point of the path: the final timer value of the reference range. The cut range starts at the timer value 0, so the first point has `timerMs` 0. For `demo-a` the reference time is 16 082 ms. The packet time of the same path is 16 100 ms. `AttemptReview.referenceTimeMs` and `ReferenceTrace.timeMs` give the reference time. A reference range without a timer run has no valid reference time. The code has no other source for it.
+
+Every reference range is cut to a timer run before the server stores it:
+
+- **Range set by hand** (`POST /api/references`): the server cuts the range to the run of the demonstration timer, with the same rules as step 5. It stores the cut range, not the requested range. For `demo-a`, the range 300 to 1700 is stored as 457 to 1422. If the range has no complete timer run, the server refuses it: HTTP 400 with `{ code: 'no-timer-run', reason }`. It stores no reference.
+- **Attempt as a reference** (`POST /api/attempts/:id/promote`): the attempt must be complete and have a game time (`game_ms`). Otherwise the server refuses it: HTTP 409 with `{ code: 'no-game-time', reason }`. The server cuts the attempt range to the run of the player timer (session `player`). The stored attempt range ends 3 packets after the finish, so the cut ends at the first packet with the final value. The reference time of the new reference is the game time of the attempt. For the `ce-clean` attempt it is 17 071 ms.
 
 `matchesReference(capture, path)` checks that a later capture holds the same demonstration. All of these must be true:
 
@@ -122,9 +142,11 @@ Guidance uses a match only when it is trusted.
 
 `AttemptTracker` has four states: `waiting`, `driving`, `paused`, `finished`. Each start gives a new **generation** number. A cue of an older generation is never played.
 
-**Start, flying:** the previous sample and the current sample both have player control, there is no break, and the car crosses the start gate.
+The game timer starts and finishes an attempt. The tracker gives each sample to a `GameTimerWatch` (section Game timer below). The position of the car does not start or finish an attempt.
 
-**Start, standing:** the car is slower than 0.5 m/s inside the start area, which is 3 m around the start gate. Then it moves at 0.5 m/s or more for three samples in a row. The first of these samples is the start.
+An attempt event has the arrival time (`atMonoMs`) and the packet time (`atClockMs`). The event `finished` also has the game time (`gameTimeMs`). The other events have `gameTimeMs` `null`.
+
+**Start:** the tracker is not driving or paused, and the watch gives `started`. The event `started` has the reason `game-timer` and the `rawIndex` of the sample. Its time is the time of the sample minus the timer value of the sample. So the start is the moment when the timer was 0. A training that starts while the game timer runs waits for the next start of the timer.
 
 **While driving or paused,** in this order:
 
@@ -132,15 +154,52 @@ Guidance uses a match only when it is trusted.
 | --- | --- |
 | More than 1000 ms without a sample | `aborted`, reason `silence` |
 | `playerSession` is false | `aborted`, reason `player-session-ended` |
+| The watch gives `left-track` (the timer is −1) | `aborted`, reason `left-track` |
+| The watch gives `restart` (the timer falls to 0) | `aborted`, reason `restart` |
 | A break between the samples | `aborted`, reason `car-changed` or `discontinuity` |
 | `loading` is true | `aborted`, reason `loading` |
 | `paused` becomes true | `paused` |
 | `paused` becomes false | `resumed` |
-| The car crosses the end gate | `finished`, reason `end-gate` |
+| The watch gives `finished` | `finished`, reason `game-timer` |
 
-A manual action can also start, finish or abort an attempt.
+The event `finished` has the `rawIndex` of the first sample with the final timer value. Its time is the time of that sample, not the time of the later sample on which the watch reports the finish. Its `gameTimeMs` is the final timer value.
 
-**Measured time** (`measureAttemptMs`): the time of the `finished` event minus the time of the `started` event minus the paused time. It is a measured time, not the official time of the game.
+The server stores the raw range of a finished attempt up to the sample on which the watch reports the finish. So the range holds the still packets, and `measureAttemptTimes` on the range finds the finish again.
+
+Only the game timer starts and finishes an attempt. The user has no action that starts or finishes an attempt. The user can only stop the training: Stop in Drive sends `POST /api/training/disarm`. If an attempt runs, the server then calls `abortByUser`, and the attempt gets the reason `manual`. There is no other manual action. When the tracker ends an attempt for another reason than the watch, it resets the watch. The watch then needs a new start of the timer.
+
+**Attempt times** (`measureAttemptTimes`): the function gives two values.
+
+- `gameMs` is the `gameTimeMs` of the `finished` event. It is the official time of the game or one packet more (`docs/protocol.md`, Game timer).
+- `measuredMs` is the packet time (`atClockMs`) of the `finished` event minus the packet time of the `started` event minus the paused time. It is a measured time. On the five format `C` fixtures with a finish, `measuredMs` is 17 to 39 ms more than `gameMs` (software check on recorded data).
+
+Both values are `null` when the samples have no finished attempt.
+
+**Stored times:** the server stores two times for a complete attempt. `attempts.game_ms` is the `gameTimeMs` of the live `finished` event. It is the time of the attempt (`AttemptSummary.timeMs` and `gameMs`). The best time of an exercise (`bestMs`), the gap to the best time, the best time of a day and the medal from the targets use it. `attempts.measured_ms` is `measuredMs` of the stored raw range (`AttemptSummary.measuredMs`). The interface shows no measured attempt time. The gap to the reference and the gap to the next medal use the game time. An aborted attempt has no stored time: `game_ms` and `measured_ms` are `null`. There is no manual official time (migration 008 removes `official_ms`).
+
+**Live gap** (`gapToReferenceMs`): the game timer of the running attempt minus the demonstration timer at the matched position. The attempt side is the game timer of the current sample (`gameTimerMs`). The reference side is `timerMs` of the reference at that position (`pointAt`). A positive gap means that the attempt is slower than the reference at this position. The server sends the gap as `gapMs` in the live state. During a pause the game timer and the position do not change, so the gap keeps its value from before the pause. The gap is `null` when no attempt runs, when the matcher gives no position, or when the timer is 0 or -1. On `ce-pause` with the `demo-a` reference, the gap has a value up to packet 13306. That packet has the final timer value 17 412 ms, and its gap is 1330 ms. The still packets 13307 and 13308 come after the end of the reference path. The matcher gives no position for them, so their gap is `null`. The attempt ends at packet 13309, and the gap stays `null`. The reference time is 16 082 ms. So the last live gap is the Review gap (software check on recorded data).
+
+**Review gap:** the game time of a complete attempt (`AttemptSummary.gameMs`) minus the reference time (`AttemptReview.referenceTimeMs`). Both are game times. On `ce-pause` with the `demo-a` reference, the Review gap is 17 412 − 16 082 = 1330 ms. The time lost by distance and the time lost per turn stay measured times on both sides (`timeMs` of the attempt and of the reference).
+
+**Does the voice help?** The web compares the median game time (`gameMs`) of complete baseline attempts with the median game time of complete guided attempts. It uses only the attempts of the active reference. An attempt without a game time does not count.
+
+### Game timer
+
+`GameTimerWatch` reads `gameTimerMs` of each sample. It gives the events `started`, `finished`, `left-track` and `restart`. Each event has the `rawIndex` and the game time in ms. The watch is active from `started` until one of the other three events.
+
+**Started:** the watch is not active. The sample has `playerSession`. The previous sample had the value 0. This sample has a value from 1 to 50 ms (`GAME_TIMER_START_MAX_MS`). A jump to a larger value is not a start.
+
+**Repeated packets:** while the watch is active, a sample with the same packet ID as the last counted one, or up to 64 IDs behind it, changes nothing. Any other packet ID counts as newer, also after a wrap of the 32-bit counter or a large drop. `SequenceTracker` uses the same rule (`isRepeatedPacket`).
+
+**Left track:** the value is -1. The watch becomes inactive.
+
+**Restart:** the value is 0. The watch becomes inactive.
+
+**Finished:** the sample is not paused. The value did not increase for 3 packets in a row (`GAME_TIMER_STILL_PACKETS`). Each of these packets is a newer packet, as in the rule above. The event has the `rawIndex` of the first packet with the final value. Its game time is that value. The watch becomes inactive. A packet with `paused` set clears the count of still packets.
+
+After an event, the watch needs the full start rule again. `docs/protocol.md`, Game timer, gives the hardware facts.
+
+**Session:** the default session `player` needs `playerSession` for a start. The session `demonstration` needs `playerSession` false. Only the demonstration-range finder uses it. The attempt tracker always uses `player`.
 
 ## Reference events
 
@@ -261,6 +320,19 @@ The mute key is `tighter`.
 - Between the turn-in point and the apex the side cue does not speak. The excursion timer continues, so the cue can speak once after the apex.
 - The mute keys are `keep-left` and `keep-right`.
 
+### Recording countdown
+
+A demonstration capture with a wait of `d` seconds before the START cue gets a spoken countdown. The server decides it, not the coach.
+
+- The voice says `Three`, `Two` and `One` at `d − 3`, `d − 2` and `d − 1` seconds after the capture starts, and `Start` at `d` seconds. It is silent before.
+- A count that falls before the capture start is not spoken. With `d = 2` the voice says `Two`, `One`, `Start`.
+- Each count is a cue of the kind `countdown` with the event key `countdown-<capture id>-<count>` (3, 2, 1, 0 for `Start`). It goes only to the voice device of the profile.
+- The priority is 101, above every training cue. The time to live is 800 ms.
+- The four counts share one new generation. The server takes it from the same counter as the training generations, so the browser never drops a count as old.
+- When the capture stops, the counts that are not spoken yet are cancelled.
+- A capture without a wait, and a capture of another purpose, has no countdown.
+- The Drive screen does not show a countdown cue.
+
 ### Snapshot
 
 Training takes the muted keys, the timing offsets, `Speak target speeds` and the side cue distance at arm time. A change of the exercise during an armed session has no effect until the next arm.
@@ -279,6 +351,10 @@ Training takes the muted keys, the timing offsets, `Speak target speeds` and the
 | `off-line` | More than 1.5 m to one side for more than 500 ms | largest distance, metres |
 | `wide-apex` | More than 2 m on the outside at the apex of a corner | metres |
 
+**Turn of a position.** `turnOf(corners, sM)` gives the number of the last corner whose zone starts at or before `sM`. A position before the zone of turn 1 belongs to turn 1. Without corners the result is `null`. Each difference gets the turn of its position.
+
+**Time lost per turn.** `turnLosses(corners, lengthM, gridM, attemptT, referenceT)` splits the section into one zone per turn. The zone of turn 1 starts at 0 m. The zone of each other turn starts at its zone start. A zone ends at the zone start of the next turn, or at the end of the section. The gap at a grid point is the attempt time minus the reference time. The time lost in a zone is the gap at the last grid point that has both times, minus the gap at the first such point. Both ends of the zone are included. A zone with fewer than two such points has no value. Without corners the list is empty. A negative value is time gained.
+
 **Recurring.** With at least three complete attempts, a difference is recurring when it occurs in at least half of them. The code groups differences that have an event key by kind and key. It groups `off-line` differences by place, within 20 m. The size is the median.
 
 **Focus sentence.** After an attempt the voice names one difference: the most frequent recurring difference, or else the largest difference of the last attempt. The sentence is the corner number and an action, for example `Turn two. Tighter at the apex.` Up to turn ten has a clip.
@@ -287,7 +363,7 @@ Training takes the muted keys, the timing offsets, `Speak target speeds` and the
 
 ## Exercise status
 
-`exerciseStatus`: a manual medal wins. With no complete attempt the status is `ready` (an active reference exists) or `new`. Else the medal that the best measured time reaches against the targets of the exercise, or `practising`.
+`exerciseStatus`: a manual medal wins. With no complete attempt the status is `ready` (an active reference exists) or `new`. Else the medal that the best game time reaches against the targets of the exercise, or `practising`.
 
 ## Thresholds
 
@@ -299,9 +375,7 @@ The full list is `DEFAULT_CONFIG`. These values appear most often in this docume
 | Silence gap | 1000 ms |
 | Trusted lateral distance, height, heading | 8 m, 3 m, 45° at 2 m/s or more |
 | Matcher search | 5 m back, `max(20 m, speed × time + 10 m)` ahead |
-| Gate half-width, height tolerance | 8 m, 3 m |
 | Discontinuity margin | 20 m |
-| Start area, moving speed, samples | 3 m, 0.5 m/s, 3 |
 | Cue lead | Device delay + 500 ms |
 | Cue time to live | 150 ms + device delay |
 | Cooldown | 1500 ms |
@@ -317,15 +391,19 @@ Tests use `fixtures/`, never `data/`. `fixtures/manifest.json` names the source 
 
 | Fixture | Content |
 | --- | --- |
-| `demo-wait05`, `demo-wait10`, `demo-wait15` | Three captures of the same Yangwang demonstration. The reference of the tests is `demo-wait05`, raw 352 to 1897: 1546 samples, 1092.65 m. |
-| `player-run` | A player's attempt, raw 1162 to 2786, about 27.1 s, then the automatic replay. Car ID 3602. |
-| `player-pause` | A player's attempt with a pause of 539 samples and no finish |
-| `h3-wide-apex`, `h3-wide-finish` | Attempts with a wide line, used by the demo and by tests |
+| `demo-a`, `demo-b`, `demo-c` | Three captures of the same demonstration of Autódromo de Interlagos, Circuit Experience sector 2, with waits of 5, 10 and 15 s. The demonstration timer runs 16 082 ms. The reference of the tests is `demo-a`, raw 457 to 1422 (the cut to the demonstration timer): 966 samples, 818.17 m, one corner with the apex at 404 m. |
+| `ce-clean` | A clean run of the same sector: start 8452, finish 17 071 ms at 9476, screen 0:17.071 (bronze). The stored attempt range is 8451 to 9479. |
+| `ce-slow` | A run of the same sector, too slow for the game: start 5492, finish 18 824 ms at 6621. It brakes late at the first corner. The stored attempt range is 5491 to 6624. |
+| `ce-pause` | A run with a pause of 696 samples (raw 11651 to 12346): start 11565, finish 17 412 ms at 13306. It brakes early at the first corner. |
+| `ce-off-track-reset`, `ce-off-track-end` | Runs that leave the track (value -1), then restart or end the session |
+| `b3-run`, `b1-run` | National B licence tests B-3 (15 839 ms) and B-1 (standing start, 20 366 ms) |
 
-Golden traces: `fixtures/golden/player-run-cues.json` (default settings) and `fixtures/golden/player-run-cues-side-1m.json` (side cue distance 1 m).
+The demo uses `demo-a` and the attempts `ce-clean`, `ce-slow` and `ce-pause`. The demo exercise gets the medal targets of the sector from the seed: gold 16.400 s, silver 16.700 s, bronze 17.800 s. The catalogue has no targets for it.
+
+Golden traces: `fixtures/golden/ce-slow-cues.json` (default settings) and `fixtures/golden/ce-slow-cues-side-1m.json` (side cue distance 1 m).
 Rewrite them only after a deliberate coach or clip change, and read the new trace first:
 
 ```sh
-pnpm evaluate-coach --attempt player-run --reference demo-wait05 --first 352 --last 1897 --out fixtures/golden/player-run-cues.json
-pnpm evaluate-coach --attempt player-run --reference demo-wait05 --first 352 --last 1897 --side-distance 1 --out fixtures/golden/player-run-cues-side-1m.json
+pnpm evaluate-coach --attempt ce-slow --reference demo-a --first 457 --last 1422 --out fixtures/golden/ce-slow-cues.json
+pnpm evaluate-coach --attempt ce-slow --reference demo-a --first 457 --last 1422 --side-distance 1 --out fixtures/golden/ce-slow-cues-side-1m.json
 ```

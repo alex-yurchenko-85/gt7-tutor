@@ -1,10 +1,18 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { CaptureInfo, ReferenceCheckResult, ReferenceProposal, StartKindName } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
+import { useLive } from '../../api/live.tsx';
+import { Icon } from '../../app/icons.tsx';
+import { useImmersive } from '../../app/immersive.tsx';
+import { useWideLayout } from '../../app/layout.ts';
+import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
-import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
+import type { Status } from '../../app/status.ts';
+import { COUNTDOWN_CLIPS } from '../../voice/clips.ts';
 import { useExercise } from '../exercise/use-exercise.ts';
+import { consoleState, voiceState, type ConsoleState, type VoiceState } from '../setup/readiness.ts';
+import { ReadinessChip } from '../setup/SetupView.tsx';
 import './record.css';
 
 const STANDARD_DELAYS_S = [5, 10, 15];
@@ -23,15 +31,14 @@ function useNow(running: boolean): number {
   return now;
 }
 
-function Countdown({ active }: { active: Active }) {
-  const now = useNow(true);
-  const remaining = active.delayS - (now - active.startedAt) / 1000;
-  const started = remaining <= 0;
-  return (
-    <div className={`countdown${started ? ' go' : ''}`} role="timer" aria-live="assertive">
-      {started ? 'START' : Math.ceil(remaining)}
-    </div>
-  );
+const SPOKEN_WORDS = ['start', 'one', 'two', 'three'];
+const CONSOLE_MISSING = 'Enter the PS5 address in Setup first.';
+
+type Clock = { secondsLeft: number; recordingS: number };
+
+function clockOf(active: Active, now: number): Clock {
+  const sinceStart = Math.max(0, now - active.startedAt) / 1000 - active.delayS;
+  return { secondsLeft: Math.max(0, Math.ceil(-sinceStart)), recordingS: Math.max(0, Math.floor(sinceStart)) };
 }
 
 function useRunningCapture(exerciseId: string, active: Active | null, setActive: (active: Active) => void): void {
@@ -46,8 +53,11 @@ function useRunningCapture(exerciseId: string, active: Active | null, setActive:
 }
 
 function problemText(error: unknown): string {
-  if (error instanceof ApiError && error.code === 'console-address-missing') return 'Enter the PS5 address in Setup first.';
+  if (error instanceof ApiError && error.code === 'console-address-missing') return CONSOLE_MISSING;
   if (error instanceof ApiError && error.code === 'busy') return 'Another capture or training is active. Stop it first.';
+  if (error instanceof ApiError && error.code === 'no-timer-run') {
+    return 'This range does not hold the whole run of the demonstration timer. Choose frames from before the demonstration starts to after it finishes.';
+  }
   return errorText(error);
 }
 
@@ -81,13 +91,6 @@ function Proposal({ exerciseId, captures, proposals, onCreated }: ProposalProps)
   const [problem, setProblem] = useState<string | null>(null);
   const recordingNumber = (captureId: string) => captures.findIndex(capture => capture.id === captureId) + 1;
 
-  if (proposals.length === 0) {
-    return (
-      <div className="notice bad" role="alert">
-        No range repeats in the recordings. Record again, or set the range by hand.
-      </div>
-    );
-  }
   const confirm = async () => {
     const proposal = selected === null ? null : proposals[selected];
     const range = proposal?.ranges[0];
@@ -170,6 +173,7 @@ function ManualRange({ exerciseId, onCreated }: { exerciseId: string; onCreated(
     <form className="panel manual" aria-label="Manual range" onSubmit={submit} noValidate>
       <h2>Set the range by hand</h2>
       <p className="sub">For an experienced user: select one capture and the first and last frame of the demonstration. Both frames are included.</p>
+      <p className="sub">GT7 Tutor keeps only the part where the demonstration timer runs.</p>
       <div className="field">
         <label htmlFor="manual-capture">Capture</label>
         <select id="manual-capture" value={chosen} onChange={event => setCaptureId(event.target.value)}>
@@ -209,9 +213,115 @@ function checkText(result: ReferenceCheckResult): string {
     : 'The new recording does not match the reference. Record a new reference with the three recordings.';
 }
 
+const CONSOLE_CHIPS: Record<ConsoleState, Status> = {
+  'recorded-data': { tone: 'on', text: 'Console: recorded data' },
+  'no-address': { tone: 'off', text: 'Console: no address' },
+  receiving: { tone: 'on', text: 'Console: receiving telemetry' },
+  'address-saved': { tone: 'idle', text: 'Console: address saved' }
+};
+
+const VOICE_CHIPS: Record<VoiceState, Status> = {
+  none: { tone: 'warn', text: 'Voice: no device, the countdown is shown only' },
+  elsewhere: { tone: 'on', text: 'Voice: another device speaks the countdown' },
+  here: { tone: 'on', text: 'Voice: this device speaks the countdown' },
+  'here-not-ready': { tone: 'warn', text: 'Voice: this device, audio not started' }
+};
+
+function spokenLine(voice: VoiceState, secondsLeft: number, wide: boolean): string {
+  if (voice === 'none') return wide ? 'No device speaks the countdown. Start the demonstration at START.' : 'No voice. Start at START.';
+  if (secondsLeft > 3) return wide ? 'The voice starts at three.' : 'Voice: from three';
+  const word = SPOKEN_WORDS[secondsLeft]!;
+  return wide ? `The voice says “${word}”.` : `Voice: “${word}”`;
+}
+
+function idleHint(voice: VoiceState, delayS: number, wide: boolean): string {
+  if (voice === 'none') {
+    return wide
+      ? `Then press Start here. This screen counts down from ${delayS}. On START, start the demonstration in the game.`
+      : `This screen counts down from ${delayS}. On START, start the demonstration.`;
+  }
+  return wide
+    ? `Then press Start here. The voice counts down from ${delayS}. On “start”, start the demonstration in the game.`
+    : `Put the phone by the TV. The voice counts down from ${delayS}. On “start”, start the demonstration.`;
+}
+
+function captureSeconds(capture: CaptureInfo): number | null {
+  if (!capture.endedAt) return null;
+  return Math.max(1, Math.round((Date.parse(capture.endedAt) - Date.parse(capture.startedAt)) / 1000));
+}
+
+function slotNote(delayS: number, done: CaptureInfo | undefined, wide: boolean): string {
+  if (!done) return wide ? `start after ${delayS} s` : `after ${delayS} s`;
+  const seconds = captureSeconds(done);
+  return seconds === null ? 'done' : `done, ${seconds} s`;
+}
+
+function Slots({ delays, recorded, current, wide }: { delays: number[]; recorded: CaptureInfo[]; current: number | null; wide: boolean }) {
+  return (
+    <ol className="record-slots" aria-label="Recordings">
+      {delays.map((delay, index) => {
+        const state = index < recorded.length ? 'done' : index === current ? 'now' : undefined;
+        return (
+          <li key={index} className={state} aria-current={state === 'now' ? 'step' : undefined}>
+            <b>{wide ? `Recording ${index + 1}` : `${index + 1} of ${delays.length}`}</b>
+            <span>{slotNote(delay, recorded[index], wide)}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function SetupProblem({ text }: { text: string }) {
+  return (
+    <p className="error" role="alert">
+      {text}
+      {text === CONSOLE_MISSING ? (
+        <>
+          {' '}
+          <Link to={paths.setup('console')}>Open Setup</Link>
+        </>
+      ) : null}
+    </p>
+  );
+}
+
+function SideNotes({ check, manualOpen, onManual }: { check: boolean; manualOpen: boolean; onManual(): void }) {
+  return (
+    <aside className="record-side">
+      {check ? null : (
+        <div className="panel">
+          <h2>Why three times</h2>
+          <p>Each recording starts after a different wait: 5, 10 and 15 s. The demonstration is the part that stays the same, so GT7 Tutor finds it by itself.</p>
+        </div>
+      )}
+      <div className="panel">
+        <h2>The phone as the voice device</h2>
+        <p>Put the phone next to the TV. It shows the same countdown in large type.</p>
+      </div>
+      {check || manualOpen ? null : <ManualHint onManual={onManual} />}
+    </aside>
+  );
+}
+
+function ManualHint({ onManual }: { onManual(): void }) {
+  return (
+    <p className="record-manual-hint">
+      <span>Experienced user?</span>{' '}
+      <button type="button" className="text-link" onClick={onManual}>
+        Set the range by hand
+      </button>
+    </p>
+  );
+}
+
 export function RecordView({ exerciseId }: { exerciseId: string }) {
   const exercise = useExercise(exerciseId);
+  const wide = useWideLayout();
   const { search } = useRouter();
+  const { state, connected, deviceId, player } = useLive();
+  const settings = useResource(() => api.settings(), []);
+  const info = useResource(() => api.appInfo(), []);
   const checkId = search.get('check');
   const delays = checkId ? CHECK_DELAYS_S : STANDARD_DELAYS_S;
   const [recorded, setRecorded] = useState<CaptureInfo[]>([]);
@@ -223,7 +333,14 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [finishFailed, setFinishFailed] = useState(false);
+  const now = useNow(active !== null);
+  const voice = voiceState(state, deviceId);
+  const voiceHere = voice === 'here' || voice === 'here-not-ready';
   useRunningCapture(exerciseId, active, setActive);
+  useImmersive(!wide);
+  useEffect(() => {
+    if (voiceHere) player.preload(COUNTDOWN_CLIPS).catch(() => undefined);
+  }, [voiceHere, player]);
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -265,83 +382,224 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
       if (all.length >= delays.length) await finish(all);
     });
 
+  const cancel = () =>
+    run(async () => {
+      if (!active) return;
+      await api.stopCapture(active.capture.id);
+      setActive(null);
+    });
+
   const retry = () => run(() => finish(recorded));
 
-  if (exercise.error) return <p className="error">{errorText(exercise.error)}</p>;
+  const recordAgain = () => {
+    setRecorded([]);
+    setProposals(null);
+    setProblem(null);
+  };
+
+  if (exercise.error) return <LoadProblem error={exercise.error} kind="exercise" />;
   if (!exercise.data) return <p className="sub">Reading the exercise…</p>;
   const finished = recorded.length >= delays.length;
   const number = recorded.length + 1;
-  return (
-    <section>
-      <ExerciseHeader exercise={exercise.data} title={checkId ? 'Check the reference' : 'Record the reference'} />
-      <div className="cols">
-        <div className="panel">
-          <p className="lede">
-            {checkId
-              ? 'One recording of the demonstration shows whether the stored reference still matches the game.'
-              : 'The game shows the same demonstration on every run, while the background differs. Three recordings with different waits let GT7 Tutor find the demonstration.'}
+  const consoleRequired = info.data?.consoleRequired ?? false;
+  const ps5Ip = settings.data?.ps5Ip;
+  const startBlocked = consoleRequired && ps5Ip === null;
+  const consoleChip = CONSOLE_CHIPS[consoleState(ps5Ip, state, connected, !consoleRequired)];
+  const voiceChip = VOICE_CHIPS[voice];
+  const clock = active ? clockOf(active, now) : null;
+  const shownProblem = problem ?? (startBlocked && !active && !finished ? CONSOLE_MISSING : null);
+  const title = checkId ? 'Check the reference' : 'Record the reference';
+  const lede = checkId
+    ? 'One recording of the demonstration shows whether the stored reference still matches the game.'
+    : 'The game shows the same demonstration before every run. GT7 Tutor records it three times with different waits and keeps the part that repeats.';
+
+  const stageBody = (): ReactNode => {
+    if (created) {
+      return (
+        <div className="record-message">
+          <h2 className="record-done">The reference is active</h2>
+          <p>Next: three baseline attempts without voice. You can skip them.</p>
+          <div className="record-actions">
+            <Link to={paths.exercise(exerciseId)} className="stage-button primary">
+              Back to the exercise
+            </Link>
+            <Link to={paths.cues(exerciseId)} className="stage-button">
+              Hear the cues
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    if (finished && proposals?.length === 0) {
+      return (
+        <div className="record-message">
+          <h2>No complete demonstration found</h2>
+          <p>
+            A range must repeat in every recording and show the timer of the demonstration from start to finish. Record again and let each demonstration play to the end, or set the range by hand.
           </p>
-          <ol className="recordings">
-            {delays.map((delay, index) => (
-              <li key={delay} className={index < recorded.length ? 'done' : index === recorded.length && !finished ? 'now' : undefined}>
-                Recording {index + 1}: START after {delay} s{index < recorded.length ? `, ${recorded[index]!.packets} packets` : ''}
-              </li>
-            ))}
-          </ol>
-          {active ? (
-            <div className="recording-live">
-              <p>
-                Recording {number} of {delays.length}. Start the demonstration in the game when you see START.
-              </p>
-              <Countdown active={active} />
-              <p className="sub">Stop when the demonstration has ended.</p>
-              <button className="btn" type="button" onClick={() => void stop()} disabled={busy}>
-                Stop recording
-              </button>
-            </div>
-          ) : !finished ? (
-            <>
-              <p className="sub">Open the exercise in GT7 and wait on the screen before the demonstration. Then start the recording here.</p>
-              <button className="btn" type="button" onClick={() => void start()} disabled={busy}>
-                Start recording {number} of {delays.length}
-              </button>
-            </>
-          ) : null}
-          {problem ? (
-            <p className="error" role="alert">
-              {problem}
-              {problem.includes('Setup') ? (
-                <>
-                  {' '}
-                  <Link to={paths.setup()}>Open Setup</Link>
-                </>
-              ) : null}
+          <button className="stage-button primary" type="button" onClick={recordAgain}>
+            Record again
+          </button>
+        </div>
+      );
+    }
+    if (finished) {
+      return (
+        <div className="record-message">
+          <h2>{checkId ? 'The recording is done' : 'Three recordings done'}</h2>
+          {checkResult ? (
+            <p className={`notice${checkResult.matched ? '' : ' bad'}`} role="status">
+              {checkText(checkResult)}
             </p>
           ) : null}
+          {proposals ? <Proposal exerciseId={exerciseId} captures={recorded} proposals={proposals} onCreated={() => setCreated(true)} /> : null}
+          {shownProblem ? <SetupProblem text={shownProblem} /> : null}
           {finishFailed ? (
-            <button className="btn" type="button" onClick={() => void retry()} disabled={busy}>
+            <button className="stage-button primary" type="button" onClick={() => void retry()} disabled={busy}>
               Try again
             </button>
           ) : null}
           {checkResult ? (
-            <div className={`notice${checkResult.matched ? '' : ' bad'}`} role="status">
-              {checkText(checkResult)}
+            <div className="record-actions">
+              <Link to={paths.exercise(exerciseId)} className="stage-button primary">
+                Back to the exercise
+              </Link>
             </div>
           ) : null}
-          {created ? (
-            <div className="notice" role="status">
-              The reference is active. <Link to={paths.cues(exerciseId)}>See what the voice will say</Link> or{' '}
-              <Link to={paths.now()}>go to the next step</Link>.
-            </div>
+        </div>
+      );
+    }
+    if (active && clock) {
+      const recording = clock.secondsLeft === 0;
+      return (
+        <div className="record-live">
+          <div className={`record-count${recording ? ' go' : ''}`} role="timer">
+            {recording ? 'START' : clock.secondsLeft}
+          </div>
+          {recording && wide ? (
+            <p className="record-line">
+              <span className="record-dot" aria-hidden="true" />
+              <span>Recording, {clock.recordingS} s. Stop when the demonstration has ended.</span>
+            </p>
+          ) : recording ? (
+            <>
+              <p className="record-line">
+                <span className="record-dot" aria-hidden="true" />
+                <span>Recording, {clock.recordingS} s</span>
+              </p>
+              <p className="record-note">Stop when the demonstration has ended.</p>
+            </>
+          ) : (
+            <p className="record-line">
+              {wide && voice !== 'none' ? <Icon name="speaker" /> : null}
+              <span>{spokenLine(voice, clock.secondsLeft, wide)}</span>
+            </p>
+          )}
+          {shownProblem ? <SetupProblem text={shownProblem} /> : null}
+          {wide && recording ? (
+            <button className="stage-button light" type="button" onClick={() => void stop()} disabled={busy}>
+              Stop recording {number}
+            </button>
           ) : null}
-          {!checkId && !manual && !created ? (
-            <button className="btn ghost" type="button" onClick={() => setManual(true)}>
-              Set the range by hand
+        </div>
+      );
+    }
+    return (
+      <div className="record-message">
+        <h2>{wide ? 'In GT7, open the exercise and stay on the screen before the demonstration.' : 'Open the exercise in GT7 and wait before the demonstration.'}</h2>
+        <p>{idleHint(voice, delays[recorded.length]!, wide)}</p>
+        {shownProblem ? <SetupProblem text={shownProblem} /> : null}
+        {wide ? (
+          <button className="stage-button primary" type="button" onClick={() => void start()} disabled={busy || startBlocked}>
+            Start recording {number} of {delays.length}
+          </button>
+        ) : null}
+      </div>
+    );
+  };
+
+  const phoneAction = (): ReactNode => {
+    if (created || finished) return null;
+    if (active && clock) {
+      return clock.secondsLeft === 0 ? (
+        <button className="stage-button light wide" type="button" onClick={() => void stop()} disabled={busy}>
+          Stop recording {number}
+        </button>
+      ) : (
+        <button className="stage-button wide" type="button" onClick={() => void cancel()} disabled={busy}>
+          Cancel
+        </button>
+      );
+    }
+    return (
+      <button className="stage-button primary wide" type="button" onClick={() => void start()} disabled={busy || startBlocked}>
+        Start recording {number}
+      </button>
+    );
+  };
+
+  const current = finished ? null : recorded.length;
+
+  if (!wide) {
+    return (
+      <section className="record-phone" aria-label={title}>
+        <div className="record-stage">
+          <div className="record-top">
+            <div>
+              <p>
+                {checkId ? 'Check' : 'Reference'} · {exercise.data.name}
+              </p>
+              <ul className="record-dots" aria-label="Readiness">
+                <li title={consoleChip.text}>
+                  <span className={`dot ${consoleChip.tone}`} aria-hidden="true" />
+                  {consoleRequired ? 'Telemetry' : 'Recorded data'}
+                </li>
+                <li title={voiceChip.text}>
+                  <span className={`dot ${voiceChip.tone}`} aria-hidden="true" />
+                  {voice === 'none' ? 'No voice' : 'Voice'}
+                </li>
+              </ul>
+            </div>
+            <Link to={paths.exercise(exerciseId)} className="stage-button">
+              Close
+            </Link>
+          </div>
+          <Slots delays={delays} recorded={recorded} current={current} wide={false} />
+          <div className="record-body">{stageBody()}</div>
+          <div className="record-bottom">{phoneAction()}</div>
+        </div>
+        {checkId || created ? null : (
+          <div className="record-after">
+            {manual ? <ManualRange exerciseId={exerciseId} onCreated={() => setCreated(true)} /> : <ManualHint onManual={() => setManual(true)} />}
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <section className="record">
+      <nav className="breadcrumb" aria-label="Breadcrumb">
+        <Link to={paths.exercises()}>Exercises</Link> / <Link to={paths.exercise(exerciseId)}>{exercise.data.name}</Link> / Reference
+      </nav>
+      <h1>{title}</h1>
+      <p className="lede">{lede}</p>
+      <ul className="setup-chips" aria-label="Readiness">
+        <ReadinessChip status={consoleChip} />
+        <ReadinessChip status={voiceChip} />
+      </ul>
+      <div className="record-cols">
+        <div className="record-stage">
+          <Slots delays={delays} recorded={recorded} current={current} wide />
+          <div className="record-body">{stageBody()}</div>
+          {active ? (
+            <button type="button" className="text-link record-cancel" onClick={() => void cancel()} disabled={busy}>
+              Cancel this recording
             </button>
           ) : null}
         </div>
         <div>
-          {proposals && !created ? <Proposal exerciseId={exerciseId} captures={recorded} proposals={proposals} onCreated={() => setCreated(true)} /> : null}
+          <SideNotes check={checkId !== null} manualOpen={manual || created} onManual={() => setManual(true)} />
           {manual && !created ? <ManualRange exerciseId={exerciseId} onCreated={() => setCreated(true)} /> : null}
         </div>
       </div>

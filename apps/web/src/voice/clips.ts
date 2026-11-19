@@ -6,6 +6,8 @@ const GUIDANCE_CLIPS = ['guidance-paused', 'guidance-resumed'];
 const FOCUS_KINDS = ['brake-early', 'brake-late', 'slow-corner', 'throttle-late', 'off-line', 'wide-apex'];
 const MAX_SPOKEN_TURN = 10;
 
+export const COUNTDOWN_CLIPS = ['countdown-three', 'countdown-two', 'countdown-one', 'countdown-start'];
+
 function focusClips(cornerCount: number): string[] {
   const turns = Array.from({ length: Math.min(MAX_SPOKEN_TURN, cornerCount) }, (_, index) => index + 1);
   return FOCUS_KINDS.flatMap(kind => turns.map(turn => `focus-${kind}-${turn}`));

@@ -12,7 +12,7 @@ describe('running capture', () => {
       .on('GET /api/captures', [
         {
           id: 'cap-7',
-          exerciseId: 'ex-1',
+          exerciseId: 'e0000000-0000-4000-8000-000000000001',
           purpose: 'demo',
           startedAt: '2026-11-16T10:00:00.000Z',
           endedAt: null,
@@ -29,7 +29,7 @@ describe('running capture', () => {
     await waitFor(() => view.sockets.latest);
     act(() => {
       view.sockets.latest.open();
-      view.sockets.latest.receive({ type: 'state', state: liveState({ mode: 'capturing', exerciseId: 'ex-1', connection: 'connected' }) });
+      view.sockets.latest.receive({ type: 'state', state: liveState({ mode: 'capturing', exerciseId: 'e0000000-0000-4000-8000-000000000001', connection: 'connected' }) });
     });
     expect(await screen.findByText(/A recording is running/)).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Stop recording' }));

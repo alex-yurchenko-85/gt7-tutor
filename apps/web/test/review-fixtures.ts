@@ -2,8 +2,8 @@ import type { AttemptList, AttemptReview, AttemptSummary } from '@gt7/contracts'
 
 export function attemptSummary(overrides: Partial<AttemptSummary> = {}): AttemptSummary {
   return {
-    id: 'att-1',
-    exerciseId: 'ex-1',
+    id: 'a0000000-0000-4000-8000-000000000001',
+    exerciseId: 'e0000000-0000-4000-8000-000000000001',
     number: 1,
     referenceId: 'ref-demo',
     captureId: 'cap-9',
@@ -13,7 +13,7 @@ export function attemptSummary(overrides: Partial<AttemptSummary> = {}): Attempt
     completion: 'complete',
     reason: null,
     measuredMs: 27100,
-    officialMs: null,
+    gameMs: 27100,
     medal: null,
     timeMs: 27100,
     gapToBestMs: 0,
@@ -31,8 +31,8 @@ export const ATTEMPT_LIST: AttemptList = {
       date: '2026-11-17',
       bestMs: 26800,
       attempts: [
-        attemptSummary({ id: 'att-3', number: 3, timeMs: null, measuredMs: null, completion: 'aborted', reason: 'manual', gapToBestMs: null }),
-        attemptSummary({ id: 'att-2', number: 2, timeMs: 26800, measuredMs: 26800, gapToBestMs: 0, mode: 'guided' })
+        attemptSummary({ id: 'a0000000-0000-4000-8000-000000000003', number: 3, timeMs: null, measuredMs: null, gameMs: null, completion: 'aborted', reason: 'manual', gapToBestMs: null }),
+        attemptSummary({ id: 'a0000000-0000-4000-8000-000000000002', number: 2, timeMs: 26800, measuredMs: 26800, gameMs: 26800, gapToBestMs: 0, mode: 'guided' })
       ]
     },
     {
@@ -40,10 +40,10 @@ export const ATTEMPT_LIST: AttemptList = {
       bestMs: 27100,
       attempts: [
         attemptSummary({
-          id: 'att-1',
+          id: 'a0000000-0000-4000-8000-000000000001',
           number: 1,
           gapToBestMs: 300,
-          largestDifference: { kind: 'brake-early', eventKey: 'brake@332', sM: 332, size: 14, unit: 'm' }
+          largestDifference: { kind: 'brake-early', eventKey: 'brake@332', sM: 332, size: 14, unit: 'm', turn: 1 }
         })
       ]
     }
@@ -63,6 +63,7 @@ export function review(overrides: Partial<AttemptReview> = {}): AttemptReview {
     referenceId: 'ref-demo',
     gridM: 2,
     lengthM: LENGTH,
+    referenceTimeMs: 25470,
     reference: {
       t: series(index.map(i => i * 100)),
       v: series(index.map(i => 30 + i)),
@@ -84,9 +85,10 @@ export function review(overrides: Partial<AttemptReview> = {}): AttemptReview {
     referenceEvents: [{ key: 'brake@10', kind: 'brake', sM: 10, endSM: 14, targetSpeedKph: 85 }],
     attemptEvents: [{ key: 'brake@8', kind: 'brake', sM: 8, endSM: 14, targetSpeedKph: 80 }],
     findings: [
-      { kind: 'brake-early', eventKey: 'brake@10', sM: 10, size: 2, unit: 'm' },
-      { kind: 'off-line', eventKey: null, sM: 16, size: 1.6, unit: 'm' }
+      { kind: 'brake-early', eventKey: 'brake@10', sM: 10, size: 2, unit: 'm', turn: null },
+      { kind: 'off-line', eventKey: null, sM: 16, size: 1.6, unit: 'm', turn: null }
     ],
+    turnLosses: [],
     cues: [],
     corners: [],
     reactions: [],

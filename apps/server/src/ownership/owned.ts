@@ -56,7 +56,7 @@ export type AttemptRow = {
   completion: 'complete' | 'aborted';
   reason: string | null;
   measured_ms: number | null;
-  official_ms: number | null;
+  game_ms: number | null;
   medal: 'bronze' | 'silver' | 'gold' | null;
   started_at: Date;
   created_at: Date;

@@ -12,6 +12,14 @@ function forwardDistance(from: number, to: number): number {
   return (to - from + UINT32_RANGE) % UINT32_RANGE;
 }
 
+export function isRepeatedPacket(
+  lastPacketId: number,
+  packetId: number,
+  reorderWindow: number = DEFAULT_SEQUENCE_LIMITS.reorderWindow,
+): boolean {
+  return forwardDistance(packetId, lastPacketId) <= reorderWindow;
+}
+
 export class SequenceTracker {
   private readonly limits: SequenceLimits;
   private lastPacketId: number | null = null;
@@ -23,11 +31,10 @@ export class SequenceTracker {
   accept(sample: Sample): SequenceResult {
     const last = this.lastPacketId;
     if (last === null) return this.advance(sample.packetId, 0, false);
-    const forward = forwardDistance(last, sample.packetId);
-    const backward = forwardDistance(sample.packetId, last);
-    if (forward === 0 || (backward > 0 && backward <= this.limits.reorderWindow)) {
+    if (isRepeatedPacket(last, sample.packetId, this.limits.reorderWindow)) {
       return { gapPackets: 0, duplicate: true, discontinuity: false };
     }
+    const forward = forwardDistance(last, sample.packetId);
     if (forward > this.limits.maxForwardGap) return this.advance(sample.packetId, 0, true);
     return this.advance(sample.packetId, forward - 1, false);
   }

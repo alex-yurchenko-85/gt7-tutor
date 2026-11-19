@@ -1,7 +1,7 @@
 import type { CatalogueListEntry, CornerInfo, Exercise, ExerciseStep, ReferenceCue, ReferenceInfo, ReferenceTrace } from '@gt7/contracts';
 import { ApiStub, signedIn, USER } from './support.tsx';
 
-export const EXERCISE_ID = 'ex-1';
+export const EXERCISE_ID = 'e0000000-0000-4000-8000-000000000001';
 export const REFERENCE_ID = 'ref-demo';
 
 export function exercise(overrides: Partial<Exercise> = {}): Exercise {
@@ -20,6 +20,8 @@ export function exercise(overrides: Partial<Exercise> = {}): Exercise {
     activeReferenceId: REFERENCE_ID,
     status: 'ready',
     step: 2,
+    attemptCount: 0,
+    referenceCount: 0,
     completeAttempts: 0,
     bestMs: null,
     createdAt: '2026-11-16T10:00:00.000Z',

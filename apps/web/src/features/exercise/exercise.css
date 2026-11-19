@@ -28,3 +28,36 @@
 .section-title {
   margin: 0 0 12px;
 }
+
+.exercise-header h1 {
+  font-size: 40px;
+}
+
+.exercise-tabs a {
+  font-size: 17px;
+  padding: 0 22px;
+  min-height: 52px;
+}
+
+.tab-count {
+  margin-left: 6px;
+  color: var(--mute);
+}
+
+.exercise-tabs a[aria-current='page'] .tab-count {
+  color: inherit;
+}
+
+@media (max-width: 899px) {
+  .exercise-header h1 {
+    font-size: 28px;
+  }
+
+  .exercise-tabs a {
+    flex: 1 0 auto;
+    justify-content: center;
+    padding: 0 8px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+}

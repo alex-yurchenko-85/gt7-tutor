@@ -8,13 +8,8 @@ export type UdpSourceOptions = {
   bindAddress?: string;
   heartbeatPort?: number;
   heartbeatMs?: number;
-  packetFormat?: PacketFormat;
   now?: () => number;
 };
-
-export const PACKET_FORMATS = ['A', 'B', '~', 'C'] as const;
-
-export type PacketFormat = (typeof PACKET_FORMATS)[number];
 
 export class UdpSource implements TelemetrySource {
   foreignDatagrams = 0;
@@ -36,7 +31,7 @@ export class UdpSource implements TelemetrySource {
     this.bindAddress = options.bindAddress ?? '0.0.0.0';
     this.heartbeatPort = options.heartbeatPort ?? DEFAULT_CONFIG.udp.heartbeatPort;
     this.heartbeatMs = options.heartbeatMs ?? DEFAULT_CONFIG.udp.heartbeatMs;
-    this.heartbeatMessage = Buffer.from(options.packetFormat ?? 'A');
+    this.heartbeatMessage = Buffer.from('C');
     this.now = options.now ?? (() => performance.now());
   }
 

@@ -1,4 +1,4 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type {
   AttemptReaction,
   BrakeReactionSummary,
@@ -21,7 +21,10 @@ import {
   buildReview,
   median,
   outsideM,
+  referenceTimeMs,
   seriesAt,
+  turnLosses,
+  turnOf,
   type Corner,
   type Finding,
   type PlayedBrakeCue,
@@ -38,13 +41,16 @@ import { localDate } from './local-date.js';
 
 type FindingRow = { kind: Difference['kind']; event_key: string | null; s_m: number; size: number; unit: Difference['unit'] };
 
-export function attemptTimeMs(row: Pick<AttemptRow, 'completion' | 'official_ms' | 'measured_ms'>): number | null {
-  if (row.completion !== 'complete') return null;
-  return row.official_ms ?? row.measured_ms;
+export function attemptTimeMs(row: Pick<AttemptRow, 'completion' | 'game_ms'>): number | null {
+  return row.completion === 'complete' ? row.game_ms : null;
 }
 
-function difference(row: FindingRow): Difference {
+function findingOf(row: FindingRow): Finding {
   return { kind: row.kind, eventKey: row.event_key, sM: row.s_m, size: row.size, unit: row.unit };
+}
+
+export function withTurn(finding: Finding, corners: Corner[]): Difference {
+  return { ...finding, turn: turnOf(corners, finding.sM) };
 }
 
 function largest(findings: Difference[]): Difference | null {
@@ -112,28 +118,24 @@ export class AttemptsService {
   }
 
   async update(userId: string, id: string, body: UpdateAttemptRequest): Promise<AttemptSummary> {
-    const attempt = await ownedAttempt(this.db, userId, id);
-    if (attempt.completion !== 'complete' && (body.officialMs ?? null) !== null) {
-      throw new ConflictException({ code: 'attempt-incomplete', reason: 'Only a complete attempt has an official time.' });
-    }
-    const changes: Record<string, unknown> = {};
-    if (body.officialMs !== undefined) changes.official_ms = body.officialMs;
-    if (body.medal !== undefined) changes.medal = body.medal;
-    if (Object.keys(changes).length > 0) await this.db('attempts').where({ id }).update(changes);
+    await ownedAttempt(this.db, userId, id);
+    if (body.medal !== undefined) await this.db('attempts').where({ id }).update({ medal: body.medal });
     return this.get(userId, id);
   }
 
   async review(userId: string, id: string, referenceId?: string): Promise<AttemptReview> {
     const attempt = await ownedAttempt(this.db, userId, id);
     const reference = await this.referenceFor(attempt, referenceId ?? attempt.reference_id);
-    const { review, findings, samples } = await this.compare(attempt, reference);
+    const { review, findings, samples, referenceTimeMs } = await this.compare(attempt, reference);
     const cues = await this.db('cue_events').where({ attempt_id: id }).orderBy('decided_mono_ms');
     const { corners, ...series } = review;
     const reactions: AttemptReaction[] = brakeReactions(samples, playedBrakeCues(cues.filter(isVoicedBrake)));
     return {
       referenceId: reference.id,
+      referenceTimeMs,
       ...series,
-      findings,
+      findings: findings.map(finding => withTurn(finding, corners)),
+      turnLosses: turnLosses(corners, review.lengthM, review.gridM, review.attempt.t, review.reference.t),
       corners: corners.map(corner => cornerReview(corner, review)),
       reactions,
       cues: cues.map(
@@ -169,7 +171,12 @@ export class AttemptsService {
       .sort((a, b) => eventPlace(a.eventKey) - eventPlace(b.eventKey));
   }
 
-  async findingsAgainst(attempt: AttemptRow, reference: ReferenceRow): Promise<Difference[]> {
+  async cornersOfReference(reference: ReferenceRow): Promise<Corner[]> {
+    const path: ReferencePath = await this.references.pathOf(reference);
+    return findCorners(path, buildCueEvents(path, DEFAULT_CONFIG), DEFAULT_CONFIG);
+  }
+
+  async findingsAgainst(attempt: AttemptRow, reference: ReferenceRow): Promise<Finding[]> {
     const stored = await this.storedFindings(attempt.id, reference.id);
     if (stored.length > 0) return stored;
     return (await this.compare(attempt, reference)).findings;
@@ -180,12 +187,13 @@ export class AttemptsService {
     return this.references.samplesOf(capture!, { first: attempt.first_raw_index, last: attempt.last_raw_index });
   }
 
-  private async compare(attempt: AttemptRow, reference: ReferenceRow): Promise<{ review: Review; findings: Difference[]; samples: Sample[] }> {
+  private async compare(attempt: AttemptRow, reference: ReferenceRow): Promise<{ review: Review; findings: Finding[]; samples: Sample[]; referenceTimeMs: number }> {
     const samples = await this.samplesFor(attempt);
-    const review = buildReview(samples, await this.references.pathOf(reference), DEFAULT_CONFIG);
+    const path = await this.references.pathOf(reference);
+    const review = buildReview(samples, path, DEFAULT_CONFIG);
     const findings = findDifferences(review, DEFAULT_CONFIG);
     await this.storeFindings(attempt.id, reference.id, findings);
-    return { review, findings, samples };
+    return { review, findings, samples, referenceTimeMs: referenceTimeMs(path) };
   }
 
   private async storeFindings(attemptId: string, referenceId: string, findings: Finding[]): Promise<void> {
@@ -206,12 +214,12 @@ export class AttemptsService {
     });
   }
 
-  private async storedFindings(attemptId: string, referenceId: string): Promise<Difference[]> {
+  private async storedFindings(attemptId: string, referenceId: string): Promise<Finding[]> {
     const rows = await this.db('attempt_findings')
       .where({ attempt_id: attemptId, reference_id: referenceId })
       .orderBy('s_m')
       .select<FindingRow[]>('kind', 'event_key', 's_m', 'size', 'unit');
-    return rows.map(difference);
+    return rows.map(findingOf);
   }
 
   private async referenceFor(attempt: AttemptRow, referenceId: string): Promise<ReferenceRow> {
@@ -233,7 +241,7 @@ export class AttemptsService {
     for (const row of rows) {
       if (row.completion !== 'complete') continue;
       const scope = { exerciseId, referenceId: row.reference_id, upTo: { startedAt: row.started_at, id: row.id } };
-      focuses.set(row.id, focusSummary(focusOf(await recentFindings(this.db, scope, FOCUS_ATTEMPTS), corners.get(row.reference_id) ?? [])));
+      focuses.set(row.id, focusSummary(focusOf(await recentFindings(this.db, scope, FOCUS_ATTEMPTS), corners.get(row.reference_id)!)));
     }
     return rows.map((row, index) => {
       const timeMs = attemptTimeMs(row);
@@ -249,11 +257,13 @@ export class AttemptsService {
         completion: row.completion,
         reason: row.reason,
         measuredMs: row.completion === 'complete' ? row.measured_ms : null,
-        officialMs: row.official_ms,
+        gameMs: timeMs,
         medal: row.medal,
         timeMs,
         gapToBestMs: timeMs === null || bestMs === null ? null : timeMs - bestMs,
-        largestDifference: largest(findingRows.filter(finding => finding.attempt_id === row.id).map(difference)),
+        largestDifference: largest(
+          findingRows.filter(finding => finding.attempt_id === row.id).map(finding => withTurn(findingOf(finding), corners.get(row.reference_id)!))
+        ),
         focus: focuses.get(row.id) ?? null,
         startedAt: row.started_at.toISOString()
       };
@@ -262,12 +272,8 @@ export class AttemptsService {
 
   private async cornersOf(rows: AttemptRow[]): Promise<Map<string, Corner[]>> {
     const corners = new Map<string, Corner[]>();
-    for (const referenceId of new Set(rows.filter(row => row.completion === 'complete').map(row => row.reference_id))) {
-      const reference = await this.db<ReferenceRow>('references').where({ id: referenceId }).first();
-      if (!reference) continue;
-      const path: ReferencePath = await this.references.pathOf(reference);
-      corners.set(referenceId, findCorners(path, buildCueEvents(path, DEFAULT_CONFIG), DEFAULT_CONFIG));
-    }
+    const references = await this.db<ReferenceRow>('references').whereIn('id', [...new Set(rows.map(row => row.reference_id))]);
+    for (const reference of references) corners.set(reference.id, await this.cornersOfReference(reference));
     return corners;
   }
 }

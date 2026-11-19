@@ -89,7 +89,7 @@ export class CatalogueService implements OnModuleInit {
     this.order = new Map(catalogue.entries.map((entry, index) => [entry.id, index]));
   }
 
-  info(): CatalogueInfo {
+  async info(): Promise<CatalogueInfo> {
     const entries: Record<string, number> = {};
     for (const entry of this.active.entries) entries[entry.family] = (entries[entry.family] ?? 0) + 1;
     return {
@@ -97,7 +97,8 @@ export class CatalogueService implements OnModuleInit {
       gameVersionNote: this.active.gameVersionNote,
       counts: { entries, circuits: this.active.circuits.length, cars: this.active.cars.length },
       sources: CATALOGUE_SOURCES,
-      hasPrevious: this.files.hasPrevious()
+      hasPrevious: this.files.hasPrevious(),
+      previousRetrieved: await this.files.previousRetrieved()
     };
   }
 

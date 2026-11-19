@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildReference, pointAt, ReferencePathError } from '../src/reference.ts';
-import { yangwangReference } from './paths.ts';
+import { activeTimesMs, buildReference, pointAt, referenceTimeMs, ReferencePathError } from '../src/reference.ts';
+import { interlagosReference } from './paths.ts';
 import { drive, straightLine, syntheticSample } from './synthetic.ts';
 
 function codeOf(action: () => unknown): string | null {
@@ -14,8 +14,8 @@ function codeOf(action: () => unknown): string | null {
 
 describe('buildReference', () => {
   it('reference_length_matches_capture', () => {
-    const path = yangwangReference();
-    expect(Math.abs(path.lengthM - 1092.65)).toBeLessThan(0.5);
+    const path = interlagosReference();
+    expect(Math.abs(path.lengthM - 818.17)).toBeLessThan(0.5);
     expect(path.points[0]!.sM).toBe(0);
     expect(path.points.at(-1)!.sM).toBeCloseTo(path.lengthM, 6);
     const steps = path.points.slice(1).map((point, index) => point.sM - path.points[index]!.sM);
@@ -23,20 +23,35 @@ describe('buildReference', () => {
     expect(steps.at(-1)!).toBeGreaterThan(0);
     expect(steps.at(-1)!).toBeLessThanOrEqual(1);
     expect(path.startKind).toBe('flying');
-    expect(path.start.position).toEqual(path.points[0]!.position);
-    expect(path.end.position).toEqual(path.points.at(-1)!.position);
   });
 
   it('reference_profiles_follow_the_capture', () => {
-    const path = yangwangReference();
+    const path = interlagosReference();
     const first = path.points[0]!;
-    expect(first.speedMps * 3.6).toBeCloseTo(207.15, 0);
+    expect(first.speedMps * 3.6).toBeCloseTo(213.09, 0);
     expect(first.timeMs).toBe(0);
     const last = path.points.at(-1)!;
-    expect(last.timeMs / 1000).toBeGreaterThan(25);
-    expect(last.timeMs / 1000).toBeLessThan(26);
+    expect(Math.abs(last.timeMs - 16082)).toBeLessThan(40);
     expect(path.points.every(point => point.throttle >= 0 && point.throttle <= 1 && point.brake >= 0 && point.brake <= 1)).toBe(true);
     expect(path.points.every(point => Math.abs(Math.hypot(point.tangent.x, point.tangent.y, point.tangent.z) - 1) < 1e-9)).toBe(true);
+  });
+
+  it('reference_points_carry_the_demonstration_timer', () => {
+    const path = interlagosReference();
+    expect(path.points[0]!.timerMs).toBe(0);
+    expect(path.points.at(-1)!.timerMs).toBe(16082);
+    const timers = path.points.map(point => point.timerMs);
+    expect(timers.slice(1).every((timer, index) => timer >= timers[index]!)).toBe(true);
+    expect(referenceTimeMs(path)).toBe(16082);
+  });
+
+  it('point_at_interpolates_the_timer', () => {
+    const line = drive(straightLine({ fromX: 0, toX: 30, speedMps: 10 })).map((sample, index) => ({ ...sample, gameTimerMs: index * 20 }));
+    const path = buildReference(line, 'flying');
+    const before = pointAt(path, 10);
+    const after = pointAt(path, 11);
+    expect(pointAt(path, 10.5).timerMs).toBeCloseTo((before.timerMs + after.timerMs) / 2, 6);
+    expect(after.timerMs).toBeGreaterThan(before.timerMs);
   });
 
   it('point_at_interpolates_between_points', () => {
@@ -80,12 +95,19 @@ describe('buildReference', () => {
     expect(path.points.at(-1)!.timeMs).toBeCloseTo(plain.points.at(-1)!.timeMs, 6);
   });
 
+  it('active_times_follow_the_packet_clock', () => {
+    const line = drive(straightLine({ fromX: 0, toX: 30, speedMps: 10 }));
+    const plain = activeTimesMs(line);
+    const doubled = activeTimesMs(line.map(sample => ({ ...sample, clockMs: sample.receivedMonoMs * 2 })));
+    expect(doubled.at(-1)).toBeCloseTo(2 * plain.at(-1)!, 6);
+  });
+
   it('standing_reference_starts_at_the_stationary_position', () => {
     const still = Array.from({ length: 30 }, () => ({ position: { x: 0, y: 0, z: 0 }, speedMps: 0 }));
     const samples = drive([...still, ...straightLine({ fromX: 0.1, toX: 30, speedMps: 5 })]);
     const path = buildReference(samples, 'standing');
     expect(path.startKind).toBe('standing');
-    expect(path.start.position).toEqual({ x: 0, y: 0, z: 0 });
+    expect(path.points[0]!.position).toEqual({ x: 0, y: 0, z: 0 });
     expect(path.points[0]!.speedMps).toBe(0);
   });
 });

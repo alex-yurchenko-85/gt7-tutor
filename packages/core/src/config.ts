@@ -16,8 +16,6 @@ export type CoreConfig = {
     progressWeight: number;
     sectionEndToleranceM: number;
   };
-  startArea: { radiusM: number; movingSpeedMps: number; movingSamples: number };
-  gate: { halfWidthM: number; heightToleranceM: number; maxInterpolationMs: number };
   discontinuityMarginM: number;
   events: {
     consecutiveSamples: number;
@@ -111,8 +109,6 @@ export const DEFAULT_CONFIG: CoreConfig = {
     progressWeight: 0.5,
     sectionEndToleranceM: 1
   },
-  startArea: { radiusM: 3, movingSpeedMps: 0.5, movingSamples: 3 },
-  gate: { halfWidthM: 8, heightToleranceM: 3, maxInterpolationMs: 100 },
   discontinuityMarginM: 20,
   events: {
     consecutiveSamples: 3,

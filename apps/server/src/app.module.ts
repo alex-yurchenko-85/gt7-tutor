@@ -9,6 +9,7 @@ import { DemoModule } from './demo/demo.module.js';
 import { ExercisesModule } from './exercises/exercises.module.js';
 import type { AppConfig } from './config/app-config.js';
 import { HealthModule } from './health/health.module.js';
+import { HistoryModule } from './history/history.module.js';
 import { ReferencesModule } from './references/references.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { TrainingModule } from './training/training.module.js';
@@ -31,6 +32,7 @@ export class AppModule {
         ReferencesModule,
         TrainingModule,
         AttemptsModule,
+        HistoryModule,
         HealthModule,
         DemoModule
       ]

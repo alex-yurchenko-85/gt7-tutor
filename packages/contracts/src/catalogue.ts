@@ -104,6 +104,7 @@ export type CatalogueInfo = {
   counts: { entries: Record<string, number>; circuits: number; cars: number };
   sources: CatalogueSource[];
   hasPrevious: boolean;
+  previousRetrieved: string | null;
 };
 
 export type CatalogueCheckResponse = { token: string; diff: CatalogueDiff };

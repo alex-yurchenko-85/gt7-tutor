@@ -37,15 +37,21 @@ It is an unofficial fan project (see [Licences](#licences)).
 
 GT7 Tutor leads you through four steps for each exercise:
 
-1. **Reference.** Record a drive of the exercise and select the range that GT7 Tutor follows.
-2. **Baseline.** Drive a few attempts without voice. GT7 Tutor measures them.
-3. **Guided attempts.** Drive with voice. GT7 Tutor calls the next action, for example `Hard brake 85`, about half a second before the point where the reference does it.
-4. **Review.** Compare each attempt with the reference: the line, the speed, the pedals and the differences.
+1. **Reference.** Record the demonstration of the exercise three times. GT7 Tutor finds the part that repeats and keeps the part where the timer of the demonstration runs. That part is the reference.
+2. **Baseline.** Drive a few attempts without voice. The game timer starts and finishes each attempt and gives its time.
+3. **Guided attempts.** Drive with voice. GT7 Tutor calls the next action, for example `Hard brake 115`, about half a second before the point where the reference does it.
+4. **Review.** Compare each attempt with the reference: the line, the speed, the pedals and the differences. The differences are grouped by turn, with the time lost in each turn.
+
+The application has two sections, **Exercises** and **Setup**.
+**Exercises** shows your exercises with their best times and medals. **Add exercise** opens the catalogue.
+Each exercise has its own page with the four steps, the cues, the references and the attempts.
+The **Drive** button opens the drive mode for the current exercise. On a phone, **Drive** is in the bottom bar.
+**Setup** has the sections Console, Voice, Profiles, Preferences, Catalogue and Data.
 
 <table>
   <tr>
-    <td width="50%"><img src="site/assets/screenshots/drive-desktop.webp" alt="The Drive view during a guided attempt. The current cue is Hard brake 85, and the map shows the position on the track."></td>
-    <td width="50%"><img src="site/assets/screenshots/review-desktop.webp" alt="The review of one attempt. The map shows the reference line and the attempt line, with speed and throttle charts and a list of differences."></td>
+    <td width="50%"><img src="site/assets/screenshots/drive-desktop.webp" alt="The drive mode during a guided attempt. The current cue is Hard brake 115, and the map shows the position on the track."></td>
+    <td width="50%"><img src="site/assets/screenshots/review-desktop.webp" alt="The review of one attempt. The map shows the reference line and the attempt line. The differences are grouped by turn, with the time lost in the turn, and the speed chart is below the map."></td>
   </tr>
   <tr>
     <td align="center"><b>Drive</b>: the current cue and the position on the track</td>
@@ -143,10 +149,12 @@ Then the command prints:
 - the address for a phone on the same network, and a QR code of it
 - the demo profile `demo` and its password `demodemo`.
 
-The demo has the exercise `Yangwang EXP-1 Racing Line: Intermediate`, its reference, and three recorded attempts.
-Open **Drive** and select **Play a demo attempt** to hear a guided attempt with voice.
-The attempt replays in real time and takes about one minute.
-After it, the attempt summary, the review and **Progress** show the results.
+The demo has the exercise `Autódromo de Interlagos` (Circuit Experience, sector 2), its reference, and three recorded attempts.
+Select the **Drive** button (on a phone, **Drive** in the bottom bar), then select **Play a demo attempt** to hear a guided attempt with voice.
+To hear the voice, select **Use this device for voice** first. This button is on the Drive screen and in **Setup** → **Voice**.
+The attempt replays in real time and takes 27 to 41 s.
+After it, the summary shows the time from the game and one focus for the next attempt.
+**Review this attempt** opens the review. The **Exercises** home shows the best time and the medal.
 
 The demo uses its own database and the folder `.demo/`.
 It never changes your own profiles and attempts.
@@ -158,8 +166,8 @@ You can also run the setup and the demo in one step: `sh scripts/setup.sh --demo
 ## Connect the PS5
 
 1. On the PS5, open Settings → Network → View Connection Status, and read the IPv4 address.
-2. In GT7 Tutor, open **Setup** and enter that address in **Console**.
-3. Open Gran Turismo 7 past the title screen, and select **Check reception**.
+2. In GT7 Tutor, enter that address. On the first start, the **Get ready** screen asks for it. Later, use **Setup** → **Console**.
+3. Open Gran Turismo 7 past the title screen, and select the check button next to the address (**Save and check**). GT7 Tutor saves the address and checks the reception.
 
 The console address can change after a router restart. Check it again if reception stops.
 The computer must accept UDP on port 33740.
@@ -177,11 +185,11 @@ Your computer firewall must accept TCP on that port.
 
 Two limits come from the phone browser, not from GT7 Tutor:
 
-- In **Setup**, tap **Use this device for voice** once. A browser does not let a page start sound by itself.
+- Tap **Use this device for voice** once. The button is in **Setup** → **Voice**, on the Drive screen and on the **Get ready** screen. A browser does not let a page start sound by itself.
 - Do not let the phone screen lock during an attempt. A locked screen stops the sound. Turn off auto-lock for the session.
 
 Known issue on iPhone (Safari): after the screen locks and unlocks, the voice can stay silent.
-The status still shows `Voice on this device` in green, and **Run voice test** is also silent.
+The status still shows `Voice on this device` in green, and the **Test** button (the speaker) is also silent.
 Only a reload of the page brings the sound back. After the reload, tap **Use this device for voice** again.
 Until GT7 Tutor has a fix, turn off auto-lock on the iPhone for the whole session (Settings → Display & Brightness → Auto-Lock → Never).
 
@@ -200,8 +208,8 @@ Until GT7 Tutor has a fix, turn off auto-lock on the iPhone for the whole sessio
 | `Node.js 26 or later is required` | Install Node.js from <https://nodejs.org/en/download>. Then run the command again. |
 | Port 3000 or 3001 is in use | Stop the other program that uses the port. For the demo, you can also run `pnpm demo --port 3002`. |
 | The phone cannot open the address | Check that the phone is on the same network as the computer, not on mobile data. Check the computer firewall. |
-| No sound on the phone | In **Setup**, tap **Use this device for voice**. On an iPhone after a screen lock, reload the page first. Turn off silent mode. Keep the screen on. |
-| `No packets` in **Setup** | Check the console address, the firewall rule for UDP 33740, and that GT7 is open past the title screen. |
+| No sound on the phone | Tap **Use this device for voice** (in **Setup** → **Voice** or on the Drive screen). On an iPhone after a screen lock, reload the page first. Turn off silent mode. Keep the screen on. |
+| `No packets` in **Setup** → **Console** | Check the console address, the firewall rule for UDP 33740, and that GT7 is open past the title screen. |
 
 ## Security
 
@@ -220,7 +228,7 @@ pnpm test:integration      # server tests against PostgreSQL
 pnpm test:coverage         # unit tests with a coverage report in coverage/
 pnpm capture --ip <PS5 address> --seconds 60 --purpose demo --start-after 5
 pnpm replay --file <raw capture .ndjson>
-pnpm evaluate-coach --attempt player-run --reference demo-wait05 --first 352 --last 1897
+pnpm evaluate-coach --attempt ce-slow --reference demo-a --first 457 --last 1422
 pnpm catalogue:build --record fixtures/catalogue-sources   # network, rewrites the catalogue
 pnpm audio:generate        # network, about 400 MB, rewrites the voice clips
 pnpm site:check            # checks the landing page
@@ -244,9 +252,10 @@ Stop a running server before `pnpm test`: only one program can receive telemetry
 | Exercise | A task with an activity type, selected section and driving conditions |
 | Reference | A reviewed range of a demonstration or trusted run |
 | Attempt | A selected player-driving range inside a capture |
+| Cue | A short voice instruction tied to a place on the section, for example `Hard brake. One fifteen`. The server decides it, and the voice device plays it. |
 | Generation | A new attempt context that invalidates earlier matches and audio cues |
 | Trusted match | A position match that passes the configured direction, distance and freshness checks |
-| Gate | A directed spatial boundary for an exercise start or finish |
+| Game timer | The run time that the game sends in each packet. It starts and finishes an attempt. |
 
 ## Files and dependencies
 

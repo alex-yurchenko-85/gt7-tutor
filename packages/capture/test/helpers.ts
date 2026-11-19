@@ -8,7 +8,7 @@ export function fixturePath(name: string): string {
 }
 
 export function tempDir(): string {
-  return mkdtempSync(join(tmpdir(), 'gt7-capture-'));
+  return mkdtempSync(join(process.env.GT7_TEST_TEMP_ROOT ?? tmpdir(), 'gt7-capture-'));
 }
 
 export function waitFor(condition: () => boolean, timeoutMs = 3000): Promise<void> {

@@ -18,7 +18,8 @@ function sample(packetId: number): Sample {
     flags: 0,
     playerSession: false,
     paused: false,
-    loading: false
+    loading: false,
+    gameTimerMs: 0
   };
 }
 

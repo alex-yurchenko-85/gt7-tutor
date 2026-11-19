@@ -19,6 +19,7 @@ export function syntheticSample(overrides: Partial<Sample> = {}): Sample {
     playerSession: true,
     paused: false,
     loading: false,
+    gameTimerMs: 0,
     ...overrides
   };
 }

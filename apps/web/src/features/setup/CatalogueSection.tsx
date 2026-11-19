@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import type { CatalogueCheckResponse, CatalogueEntry } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
+import { IconButton } from '../../app/IconButton.tsx';
+import { Icon } from '../../app/icons.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
+import { orderedFamilies } from '../exercises/next-step.ts';
+import { lastCatalogueCheck, rememberCatalogueCheck, type CatalogueCheck } from './catalogue-check.ts';
 
 const SHOWN_PER_GROUP = 12;
 
@@ -11,6 +15,20 @@ function entryLabel(entry: CatalogueEntry): string {
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function checkResult(check: CatalogueCheckResponse): string {
+  if (check.diff.rejected) return 'The update was rejected.';
+  const total = check.diff.added.length + check.diff.changed.length + check.diff.removed.length;
+  if (total === 0) return 'No changes.';
+  return `${total} ${total === 1 ? 'change' : 'changes'}, not applied.`;
+}
+
+function lastCheckText(check: CatalogueCheck | null): string {
+  if (!check) return 'Not checked on this device yet.';
+  const at = new Date(check.at);
+  const clock = at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return `Last checked ${formatDate(check.at)}, ${clock}. ${check.result} On this device.`;
 }
 
 function DiffGroup({ title, items }: { title: string; items: string[] }) {
@@ -67,6 +85,13 @@ export function CatalogueSection() {
   const [busy, setBusy] = useState<'checking' | 'applying' | 'restoring' | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [lastCheck, setLastCheck] = useState<CatalogueCheck | null>(lastCatalogueCheck);
+
+  const remember = (result: string) => {
+    const next = { at: new Date().toISOString(), result };
+    rememberCatalogueCheck(next);
+    setLastCheck(next);
+  };
 
   const run = async (kind: 'checking' | 'applying' | 'restoring', action: () => Promise<void>) => {
     setBusy(kind);
@@ -84,7 +109,14 @@ export function CatalogueSection() {
   const checkUpdates = () =>
     run('checking', async () => {
       setCheck(null);
-      setCheck(await api.checkCatalogue());
+      try {
+        const found = await api.checkCatalogue();
+        setCheck(found);
+        remember(checkResult(found));
+      } catch (error) {
+        remember('The check failed.');
+        throw error;
+      }
     });
 
   const apply = () =>
@@ -106,56 +138,45 @@ export function CatalogueSection() {
 
   const data = info.data;
   return (
-    <section className="panel" aria-labelledby="catalogue-title">
+    <section className="panel setup-section" id="setup-catalogue" aria-labelledby="catalogue-title">
       <h2 id="catalogue-title">Catalogue</h2>
+      <p className="sub">The list of exercises you can select. A catalogue entry does not mean that GT7 Tutor supports the exercise.</p>
       {data ? (
-        <>
-          <div className="kv">
-            <span>Retrieved</span>
-            <b>{formatDate(data.retrieved)}</b>
-          </div>
-          {Object.entries(data.counts.entries).map(([family, count]) => (
-            <div className="kv" key={family}>
-              <span>{family}</span>
-              <b>{count}</b>
+        <dl className="catalogue-counts">
+          {[
+            ...orderedFamilies(Object.keys(data.counts.entries))
+              .filter(family => family in data.counts.entries)
+              .map(family => [family, data.counts.entries[family]!] as const),
+            ['Circuit layouts', data.counts.circuits] as const,
+            ['Cars', data.counts.cars] as const
+          ].map(([label, count]) => (
+            <div key={label}>
+              <dd>{count}</dd>
+              <dt>{label}</dt>
             </div>
           ))}
-          <div className="kv">
-            <span>Circuit layouts</span>
-            <b>{data.counts.circuits}</b>
-          </div>
-          <div className="kv">
-            <span>Cars</span>
-            <b>{data.counts.cars}</b>
-          </div>
-          <p className="sub" style={{ marginTop: 10 }}>
-            Sources:{' '}
-            {data.sources.map((source, index) => (
-              <span key={source.url}>
-                {index > 0 ? '; ' : ''}
-                {source.name} ({source.licence})
-              </span>
-            ))}
-            . A catalogue entry does not mean that GT7 Tutor supports the exercise.
-          </p>
-        </>
+        </dl>
       ) : info.error ? (
         <p className="error">{errorText(info.error)}</p>
       ) : (
         <p className="sub">Reading the catalogue…</p>
       )}
-      <p className="sub" style={{ marginTop: 10 }}>
-        Check for updates reads the two public sources over the internet. It sends no data about you or your driving.
-      </p>
-      <div className="btn-row" style={{ marginTop: 10 }}>
-        <button className="btn inline ghost" type="button" onClick={checkUpdates} disabled={busy !== null}>
-          {busy === 'checking' ? 'Checking…' : 'Check for updates'}
-        </button>
-        {data?.hasPrevious ? (
-          <button className="btn inline ghost" type="button" onClick={restore} disabled={busy !== null}>
-            Restore previous
-          </button>
-        ) : null}
+      <div className="pref">
+        <span className="pref-text">
+          <span>Catalogue version</span>
+          {data ? <span className="pref-value">{formatDate(data.retrieved)}</span> : null}
+          <span className="sub">
+            The date the public sources were read. The check reads them again over the internet and sends no data about you or your driving.
+          </span>
+        </span>
+        <div className="pref-control">
+          <div className="field-pair">
+            <p className="sub check-status" role="status">
+              {busy === 'checking' ? 'Checking…' : lastCheckText(lastCheck)}
+            </p>
+            <IconButton icon="refresh" label="Check for updates" onClick={() => void checkUpdates()} disabled={busy !== null} />
+          </div>
+        </div>
       </div>
       {problem ? (
         <p className="notice bad" role="alert">
@@ -168,6 +189,36 @@ export function CatalogueSection() {
         </p>
       ) : null}
       {check ? <Difference check={check} onApply={apply} applying={busy === 'applying'} /> : null}
+      {data?.hasPrevious ? (
+        <div className="pref">
+          <span className="pref-text">
+            <span>Previous version</span>
+            <span className="sub">
+              {data.previousRetrieved
+                ? `${formatDate(data.previousRetrieved)}. The last update changed the catalogue.`
+                : 'The last update changed the catalogue.'}
+            </span>
+          </span>
+          <div className="pref-control">
+            <button className="btn inline ghost control-end" type="button" onClick={restore} disabled={busy !== null}>
+              <Icon name="undo" size={18} />
+              {busy === 'restoring' ? 'Restoring…' : 'Restore'}
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {data ? (
+        <p className="sub catalogue-sources">
+          Sources:{' '}
+          {data.sources.map((source, index) => (
+            <span key={source.url}>
+              {index > 0 ? '; ' : ''}
+              {source.name} ({source.licence})
+            </span>
+          ))}
+          .
+        </p>
+      ) : null}
     </section>
   );
 }

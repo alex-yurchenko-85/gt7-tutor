@@ -26,6 +26,7 @@ export type Sample = {
   rawIndex: number;
   packetId: number;
   receivedMonoMs: number;
+  clockMs?: number;
   position: Vec3;
   velocity: Vec3;
   speedMps: number;
@@ -38,5 +39,6 @@ export type Sample = {
   playerSession: boolean;
   paused: boolean;
   loading: boolean;
+  gameTimerMs: number;
   extension?: PacketExtension;
 };

@@ -1,9 +1,9 @@
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { testTempDir } from '../testing/temp-root.ts';
 
 const script = fileURLToPath(new URL('../../scripts/setup.sh', import.meta.url));
 
@@ -29,7 +29,7 @@ function nodeStub(version: string): string {
 }
 
 function prepare(machine: Machine): { dir: string; log: string } {
-  const dir = mkdtempSync(join(tmpdir(), 'gt7-setup-'));
+  const dir = testTempDir('gt7-setup-');
   const log = join(dir, 'calls.log');
   writeFileSync(log, '');
   stub(dir, 'uname', `echo "${machine.system}"`);

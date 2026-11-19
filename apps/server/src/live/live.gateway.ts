@@ -4,7 +4,7 @@ import { Logger } from '@nestjs/common';
 import { WebSocketGateway, type OnGatewayConnection } from '@nestjs/websockets';
 import { clientMsgSchema } from '@gt7/contracts';
 import { WebSocket, type RawData } from 'ws';
-import { AuthService } from '../auth/auth.service.js';
+import { AuthService, hashToken } from '../auth/auth.service.js';
 import { isForeignOrigin } from '../auth/origin.guard.js';
 import { sessionTokenOf } from '../auth/session-cookie.js';
 import { LiveHub, type LiveClient } from './live-hub.service.js';
@@ -13,16 +13,20 @@ export const UNAUTHENTICATED_CLOSE_CODE = 4401;
 export const FORBIDDEN_ORIGIN_CLOSE_CODE = 4403;
 const MAX_MESSAGE_BYTES = 4096;
 
-function socketClient(socket: WebSocket, userId: string): LiveClient {
+function socketClient(socket: WebSocket, userId: string, sessionKey: string): LiveClient {
   return {
     id: randomUUID(),
     userId,
+    sessionKey,
     get bufferedAmount() {
       return socket.bufferedAmount;
     },
     send(text: string) {
       if (socket.readyState !== WebSocket.OPEN) throw new Error('The socket is not open');
       socket.send(text);
+    },
+    close() {
+      socket.close(UNAUTHENTICATED_CLOSE_CODE, 'Profile deleted');
     }
   };
 }
@@ -54,14 +58,15 @@ export class LiveGateway implements OnGatewayConnection {
     const early: RawData[] = [];
     const keepEarly = (data: RawData) => early.push(data);
     socket.on('message', keepEarly);
-    const user = await this.auth.userForToken(sessionTokenOf(request));
+    const token = sessionTokenOf(request);
+    const user = await this.auth.userForToken(token);
     socket.off('message', keepEarly);
     if (!user) {
       socket.close(UNAUTHENTICATED_CLOSE_CODE, 'Sign in first');
       return;
     }
     if (socket.readyState !== WebSocket.OPEN) return;
-    const client = socketClient(socket, user.id);
+    const client = socketClient(socket, user.id, hashToken(token!));
     const receive = (data: RawData) => {
       const parsed = clientMsgSchema.safeParse(parseMessage(data));
       if (parsed.success) this.hub.receive(client, parsed.data);

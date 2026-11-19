@@ -1,6 +1,6 @@
-import { ConflictException, HttpException, HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, HttpException, HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
-import type { AuthState, ProfileCredentials, ProfileUser } from '@gt7/contracts';
+import type { AuthState, ChangePasswordRequest, ProfileCard, ProfileCredentials, ProfileUser } from '@gt7/contracts';
 import type { Knex } from 'knex';
 import { KNEX } from '../storage/knex.provider.js';
 import { hashPassword, verifyPassword } from './password.js';
@@ -11,7 +11,7 @@ export type IssuedSession = { user: ProfileUser; token: string };
 
 const UNIQUE_VIOLATION = '23505';
 
-function hashToken(token: string): string {
+export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
@@ -31,6 +31,11 @@ export class AuthService {
   async state(token: string | null): Promise<AuthState> {
     const [user, hasUsers] = await Promise.all([this.userForToken(token), this.hasUsers()]);
     return { hasUsers, user };
+  }
+
+  async profileCards(): Promise<ProfileCard[]> {
+    const rows: { name: string }[] = await this.db('users').select('name').orderByRaw('lower(name), name');
+    return rows.map(row => ({ name: row.name }));
   }
 
   async createFirstProfile(credentials: ProfileCredentials): Promise<IssuedSession> {
@@ -57,9 +62,7 @@ export class AuthService {
   }
 
   async signIn(credentials: ProfileCredentials, address: string): Promise<IssuedSession> {
-    if (this.limiter.isBlocked(credentials.name, address)) {
-      throw new HttpException('Too many failed sign-in attempts. Wait 15 minutes and try again.', HttpStatus.TOO_MANY_REQUESTS);
-    }
+    this.refuseWhenBlocked(credentials.name, address);
     const row = await this.db('users').where({ name: credentials.name }).first('id', 'name', 'password_hash');
     const valid = await verifyPassword(credentials.password, row?.password_hash ?? (await this.unknownUserHash()));
     if (!row || !valid) {
@@ -68,6 +71,31 @@ export class AuthService {
     }
     this.limiter.clear(credentials.name, address);
     return { user: { id: row.id, name: row.name }, token: await this.issueSession(row.id) };
+  }
+
+  async changePassword(user: ProfileUser, body: ChangePasswordRequest, token: string, address: string): Promise<void> {
+    this.refuseWhenBlocked(user.name, address);
+    const row = await this.db('users').where({ id: user.id }).first('password_hash');
+    if (!(await verifyPassword(body.currentPassword, row.password_hash))) {
+      this.limiter.recordFailure(user.name, address);
+      throw new ForbiddenException({ code: 'wrong-password', reason: 'The current password is not correct.' });
+    }
+    this.limiter.clear(user.name, address);
+    const passwordHash = await hashPassword(body.newPassword);
+    await this.db.transaction(async trx => {
+      await trx('users').where({ id: user.id }).update({ password_hash: passwordHash });
+      await trx('sessions').where({ user_id: user.id }).whereNot({ token_hash: hashToken(token) }).delete();
+    });
+  }
+
+  async confirmPassword(user: ProfileUser, password: string, address: string): Promise<void> {
+    this.refuseWhenBlocked(user.name, address);
+    const row = await this.db('users').where({ id: user.id }).first('password_hash');
+    if (!(await verifyPassword(password, row.password_hash))) {
+      this.limiter.recordFailure(user.name, address);
+      throw new ForbiddenException({ code: 'wrong-password', reason: 'The password is not correct.' });
+    }
+    this.limiter.clear(user.name, address);
   }
 
   async signOut(token: string | null): Promise<void> {
@@ -82,6 +110,12 @@ export class AuthService {
       .where('sessions.expires_at', '>', this.db.fn.now())
       .first('users.id as id', 'users.name as name');
     return row ? { id: row.id, name: row.name } : null;
+  }
+
+  private refuseWhenBlocked(name: string, address: string): void {
+    if (this.limiter.isBlocked(name, address)) {
+      throw new HttpException('Too many failed sign-in attempts. Wait 15 minutes and try again.', HttpStatus.TOO_MANY_REQUESTS);
+    }
   }
 
   private unknownUserHash(): Promise<string> {

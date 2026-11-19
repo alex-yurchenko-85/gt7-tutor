@@ -7,13 +7,8 @@ export type DecodeFailure = 'unsupported-format' | 'decrypt' | 'invalid-fields';
 
 export type DecodeResult = { ok: true; sample: DecodedSample } | { ok: false; reason: DecodeFailure };
 
-const NONCE_XOR_BY_LENGTH = new Map([
-  [296, 0xdeadbeaf],
-  [316, 0xdeadbeef],
-  [344, 0x55fabb4f],
-  [368, 0xdeadbeef]
-]);
-const EXTENSION_MIN_LENGTH = 316;
+const PACKET_LENGTH = 368;
+const NONCE_XOR = 0xdeadbeef;
 const MAGIC = 0x47375330;
 export const PACKET_KEY = asciiBytes('Simulator Interface Packet GT7 ver 0.0').subarray(0, 32);
 
@@ -33,7 +28,8 @@ const Offset = {
   wheelRotation: 0x128,
   sway: 0x130,
   heave: 0x134,
-  surge: 0x138
+  surge: 0x138,
+  gameTimer: 0x15c
 } as const;
 
 const Flag = {
@@ -51,11 +47,10 @@ export function salsa20Xor(key: Uint8Array, nonce: Uint8Array, data: Uint8Array)
 }
 
 export function packetNonce(iv: number, length: number): Uint8Array | null {
-  const xor = NONCE_XOR_BY_LENGTH.get(length);
-  if (xor === undefined) return null;
+  if (length !== PACKET_LENGTH) return null;
   const nonce = new Uint8Array(8);
   const view = new DataView(nonce.buffer);
-  view.setUint32(0, (iv ^ xor) >>> 0, true);
+  view.setUint32(0, (iv ^ NONCE_XOR) >>> 0, true);
   view.setUint32(4, iv, true);
   return nonce;
 }
@@ -84,7 +79,6 @@ function readExtension(view: DataView): PacketExtension {
 function readFields(plain: Uint8Array): DecodedSample {
   const view = new DataView(plain.buffer, plain.byteOffset, plain.byteLength);
   const flags = view.getUint16(Offset.flags, true);
-  const extension = plain.byteLength >= EXTENSION_MIN_LENGTH ? { extension: readExtension(view) } : {};
   return {
     packetId: view.getUint32(Offset.packetId, true),
     position: readVec3(view, Offset.position),
@@ -99,7 +93,8 @@ function readFields(plain: Uint8Array): DecodedSample {
     playerSession: (flags & Flag.playerSession) !== 0,
     paused: (flags & Flag.paused) !== 0,
     loading: (flags & Flag.loading) !== 0,
-    ...extension
+    gameTimerMs: view.getInt32(Offset.gameTimer, true),
+    extension: readExtension(view)
   };
 }
 
@@ -113,7 +108,7 @@ export function decryptPayload(payload: Uint8Array): Uint8Array | null {
 }
 
 export function decode(payload: Uint8Array): DecodeResult {
-  if (!NONCE_XOR_BY_LENGTH.has(payload.byteLength)) return { ok: false, reason: 'unsupported-format' };
+  if (payload.byteLength !== PACKET_LENGTH) return { ok: false, reason: 'unsupported-format' };
   const plain = decryptPayload(payload);
   if (plain === null) return { ok: false, reason: 'decrypt' };
   const sample = readFields(plain);

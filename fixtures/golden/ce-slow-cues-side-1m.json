@@ -1,0 +1,223 @@
+{
+  "reference": {
+    "fixture": "demo-a",
+    "first": 457,
+    "last": 1422,
+    "lengthM": 818.1706930922135
+  },
+  "attempt": "ce-slow",
+  "deviceDelayMs": 60,
+  "phraseDurations": "estimatedPhraseMs",
+  "speakTargets": true,
+  "sideCueDistanceM": 1,
+  "events": [
+    {
+      "key": "brake@291",
+      "kind": "brake",
+      "sM": 291,
+      "endSM": 378,
+      "targetSpeedKph": 115,
+      "voice": "hard-brake",
+      "bigStop": true,
+      "text": "Hard brake"
+    },
+    {
+      "key": "throttle@411",
+      "kind": "throttle",
+      "sM": 411,
+      "endSM": null,
+      "targetSpeedKph": 140,
+      "voice": "full-throttle",
+      "bigStop": false,
+      "text": "Full throttle"
+    },
+    {
+      "key": "ease-off@564",
+      "kind": "ease-off",
+      "sM": 564,
+      "endSM": null,
+      "targetSpeedKph": null,
+      "voice": "ease-off",
+      "bigStop": false,
+      "text": "Ease off"
+    },
+    {
+      "key": "throttle@568",
+      "kind": "throttle",
+      "sM": 568,
+      "endSM": null,
+      "targetSpeedKph": 190,
+      "voice": "full-throttle",
+      "bigStop": false,
+      "text": "Full throttle"
+    },
+    {
+      "key": "ease-off@792",
+      "kind": "ease-off",
+      "sM": 792,
+      "endSM": null,
+      "targetSpeedKph": null,
+      "voice": "ease-off",
+      "bigStop": false,
+      "text": "Ease off"
+    },
+    {
+      "key": "throttle@796",
+      "kind": "throttle",
+      "sM": 796,
+      "endSM": null,
+      "targetSpeedKph": 210,
+      "voice": "full-throttle",
+      "bigStop": false,
+      "text": "Full throttle"
+    }
+  ],
+  "trace": {
+    "attemptEvents": [
+      {
+        "generation": 1,
+        "type": "started",
+        "rawIndex": 5492,
+        "reason": "game-timer"
+      },
+      {
+        "generation": 1,
+        "type": "finished",
+        "rawIndex": 6621,
+        "reason": "game-timer"
+      }
+    ],
+    "cues": [
+      {
+        "id": "1:big-stop@291",
+        "kind": "big-stop",
+        "targetSpeedKph": null,
+        "clip": "big-stop",
+        "followClip": null,
+        "priority": 95,
+        "rawIndex": 5639,
+        "sM": 153.31508546593668,
+        "decidedMonoMs": 94716.964375,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:brake@291",
+        "kind": "hard-brake",
+        "targetSpeedKph": 115,
+        "clip": "hard-brake",
+        "followClip": "speed-115",
+        "priority": 100,
+        "rawIndex": 5743,
+        "sM": 262.2525585966993,
+        "decidedMonoMs": 96451.964458,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:throttle@411",
+        "kind": "full-throttle",
+        "targetSpeedKph": 140,
+        "clip": "full-throttle",
+        "followClip": null,
+        "priority": 20,
+        "rawIndex": 5991,
+        "sM": 395.94715814102483,
+        "decidedMonoMs": 100589.182958,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:keep-left@406",
+        "kind": "keep-left",
+        "targetSpeedKph": null,
+        "clip": "keep-left",
+        "followClip": null,
+        "priority": 50,
+        "rawIndex": 6014,
+        "sM": 406.0105858904777,
+        "decidedMonoMs": 100972.961833,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:ease-off@564",
+        "kind": "ease-off",
+        "targetSpeedKph": null,
+        "clip": "ease-off",
+        "followClip": null,
+        "priority": 90,
+        "rawIndex": 6260,
+        "sM": 541.9723936573871,
+        "decidedMonoMs": 105077.336833,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:keep-right@685",
+        "kind": "keep-right",
+        "targetSpeedKph": null,
+        "clip": "keep-right",
+        "followClip": null,
+        "priority": 50,
+        "rawIndex": 6465,
+        "sM": 684.62496571763,
+        "decidedMonoMs": 108497.543625,
+        "ttlMs": 210
+      },
+      {
+        "id": "1:ease-off@792",
+        "kind": "ease-off",
+        "targetSpeedKph": null,
+        "clip": "ease-off",
+        "followClip": null,
+        "priority": 90,
+        "rawIndex": 6558,
+        "sM": 762.080525174663,
+        "decidedMonoMs": 110049.15354099999,
+        "ttlMs": 210
+      }
+    ],
+    "suppressed": [
+      {
+        "generation": 1,
+        "eventKey": "keep-right@186",
+        "why": "cooldown",
+        "rawIndex": 5669
+      },
+      {
+        "generation": 1,
+        "eventKey": "keep-right@444",
+        "why": "cooldown",
+        "rawIndex": 6098
+      },
+      {
+        "generation": 1,
+        "eventKey": "throttle@568",
+        "why": "cooldown",
+        "rawIndex": 6297
+      },
+      {
+        "generation": 1,
+        "eventKey": "throttle@796",
+        "why": "already-full",
+        "rawIndex": 6593
+      },
+      {
+        "generation": 1,
+        "eventKey": "keep-left@793",
+        "why": "cooldown",
+        "rawIndex": 6593
+      }
+    ],
+    "guidance": [
+      {
+        "generation": 1,
+        "rawIndex": 5492,
+        "mode": "active",
+        "reason": null
+      },
+      {
+        "generation": 1,
+        "rawIndex": 6621,
+        "mode": "waiting-for-restart",
+        "reason": "awaiting-restart"
+      }
+    ]
+  }
+}

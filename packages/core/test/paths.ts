@@ -3,11 +3,11 @@ import { buildReference, type ReferencePath } from '../src/reference.ts';
 import { between, samplesOf } from './fixtures.ts';
 import { drive, FRAME_MS, type Waypoint } from './synthetic.ts';
 
-let yangwang: ReferencePath | null = null;
+let interlagos: ReferencePath | null = null;
 
-export function yangwangReference(): ReferencePath {
-  yangwang ??= buildReference(between(samplesOf('demo-wait05'), 352, 1897), 'flying');
-  return yangwang;
+export function interlagosReference(): ReferencePath {
+  interlagos ??= buildReference(between(samplesOf('demo-a'), 457, 1422), 'flying');
+  return interlagos;
 }
 
 export function polyline(corners: Vec3[], speedMps: number, stepM = 0.5): Waypoint[] {

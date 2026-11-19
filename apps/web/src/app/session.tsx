@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { ProfileUser } from '@gt7/contracts';
 
-export type Session = { user: ProfileUser; signOut(): Promise<void> };
+export type Session = { user: ProfileUser; signOut(): Promise<void>; ended(): void };
 
 export const SessionContext = createContext<Session | null>(null);
 

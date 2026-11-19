@@ -1,7 +1,8 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AttemptSummary, LiveState } from '@gt7/contracts';
+import { MISSED_START_AFTER_MS, useMissedStart } from '../src/features/drive/missed-start.ts';
 import { voiceDeviceId } from '../src/voice/device.ts';
 import { exercise, exerciseApi, rememberExercise } from './fixtures.ts';
 import { cue, liveState, playerRig, renderApp, setViewportWidth, type ApiStub, type FakeSocket } from './support.tsx';
@@ -11,21 +12,20 @@ const FOCUS_CLIPS = ['brake-early', 'brake-late', 'slow-corner', 'throttle-late'
 );
 const ARMED_CLIPS = ['hard-brake', 'speed-85', 'full-throttle', 'ease-off', 'big-stop', 'tighter', 'keep-left', 'keep-right', 'guidance-paused', 'guidance-resumed', ...FOCUS_CLIPS];
 
-const ARMED = { captureId: 'cap-9', exerciseId: 'ex-1', referenceId: 'ref-demo' };
+const ARMED = { captureId: 'cap-9', exerciseId: 'e0000000-0000-4000-8000-000000000001', referenceId: 'ref-demo' };
 
 function driveApi(): ApiStub {
   rememberExercise();
   return exerciseApi(exercise({ step: 3 }))
     .on('POST /api/training/arm', (body: unknown) => ({ status: 201, body: { ...ARMED, mode: (body as { mode: string }).mode } }))
-    .on('POST /api/training/disarm', { status: 201, body: { ok: true } })
-    .on('POST /api/training/manual', { status: 201, body: { ok: true } });
+    .on('POST /api/training/disarm', { status: 201, body: { ok: true } });
 }
 
 function driving(overrides: Partial<LiveState> = {}): LiveState {
   return liveState({
     mode: 'driving',
     connection: 'connected',
-    exerciseId: 'ex-1',
+    exerciseId: 'e0000000-0000-4000-8000-000000000001',
     attemptNumber: 2,
     sM: 300,
     speedKph: 142,
@@ -58,7 +58,8 @@ describe('drive', () => {
     const current = screen.getByRole('status', { name: 'Current cue' });
     expect(current).toHaveTextContent('Brake85');
     expect(screen.getAllByRole('status', { name: 'Current cue' })).toHaveLength(1);
-    expect(screen.getByText('Next in 120 m: Full throttle')).toBeInTheDocument();
+    expect(screen.getByText('Next: Full throttle')).toBeInTheDocument();
+    expect(screen.getByText('in 120 m')).toBeInTheDocument();
     expect(screen.getByText('142')).toBeInTheDocument();
   });
 
@@ -74,14 +75,14 @@ describe('drive', () => {
     setViewportWidth(1280);
     const api = driveApi().install();
     await openDrive('/drive?mode=guided', liveState({ voiceDeviceId: null }));
-    expect(screen.getAllByText('Voice not ready').length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: 'The voice is off' })).toBeInTheDocument();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Arm a guided attempt' }));
+    await user.click(screen.getByRole('button', { name: 'Start a guided attempt' }));
     expect(api.called('POST /api/training/arm')).toBe(false);
     expect(screen.getByText(/No device plays the voice/)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Arm without voice' }));
+    await user.click(screen.getByRole('button', { name: 'Start without voice' }));
     await waitFor(() =>
-      expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'ex-1', mode: 'guided', confirmNoVoice: true })
+      expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'e0000000-0000-4000-8000-000000000001', mode: 'guided', confirmNoVoice: true })
     );
   });
 
@@ -101,14 +102,14 @@ describe('drive', () => {
       view.sockets.latest.open();
       view.sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: true }) });
     });
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Arm a guided attempt' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Start a guided attempt' }));
     await waitFor(() => expect(api.called('POST /api/training/arm')).toBe(true));
     expect(preload).toHaveBeenCalledTimes(1);
     expect(order[0]).toBe(`preload:${[...ARMED_CLIPS].sort().join(',')}`);
     const armIndex = api.calls.findIndex(call => call.path === '/api/training/arm');
     const cuesIndex = api.calls.findIndex(call => call.path === '/api/references/ref-demo/cues');
     expect(cuesIndex).toBeLessThan(armIndex);
-    expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'ex-1', mode: 'guided' });
+    expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'e0000000-0000-4000-8000-000000000001', mode: 'guided' });
   });
 
   it('connection_lost_clears_cue_and_says_so', async () => {
@@ -135,12 +136,26 @@ describe('drive', () => {
     expect(screen.getByText(/Restart the attempt to get cues again/)).toBeInTheDocument();
   });
 
+  it('drive_view_shows_the_armed_exercise_not_the_remembered_one', async () => {
+    setViewportWidth(390);
+    const basics = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', activeReferenceId: null, step: 1 });
+    driveApi().on('GET /api/exercises', [exercise({ step: 3 }), basics]).install();
+    rememberExercise(basics.id);
+    const { socket } = await openDrive('/drive', driving({ lastCue: cue({ kind: 'brake', targetSpeedKph: 85 }) }));
+    expect(await screen.findByText('142')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Current cue' })).toHaveTextContent('Brake85');
+    expect(screen.queryByText('This exercise has no reference yet. Record it first.')).not.toBeInTheDocument();
+    send(socket, liveState({ mode: 'idle', exerciseId: null, seq: 99 }));
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(screen.queryByText('This exercise has no reference yet. Record it first.')).not.toBeInTheDocument();
+  });
+
   it('another_device_shows_the_baseline_mode_from_the_server', async () => {
     setViewportWidth(390);
     driveApi().install();
     await openDrive('/drive', driving({ trainingMode: 'baseline', lastCue: null, nextCue: { text: 'Brake to eighty five', inM: 50 } }));
     expect(screen.getByRole('status', { name: 'Current cue' })).toHaveTextContent('Recording without voice');
-    expect(screen.queryByText(/Next in 50 m/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/in 50 m/)).not.toBeInTheDocument();
   });
 
   it('voice_device_loads_clips_when_training_is_armed_elsewhere', async () => {
@@ -159,7 +174,7 @@ describe('drive', () => {
     act(() =>
       view.sockets.latest.receive({
         type: 'state',
-        state: liveState({ seq: 2, mode: 'armed', exerciseId: 'ex-1', trainingMode: 'guided', referenceId: 'ref-demo', voiceDeviceId: voiceDeviceId(), voiceReady: true })
+        state: liveState({ seq: 2, mode: 'armed', exerciseId: 'e0000000-0000-4000-8000-000000000001', trainingMode: 'guided', referenceId: 'ref-demo', voiceDeviceId: voiceDeviceId(), voiceReady: true })
       })
     );
     await waitFor(() => expect(preload).toHaveBeenCalledWith(ARMED_CLIPS));
@@ -169,16 +184,16 @@ describe('drive', () => {
     setViewportWidth(390);
     driveApi().install();
     const { socket } = await openDrive('/drive?mode=baseline', liveState());
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Arm a baseline attempt' }));
-    await screen.findByRole('button', { name: 'Stop training' });
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Start a baseline attempt' }));
+    await screen.findByRole('button', { name: 'Stop' });
     send(socket, driving({ seq: 2, lastCue: null, trainingMode: 'baseline' }));
     expect(screen.getByRole('status', { name: 'Current cue' })).toHaveTextContent('Recording without voice');
   });
 });
 
 const ATTEMPT: AttemptSummary = {
-  id: 'att-1',
-  exerciseId: 'ex-1',
+  id: 'a0000000-0000-4000-8000-000000000001',
+  exerciseId: 'e0000000-0000-4000-8000-000000000001',
   number: 2,
   referenceId: 'ref-demo',
   captureId: 'cap-9',
@@ -188,11 +203,11 @@ const ATTEMPT: AttemptSummary = {
   completion: 'complete',
   reason: null,
   measuredMs: 27100,
-  officialMs: null,
+  gameMs: 27100,
   medal: null,
   timeMs: 27100,
   gapToBestMs: 350,
-  largestDifference: { kind: 'brake-early', eventKey: 'brake@332', sM: 332, size: 14.2, unit: 'm' },
+  largestDifference: { kind: 'brake-early', eventKey: 'brake@332', sM: 332, size: 14.2, unit: 'm', turn: 1 },
   focus: null,
   startedAt: '2026-11-16T11:23:30.000Z'
 };
@@ -226,34 +241,26 @@ describe('action cues on Drive', () => {
 
 describe('attempt summary', () => {
   function summaryApi(): ApiStub {
-    let current = ATTEMPT;
-    return driveApi()
-      .on('GET /api/attempts/att-1', () => current)
-      .on('PATCH /api/attempts/att-1', (body: unknown) => {
-        const officialMs = (body as { officialMs: number }).officialMs;
-        current = { ...current, officialMs, timeMs: officialMs };
-        return current;
-      })
-      .install();
+    return driveApi().on('GET /api/attempts/a0000000-0000-4000-8000-000000000001', ATTEMPT).install();
   }
 
   it('summary_appears_on_finished_with_time_gap_and_largest_difference', async () => {
     setViewportWidth(390);
     summaryApi();
-    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'att-1' }));
+    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000001' }));
     const summary = await screen.findByRole('region', { name: 'Attempt 2' });
-    expect(summary).toHaveTextContent('0:27.10');
+    expect(summary).toHaveTextContent('0:27.100');
     expect(summary).toHaveTextContent('+0.35 s');
     expect(summary).toHaveTextContent('332 m. Braked 14 m earlier');
-    expect(screen.getByRole('link', { name: 'Review this attempt' })).toHaveAttribute('href', '/attempts/att-1/review');
+    expect(screen.getByRole('link', { name: 'Review this attempt' })).toHaveAttribute('href', '/attempts/a0000000-0000-4000-8000-000000000001/review');
   });
 
   it('summary_shows_the_focus_sentence', async () => {
     setViewportWidth(390);
     driveApi()
-      .on('GET /api/attempts/att-1', { ...ATTEMPT, focus: { text: 'Turn one. Brake later.', turn: 1, kind: 'brake-early' } })
+      .on('GET /api/attempts/a0000000-0000-4000-8000-000000000001', { ...ATTEMPT, focus: { text: 'Turn one. Brake later.', turn: 1, kind: 'brake-early' } })
       .install();
-    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'att-1' }));
+    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000001' }));
     const summary = await screen.findByRole('region', { name: 'Attempt 2' });
     expect(within(summary).getByText('Turn one. Brake later.')).toBeInTheDocument();
     expect(summary).toHaveTextContent('Focus for the next attempt');
@@ -262,50 +269,235 @@ describe('attempt summary', () => {
   it('summary_without_focus_has_no_focus_line', async () => {
     setViewportWidth(390);
     summaryApi();
-    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'att-1' }));
+    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000001' }));
     const summary = await screen.findByRole('region', { name: 'Attempt 2' });
     expect(summary).not.toHaveTextContent('Focus for the next attempt');
   });
 
-  it('summary_labels_time_as_measured', async () => {
+  it('summary_labels_the_time_from_the_game', async () => {
     setViewportWidth(1280);
     summaryApi();
-    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'att-1' }));
+    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000001' }));
     const summary = await screen.findByRole('region', { name: 'Attempt 2' });
-    expect(summary).toHaveTextContent('Measured from telemetry');
-    expect(summary).not.toHaveTextContent('Official time:');
+    expect(within(summary).getByText('Time from the game.')).toBeInTheDocument();
+    expect(summary).not.toHaveTextContent('Measured from telemetry');
+    expect(summary).not.toHaveTextContent('official');
+    expect(within(summary).queryByRole('textbox')).not.toBeInTheDocument();
+    expect(within(summary).queryByRole('button', { name: 'Save official time' })).not.toBeInTheDocument();
   });
 
-  it('official_time_can_be_entered', async () => {
-    setViewportWidth(1280);
-    const api = summaryApi();
-    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'att-1' }));
-    const user = userEvent.setup();
-    await user.type(await screen.findByLabelText('Official time from the game'), '0:27.054');
-    await user.click(screen.getByRole('button', { name: 'Save official time' }));
-    await waitFor(() => expect(api.calls.find(call => call.method === 'PATCH')?.body).toEqual({ officialMs: 27054 }));
-    expect(await screen.findByText('Official time: 0:27.054')).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Attempt 2' })).toHaveTextContent('0:27.054');
+  it('aborted_summary_names_the_reason_in_plain_words', async () => {
+    setViewportWidth(390);
+    driveApi()
+      .on('GET /api/attempts/a0000000-0000-4000-8000-000000000001', { ...ATTEMPT, completion: 'aborted', reason: 'left-track', timeMs: null, gameMs: null, measuredMs: null, gapToBestMs: null })
+      .install();
+    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000001' }));
+    const summary = await screen.findByRole('region', { name: 'Attempt 2' });
+    expect(summary).toHaveTextContent('No time');
+    expect(within(summary).getByText('The attempt did not finish (left the track). Only complete attempts have a time.')).toBeInTheDocument();
+    expect(summary).not.toHaveTextContent('Gap to your best');
   });
 
   it('summary_never_shows_the_previous_attempt_while_the_next_loads', async () => {
     setViewportWidth(1280);
-    summaryApi().on('GET /api/attempts/att-2', () => new Promise(() => undefined));
-    const { socket } = await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'att-1' }));
+    summaryApi().on('GET /api/attempts/a0000000-0000-4000-8000-000000000002', () => new Promise(() => undefined));
+    const { socket } = await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000001' }));
     await screen.findByRole('region', { name: 'Attempt 2' });
-    send(socket, driving({ seq: 2, mode: 'finished', lastAttemptId: 'att-2' }));
+    send(socket, driving({ seq: 2, mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000002' }));
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Attempt 2' })).not.toBeInTheDocument());
-    expect(screen.queryByLabelText('Official time from the game')).not.toBeInTheDocument();
+  });
+});
+
+function armed(overrides: Partial<LiveState> = {}): LiveState {
+  return liveState({
+    mode: 'armed',
+    connection: 'connected',
+    exerciseId: 'e0000000-0000-4000-8000-000000000001',
+    trainingMode: 'guided',
+    referenceId: 'ref-demo',
+    voiceDeviceId: voiceDeviceId(),
+    voiceReady: true,
+    speedKph: 0,
+    ...overrides
+  });
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('drive mode', () => {
+  it('arm_panel_claims_voice_in_place', async () => {
+    setViewportWidth(390);
+    driveApi().install();
+    const rig = playerRig();
+    vi.spyOn(rig.player, 'preload').mockResolvedValue(undefined);
+    const view = renderApp({ path: '/drive?mode=guided', player: rig.player });
+    await screen.findByRole('heading', { name: 'Drive' });
+    const socket = await waitFor(() => view.sockets.latest);
+    act(() => {
+      socket.open();
+      socket.receive({ type: 'state', state: liveState({ voiceDeviceId: null }) });
+    });
+    expect(screen.getByRole('heading', { name: 'The voice is off' })).toBeInTheDocument();
+    expect(screen.getByText('This device can play the cues. A phone must stay unlocked during the attempt.')).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Use this device for voice' }));
+    await waitFor(() => expect(socket.sent).toContainEqual({ type: 'claim-voice', deviceId: voiceDeviceId(), ready: true }));
+    act(() => socket.receive({ type: 'state', state: liveState({ seq: 2, voiceDeviceId: voiceDeviceId(), voiceReady: true }) }));
+    expect(await screen.findByText('This device plays the voice')).toBeInTheDocument();
+    expect(await screen.findByText(/3 cues loaded\./)).toBeInTheDocument();
+    const test = screen.getByRole('button', { name: 'Test' });
+    expect(test.textContent).toBe('');
+    expect(test.querySelector('[data-icon="speaker"]')).not.toBeNull();
+    expect(screen.queryByRole('heading', { name: 'The voice is off' })).not.toBeInTheDocument();
   });
 
-  it('official_time_rejects_text_that_is_not_a_time', async () => {
+  it('drive_mode_hides_navigation_when_armed', async () => {
+    setViewportWidth(390);
+    driveApi().install();
+    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+    const view = renderApp({ path: '/drive' });
+    expect(await screen.findByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+    const socket = await waitFor(() => view.sockets.latest);
+    act(() => {
+      socket.open();
+      socket.receive({ type: 'state', state: armed() });
+    });
+    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Current cue' })).toHaveTextContent('READY');
+    expect(screen.getByText('Waiting for the start')).toBeInTheDocument();
+    expect(await screen.findByText('First cue: Hard brake. Eighty five')).toBeInTheDocument();
+    expect(screen.getByText('after the start')).toBeInTheDocument();
+  });
+
+  it('drive_mode_has_no_start_finish_or_abort_buttons', async () => {
     setViewportWidth(1280);
-    const api = summaryApi();
-    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'att-1' }));
-    const user = userEvent.setup();
-    await user.type(await screen.findByLabelText('Official time from the game'), 'fast');
-    await user.click(screen.getByRole('button', { name: 'Save official time' }));
-    expect(await screen.findByText(/Enter the time as the game shows it/)).toBeInTheDocument();
-    expect(api.calls.some(call => call.method === 'PATCH')).toBe(false);
+    driveApi().install();
+    await openDrive('/drive', driving({ lastCue: cue({ id: 'c1', eventKey: 'brake@332', kind: 'hard-brake', targetSpeedKph: 85, clip: 'hard-brake' }) }));
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument();
+    for (const name of ['Start now', 'Finish now', 'Abort attempt']) expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+    expect(screen.getByText('Guided attempt 2 · Yangwang Experience / Racing Lines')).toBeInTheDocument();
+    expect(await screen.findByText('Cue 1 of 3 · before T1')).toBeInTheDocument();
+    expect(screen.getByText('m of 20')).toBeInTheDocument();
+  });
+
+  it('missed_start_prompt_after_ten_seconds_moving', async () => {
+    setViewportWidth(390);
+    driveApi().install();
+    const { socket } = await openDrive('/drive', armed());
+    vi.useFakeTimers();
+    send(socket, armed({ seq: 2, speedKph: 40 }));
+    act(() => vi.advanceTimersByTime(5000));
+    send(socket, armed({ seq: 3, speedKph: 42 }));
+    act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS - 5000 - 1));
+    expect(screen.queryByRole('alert', { name: 'The game timer did not start' })).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(1));
+    const prompt = screen.getByRole('alert', { name: 'The game timer did not start' });
+    expect(prompt).toHaveTextContent('The car has moved for 10 s, but the game timer has not started. Restart the exercise in the game. The attempt starts with the game timer.');
+    expect(within(prompt).getAllByRole('button').map(button => button.textContent)).toEqual(['OK']);
+  });
+
+  it('missed_start_timer_restarts_when_the_car_stops', () => {
+    vi.useFakeTimers();
+    const { result, rerender } = renderHook(({ state }) => useMissedStart(state), { initialProps: { state: armed({ speedKph: 40 }) } });
+    act(() => vi.advanceTimersByTime(6000));
+    rerender({ state: armed({ seq: 2, speedKph: 0 }) });
+    act(() => vi.advanceTimersByTime(1000));
+    rerender({ state: armed({ seq: 3, speedKph: 40 }) });
+    act(() => vi.advanceTimersByTime(6000));
+    expect(result.current.missed).toBe(false);
+    act(() => vi.advanceTimersByTime(4000));
+    expect(result.current.missed).toBe(true);
+  });
+
+  it('ok_closes_the_missed_start_prompt', async () => {
+    setViewportWidth(390);
+    driveApi().install();
+    const { socket } = await openDrive('/drive', armed());
+    vi.useFakeTimers();
+    send(socket, armed({ seq: 2, speedKph: 40 }));
+    act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS));
+    const prompt = screen.getByRole('alert', { name: 'The game timer did not start' });
+    vi.useRealTimers();
+    await userEvent.setup().click(within(prompt).getByRole('button', { name: 'OK' }));
+    expect(screen.queryByRole('alert', { name: 'The game timer did not start' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start now' })).not.toBeInTheDocument();
+  });
+
+  it('missed_start_prompt_hidden_when_driving_starts', () => {
+    vi.useFakeTimers();
+    const { result, rerender } = renderHook(({ state }) => useMissedStart(state), { initialProps: { state: armed({ speedKph: 40 }) } });
+    act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS));
+    expect(result.current.missed).toBe(true);
+    rerender({ state: driving({ seq: 2 }) });
+    expect(result.current.missed).toBe(false);
+  });
+
+  it('dismissed_prompt_stays_hidden_until_the_mode_changes', () => {
+    vi.useFakeTimers();
+    const { result, rerender } = renderHook(({ state }) => useMissedStart(state), { initialProps: { state: armed({ speedKph: 40 }) } });
+    act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS));
+    act(() => result.current.dismiss());
+    expect(result.current.missed).toBe(false);
+    rerender({ state: armed({ seq: 2, speedKph: 50 }) });
+    act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS * 2));
+    expect(result.current.missed).toBe(false);
+    rerender({ state: driving({ seq: 3 }) });
+    rerender({ state: armed({ seq: 4, speedKph: 40 }) });
+    act(() => vi.advanceTimersByTime(MISSED_START_AFTER_MS));
+    expect(result.current.missed).toBe(true);
+  });
+
+  it('finished_attempt_shows_summary_in_drive_mode', async () => {
+    setViewportWidth(390);
+    driveApi().on('GET /api/attempts/a0000000-0000-4000-8000-000000000001', ATTEMPT).install();
+    await openDrive('/drive', driving({ mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000001' }));
+    const summary = await screen.findByRole('region', { name: 'Attempt 2' });
+    expect(summary.closest('.drive-stage')).not.toBeNull();
+    expect(within(summary).getByRole('button', { name: 'Drive again' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+  });
+
+  it('finished_summary_waits_for_the_new_attempt', async () => {
+    setViewportWidth(390);
+    driveApi()
+      .on('GET /api/attempts/a0000000-0000-4000-8000-000000000001', ATTEMPT)
+      .on('GET /api/attempts/a0000000-0000-4000-8000-000000000002', { ...ATTEMPT, id: 'a0000000-0000-4000-8000-000000000002', number: 3 })
+      .install();
+    const { socket } = await openDrive('/drive', armed({ lastAttemptId: 'a0000000-0000-4000-8000-000000000001' }));
+    send(socket, driving({ seq: 2, lastAttemptId: 'a0000000-0000-4000-8000-000000000001' }));
+    send(socket, driving({ seq: 3, mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000001' }));
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+    expect(screen.queryByRole('region', { name: 'Attempt 2' })).not.toBeInTheDocument();
+    send(socket, driving({ seq: 4, mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000002' }));
+    expect(await screen.findByRole('region', { name: 'Attempt 3' })).toBeInTheDocument();
+  });
+
+  it('stop_brings_back_the_navigation', async () => {
+    setViewportWidth(390);
+    const api = driveApi().install();
+    const { socket } = await openDrive('/drive', armed());
+    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Stop' }));
+    await waitFor(() => expect(api.called('POST /api/training/disarm')).toBe(true));
+    send(socket, liveState({ seq: 2, connection: 'connected', voiceDeviceId: voiceDeviceId(), voiceReady: true }));
+    expect(await screen.findByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start a guided attempt' })).toBeInTheDocument();
+  });
+
+  it('drive_shows_gap_to_reference', async () => {
+    setViewportWidth(390);
+    driveApi().install();
+    const { socket } = await openDrive('/drive', driving({ gapMs: 400 }));
+    expect(screen.getByText('+0.4')).toBeInTheDocument();
+    expect(screen.getByText('s to reference')).toBeInTheDocument();
+    send(socket, driving({ seq: 2, gapMs: -250 }));
+    expect(screen.getByText('\u22120.3')).toBeInTheDocument();
+    send(socket, driving({ seq: 3, gapMs: null }));
+    expect(screen.queryByText('+0.4')).not.toBeInTheDocument();
+    expect(screen.queryByText('\u22120.3')).not.toBeInTheDocument();
   });
 });

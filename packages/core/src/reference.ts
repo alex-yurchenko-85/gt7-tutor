@@ -1,7 +1,10 @@
 import type { Sample, Vec3 } from '@gt7/contracts';
-import { positionBreak, type PositionBreak, type StartKind } from './attempts.ts';
+import { positionBreak, type PositionBreak } from './attempts.ts';
 import { DEFAULT_CONFIG, type CoreConfig } from './config.ts';
-import { distance, isFiniteVec, lerp, normalize, sub, type Gate } from './geometry.ts';
+import { distance, isFiniteVec, lerp, normalize, sub } from './geometry.ts';
+import { clockOf } from './packet-clock.ts';
+
+export type StartKind = 'standing' | 'flying';
 
 export type ReferencePoint = {
   sM: number;
@@ -11,14 +14,13 @@ export type ReferencePoint = {
   throttle: number;
   brake: number;
   timeMs: number;
+  timerMs: number;
 };
 
 export type ReferencePath = {
   points: ReferencePoint[];
   lengthM: number;
   startKind: StartKind;
-  start: Gate;
-  end: Gate;
 };
 
 export type ReferencePathErrorCode = 'too-few-points' | 'nonfinite-field' | 'discontinuity' | 'car-changed';
@@ -64,7 +66,7 @@ export function activeTimesMs(samples: Sample[]): number[] {
   let activeMs = 0;
   return samples.map((sample, index) => {
     const previous = samples[index - 1];
-    if (previous && isDriven(previous)) activeMs += sample.receivedMonoMs - previous.receivedMonoMs;
+    if (previous && isDriven(previous)) activeMs += clockOf(sample) - clockOf(previous);
     return activeMs;
   });
 }
@@ -117,7 +119,8 @@ function resample(samples: TimedSample[], along: number[], lengthM: number): Omi
       speedMps: mix(from.sample.speedMps, to.sample.speedMps, u),
       throttle: mix(from.sample.throttle, to.sample.throttle, u),
       brake: mix(from.sample.brake, to.sample.brake, u),
-      timeMs: mix(from.activeMs, to.activeMs, u) - startMs
+      timeMs: mix(from.activeMs, to.activeMs, u) - startMs,
+      timerMs: mix(from.sample.gameTimerMs, to.sample.gameTimerMs, u)
     };
   });
 }
@@ -139,16 +142,7 @@ export function buildReference(samples: Sample[], startKind: StartKind, config: 
   if (moving.length < 2 || lengthM <= 0) {
     throw new ReferencePathError('too-few-points', 'a reference needs at least two different positions');
   }
-  const points = withTangents(resample(moving, along, lengthM));
-  const first = points[0]!;
-  const last = points.at(-1)!;
-  return {
-    points,
-    lengthM,
-    startKind,
-    start: { position: first.position, tangent: first.tangent },
-    end: { position: last.position, tangent: last.tangent }
-  };
+  return { points: withTangents(resample(moving, along, lengthM)), lengthM, startKind };
 }
 
 export function pointAt(path: ReferencePath, sM: number): ReferencePoint {
@@ -164,6 +158,11 @@ export function pointAt(path: ReferencePath, sM: number): ReferencePoint {
     speedMps: mix(from.speedMps, to.speedMps, u),
     throttle: mix(from.throttle, to.throttle, u),
     brake: mix(from.brake, to.brake, u),
-    timeMs: mix(from.timeMs, to.timeMs, u)
+    timeMs: mix(from.timeMs, to.timeMs, u),
+    timerMs: mix(from.timerMs, to.timerMs, u)
   };
+}
+
+export function referenceTimeMs(path: ReferencePath): number {
+  return path.points.at(-1)!.timerMs;
 }

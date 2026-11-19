@@ -6,10 +6,10 @@ import {
   Matcher,
   SequenceTracker,
   cueText,
+  gapToReferenceMs,
   type AttemptEvent,
   type CoreConfig,
   type Cue,
-  type ManualAction,
   type Match,
   type ReferenceCueEvent,
   type ReferencePath
@@ -45,6 +45,7 @@ export type AttemptRecord = {
   reason: string | null;
   firstRawIndex: number;
   lastRawIndex: number;
+  gameTimeMs: number | null;
   startedAt: Date;
   samples: Sample[];
   cues: CueRecord[];
@@ -71,6 +72,7 @@ export type SessionView = {
   speedKph: number | null;
   lastCue: Cue | null;
   nextCue: { text: string; inM: number } | null;
+  gapMs: number | null;
 };
 
 type OpenAttempt = { generation: number; startedAt: Date; samples: Sample[]; cues: CueRecord[] };
@@ -101,16 +103,16 @@ export class TrainingSession {
     sM: null,
     speedKph: null,
     lastCue: null,
-    nextCue: null
+    nextCue: null,
+    gapMs: null
   };
 
   constructor(snapshot: TrainingSnapshot, config: CoreConfig, effects: TrainingEffects) {
     this.snapshot = snapshot;
     this.effects = effects;
-    const path = snapshot.path;
-    this.tracker = new AttemptTracker({ start: path.start, end: path.end, startKind: path.startKind }, config);
-    this.matcher = new Matcher(path, config);
-    this.coach = new Coach(path, snapshot.events, config);
+    this.tracker = new AttemptTracker(config);
+    this.matcher = new Matcher(snapshot.path, config);
+    this.coach = new Coach(snapshot.path, snapshot.events, config);
     this.eventKinds = new Map(snapshot.events.map(event => [event.key, event.kind]));
   }
 
@@ -127,7 +129,7 @@ export class TrainingSession {
     this.attempt?.samples.push(sample);
     this.handle(this.tracker.step(sample), sample);
     if (this.attempt && (this.tracker.state === 'driving' || this.tracker.state === 'paused')) this.guide(sample);
-    else this.view = { ...this.view, sM: null, speedKph: sample.speedMps * KPH_PER_MPS, nextCue: null };
+    else this.view = { ...this.view, sM: null, speedKph: sample.speedMps * KPH_PER_MPS, nextCue: null, gapMs: null };
     this.previous = sample;
     this.effects.changed();
   }
@@ -139,8 +141,8 @@ export class TrainingSession {
     this.effects.changed();
   }
 
-  manual(action: ManualAction, nowMonoMs: number): void {
-    this.handle(this.tracker.manual(action, nowMonoMs), null);
+  abortByUser(nowMonoMs: number): void {
+    this.handle(this.tracker.abortByUser(nowMonoMs), null);
     this.effects.changed();
   }
 
@@ -166,7 +168,7 @@ export class TrainingSession {
     const generation = this.effects.nextGeneration();
     this.matcher.reset();
     this.coach.reset(generation);
-    const samples = event.reason === 'manual' ? [] : [this.previous, sample].filter((item): item is Sample => item !== null);
+    const samples = [this.previous, sample].filter((item): item is Sample => item !== null);
     this.attempt = { generation, startedAt: new Date(), samples, cues: [] };
     this.attempts++;
     this.view = { ...this.view, mode: 'driving', generation, attemptNumber: this.attempts, guidance: ACTIVE_GUIDANCE, lastCue: null };
@@ -181,10 +183,11 @@ export class TrainingSession {
     this.effects.cancel(this.view.generation);
     const attempt = this.attempt;
     this.attempt = null;
-    this.view = { ...this.view, mode: 'finished', sM: null, nextCue: null };
+    this.view = { ...this.view, mode: 'finished', sM: null, nextCue: null, gapMs: null };
     if (!attempt) return;
     const first = attempt.samples[0]?.rawIndex ?? event.rawIndex;
-    const last = event.rawIndex ?? attempt.samples.at(-1)?.rawIndex ?? first;
+    const lastSeen = attempt.samples.at(-1)?.rawIndex;
+    const last = (event.type === 'finished' ? lastSeen ?? event.rawIndex : event.rawIndex ?? lastSeen) ?? first;
     if (first === null || first === undefined || last === null) return;
     this.effects.attemptEnded({
       generation: attempt.generation,
@@ -192,6 +195,7 @@ export class TrainingSession {
       reason: event.reason,
       firstRawIndex: first,
       lastRawIndex: Math.max(first, last),
+      gameTimeMs: event.gameTimeMs,
       startedAt: attempt.startedAt,
       samples: attempt.samples.filter(item => item.rawIndex <= last),
       cues: attempt.cues
@@ -200,7 +204,8 @@ export class TrainingSession {
 
   private guide(sample: Sample): void {
     const match = this.matcher.step(sample);
-    this.view = { ...this.view, sM: match?.sM ?? null, speedKph: sample.speedMps * KPH_PER_MPS, nextCue: this.nextCue(match) };
+    const gapMs = match && sample.gameTimerMs > 0 ? gapToReferenceMs(this.snapshot.path, match.sM, sample.gameTimerMs) : null;
+    this.view = { ...this.view, sM: match?.sM ?? null, speedKph: sample.speedMps * KPH_PER_MPS, nextCue: this.nextCue(match), gapMs };
     if (this.snapshot.mode !== 'guided') return;
     const output = this.coach.step({
       sample,

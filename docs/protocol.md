@@ -31,14 +31,13 @@ Code: `packages/capture/src/udp-source.ts`. Settings: `DEFAULT_CONFIG.udp` in `p
 
 | Heartbeat letter | Packet length | Nonce constant | Content | State |
 | --- | --- | --- | --- | --- |
-| `A` | 296 bytes (0x128) | `0xDEADBEAF` | Base packet | Verified. The server always asks for `A`. |
-| `B` | 316 bytes (0x13C) | `0xDEADBEEF` | Base packet and motion fields | Software check only |
-| `~` | 344 bytes (0x158) | `0x55FABB4F` | Format `B` and powertrain fields | Software check only |
-| `C` | 368 bytes (0x170) | `0xDEADBEEF` | Format `~` and wheel fields | Verified in one capture session |
+| `A` | 296 bytes (0x128) | `0xDEADBEAF` | Base packet | Not decoded. The decoder rejects it. |
+| `B` | 316 bytes (0x13C) | `0xDEADBEEF` | Base packet and motion fields | Not decoded. The decoder rejects it. |
+| `~` | 344 bytes (0x158) | `0x55FABB4F` | Format `B` and powertrain fields | Not decoded. The decoder rejects it. |
+| `C` | 368 bytes (0x170) | `0xDEADBEEF` | Format `~` and wheel fields | Verified. The server always asks for `C`. |
 
 Each larger packet starts with the complete smaller packet.
-The decoder accepts all four lengths. It rejects every other length with `unsupported-format`.
-Only `pnpm capture --format` asks for a format other than `A`.
+The application asks only for `C` and decodes only 368-byte packets. It rejects every other length with `unsupported-format`.
 
 ## Decryption
 
@@ -58,7 +57,7 @@ After decryption, the decoder rejects a packet with a position, velocity or spee
 All values are little-endian. `f32` is a 32-bit float. `i16`, `u16`, `i32`, `u32` and `u8` are integers.
 The column `Sample field` names the field of the `Sample` type in `packages/contracts/src/telemetry.ts`. An empty cell means that the decoder does not read the field.
 
-### Base packet, format `A` (296 bytes)
+### Base fields (first 296 bytes)
 
 | Offset | Type | Content | Sample field | State |
 | --- | --- | --- | --- | --- |
@@ -135,14 +134,47 @@ The decoder reads none of these fields.
 
 | Offset | Type | Content | State |
 | --- | --- | --- | --- |
-| 0x158 | 4 ASCII characters | Surface under each wheel: front left, front right, rear left, rear right. `T` is tarmac, `C` is kerb. | Verified for `T` and `C`. Other letters were not seen. |
-| 0x15C | i32 | Current lap time, ms | Described |
+| 0x158 | 4 ASCII characters | Surface under each wheel: front left, front right, rear left, rear right. `T` is tarmac, `C` is kerb, `G` is grass. | Verified for `T`, `C` and `G` (Circuit Experience, 18 November 2026). Other letters were not seen. |
+| 0x15C | i32 | Current lap time, ms. In a licence test it is the game timer of the test, see "Game timer". The decoder reads it as `gameTimerMs` and keeps −1 as −1. | Verified in two licence tests |
 | 0x160 | f32 | Angle of the left front wheel, radians. About 0.63 at full lock to the left. | Verified in one capture session |
 | 0x164 | f32 | Angle of the right front wheel, radians. Same sign as the steering input. | Verified in one capture session |
 | 0x168 | f32 | Wheelbase, metres | Described |
 | 0x16C | 4 ASCII characters | Car category | Described |
 
-The decoder reads none of these fields. A capture with `--format C` keeps them in the raw file.
+The decoder reads the field 0x15C as `gameTimerMs`. It reads none of the other fields. The raw file keeps all of them.
+
+### Game timer
+
+Captures of the National B licence tests B-3 (`Cornering Basics 1`, the game drives the car to the start line and gives control at about 68 km/h) and B-1 (standing start, the test ends when the car stops) and of one Circuit Experience sector (the game gives control at about 213 km/h) on the console, 18 November 2026. Format `C` only: formats `A`, `B` and `~` do not have this field. In these tests the best and last lap times (0x78, 0x7C) stayed −1.
+
+- **Start.** The value goes from 0 to 16 ms in one packet. In B-3 this happens when the game gives control to the player, at the same position in every run. Before it the game drives the car with full throttle. The player's first brake input came 0.43 to 0.67 s later. In B-1 it happens at the start signal, with the car still standing. The car moves one or two packets later.
+- **Running.** The value increases with the packets and is a multiple of about 16.7 ms.
+- **Finish.** The value stops at the finish and stays fixed on the result screen until the player restarts or leaves the test. In B-3 it stopped at the same position in every run. In B-1 it stopped when the car came to rest.
+- **The fixed value is the official time.** B-3: 15 839 ms, screen 0:15.839. B-1: 21 683 ms and 20 366 ms, screen 0:21.668 and 0:20.352. Circuit Experience: 17 071 ms, screen 0:17.071; with a pause 17 412 ms, screen 0:17.417 as the user remembered it. So the value is the official time or less than one packet away.
+- **A pause stops the value.** While bit 1 (paused) is set, the value stays fixed. After the pause it continues from the same value. In one run a pause of about 12 s added nothing to the value.
+- **A failed run ends the session.** When the game ended a Circuit Experience run before the finish, bit 0 became false and the value went to 0.
+- **The background scene has a timer too.** After that failed run, the background scene drove the sector and the value counted from 0 as in a real run, with bit 0 false. An attempt starts only with bit 0 set. The demonstration-range finder reads the demonstration timer, which also counts with bit 0 false (`docs/algorithms.md`, Demonstration range).
+- **A −1 marks a run that left the track.** In the two Circuit Experience runs where the player left the track, one packet had the value −1, at the moment the surface letters showed grass under two or four wheels. The packets before and after it continued the count. In one run the game put the car back to the start 1.7 s later; in the other it ended the session 5.6 s later. Two cases only: this meaning is an assumption.
+- **A demonstration has the timer too.** Three demonstrations of Interlagos Circuit Experience sector 2 (bit 0 false): the timer started at the same position as in the player's runs (about 0.5 m away) and stopped at 16 082 ms in all three, at the player's finish position (about 1 m away). The demonstration started 1.1 to 1.4 s after the START cue with a position jump; the timer started about 1.3 s later. The demonstration-range finder cuts the reference to this timer run (`docs/algorithms.md`, Demonstration range).
+- **A slow run still finishes.** The game did not count one Circuit Experience run because it was too slow. The value still stopped at the finish (18 824 ms).
+- **A restart sets the value to 0** together with a position jump.
+- **A false jump.** After the result screen, four packets with bit 0 set gave the final value again, at another position, directly after 0. A start is a step from 0 to a small value, not any value above 0.
+
+**What an exercise needs.** The application starts and finishes an attempt only by the game timer. It cuts each reference to a run of the demonstration timer. So an exercise works only when two facts are true for it:
+
+1. **Demonstration timer.** The demonstration runs the value at 0x15C with bit 0 false. The value starts at 0 and stops at a final value inside the demonstration.
+2. **Player start.** The player's run gives a step from 0 to a value from 1 to 50 ms in one packet (`GAME_TIMER_START_MAX_MS`).
+
+Verified on the console (18 November 2026):
+
+- Fact 1: one Circuit Experience sector only (Interlagos sector 2).
+- Fact 2: the same Circuit Experience sector and the licence tests B-1 and B-3.
+
+Not verified: the demonstrations of the licence tests, the demonstrations and runs of the Brand Central exercises, and full laps. The application assumes that these exercises give the two facts too. This is an assumption.
+
+Without fact 1, an exercise cannot get a reference. The proposals API gives no proposal. The server refuses a range set by hand with `no-timer-run`. A training needs an active reference, so no attempt can start either. Without fact 2, no attempt starts: the tracker sees no start. After 10 s of driving, the Drive screen shows the prompt `The game timer did not start`.
+
+Not checked: a licence test that the player fails, the replay that the player opens from the result screen, a full Circuit Experience lap, a race, the demonstration of a licence test, a Brand Central exercise.
 
 ## Flags
 
@@ -156,6 +188,7 @@ The flags are the unsigned 16-bit integer at offset `0x8E`.
 
 These meanings are observed, not documented by the game.
 The values 8, 0x80, 0x100 and 0x400 also change during driving. The code ignores them. Do not start or split an attempt on these bits.
+In the licence tests B-1 and B-3 (18 November 2026) bit 0 was already set while the game drove the car to the start line, so `hasPlayerControl` is true before the player has control. No flag bit changed when the game gave control. The value 0x20 was set with full throttle while the car stood before the start signal and at full throttle shortly before a gear change; this looks like the rev limiter. The value 0x800 was set while the car pulled away at low speed. These meanings are assumptions.
 `hasPlayerControl` is `playerSession && !paused && !loading`.
 
 ## What a packet does not tell
@@ -188,6 +221,8 @@ The captures behind these facts come from one exercise: `Yangwang EXP-1 Racing L
 - More than 600 ahead: a discontinuity.
 - Other cases: the difference minus 1 is the number of lost packets.
 
+The packet ID also gives the packet time (`clockMs`, `packages/core/src/packet-clock.ts`). The arrival time has network bursts; the packet ID does not. The packet rate is not exactly 60 per second and it changes during a capture (59.2 to 59.9 packets per second in one earlier capture; 59.85 to 59.94 on average in the format `C` fixtures), so the packet time follows the earliest arrivals and not a fixed rate.
+
 ## Raw capture file
 
 A capture is a text file with one JSON object per line (`.ndjson`). It holds the encrypted payload, so the file is the source of truth and the decoder can change later.
@@ -197,7 +232,7 @@ A capture is a text file with one JSON object per line (`.ndjson`). It holds the
 | `schemaVersion` | Always 1 |
 | `captureId` | ID of the capture |
 | `rawIndex` | Number of the datagram in the file, from 0. A dropped datagram keeps its number, so gaps can occur. |
-| `receivedMonoMs` | Arrival time on a monotonic clock, ms. All timing uses this value. |
+| `receivedMonoMs` | Arrival time on a monotonic clock, ms. Real-time rules use this value. Measured times use the packet time, which the core computes from the packet ID and this value (`docs/algorithms.md`, Packet time). |
 | `receivedUnixMs` | Arrival time on the wall clock, ms |
 | `peerIp` | Address of the console. A committed fixture has `0.0.0.0`. |
 | `payloadBase64` | The encrypted datagram |
@@ -214,7 +249,7 @@ Code: `packages/capture/src/raw-file.ts`, `toSample` in `packages/core/src/decod
 ## Tools
 
 ```sh
-pnpm capture --ip <PS5 address> --seconds 60 --purpose demo --start-after 5 [--format A|B|~|C]
+pnpm capture --ip <PS5 address> --seconds 60 --purpose demo --start-after 5
 pnpm replay --file <raw capture .ndjson>
 ```
 

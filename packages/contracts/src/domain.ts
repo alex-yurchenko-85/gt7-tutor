@@ -78,6 +78,8 @@ export type Exercise = {
   activeReferenceId: string | null;
   status: ExerciseStatusName;
   step: ExerciseStep;
+  attemptCount: number;
+  referenceCount: number;
   completeAttempts: number;
   bestMs: number | null;
   createdAt: string;
@@ -189,13 +191,38 @@ export type StorageUse = { rawBytes: number; profileRawBytes: number; profileCap
 
 export type CleanupResult = { captures: number; bytesBefore: number; bytesAfter: number };
 
+export const deleteAttemptsSchema = z.object({ ids: z.array(z.uuid()).min(1).max(500) }).strict();
+
+export type DeleteAttemptsRequest = z.infer<typeof deleteAttemptsSchema>;
+
+export type DeleteAttemptsResult = { deleted: number };
+
+export const deleteHistorySchema = z
+  .object({ scope: z.enum(['exercise', 'attempts', 'everything']), exerciseId: z.uuid().optional(), cleanup: z.boolean() })
+  .strict()
+  .refine(body => (body.scope === 'exercise') === (body.exerciseId !== undefined), { message: 'exerciseId belongs to the exercise scope only' });
+
+export type DeleteHistoryRequest = z.infer<typeof deleteHistorySchema>;
+
+export type DeleteHistoryResult = { attempts: number; references: number; cleanup: CleanupResult | null };
+
+export const removeExercisesSchema = z.object({ ids: z.array(z.uuid()).min(1).max(500), cleanup: z.boolean() }).strict();
+
+export type RemoveExercisesRequest = z.infer<typeof removeExercisesSchema>;
+
+export type RemoveExercisesResult = { exercises: number; attempts: number; references: number; cleanup: CleanupResult | null };
+
+export type DeleteProfileResult = { exercises: number; attempts: number; references: number; cleanup: CleanupResult };
+
 export const medalSchema = z.enum(['bronze', 'silver', 'gold']);
 
 export type MedalName = z.infer<typeof medalSchema>;
 
 export type FindingKindName = 'brake-early' | 'brake-late' | 'slow-corner' | 'throttle-late' | 'off-line' | 'wide-apex';
 
-export type Difference = { kind: FindingKindName; eventKey: string | null; sM: number; size: number; unit: 'm' | 'km/h' };
+export type Difference = { kind: FindingKindName; eventKey: string | null; sM: number; size: number; unit: 'm' | 'km/h'; turn: number | null };
+
+export type TurnLossInfo = { turn: number; fromSM: number; toSM: number; lostMs: number | null };
 
 export type RecurringDifference = Difference & { count: number; of: number; medianSize: number };
 
@@ -211,7 +238,7 @@ export type AttemptSummary = {
   completion: 'complete' | 'aborted';
   reason: string | null;
   measuredMs: number | null;
-  officialMs: number | null;
+  gameMs: number | null;
   medal: MedalName | null;
   timeMs: number | null;
   gapToBestMs: number | null;
@@ -225,7 +252,7 @@ export type AttemptDay = { date: string; bestMs: number | null; attempts: Attemp
 export type AttemptList = { bestMs: number | null; days: AttemptDay[] };
 
 export const updateAttemptSchema = z
-  .object({ officialMs: z.number().int().positive().max(3600000).nullable(), medal: medalSchema.nullable() })
+  .object({ medal: medalSchema.nullable() })
   .partial()
   .strict();
 
@@ -256,11 +283,13 @@ export type AttemptReview = {
   referenceId: string;
   gridM: number;
   lengthM: number;
+  referenceTimeMs: number;
   reference: ReviewSeries;
   attempt: ReviewSeries;
   referenceEvents: ReviewEvent[];
   attemptEvents: ReviewEvent[];
   findings: Difference[];
+  turnLosses: TurnLossInfo[];
   cues: StoredCueEvent[];
   corners: CornerReview[];
   reactions: AttemptReaction[];

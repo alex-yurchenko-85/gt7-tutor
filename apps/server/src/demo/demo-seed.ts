@@ -11,8 +11,9 @@ import { ReferencesService } from '../references/references.service.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { TrainingService } from '../training/training.service.js';
 
-export const DEMO_CATALOGUE_ID = 'brand-yangwang-racing-lines';
-export const DEMO_REFERENCE = { fixture: 'demo-wait05', first: 352, last: 1897, startKind: 'flying' } as const;
+export const DEMO_CATALOGUE_ID = 'ce-autodromo-de-interlagos';
+export const DEMO_TARGETS = { goldMs: 16400, silverMs: 16700, bronzeMs: 17800 } as const;
+export const DEMO_REFERENCE = { fixture: 'demo-a', first: 457, last: 1422, startKind: 'flying' } as const;
 const AS_FAST_AS_POSSIBLE = 0;
 
 @Injectable()
@@ -36,6 +37,7 @@ export class DemoSeed {
     if (await this.db('users').where({ name: DEMO_PROFILE.name }).first('id')) return;
     const user = await this.auth.createProfile(DEMO_PROFILE);
     const exercise = await this.exercises.create(user.id, { catalogueId: DEMO_CATALOGUE_ID });
+    await this.exercises.update(user.id, exercise.id, { targets: DEMO_TARGETS });
     const captureId = await this.recordDemonstration(user.id, exercise.id);
     const reference = await this.references.create(user.id, {
       exerciseId: exercise.id,

@@ -5,6 +5,8 @@ export type ExerciseStatusSummary = {
   exerciseId: string;
   catalogueId: string | null;
   status: ExerciseStatus;
+  attemptCount: number;
+  referenceCount: number;
   completeAttempts: number;
   baselineAttempts: number;
   guidedAttempts: number;
@@ -19,6 +21,8 @@ type StatusRow = {
   active_reference_id: string | null;
   targets: MedalTargets;
   created_at: Date;
+  attempt_count: number;
+  reference_count: number;
   complete_attempts: number;
   baseline_attempts: number;
   guided_attempts: number;
@@ -47,15 +51,19 @@ export async function exerciseStatuses(db: Knex, userId: string, exerciseId?: st
       'e.active_reference_id',
       'e.targets',
       'e.created_at',
+      db.raw('count(a.id)::int as attempt_count'),
+      db.raw('(select count(*) from "references" r where r.exercise_id = e.id)::int as reference_count'),
       db.raw("(count(a.id) filter (where a.completion = 'complete'))::int as complete_attempts"),
       db.raw("(count(a.id) filter (where a.completion = 'complete' and a.mode = 'baseline'))::int as baseline_attempts"),
       db.raw("(count(a.id) filter (where a.completion = 'complete' and a.mode = 'guided'))::int as guided_attempts"),
-      db.raw("min(coalesce(a.official_ms, a.measured_ms)) filter (where a.completion = 'complete') as best_ms"),
+      db.raw("min(a.game_ms) filter (where a.completion = 'complete') as best_ms"),
       db.raw("coalesce(array_agg(distinct a.medal) filter (where a.medal is not null), '{}'::text[]) as medals")
     );
   return rows.map(row => ({
     exerciseId: row.id,
     catalogueId: row.catalogue_id,
+    attemptCount: row.attempt_count,
+    referenceCount: row.reference_count,
     completeAttempts: row.complete_attempts,
     baselineAttempts: row.baseline_attempts,
     guidedAttempts: row.guided_attempts,

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { decode, decryptPayload, salsa20Xor, toSample } from '../src/decode.ts';
-import { encryptPacket } from './packets.ts';
-import { payloadOf, readFixture } from './fixtures.ts';
+import { payloadOf, readFixture, samplesOf } from './fixtures.ts';
 
 const kph = (mps: number) => mps * 3.6;
 
@@ -10,22 +9,45 @@ function hex(text: string): Uint8Array {
   return Uint8Array.from(clean.match(/../g)!.map(pair => parseInt(pair, 16)));
 }
 
+const FORMAT_A_PACKET =
+  'sYsDxsgRy8UGoGMdF7MpHQN2eRC3E7IFcN27zHkEbyCyIYZgTXQc5cNT59OvOeMDZkAuNQx6eCvzQddCGpr+v2rDEXNyagIqfQrVySnDL8R3qZRbx+IG6qQFeAEiD4bJdWhZg0LxvG0lMYbbOrkT7uY8YyAeYdmtIomG25FdX4/rJlhfZGJzxqnaJns5c11xzVUGfEsLuLSALMhn+d7fsskxfF9sUcp8/J5QtwG2iqClAjdhI+BMgpEGBOuPwvJNNG7QO5DlndkVLZcYYmXdG0g6zhCG9J0scz1B3zk8VmRT154PUbjCD36luRaqZ2lh3U6hRu4wh+oaMdCmLEtgeatLJMPhRhmAA9sGTcMmNTqbn7FU0LJODJlgnE9xKCIRzGsgpKhGtOI=';
+
 describe('decode', () => {
-  const playerRun = readFixture('player-run');
+  const cleanRun = readFixture('ce-clean');
 
   it('decodes_real_packet', () => {
-    const raw = playerRun.find(row => row.rawIndex === 1162)!;
+    const raw = cleanRun.find(row => row.rawIndex === 8452)!;
     const sample = toSample(raw);
     expect(sample).not.toBeNull();
-    expect(sample!.rawIndex).toBe(1162);
+    expect(sample!.rawIndex).toBe(8452);
     expect(sample!.receivedMonoMs).toBe(raw.receivedMonoMs);
-    expect(sample!.carId).toBe(3602);
-    expect(Math.abs(kph(sample!.speedMps) - 207.14)).toBeLessThan(0.5);
+    expect(sample!.carId).toBe(1905);
+    expect(sample!.gameTimerMs).toBe(16);
+    expect(Math.abs(kph(sample!.speedMps) - 213.38)).toBeLessThan(0.5);
     for (const value of Object.values(sample!.position)) expect(Number.isFinite(value)).toBe(true);
   });
 
+  it('decode_reads_the_game_timer', () => {
+    const samples = samplesOf('b3-run');
+    const timerAt = (rawIndex: number) => samples.find(sample => sample.rawIndex === rawIndex)!.gameTimerMs;
+    expect(timerAt(5491)).toBe(0);
+    expect(timerAt(5492)).toBe(16);
+    expect(timerAt(6442)).toBe(15839);
+  });
+
+  it('decode_keeps_the_minus_one', () => {
+    const sample = samplesOf('ce-off-track-reset').find(candidate => candidate.rawIndex === 7974)!;
+    expect(sample.gameTimerMs).toBe(-1);
+  });
+
+  it('decode_refuses_format_a', () => {
+    const packet = new Uint8Array(Buffer.from(FORMAT_A_PACKET, 'base64'));
+    expect(packet.byteLength).toBe(296);
+    expect(decode(packet)).toEqual({ ok: false, reason: 'unsupported-format' });
+  });
+
   it('pedals_are_normalized', () => {
-    for (const raw of playerRun) {
+    for (const raw of cleanRun) {
       const sample = toSample(raw)!;
       expect(sample.throttle).toBeGreaterThanOrEqual(0);
       expect(sample.throttle).toBeLessThanOrEqual(1);
@@ -35,9 +57,9 @@ describe('decode', () => {
   });
 
   it('flags_map_to_states', () => {
-    const paused = readFixture('player-pause')
+    const paused = readFixture('ce-pause')
       .map(raw => toSample(raw)!)
-      .find(sample => sample.flags === 1035);
+      .find(sample => sample.flags === 27);
     expect(paused).toBeDefined();
     expect(paused!.playerSession).toBe(true);
     expect(paused!.paused).toBe(true);
@@ -49,7 +71,7 @@ describe('decode', () => {
   });
 
   it('corrupt_payload_is_reported', () => {
-    const payload = payloadOf(playerRun[1162]!);
+    const payload = payloadOf(cleanRun[382]!);
     payload[0] = payload[0]! ^ 0xff;
     expect(decode(payload)).toEqual({ ok: false, reason: 'decrypt' });
   });
@@ -65,56 +87,28 @@ describe('decode', () => {
   });
 
   it('toSample_returns_null_for_undecodable_payload', () => {
-    expect(toSample({ ...playerRun[0]!, payloadBase64: Buffer.from(new Uint8Array(100)).toString('base64') })).toBeNull();
+    expect(toSample({ ...cleanRun[0]!, payloadBase64: Buffer.from(new Uint8Array(100)).toString('base64') })).toBeNull();
   });
 
   it('toSample_returns_null_for_invalid_base64', () => {
-    expect(toSample({ ...playerRun[0]!, payloadBase64: '!!not base64!!' })).toBeNull();
+    expect(toSample({ ...cleanRun[0]!, payloadBase64: '!!not base64!!' })).toBeNull();
   });
 
-  describe('extended formats', () => {
-    const basePlain = () => decryptPayload(payloadOf(playerRun[1162]!))!;
+  describe('format C extension', () => {
+    const b3Row = () => readFixture('b3-run').find(row => row.rawIndex === 5492)!;
 
-    function extended(length: number, floats: number[]): Uint8Array {
-      const plain = new Uint8Array(length);
-      plain.set(basePlain());
-      const view = new DataView(plain.buffer);
-      floats.forEach((value, index) => view.setFloat32(0x128 + index * 4, value, true));
-      return encryptPacket(plain, 0x1234abcd);
-    }
-
-    it('format_b_decodes_base_fields_and_extension', () => {
-      const result = decode(extended(316, [0.25, 0, 0.1, -0.2, 0.3]));
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      const base = toSample(playerRun[1162]!)!;
-      expect(result.sample.carId).toBe(3602);
-      expect(result.sample.speedMps).toBe(base.speedMps);
-      expect(result.sample.position).toEqual(base.position);
-      expect(result.sample.extension!.wheelRotationRad).toBeCloseTo(0.25, 6);
-      expect(result.sample.extension!.sway).toBeCloseTo(0.1, 6);
-      expect(result.sample.extension!.heave).toBeCloseTo(-0.2, 6);
-      expect(result.sample.extension!.surge).toBeCloseTo(0.3, 6);
+    it('decodes_the_wheel_and_motion_fields', () => {
+      const plain = decryptPayload(payloadOf(b3Row()))!;
+      const view = new DataView(plain.buffer, plain.byteOffset, plain.byteLength);
+      const sample = toSample(b3Row())!;
+      expect(sample.extension!.wheelRotationRad).toBe(view.getFloat32(0x128, true));
+      expect(sample.extension!.sway).toBe(view.getFloat32(0x130, true));
+      expect(sample.extension!.heave).toBe(view.getFloat32(0x134, true));
+      expect(sample.extension!.surge).toBe(view.getFloat32(0x138, true));
     });
 
-    it('format_a_has_no_extension', () => {
-      expect('extension' in toSample(playerRun[1162]!)!).toBe(false);
-    });
-
-    it('formats_tilde_and_c_decode_the_b_extension', () => {
-      for (const length of [344, 368]) {
-        const result = decode(extended(length, [-0.5, 0, 0, 0, 0]));
-        expect(result.ok, String(length)).toBe(true);
-        if (result.ok) expect(result.sample.extension!.wheelRotationRad).toBeCloseTo(-0.5, 6);
-      }
-    });
-
-    it('packet_encrypted_with_another_format_key_fails', () => {
-      const packet = extended(316, [0, 0, 0, 0, 0]);
-      const asBase = new Uint8Array(296);
-      asBase.set(packet.subarray(0, 296));
-      expect(decode(asBase)).toEqual({ ok: false, reason: 'decrypt' });
+    it('formats_b_and_tilde_are_refused', () => {
+      for (const length of [316, 344]) expect(decode(new Uint8Array(length)), String(length)).toEqual({ ok: false, reason: 'unsupported-format' });
     });
   });
 });
-

@@ -12,9 +12,9 @@ import { firstProfile } from './support/session.js';
 const SEED_TIMEOUT_MS = 90000;
 
 const OFFLINE_ATTEMPT_ROWS = [
-  { first_raw_index: 1162, last_raw_index: 2786 },
-  { first_raw_index: 32, last_raw_index: 1680 },
-  { first_raw_index: 101, last_raw_index: 1767 }
+  { first_raw_index: 381, last_raw_index: 1409 },
+  { first_raw_index: 391, last_raw_index: 1524 },
+  { first_raw_index: 24, last_raw_index: 1769 }
 ];
 
 function cookieOf(response: request.Response): string {
@@ -69,14 +69,15 @@ describe('demo mode', () => {
 
   it('seed_creates_profile_exercise_and_active_reference', async () => {
     const exercise = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
-    expect(exercise.catalogueId).toBe('brand-yangwang-racing-lines');
+    expect(exercise.catalogueId).toBe('ce-autodromo-de-interlagos');
+    expect(exercise.targets).toEqual({ goldMs: 16400, silverMs: 16700, bronzeMs: 17800 });
     const references = (await http().get(`/api/exercises/${exerciseId}/references`).set('Cookie', cookie).expect(200)).body;
     expect(references).toHaveLength(1);
-    expect(references[0]).toMatchObject({ first: 352, last: 1897, startKind: 'flying', active: true });
+    expect(references[0]).toMatchObject({ first: 457, last: 1422, startKind: 'flying', active: true });
     const cues = (await http().get(`/api/references/${references[0].id}/cues`).set('Cookie', cookie).expect(200)).body;
-    expect(cues).toHaveLength(7);
+    expect(cues).toHaveLength(6);
     const corners = (await http().get(`/api/references/${references[0].id}/corners`).set('Cookie', cookie).expect(200)).body;
-    expect(corners).toHaveLength(3);
+    expect(corners).toHaveLength(1);
   });
 
   it('seed_stores_three_complete_baseline_attempts', async () => {
@@ -94,7 +95,7 @@ describe('demo mode', () => {
 
   it('app_info_shows_the_demo_profile_only_in_demo_mode', async () => {
     const info = (await http().get('/api/app-info').expect(200)).body;
-    expect(info).toEqual({ demo: { profileName: 'demo', password: 'demodemo', ready: true } });
+    expect(info).toEqual({ demo: { profileName: 'demo', password: 'demodemo', ready: true }, consoleRequired: false });
   });
 
   it('demo_attempt_selects_fixtures_in_turn', async () => {
@@ -102,7 +103,7 @@ describe('demo mode', () => {
     for (let turn = 0; turn < 4; turn++) {
       picks.push((await http().post('/api/demo/attempt').set('Cookie', cookie).expect(201)).body.fixture);
     }
-    expect(picks).toEqual(['player-run', 'h3-wide-apex', 'h3-wide-finish', 'player-run']);
+    expect(picks).toEqual(['ce-clean', 'ce-slow', 'ce-pause', 'ce-clean']);
   });
 
   it('demo_attempt_needs_a_session', async () => {
@@ -116,6 +117,22 @@ describe('demo mode', () => {
       const update = await http().post(`/api/catalogue/update/${action}`).set('Cookie', cookie).send({}).expect(409);
       expect(update.body.code).toBe('demo-mode');
     }
+  });
+
+  it('change_password_refused_in_demo', async () => {
+    const response = await http()
+      .put('/api/profiles/me/password')
+      .set('Cookie', cookie)
+      .send({ currentPassword: 'demodemo', newPassword: 'new password 1' })
+      .expect(409);
+    expect(response.body.code).toBe('demo-mode');
+    await signInDemo(app);
+  });
+
+  it('delete_profile_refused_in_demo', async () => {
+    const response = await http().post('/api/profiles/me/delete').set('Cookie', cookie).send({ password: 'demodemo' }).expect(409);
+    expect(response.body.code).toBe('demo-mode');
+    expect(await db('users').where({ name: 'demo' })).toHaveLength(1);
   });
 
   it('demo_never_binds_udp', async () => {
@@ -152,7 +169,17 @@ describe('outside demo mode', () => {
   });
 
   it('app_info_has_no_demo', async () => {
-    expect((await http().get('/api/app-info').expect(200)).body).toEqual({ demo: null });
+    expect((await http().get('/api/app-info').expect(200)).body).toEqual({ demo: null, consoleRequired: false });
+  });
+
+  it('app_info_reports_console_required', async () => {
+    const udp = await createTestApp(database.url, { env: { TELEMETRY_SOURCE: 'udp' } });
+    try {
+      expect((await request(udp.getHttpServer()).get('/api/app-info').expect(200)).body).toEqual({ demo: null, consoleRequired: true });
+    } finally {
+      await udp.close();
+    }
+    expect((await http().get('/api/app-info').expect(200)).body.consoleRequired).toBe(false);
   });
 
   it('demo_endpoints_are_404_outside_demo_mode', async () => {

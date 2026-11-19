@@ -1,14 +1,16 @@
 import { readRaw, type RawRange } from '@gt7/capture';
 import type { Sample } from '@gt7/contracts';
-import { toSample } from '@gt7/core';
+import { clockWarmupStart, toSample, withPacketClock } from '@gt7/core';
 
 export async function readSamples(path: string, range?: RawRange): Promise<Sample[]> {
   const samples: Sample[] = [];
-  for await (const row of readRaw(path, range)) {
+  const withWarmup = range === undefined ? undefined : { first: clockWarmupStart(range.first), last: range.last };
+  for await (const row of readRaw(path, withWarmup)) {
     const sample = toSample(row);
     if (sample) samples.push(sample);
   }
-  return samples;
+  const clocked = withPacketClock(samples);
+  return range === undefined ? clocked : clocked.filter(sample => sample.rawIndex >= range.first);
 }
 
 export async function countRows(path: string): Promise<number> {

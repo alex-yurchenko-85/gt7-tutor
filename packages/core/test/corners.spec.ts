@@ -6,12 +6,12 @@ import { buildCueEvents } from '../src/cue-events.ts';
 import { Matcher } from '../src/match.ts';
 import type { ReferencePath } from '../src/reference.ts';
 import { event } from './coaching.ts';
-import { samplesOf } from './fixtures.ts';
-import { pathFromCorners, polyline, yangwangReference } from './paths.ts';
+import { between, samplesOf } from './fixtures.ts';
+import { pathFromCorners, polyline, interlagosReference } from './paths.ts';
 import { drive } from './synthetic.ts';
 
-function yangwangCorners(): Corner[] {
-  const path = yangwangReference();
+function interlagosCorners(): Corner[] {
+  const path = interlagosReference();
   return findCorners(path, buildCueEvents(path, DEFAULT_CONFIG), DEFAULT_CONFIG);
 }
 
@@ -59,23 +59,19 @@ function lateralAtApex(bend: 1 | -1, shiftM: number): { corner: Corner; lateralM
 }
 
 describe('corners', () => {
-  it('yangwang_has_three_corners', () => {
-    const corners = yangwangCorners();
-    expect(corners.map(corner => corner.number)).toEqual([1, 2, 3]);
-    const [first, second, third] = corners as [Corner, Corner, Corner];
-    expect(Math.abs(first.apexSM - 519)).toBeLessThanOrEqual(5);
-    expect(Math.abs(second.apexSM - 737)).toBeLessThanOrEqual(5);
-    expect(Math.abs(third.apexSM - 870)).toBeLessThanOrEqual(5);
-    expect(Math.abs(first.radiusM - 43)).toBeLessThanOrEqual(5);
-    expect(Math.abs(second.radiusM - 66)).toBeLessThanOrEqual(7);
-    expect(Math.abs(third.radiusM - 84)).toBeLessThanOrEqual(9);
-    expect(corners.some(corner => Math.abs(corner.apexSM - 1071) <= 50)).toBe(false);
-    expect(first.insideSign).toBe(-second.insideSign);
-    expect(second.insideSign).toBe(third.insideSign);
+  it('interlagos_has_one_corner', () => {
+    const corners = interlagosCorners();
+    expect(corners.map(corner => corner.number)).toEqual([1]);
+    const corner = corners[0]!;
+    expect(Math.abs(corner.zoneStartSM - 291)).toBeLessThanOrEqual(5);
+    expect(Math.abs(corner.apexSM - 404)).toBeLessThanOrEqual(5);
+    expect(Math.abs(corner.radiusM - 70)).toBeLessThanOrEqual(7);
+    expect(Math.abs(corner.apexSpeedKph - 116)).toBeLessThanOrEqual(3);
+    expect(corner.insideSign).toBe(-1);
   });
 
   it('turn_in_is_before_the_apex', () => {
-    for (const corner of yangwangCorners()) {
+    for (const corner of interlagosCorners()) {
       expect(corner.turnInSM).toBeLessThan(corner.apexSM);
       expect(corner.turnInSM).toBeGreaterThanOrEqual(corner.zoneStartSM);
     }
@@ -106,25 +102,29 @@ describe('corners', () => {
   });
 
   it('corner_at_maps_a_place_to_its_zone', () => {
-    const corners = yangwangCorners();
-    expect(cornerAt(corners, 340)!.number).toBe(1);
-    expect(cornerAt(corners, 700)!.number).toBe(2);
-    expect(cornerAt(corners, 1060)!.number).toBe(3);
-    expect(cornerAt(corners, 100)!.number).toBe(1);
+    const zoneCorner = (number: number, zoneStartSM: number): Corner => ({
+      number,
+      zoneStartSM,
+      turnInSM: zoneStartSM + 20,
+      apexSM: zoneStartSM + 40,
+      radiusM: 60,
+      apexSpeedKph: 90,
+      insideSign: 1
+    });
+    const corners = [zoneCorner(1, 300), zoneCorner(2, 600), zoneCorner(3, 900)];
+    expect([100, 300, 599, 600, 899, 900, 1200].map(sM => cornerAt(corners, sM)!.number)).toEqual([1, 1, 1, 2, 2, 3, 3]);
   });
 
-  it('h3_attempt_is_outside_at_the_first_two_apexes', () => {
-    const path = yangwangReference();
-    const corners = yangwangCorners();
-    const matcher = new Matcher(path, DEFAULT_CONFIG);
-    const matches = samplesOf('h3-wide-apex').map(sample => matcher.step(sample));
-    const outsideAt = (corner: Corner) => {
-      const nearest = matches
-        .filter(match => match !== null)
-        .reduce((a, b) => (Math.abs(b.sM - corner.apexSM) < Math.abs(a.sM - corner.apexSM) ? b : a));
+  it('clean_run_is_wider_at_the_apex_than_the_slow_run', () => {
+    const path = interlagosReference();
+    const corner = interlagosCorners()[0]!;
+    const outsideAtApex = (samples: ReturnType<typeof samplesOf>) => {
+      const matcher = new Matcher(path, DEFAULT_CONFIG);
+      const matches = samples.map(sample => matcher.step(sample)).filter(match => match !== null);
+      const nearest = matches.reduce((a, b) => (Math.abs(b.sM - corner.apexSM) < Math.abs(a.sM - corner.apexSM) ? b : a));
       return outsideM(corner, nearest.lateralM);
     };
-    expect(Math.abs(outsideAt(corners[0]!) - 4.8)).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(outsideAt(corners[1]!) - 2.1)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(outsideAtApex(between(samplesOf('ce-clean'), 8451, 9479)) - 3.0)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(outsideAtApex(between(samplesOf('ce-slow'), 5491, 6624)) - 1.2)).toBeLessThanOrEqual(0.5);
   });
 });

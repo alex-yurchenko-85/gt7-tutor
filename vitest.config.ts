@@ -11,6 +11,7 @@ export default defineConfig({
     }
   },
   test: {
+    globalSetup: ['./tools/testing/temp-root.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'lcov'],
@@ -24,7 +25,7 @@ export default defineConfig({
       },
       {
         extends: true,
-        test: { name: 'tools', include: ['tools/site/**/*.spec.ts', 'tools/demo/**/*.spec.ts', 'tools/setup/**/*.spec.ts'] }
+        test: { name: 'tools', include: ['tools/site/**/*.spec.ts', 'tools/demo/**/*.spec.ts', 'tools/setup/**/*.spec.ts', 'tools/testing/**/*.spec.ts'] }
       },
       'apps/web'
     ]

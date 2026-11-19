@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 export const builtMain = fileURLToPath(new URL('../../dist/main.js', import.meta.url));
 
 export function tempDir(): string {
-  return mkdtempSync(join(tmpdir(), 'gt7-server-'));
+  return mkdtempSync(join(process.env.GT7_TEST_TEMP_ROOT ?? tmpdir(), 'gt7-server-'));
 }
 
 export function freePort(): Promise<number> {
