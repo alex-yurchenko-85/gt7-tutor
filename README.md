@@ -50,8 +50,8 @@ The **Drive** button opens the drive mode for the current exercise. On a phone, 
 
 <table>
   <tr>
-    <td width="50%"><img src="site/assets/screenshots/drive-desktop.webp" alt="The drive mode during a guided attempt. The current cue is Hard brake 115, and the map shows the position on the track."></td>
-    <td width="50%"><img src="site/assets/screenshots/review-desktop.webp" alt="The review of one attempt. The map shows the reference line and the attempt line. The differences are grouped by turn, with the time lost in the turn, and the speed chart is below the map."></td>
+    <td width="50%"><img src="https://gt7tutor.app/assets/screenshots/drive-desktop.webp" alt="The drive mode during a guided attempt. The current cue is Hard brake 115, and the map shows the position on the track."></td>
+    <td width="50%"><img src="https://gt7tutor.app/assets/screenshots/review-desktop.webp" alt="The review of one attempt. The map shows the reference line and the attempt line. The differences are grouped by turn, with the time lost in the turn, and the speed chart is below the map."></td>
   </tr>
   <tr>
     <td align="center"><b>Drive</b>: the current cue and the position on the track</td>
@@ -231,7 +231,6 @@ pnpm replay --file <raw capture .ndjson>
 pnpm evaluate-coach --attempt ce-slow --reference demo-a --first 457 --last 1422
 pnpm catalogue:build --record fixtures/catalogue-sources   # network, rewrites the catalogue
 pnpm audio:generate        # network, about 400 MB, rewrites the voice clips
-pnpm site:check            # checks the landing page
 ```
 
 Always pass `--ip` with the current console address.
@@ -264,7 +263,7 @@ Stop a running server before `pnpm test`: only one program can receive telemetry
 `scripts/setup.sh` and `tools/setup/` hold the guided setup. `tools/demo/` holds the demo command.
 `fixtures/` holds short recorded captures for tests and for the demo. They do not contain the console address.
 `tools/` holds the capture, replay and evaluation commands.
-`site/` holds the landing page at gt7tutor.app. `assets/` holds the logo files of this README; they are not part of the site.
+The landing page at gt7tutor.app lives in <https://github.com/alex-yurchenko-85/gt7-tutor-site>. `assets/` holds the logo files of this README.
 PostgreSQL stores metadata, attempts and statistics. Raw capture files remain the source of truth for telemetry.
 
 The production stack is TypeScript, NestJS, React, PostgreSQL and Knex with `pg`.

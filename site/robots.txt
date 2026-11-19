@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://gt7tutor.app/sitemap.xml

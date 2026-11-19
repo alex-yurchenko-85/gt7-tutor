@@ -51,7 +51,6 @@ No file in this repository contains code from another GPL project.
 
 - Sofia Sans and Sofia Sans Condensed, by The Sofia Sans Project Authors, <https://github.com/lettersoup/Sofia-Sans>. Licence: SIL Open Font License 1.1.
 - The interface gets the fonts from the packages `@fontsource/sofia-sans` and `@fontsource/sofia-sans-condensed`. The build of `apps/web` contains the font files.
-- The landing page holds four font files in `site/assets/fonts/`. `site/assets/fonts/OFL.txt` is the licence text.
 
 ## Packages
 
