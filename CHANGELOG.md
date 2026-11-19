@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.1](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.3.0...v1.3.1) (2026-11-19)
+
+### Bug Fixes
+
+* keep attempts, captures, cached samples and live sessions consistent ([afe51c7](https://github.com/alex-yurchenko-85/gt7-tutor/commit/afe51c75ca63b336addc9a7566517318b17b0fc2))
+
 # [1.3.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.2.0...v1.3.0) (2026-11-19)
 
 ### Features
