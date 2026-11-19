@@ -34,11 +34,14 @@ export const RAW_STREAM_OPENER = Symbol('RAW_STREAM_OPENER');
 
 export type CaptureReservation = { readonly token: symbol };
 
+type CaptureOwner = 'training' | null;
+
 type ActiveCapture = {
   id: string;
   userId: string;
   exerciseId: string;
   purpose: CapturePurpose;
+  owner: CaptureOwner;
   lastReceivedMono: number;
   received: boolean;
   source: TelemetrySource;
@@ -170,10 +173,10 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     return this.beginReserved(request, this.reserve());
   }
 
-  async beginReserved(request: CaptureRequest, reservation: CaptureReservation): Promise<CaptureInfo> {
+  async beginReserved(request: CaptureRequest, reservation: CaptureReservation, owner: CaptureOwner = null): Promise<CaptureInfo> {
     if (this.reservation !== reservation) throw conflict('busy', 'The capture reservation is no longer valid.');
     try {
-      return await this.open(request);
+      return await this.open(request, owner);
     } finally {
       this.release(reservation);
     }
@@ -191,7 +194,19 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
   async stop(userId: string, id: string): Promise<CaptureInfo> {
     const row = await ownedCapture(this.db, userId, id);
     if (this.current?.id !== row.id) throw conflict('not-active', 'This capture is not active.');
+    if (this.current.owner === 'training') throw conflict('training-owns-capture', 'A training uses this capture. Stop the training first.');
     return captureInfo(await this.finish(this.current), null);
+  }
+
+  async stopForTraining(id: string): Promise<CaptureInfo> {
+    const current = this.current;
+    if (current?.id !== id) throw conflict('not-active', 'This capture is not active.');
+    try {
+      return captureInfo(await this.finish(current), null);
+    } catch (error) {
+      current.owner = null;
+      throw error;
+    }
   }
 
   private async consoleAddress(): Promise<string | null> {
@@ -230,7 +245,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     return result;
   }
 
-  private async open(request: CaptureRequest): Promise<CaptureInfo> {
+  private async open(request: CaptureRequest, owner: CaptureOwner): Promise<CaptureInfo> {
     const ps5Ip = await this.consoleAddress();
     const id = randomUUID();
     const startedAt = new Date();
@@ -257,6 +272,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
         userId: request.userId,
         exerciseId: request.exerciseId,
         purpose: request.purpose,
+        owner,
         lastReceivedMono: startedMono,
         received: false,
         source,

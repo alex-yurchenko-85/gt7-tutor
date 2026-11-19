@@ -15,10 +15,14 @@ export type LiveClient = {
   readonly id: string;
   readonly userId: string;
   readonly sessionKey: string;
+  readonly expiresAtMs: number;
   readonly bufferedAmount: number;
   send(text: string): void;
-  close(): void;
+  close(reason: string): void;
 };
+
+export const SESSION_ENDED = 'Session ended';
+export const PROFILE_DELETED = 'Profile deleted';
 
 export type ProfileState = Omit<LiveState, 'seq' | 'voiceDeviceId' | 'voiceReady'>;
 
@@ -112,12 +116,20 @@ export class LiveHub implements OnModuleDestroy {
   }
 
   closeOtherSessions(userId: string, keptSessionKey: string): void {
-    for (const entry of this.clientsOf(userId)) if (entry.client.sessionKey !== keptSessionKey) entry.client.close();
+    for (const entry of this.clientsOf(userId)) if (entry.client.sessionKey !== keptSessionKey) this.closeClient(entry, SESSION_ENDED);
+  }
+
+  closeSession(sessionKey: string): void {
+    for (const entry of this.clients.values()) if (entry.client.sessionKey === sessionKey) this.closeClient(entry, SESSION_ENDED);
+  }
+
+  closeExpired(nowUnixMs: number): void {
+    for (const entry of this.clients.values()) if (entry.client.expiresAtMs <= nowUnixMs) this.closeClient(entry, SESSION_ENDED);
   }
 
   dropProfile(userId: string): void {
     this.voices.delete(userId);
-    for (const entry of this.clientsOf(userId)) entry.client.close();
+    for (const entry of this.clientsOf(userId)) this.closeClient(entry, PROFILE_DELETED);
   }
 
   voiceReady(userId: string): boolean {
@@ -201,7 +213,13 @@ export class LiveHub implements OnModuleDestroy {
     this.changed();
   }
 
+  private closeClient(entry: ClientEntry, reason: string): void {
+    entry.client.close(reason);
+    this.detach(entry.client);
+  }
+
   private pingAll(): void {
+    this.closeExpired(Date.now());
     for (const entry of this.clients.values()) this.ping(entry);
   }
 

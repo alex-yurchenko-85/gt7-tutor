@@ -21,6 +21,8 @@ describe('cue list', () => {
     expect(rows[0]).toHaveTextContent('Braked early in 6 of 8 attempts, median 14 m');
     expect(rows[1]).toHaveTextContent('Full throttle');
     expect(rows[1]).not.toHaveTextContent('attempts');
+    expect(screen.getByText(/Yellow rows mark places/)).toBeInTheDocument();
+    expect(screen.queryByText(/mistake/i)).toBeNull();
   });
 
   it('mute_toggles_and_persists', async () => {

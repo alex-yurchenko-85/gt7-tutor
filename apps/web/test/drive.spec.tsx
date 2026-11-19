@@ -264,6 +264,8 @@ describe('attempt summary', () => {
     const summary = await screen.findByRole('region', { name: 'Attempt 2' });
     expect(within(summary).getByText('Turn one. Brake later.')).toBeInTheDocument();
     expect(summary).toHaveTextContent('Focus for the next attempt');
+    expect(within(summary).getByText('A difference from the reference.')).toBeInTheDocument();
+    expect(within(summary).queryByText(/mistake/i)).toBeNull();
   });
 
   it('summary_without_focus_has_no_focus_line', async () => {

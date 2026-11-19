@@ -28,7 +28,7 @@ export function AttemptSummary({ attemptId, onDriveAgain }: { attemptId: string;
         <div className="summary-focus">
           <span>Focus for the next attempt</span>
           <b>{data.focus.text}</b>
-          <small>A difference from the reference, not proof of a mistake.</small>
+          <small>A difference from the reference.</small>
         </div>
       ) : null}
       {complete ? (

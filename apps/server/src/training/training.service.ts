@@ -7,6 +7,7 @@ import type { Knex } from 'knex';
 import { CaptureService, type CaptureReservation } from '../captures/capture.service.js';
 import { LiveHub, type ProfileState } from '../live/live-hub.service.js';
 import { ownedExercise, type ReferenceRow } from '../ownership/owned.js';
+import { ReferenceLocks } from '../references/reference-locks.js';
 import { ReferencesService } from '../references/references.service.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { FOCUS_ATTEMPTS, focusOf, recentFindings } from '../attempts/attempt-focus.js';
@@ -18,7 +19,7 @@ export const WATCHDOG_INTERVAL_MS = 50;
 export const DISCONNECTED_AFTER_MS = 5000;
 const ENDED_CUE_LIMIT = 500;
 
-type Training = { userId: string; session: TrainingSession; unsubscribe: () => void };
+type Training = { userId: string; session: TrainingSession; unsubscribe: () => void; release: () => void };
 
 type ArmPlan = {
   userId: string;
@@ -61,6 +62,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     @Inject(KNEX) private readonly db: Knex,
     private readonly captures: CaptureService,
     private readonly references: ReferencesService,
+    private readonly locks: ReferenceLocks,
     private readonly hub: LiveHub,
     config: ConfigService
   ) {
@@ -115,8 +117,10 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
 
   private async start(plan: ArmPlan): Promise<ArmResponse> {
     const { userId, request, exerciseId, reservation } = plan;
+    const release = await this.locks.hold(plan.referenceId);
     try {
-      const reference = (await this.db<ReferenceRow>('references').where({ id: plan.referenceId }).first())!;
+      const reference = await this.db<ReferenceRow>('references').where({ id: plan.referenceId }).first();
+      if (!reference) throw conflict('no-reference', 'Record and confirm a reference first.');
       const path = await this.references.pathOf(reference);
       if (this.stopping) throw shuttingDown();
       const snapshot: TrainingSnapshot = {
@@ -140,10 +144,10 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
         attemptEnded: record => this.attemptEnded(snapshot, record),
         changed: () => this.hub.changed()
       });
-      const training: Training = { userId, session, unsubscribe: this.captures.onSample(sample => session.onSample(sample)) };
+      const training: Training = { userId, session, unsubscribe: this.captures.onSample(sample => session.onSample(sample)), release };
       this.training = training;
       try {
-        const capture = await this.captures.beginReserved({ userId, exerciseId, purpose: 'player', startAfterS: null }, reservation);
+        const capture = await this.captures.beginReserved({ userId, exerciseId, purpose: 'player', startAfterS: null }, reservation, 'training');
         this.hub.changed();
         return { captureId: capture.id, exerciseId, referenceId: reference.id, mode: request.mode };
       } catch (error) {
@@ -151,6 +155,9 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
         this.training = null;
         throw error;
       }
+    } catch (error) {
+      release();
+      throw error;
     } finally {
       this.captures.release(reservation);
     }
@@ -168,8 +175,9 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     if (training.session.attemptActive && now !== null) training.session.abortByUser(now);
     training.unsubscribe();
     this.training = null;
+    this.storing = this.storing.then(training.release);
     const capture = this.captures.activeCapture;
-    if (capture) await this.captures.stop(userId, capture.id);
+    if (capture) await this.captures.stopForTraining(capture.id);
     this.hub.changed();
     return { ok: true };
   }

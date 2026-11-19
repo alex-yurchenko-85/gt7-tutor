@@ -353,7 +353,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
           )}
         </ol>
         <p className="sub" style={{ marginTop: 12 }}>
-          Yellow rows mark places where a difference from the reference repeats in your recent attempts. A difference is not always a mistake.
+          Yellow rows mark places where a difference from the reference repeats in your recent attempts.
           Target speeds round down to 5 km/h. Turns are found from the bend of the reference line; the voice says “Tighter” only when you run wide
           before an apex.
         </p>

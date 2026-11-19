@@ -24,6 +24,11 @@ export class SampleCache {
     return loading;
   }
 
+  forget(captureId: string): void {
+    const prefix = `${captureId}:`;
+    for (const key of [...this.entries.keys()]) if (key.startsWith(prefix)) this.entries.delete(key);
+  }
+
   get size(): number {
     return this.entries.size;
   }

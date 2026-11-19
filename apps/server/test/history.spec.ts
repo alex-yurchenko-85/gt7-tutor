@@ -290,7 +290,7 @@ describe('deleting attempts and history', () => {
     const foreignPath = await rawPathOf(foreign.captureId);
     const hub = app!.get(LiveHub);
     let closed = false;
-    const client: LiveClient = { id: 'phone', userId: driverId, sessionKey: 'phone-session', bufferedAmount: 0, send: () => undefined, close: () => (closed = true) };
+    const client: LiveClient = { id: 'phone', userId: driverId, sessionKey: 'phone-session', expiresAtMs: Number.MAX_SAFE_INTEGER, bufferedAmount: 0, send: () => undefined, close: () => (closed = true) };
     hub.attach(client);
     hub.receive(client, { type: 'claim-voice', deviceId: 'phone', ready: true });
     expect(hub.voiceReady(driverId)).toBe(true);

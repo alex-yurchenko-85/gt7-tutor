@@ -3,6 +3,7 @@ import type { ClientMsg, LiveState, ServerMsg } from '@gt7/contracts';
 import { clipsForCues } from '../voice/clips.ts';
 import { browserVoicePlayer, type VoicePlayer } from '../voice/VoicePlayer.ts';
 import { api } from './client.ts';
+import { SessionContext } from '../app/session.tsx';
 import { stateRate } from '../app/state-rate.ts';
 import { delayCorrectionMs, setWantsVoice, voiceDeviceId, wantsVoice } from '../voice/device.ts';
 
@@ -29,6 +30,7 @@ const LiveContext = createContext<Live | null>(null);
 
 const OPEN = 1;
 const RECONNECT_MS = 1000;
+const MAX_RECONNECT_MS = 30000;
 const UNAUTHENTICATED_CLOSE_CODE = 4401;
 const MAX_OUTPUT_LATENCY_MS = 2000;
 
@@ -63,14 +65,19 @@ export function LiveProvider({ children, socketFactory = browserSocket, player: 
   }, []);
   const player = useMemo(() => givenPlayer ?? browserVoicePlayer(message => send(message)), [givenPlayer, send]);
   const deviceId = useMemo(() => voiceDeviceId(), []);
+  const session = useContext(SessionContext);
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
 
   useEffect(() => {
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let delayMs = RECONNECT_MS;
     const connect = () => {
       const socket = socketFactory(liveUrl());
       socketRef.current = socket;
       socket.onopen = () => {
+        delayMs = RECONNECT_MS;
         socket.send(JSON.stringify({ type: 'state-rate', perSecond: stateRate() }));
         setConnected(true);
       };
@@ -78,7 +85,10 @@ export function LiveProvider({ children, socketFactory = browserSocket, player: 
         if (socketRef.current === socket) socketRef.current = null;
         setConnected(false);
         player.stop();
-        if (!stopped && event.code !== UNAUTHENTICATED_CLOSE_CODE) timer = setTimeout(connect, RECONNECT_MS);
+        if (stopped) return;
+        if (event.code === UNAUTHENTICATED_CLOSE_CODE) sessionRef.current?.ended();
+        timer = setTimeout(connect, delayMs);
+        delayMs = Math.min(delayMs * 2, MAX_RECONNECT_MS);
       };
       socket.onmessage = event => {
         const receivedAt = performance.now();

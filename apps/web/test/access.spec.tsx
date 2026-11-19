@@ -1,7 +1,7 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { ApiStub, renderApp, setViewportWidth } from './support.tsx';
+import { ApiStub, USER, renderApp, setViewportWidth } from './support.tsx';
 
 function signInApi(names: string[]): ApiStub {
   return new ApiStub().on('GET /api/auth/state', { hasUsers: true, user: null }).on(
@@ -11,6 +11,52 @@ function signInApi(names: string[]): ApiStub {
 }
 
 describe('access', () => {
+  it('live_close_4401_shows_the_sign_in_screen', async () => {
+    setViewportWidth(1280);
+    let user: typeof USER | null = USER;
+    new ApiStub()
+      .on('GET /api/auth/state', () => ({ hasUsers: true, user }))
+      .on('GET /api/auth/profiles', [{ name: 'Driver' }])
+      .on('GET /api/exercises', [])
+      .install();
+    const { sockets } = renderApp();
+    await waitFor(() => expect(sockets.sockets).toHaveLength(1));
+    user = null;
+    act(() => sockets.latest.close(4401));
+    expect(await screen.findByRole('radiogroup', { name: 'Profiles' })).toBeInTheDocument();
+    expect(sockets.sockets).toHaveLength(1);
+  });
+
+  it('repeated_4401_closes_reconnect_with_growing_delays', async () => {
+    setViewportWidth(1280);
+    const api = new ApiStub().on('GET /api/auth/state', { hasUsers: true, user: USER }).on('GET /api/exercises', []).install();
+    const reloads = () => api.calls.filter(call => call.path === '/api/auth/state').length;
+    const { sockets } = renderApp();
+    await waitFor(() => expect(sockets.sockets).toHaveLength(1));
+    act(() => sockets.latest.close(4401));
+    expect(reloads()).toBe(2);
+    await new Promise(resolve => setTimeout(resolve, 700));
+    expect(sockets.sockets).toHaveLength(1);
+    await waitFor(() => expect(sockets.sockets).toHaveLength(2), { timeout: 1000 });
+    act(() => sockets.latest.close(4401));
+    expect(reloads()).toBe(3);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    expect(sockets.sockets).toHaveLength(2);
+    await waitFor(() => expect(sockets.sockets).toHaveLength(3), { timeout: 1000 });
+  }, 10000);
+
+  it('a_successful_open_resets_the_reconnect_delay', async () => {
+    setViewportWidth(1280);
+    new ApiStub().on('GET /api/auth/state', { hasUsers: true, user: USER }).on('GET /api/exercises', []).install();
+    const { sockets } = renderApp();
+    await waitFor(() => expect(sockets.sockets).toHaveLength(1));
+    act(() => sockets.latest.close(4401));
+    await waitFor(() => expect(sockets.sockets).toHaveLength(2), { timeout: 1500 });
+    act(() => sockets.latest.open());
+    act(() => sockets.latest.close(1006));
+    await waitFor(() => expect(sockets.sockets).toHaveLength(3), { timeout: 1300 });
+  }, 10000);
+
   it('first_visit_shows_create_profile', async () => {
     setViewportWidth(1280);
     new ApiStub().on('GET /api/auth/state', { hasUsers: false, user: null }).install();

@@ -14,6 +14,7 @@ import { AuthService } from '../auth/auth.service.js';
 import { StorageService } from '../captures/storage.service.js';
 import { ownedExercise } from '../ownership/owned.js';
 import { LiveHub } from '../live/live-hub.service.js';
+import { ReferenceLocks } from '../references/reference-locks.js';
 import type { CaptureRow } from '../ownership/owned.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { TrainingService } from '../training/training.service.js';
@@ -27,7 +28,15 @@ async function ownedAttemptCount(db: Knex, userId: string, ids: string[]): Promi
   return row.count;
 }
 
-async function removeExerciseRows(trx: Knex.Transaction, ids: string[]): Promise<Omit<RemoveExercisesResult, 'cleanup'>> {
+type ClaimReferences = (ids: string[]) => void;
+
+function busy(): ConflictException {
+  return new ConflictException({ code: 'busy', reason: 'Stop the training or the recording first.' });
+}
+
+async function removeExerciseRows(trx: Knex.Transaction, ids: string[], claim: ClaimReferences): Promise<Omit<RemoveExercisesResult, 'cleanup'>> {
+  await trx('exercises').whereIn('id', ids).forUpdate().select('id');
+  claim(await trx('references').whereIn('exercise_id', ids).pluck<string[]>('id'));
   const attempts = await trx('attempts').whereIn('exercise_id', ids).del();
   await trx('exercises').whereIn('id', ids).update({ active_reference_id: null });
   const references = await trx('references').whereIn('exercise_id', ids).del();
@@ -43,7 +52,8 @@ export class HistoryService {
     private readonly training: TrainingService,
     private readonly storage: StorageService,
     private readonly auth: AuthService,
-    private readonly hub: LiveHub
+    private readonly hub: LiveHub,
+    private readonly locks: ReferenceLocks
   ) {}
 
   async deleteAttempts(userId: string, ids: string[]): Promise<DeleteAttemptsResult> {
@@ -58,48 +68,72 @@ export class HistoryService {
 
   async deleteHistory(userId: string, request: DeleteHistoryRequest): Promise<DeleteHistoryResult> {
     await this.waitUntilIdle(userId);
-    const counts = await this.db.transaction(async trx => {
-      const exerciseIds =
-        request.exerciseId === undefined
-          ? await trx('exercises').where({ user_id: userId }).pluck<string[]>('id')
-          : [(await ownedExercise(trx, userId, request.exerciseId)).id];
-      const attempts = await trx('attempts').whereIn('exercise_id', exerciseIds).del();
-      const references = request.scope === 'everything' ? await trx('references').whereIn('exercise_id', exerciseIds).del() : 0;
-      return { attempts, references };
-    });
+    const counts = await this.deletingReferences(claim =>
+      this.db.transaction(async trx => {
+        const exerciseIds =
+          request.exerciseId === undefined
+            ? await trx('exercises').where({ user_id: userId }).pluck<string[]>('id')
+            : [(await ownedExercise(trx, userId, request.exerciseId)).id];
+        if (request.scope === 'everything') {
+          await trx('exercises').whereIn('id', exerciseIds).forUpdate().select('id');
+          claim(await trx('references').whereIn('exercise_id', exerciseIds).pluck<string[]>('id'));
+        }
+        const attempts = await trx('attempts').whereIn('exercise_id', exerciseIds).del();
+        const references = request.scope === 'everything' ? await trx('references').whereIn('exercise_id', exerciseIds).del() : 0;
+        return { attempts, references };
+      })
+    );
     return { ...counts, cleanup: request.cleanup ? await this.storage.cleanup(userId) : null };
   }
 
   async removeExercises(userId: string, request: RemoveExercisesRequest): Promise<RemoveExercisesResult> {
     await this.waitUntilIdle(userId);
     const ids = [...new Set(request.ids)];
-    const counts = await this.db.transaction(async trx => {
-      const owned = await trx('exercises').whereIn('id', ids).where({ user_id: userId }).pluck<string[]>('id');
-      if (owned.length !== ids.length) throw new NotFoundException('Exercise not found');
-      return removeExerciseRows(trx, ids);
-    });
+    const counts = await this.deletingReferences(claim =>
+      this.db.transaction(async trx => {
+        const owned = await trx('exercises').whereIn('id', ids).where({ user_id: userId }).pluck<string[]>('id');
+        if (owned.length !== ids.length) throw new NotFoundException('Exercise not found');
+        return removeExerciseRows(trx, ids, claim);
+      })
+    );
     return { ...counts, cleanup: request.cleanup ? await this.storage.cleanup(userId) : null };
   }
 
   async deleteProfile(user: ProfileUser, request: DeleteProfileRequest, address: string): Promise<DeleteProfileResult> {
     await this.waitUntilIdle(user.id);
     await this.auth.confirmPassword(user, request.password, address);
-    const { counts, captures } = await this.db.transaction(async trx => {
-      const exerciseIds = await trx('exercises').where({ user_id: user.id }).pluck<string[]>('id');
-      const removed = await removeExerciseRows(trx, exerciseIds);
-      const rows = await trx<CaptureRow>('captures').where({ user_id: user.id }).select('raw_path');
-      await trx('captures').where({ user_id: user.id }).del();
-      await trx('sessions').where({ user_id: user.id }).del();
-      await trx('users').where({ id: user.id }).del();
-      return { counts: removed, captures: rows };
-    });
+    const { counts, captures } = await this.deletingReferences(claim =>
+      this.db.transaction(async trx => {
+        const exerciseIds = await trx('exercises').where({ user_id: user.id }).pluck<string[]>('id');
+        const removed = await removeExerciseRows(trx, exerciseIds, claim);
+        const rows = await trx<CaptureRow>('captures').where({ user_id: user.id }).select('id', 'raw_path');
+        await trx('captures').where({ user_id: user.id }).del();
+        await trx('sessions').where({ user_id: user.id }).del();
+        await trx('users').where({ id: user.id }).del();
+        return { counts: removed, captures: rows };
+      })
+    );
     this.hub.dropProfile(user.id);
     this.hub.changed();
     return { ...counts, cleanup: await this.storage.removeFiles(captures) };
   }
 
   private async waitUntilIdle(userId: string): Promise<void> {
-    if (this.training.busyFor(userId)) throw new ConflictException({ code: 'busy', reason: 'Stop the training or the recording first.' });
+    if (this.training.busyFor(userId)) throw busy();
     await this.training.idle();
+  }
+
+  private async deletingReferences<T>(work: (claim: ClaimReferences) => Promise<T>): Promise<T> {
+    const releases: (() => void)[] = [];
+    const claim = (ids: string[]) => {
+      const release = this.locks.deleting(ids);
+      if (!release) throw busy();
+      releases.push(release);
+    };
+    try {
+      return await work(claim);
+    } finally {
+      for (const release of releases) release();
+    }
   }
 }

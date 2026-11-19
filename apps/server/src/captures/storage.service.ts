@@ -12,6 +12,7 @@ import type { Knex } from 'knex';
 import type { CaptureRow } from '../ownership/owned.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { CaptureService } from './capture.service.js';
+import { SampleCache } from './sample-cache.js';
 
 function fileSize(path: string): number {
   return existsSync(path) ? statSync(path).size : 0;
@@ -41,6 +42,7 @@ export class StorageService {
   constructor(
     @Inject(KNEX) private readonly db: Knex,
     private readonly captures: CaptureService,
+    private readonly samples: SampleCache,
     config: ConfigService
   ) {
     this.rawDir = join(config.getOrThrow<string>('DATA_DIR'), 'raw');
@@ -60,19 +62,21 @@ export class StorageService {
       if (!existsSync(path)) continue;
       result.bytesBefore += fileSize(path);
       await rewriteKeeping(path, await this.usedRanges(row.id));
+      this.samples.forget(row.id);
       result.bytesAfter += fileSize(path);
       result.captures++;
     }
     return result;
   }
 
-  async removeFiles(rows: Pick<CaptureRow, 'raw_path'>[]): Promise<CleanupResult> {
+  async removeFiles(rows: Pick<CaptureRow, 'id' | 'raw_path'>[]): Promise<CleanupResult> {
     const result: CleanupResult = { captures: 0, bytesBefore: 0, bytesAfter: 0 };
     for (const row of rows) {
       const path = this.captures.rawPath(row);
       if (!existsSync(path)) continue;
       result.bytesBefore += fileSize(path);
       await unlink(path);
+      this.samples.forget(row.id);
       result.captures++;
     }
     return result;

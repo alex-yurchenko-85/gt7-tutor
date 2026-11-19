@@ -3,7 +3,8 @@ import { Writable } from 'node:stream';
 import type { INestApplication } from '@nestjs/common';
 import knex, { type Knex } from 'knex';
 import request from 'supertest';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { randomUUID } from 'node:crypto';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OpenStream } from '@gt7/capture';
 import type { LiveState, RawDatagram, Sample, ServerMsg } from '@gt7/contracts';
 import { DEFAULT_CONFIG, DEFAULT_SIDE_CUE_DISTANCE_M, buildCueEvents, buildReference, estimatedPhraseMs, replayCoach, toSample } from '@gt7/core';
@@ -18,6 +19,8 @@ import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.facto
 import { MONO_CLOCK } from '../src/clock/mono-clock.js';
 import { LiveHub, type LiveClient } from '../src/live/live-hub.service.js';
 import { TrainingSession, type AttemptRecord } from '../src/training/training-session.js';
+import { TrainingService } from '../src/training/training.service.js';
+import { ReferenceLocks } from '../src/references/reference-locks.js';
 import { createTestApp } from './support/app.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
 import { ManualSource, TestClock, eventually, fixtureRows, openLive, type LiveConnection } from './support/live.js';
@@ -45,6 +48,18 @@ class SwitchableOpener {
           }
         })
       : createWriteStream(path, { flags: 'wx' });
+}
+
+class StopFailsOnce extends ManualSource {
+  failed = false;
+
+  override async stop(): Promise<void> {
+    if (!this.failed) {
+      this.failed = true;
+      throw new Error('stop failed');
+    }
+    await super.stop();
+  }
 }
 
 class GatedSampleCache extends SampleCache {
@@ -531,6 +546,132 @@ describe('training pipeline and live protocol', () => {
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
   });
 
+  it('capture_stop_is_refused_while_a_training_owns_it', async () => {
+    const armed = await arm('baseline', new ManualSource());
+    expect(armed.status).toBe(201);
+    const stop = await http().post(`/api/captures/${armed.body.captureId}/stop`).set('Cookie', cookie);
+    expect(stop.status).toBe(409);
+    expect(stop.body.code).toBe('training-owns-capture');
+    expect(stop.body.reason).toBe('A training uses this capture. Stop the training first.');
+    await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
+    expect(await openCaptures()).toEqual([]);
+  });
+
+  async function activeReferenceId(): Promise<string> {
+    const references = await http().get(`/api/exercises/${exerciseId}/references`).set('Cookie', cookie).expect(200);
+    return references.body[0].id as string;
+  }
+
+  it('reference_delete_is_refused_while_a_training_uses_it', async () => {
+    const id = await activeReferenceId();
+    expect((await arm('baseline', new ManualSource())).status).toBe(201);
+    const refused = await http().delete(`/api/references/${id}`).set('Cookie', cookie);
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({ code: 'reference-in-use', reason: 'A training uses this reference. Stop the training first.' });
+    await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
+    await app.get(TrainingService).idle();
+    await http().delete(`/api/references/${id}`).set('Cookie', cookie).expect(200);
+  });
+
+  it('reference_delete_is_refused_while_a_training_arms', async () => {
+    const id = await activeReferenceId();
+    const armed = (await armHeldAtReference()).response;
+    const refused = await http().delete(`/api/references/${id}`).set('Cookie', cookie);
+    samples.open();
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('reference-in-use');
+    expect((await armed).status).toBe(201);
+    await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
+  });
+
+  it('arm_during_a_reference_delete_waits_and_reports_no_reference', async () => {
+    const id = await activeReferenceId();
+    const locks = app.get(ReferenceLocks);
+    const done = locks.deleting([id])!;
+    const armed = arm('baseline', new ManualSource()).then(result => result);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    await db('references').where({ id }).delete();
+    done();
+    const response = await armed;
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe('no-reference');
+    expect(locks.held(id)).toBe(false);
+    expect(await openCaptures()).toEqual([]);
+    replays.queue.length = 0;
+  });
+
+  it('history_delete_is_refused_while_a_training_holds_the_reference', async () => {
+    const id = await activeReferenceId();
+    const release = await app.get(ReferenceLocks).hold(id);
+    const refused = await http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'everything', cleanup: false });
+    release();
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('busy');
+    expect(await db('references').where({ id })).toHaveLength(1);
+  });
+
+  it('exercise_remove_is_refused_while_a_training_holds_the_reference', async () => {
+    const id = await activeReferenceId();
+    const release = await app.get(ReferenceLocks).hold(id);
+    const refused = await http().post('/api/exercises/remove').set('Cookie', cookie).send({ ids: [exerciseId], cleanup: false });
+    release();
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('busy');
+    expect(await db('references').where({ id })).toHaveLength(1);
+  });
+
+  it('capture_stop_recovers_after_a_failed_disarm', async () => {
+    const armed = await arm('baseline', new StopFailsOnce());
+    expect(armed.status).toBe(201);
+    const disarm = await http().post('/api/training/disarm').set('Cookie', cookie);
+    expect(disarm.status).toBe(500);
+    await http().post(`/api/captures/${armed.body.captureId}/stop`).set('Cookie', cookie).expect(201);
+    expect(await openCaptures()).toEqual([]);
+  });
+
+  it('history_delete_keeps_a_reference_inserted_during_the_delete', async () => {
+    const original = await db('references').where({ id: await activeReferenceId() }).first();
+    const copy = { ...original, id: randomUUID(), created_at: new Date() };
+    const locks = app.get(ReferenceLocks);
+    const deleting = locks.deleting.bind(locks);
+    let inserting: Promise<unknown> | null = null;
+    vi.spyOn(locks, 'deleting').mockImplementationOnce(ids => {
+      inserting = db('references')
+        .insert(copy)
+        .catch(() => undefined);
+      return deleting(ids);
+    });
+    const blocker = await db.transaction();
+    let deleted: Promise<request.Response>;
+    try {
+      await blocker.raw('lock table attempts in access exclusive mode');
+      deleted = http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'everything', cleanup: false }).then(result => result);
+      await eventually(() => inserting !== null);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } finally {
+      await blocker.commit();
+    }
+    expect((await deleted).status).toBe(200);
+    await inserting;
+    expect(await db('references').where({ id: copy.id })).toHaveLength(1);
+    expect(await db('references').where({ id: original.id })).toHaveLength(0);
+  });
+
+  it('reference_delete_after_disarm_keeps_the_last_attempt', async () => {
+    const id = await activeReferenceId();
+    const source = new ManualSource();
+    const watcher = await live();
+    expect((await arm('baseline', source)).status).toBe(201);
+    source.emit(slowRun);
+    await watcher.waitFor('state', message => message.state.mode === 'finished');
+    await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
+    const refused = await http().delete(`/api/references/${id}`).set('Cookie', cookie);
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('reference-in-use');
+    const [attempt] = await storedAttempts();
+    expect(attempt.reference_id).toBe(id);
+  });
+
   it('capture_during_arm_is_409', async () => {
     const armed = (await armHeldAtReference()).response;
     replays.queue.push('demo-b');
@@ -676,6 +817,7 @@ describe('training pipeline and live protocol', () => {
       id: 'slow',
       userId: user.id,
       sessionKey: 'slow-session',
+      expiresAtMs: Number.MAX_SAFE_INTEGER,
       bufferedAmount: 300 * 1024,
       send: text => {
         const message = JSON.parse(text);

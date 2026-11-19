@@ -43,6 +43,7 @@ import {
   type ReferenceRow
 } from '../ownership/owned.js';
 import { SettingsService } from '../settings/settings.service.js';
+import { ReferenceLocks } from './reference-locks.js';
 import { KNEX } from '../storage/knex.provider.js';
 
 type ReferenceSource = {
@@ -110,7 +111,8 @@ export class ReferencesService {
     @Inject(KNEX) private readonly db: Knex,
     private readonly captures: CaptureService,
     private readonly settings: SettingsService,
-    private readonly samples: SampleCache
+    private readonly samples: SampleCache,
+    private readonly locks: ReferenceLocks
   ) {}
 
   async samplesOf(capture: CaptureRow, range?: RawRange): Promise<Sample[]> {
@@ -171,10 +173,16 @@ export class ReferencesService {
 
   async remove(userId: string, id: string): Promise<{ ok: true }> {
     const reference = await ownedReference(this.db, userId, id);
-    const used = await this.db('attempts').where({ reference_id: reference.id }).first('id');
-    if (used) throw conflict('reference-in-use', 'Attempts point to this reference. It cannot be deleted.');
-    await this.db('references').where({ id: reference.id }).delete();
-    return { ok: true };
+    const done = this.locks.deleting([reference.id]);
+    if (!done) throw conflict('reference-in-use', 'A training uses this reference. Stop the training first.');
+    try {
+      const used = await this.db('attempts').where({ reference_id: reference.id }).first('id');
+      if (used) throw conflict('reference-in-use', 'Attempts point to this reference. It cannot be deleted.');
+      await this.db('references').where({ id: reference.id }).delete();
+      return { ok: true };
+    } finally {
+      done();
+    }
   }
 
   async check(userId: string, id: string, captureId: string): Promise<ReferenceCheckResult> {
