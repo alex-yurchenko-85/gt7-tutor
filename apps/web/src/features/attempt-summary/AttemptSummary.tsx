@@ -15,14 +15,12 @@ export function AttemptSummary({ attemptId, onDriveAgain }: { attemptId: string;
   const complete = data.completion === 'complete';
   return (
     <section className="panel summary" aria-label={`Attempt ${data.number}`}>
-      <p className="sub">
-        Attempt {data.number}, {data.mode === 'guided' ? 'with voice' : 'without voice'}
-      </p>
-      <div className="summary-time">{complete && data.timeMs !== null ? formatTime(data.timeMs) : 'No time'}</div>
+      <p className="sub">Attempt {data.number}</p>
+      <div className="summary-time">{complete ? formatTime(data.timeMs) : 'No time'}</div>
       {!complete ? (
         <p className="sub">The attempt did not finish{data.reason ? ` (${abortReasonText(data.reason)})` : ''}. Only complete attempts have a time.</p>
       ) : (
-        <p className="sub">{data.timeMs === null ? 'No time from the game.' : 'Time from the game.'}</p>
+        <p className="sub">Time from the game.</p>
       )}
       {data.focus ? (
         <div className="summary-focus">

@@ -9,7 +9,6 @@ type ManifestRow = {
   source: string;
   range: { first: number; last: number };
   rows: number;
-  startCueMonoMs: number | null;
   peerIp: '0.0.0.0';
   note: string;
 };
@@ -37,13 +36,6 @@ function readArguments() {
   }
   if (!/^[a-z0-9-]+$/.test(values.name)) throw new Error('--name must use a-z, 0-9 and -');
   return { input: resolve(values.in), first, last, name: values.name };
-}
-
-function readStartCue(input: string): number | null {
-  const summaryPath = `${input}.summary.json`;
-  if (!existsSync(summaryPath)) return null;
-  const summary = JSON.parse(readFileSync(summaryPath, 'utf8')) as { startCue?: { firedMonoMs?: number | null } | null };
-  return summary.startCue?.firedMonoMs ?? null;
 }
 
 async function copyRange(input: string, first: number, last: number): Promise<string[]> {
@@ -86,7 +78,6 @@ async function main() {
     source: basename(input, '.ndjson'),
     range: { first, last },
     rows: rows.length,
-    startCueMonoMs: readStartCue(input),
     peerIp: scrubbedPeerIp,
     note: 'Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed.'
   });

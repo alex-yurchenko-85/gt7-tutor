@@ -47,7 +47,7 @@ export function DeleteProfileDialog({ onKeep }: { onKeep(): void }) {
           <b>{list ? counted(list.length, 'exercise') : 'the exercises'}</b> with {theirs(list?.length ?? 0)} references
         </li>
         <li>
-          <b>{attempts === null ? 'the attempts' : counted(attempts, 'attempt')}</b> with {theirs(attempts ?? 0)} cue events and differences
+          <b>{attempts === null ? 'the attempts' : counted(attempts, 'attempt')}</b> with {theirs(attempts ?? 0)} cues and differences
         </li>
         <li>
           {storage.data ? (

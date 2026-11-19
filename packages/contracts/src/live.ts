@@ -16,9 +16,9 @@ export const cueKindSchema = z.enum([
 
 export type CueKind = z.infer<typeof cueKindSchema>;
 
-export type LiveCueKind = CueKind | 'guidance-paused' | 'guidance-resumed' | 'focus' | 'countdown';
+export type LiveCueKind = CueKind | 'guidance-paused' | 'guidance-resumed' | 'focus';
 
-export type WordedCueKind = Exclude<LiveCueKind, 'focus' | 'countdown'>;
+export type WordedCueKind = Exclude<LiveCueKind, 'focus'>;
 
 export const CUE_WORDS: Record<WordedCueKind, string> = {
   'hard-brake': 'Hard brake',
@@ -75,9 +75,9 @@ export type LiveState = {
   lastCue: LiveCue | null;
   nextCue: { text: string; inM: number } | null;
   lastAttemptId: string | null;
-  trainingMode: TrainingMode | null;
   referenceId: string | null;
   gapMs: number | null;
+  startMissed: boolean;
 };
 
 export type ServerMsg =
@@ -109,13 +109,7 @@ export const clientMsgSchema = z.discriminatedUnion('type', [
 
 export type ClientMsg = z.infer<typeof clientMsgSchema>;
 
-export const trainingModeSchema = z.enum(['baseline', 'guided']);
-
-export type TrainingMode = z.infer<typeof trainingModeSchema>;
-
-export const armTrainingSchema = z
-  .object({ exerciseId: z.uuid(), mode: trainingModeSchema, confirmNoVoice: z.boolean().optional() })
-  .strict();
+export const armTrainingSchema = z.object({ exerciseId: z.uuid() }).strict();
 
 export type ArmTrainingRequest = z.infer<typeof armTrainingSchema>;
 
@@ -123,4 +117,4 @@ export const devReplaySchema = z.object({ fixture: z.string().regex(/^[a-z0-9-]+
 
 export type DevReplayRequest = z.infer<typeof devReplaySchema>;
 
-export type ArmResponse = { captureId: string; exerciseId: string; referenceId: string; mode: TrainingMode };
+export type ArmResponse = { captureId: string; exerciseId: string; referenceId: string };

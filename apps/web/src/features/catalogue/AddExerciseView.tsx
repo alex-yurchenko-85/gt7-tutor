@@ -33,7 +33,7 @@ function unique(values: (string | null)[]): string[] {
 }
 
 function targetTime(ms: number): string {
-  return ms < MINUTE_MS ? (ms / 1000).toFixed(2) : formatTime(ms, 2);
+  return ms < MINUTE_MS ? (ms / 1000).toFixed(3) : formatTime(ms, 3);
 }
 
 function targetsText(entry: CatalogueListEntry): string {
@@ -233,7 +233,7 @@ export function AddExerciseView() {
       ) : (
         <div className="panel empty">
           <p>No exercise matches.</p>
-          <p className="sub">Check the spelling, or select another family.</p>
+          <p className="sub">Check the spelling, or clear the filters.</p>
           <button className="btn inline ghost" type="button" onClick={() => setFilters(NO_FILTERS)}>
             Clear filters
           </button>

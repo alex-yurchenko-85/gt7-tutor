@@ -23,6 +23,7 @@ export function exercise(overrides: Partial<Exercise> = {}): Exercise {
     referenceCount: 0,
     completeAttempts: 0,
     bestMs: null,
+    nextMedal: null,
     createdAt: '2026-11-16T10:00:00.000Z',
     ...overrides
   };
@@ -52,9 +53,9 @@ const FOCUS_CLIPS = ['brake-early', 'brake-late', 'slow-corner', 'throttle-late'
 export const REFERENCE_CLIPS = ['hard-brake', 'speed-85', 'full-throttle', 'ease-off', 'big-stop', 'tighter', 'keep-left', 'keep-right', 'guidance-paused', 'guidance-resumed', ...FOCUS_CLIPS];
 
 export const CORNERS: CornerInfo[] = [
-  { number: 1, turnInSM: 461, apexSM: 519, radiusM: 43.05, apexSpeedMps: 88.96 / KPH_PER_MPS },
-  { number: 2, turnInSM: 691, apexSM: 737, radiusM: 65.8, apexSpeedMps: 109.99 / KPH_PER_MPS },
-  { number: 3, turnInSM: 834, apexSM: 870, radiusM: 84.2, apexSpeedMps: 122.5 / KPH_PER_MPS }
+  { number: 1, turnInSM: 461, apexSM: 519, radiusM: 43.05, apexSpeedMps: 88.96 / KPH_PER_MPS, zoneFromSM: 461, zoneToSM: 577 },
+  { number: 2, turnInSM: 691, apexSM: 737, radiusM: 65.8, apexSpeedMps: 109.99 / KPH_PER_MPS, zoneFromSM: 691, zoneToSM: 783 },
+  { number: 3, turnInSM: 834, apexSM: 870, radiusM: 84.2, apexSpeedMps: 122.5 / KPH_PER_MPS, zoneFromSM: 834, zoneToSM: 906 }
 ];
 
 export function reference(overrides: Partial<ReferenceInfo> = {}): ReferenceInfo {
@@ -65,7 +66,6 @@ export function reference(overrides: Partial<ReferenceInfo> = {}): ReferenceInfo
     first: 352,
     last: 1897,
     origin: 'demo',
-    startKind: 'flying',
     gameVersion: '1.65',
     needsCheck: false,
     active: true,

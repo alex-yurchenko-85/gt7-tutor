@@ -25,19 +25,19 @@ function recordingEffects(records: AttemptRecord[]): TrainingEffects {
 describe('TrainingSession', () => {
   it('finished_attempt_range_keeps_the_game_timer_finish', async () => {
     const samples = await readSamples(CE_CLEAN);
-    const analysis = analyseReference(samples.filter(sample => sample.rawIndex >= 8452 && sample.rawIndex <= 9476), 'flying', DEFAULT_CONFIG);
+    const analysis = analyseReference(samples.filter(sample => sample.rawIndex >= 8452 && sample.rawIndex <= 9476), DEFAULT_CONFIG);
     const records: AttemptRecord[] = [];
     const session = new TrainingSession(
       {
         userId: 'user',
         exerciseId: 'exercise',
         referenceId: 'reference',
-        mode: 'baseline',
         analysis: { ...analysis, events: [], corners: [] },
         mutedKeys: new Set(),
         speakTargets: false,
         offsetsMs: new Map(),
-        sideCueDistanceM: null
+        sideCueDistanceM: null,
+        storedAttempts: 0
       },
       DEFAULT_CONFIG,
       recordingEffects(records)
@@ -49,14 +49,14 @@ describe('TrainingSession', () => {
   });
 
   it('live_session_and_replay_give_the_same_trace', async () => {
-    const analysis = analyseReference(await readSamples(DEMO_A, { first: 457, last: 1422 }), 'flying', DEFAULT_CONFIG);
+    const analysis = analyseReference(await readSamples(DEMO_A, { first: 457, last: 1422 }), DEFAULT_CONFIG);
     const settings = { mutedKeys: new Set(['throttle@411']), speakTargets: false, offsetsMs: new Map([['ease-off@564', 150]]), sideCueDistanceM: 1 };
     const samples = await readSamples(CE_SLOW);
     const sent: { id: string; kind: string; clip: string; followClip: string | null; rawIndex: number; decidedMonoMs: number }[] = [];
     let current: Sample | null = null;
     let generation = 0;
     const session = new TrainingSession(
-      { userId: 'user', exerciseId: 'exercise', referenceId: 'reference', mode: 'guided', analysis, ...settings },
+      { userId: 'user', exerciseId: 'exercise', referenceId: 'reference', analysis, storedAttempts: 0, ...settings },
       DEFAULT_CONFIG,
       {
         deviceDelayMs: () => 60,
@@ -84,10 +84,10 @@ describe('TrainingSession', () => {
   });
   it('standing_car_sends_no_state_changes', async () => {
     const samples = await readSamples(CE_CLEAN);
-    const analysis = analyseReference(samples.filter(sample => sample.rawIndex >= 8452 && sample.rawIndex <= 9476), 'flying', DEFAULT_CONFIG);
+    const analysis = analyseReference(samples.filter(sample => sample.rawIndex >= 8452 && sample.rawIndex <= 9476), DEFAULT_CONFIG);
     let changes = 0;
     const session = new TrainingSession(
-      { userId: 'user', exerciseId: 'exercise', referenceId: 'reference', mode: 'guided', analysis, mutedKeys: new Set(), speakTargets: false, offsetsMs: new Map(), sideCueDistanceM: null },
+      { userId: 'user', exerciseId: 'exercise', referenceId: 'reference', analysis, mutedKeys: new Set(), speakTargets: false, offsetsMs: new Map(), sideCueDistanceM: null, storedAttempts: 0 },
       DEFAULT_CONFIG,
       { ...recordingEffects([]), changed: () => void changes++ }
     );
@@ -99,12 +99,12 @@ describe('TrainingSession', () => {
   });
 
   it('cue_records_of_old_generations_are_dropped', async () => {
-    const analysis = analyseReference(await readSamples(DEMO_A, { first: 457, last: 1422 }), 'flying', DEFAULT_CONFIG);
+    const analysis = analyseReference(await readSamples(DEMO_A, { first: 457, last: 1422 }), DEFAULT_CONFIG);
     const samples = await readSamples(CE_SLOW);
     const sentIds: string[] = [];
     let generation = 0;
     const session = new TrainingSession(
-      { userId: 'user', exerciseId: 'exercise', referenceId: 'reference', mode: 'guided', analysis, mutedKeys: new Set(), speakTargets: false, offsetsMs: new Map(), sideCueDistanceM: 1 },
+      { userId: 'user', exerciseId: 'exercise', referenceId: 'reference', analysis, mutedKeys: new Set(), speakTargets: false, offsetsMs: new Map(), sideCueDistanceM: 1, storedAttempts: 0 },
       DEFAULT_CONFIG,
       {
         ...recordingEffects([]),
@@ -130,5 +130,25 @@ describe('TrainingSession', () => {
     expect(session.recordOutcome(idsByRound[0]![0]!, 'played', 10)).toBeNull();
     expect(session.recordOutcome(idsByRound[1]![0]!, 'played', 10)).not.toBeNull();
     expect(session.recordOutcome(idsByRound[2]![0]!, 'played', 10)).not.toBeNull();
+  });
+
+  it('live_state_shows_a_missed_start_while_the_timer_runs_without_an_attempt', async () => {
+    const samples = await readSamples(CE_SLOW);
+    const analysis = analyseReference(await readSamples(DEMO_A, { first: 457, last: 1422 }), DEFAULT_CONFIG);
+    let changes = 0;
+    const session = new TrainingSession(
+      { userId: 'user', exerciseId: 'exercise', referenceId: 'reference', analysis, mutedKeys: new Set(), speakTargets: false, offsetsMs: new Map(), sideCueDistanceM: null, storedAttempts: 0 },
+      DEFAULT_CONFIG,
+      { ...recordingEffects([]), changed: () => void changes++ }
+    );
+    const missed: number[] = [];
+    for (const sample of samples.filter(item => item.rawIndex >= 6000)) {
+      const before = changes;
+      session.onSample(sample);
+      if (session.state.startMissed) missed.push(sample.rawIndex);
+      if (sample.rawIndex === 6001) expect(changes, String(sample.rawIndex)).toBe(before + 1);
+    }
+    expect(session.state.mode).toBe('armed');
+    expect([missed[0], missed.at(-1), missed.length]).toEqual([6001, 6621, 621]);
   });
 });

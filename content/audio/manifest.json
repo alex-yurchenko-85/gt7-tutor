@@ -58,22 +58,6 @@
       "file": "clips/voice-check.wav",
       "durationMs": 729
     },
-    "countdown-three": {
-      "file": "clips/countdown-three.wav",
-      "durationMs": 512
-    },
-    "countdown-two": {
-      "file": "clips/countdown-two.wav",
-      "durationMs": 470
-    },
-    "countdown-one": {
-      "file": "clips/countdown-one.wav",
-      "durationMs": 440
-    },
-    "countdown-start": {
-      "file": "clips/countdown-start.wav",
-      "durationMs": 581
-    },
     "focus-brake-early-1": {
       "file": "clips/focus-brake-early-1.wav",
       "durationMs": 1280

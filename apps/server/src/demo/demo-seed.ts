@@ -13,7 +13,7 @@ import { TrainingService } from '../training/training.service.js';
 
 export const DEMO_CATALOGUE_ID = 'ce-autodromo-de-interlagos';
 export const DEMO_TARGETS = { goldMs: 16400, silverMs: 16700, bronzeMs: 17800 } as const;
-export const DEMO_REFERENCE = { fixture: 'demo-a', first: 457, last: 1422, startKind: 'flying' } as const;
+export const DEMO_REFERENCE = { fixture: 'demo-a', first: 457, last: 1422 } as const;
 const AS_FAST_AS_POSSIBLE = 0;
 
 @Injectable()
@@ -43,24 +43,23 @@ export class DemoSeed {
       exerciseId: exercise.id,
       captureId,
       first: DEMO_REFERENCE.first,
-      last: DEMO_REFERENCE.last,
-      startKind: DEMO_REFERENCE.startKind
+      last: DEMO_REFERENCE.last
     });
     await this.references.activate(user.id, reference.id);
-    for (const fixture of DEMO_ATTEMPT_FIXTURES) await this.driveBaseline(user.id, exercise.id, fixture);
+    for (const fixture of DEMO_ATTEMPT_FIXTURES) await this.driveAttempt(user.id, exercise.id, fixture);
   }
 
   private async recordDemonstration(userId: string, exerciseId: string): Promise<string> {
     this.replayFiles.select(this.fixturePath(DEMO_REFERENCE.fixture), AS_FAST_AS_POSSIBLE);
-    const capture = await this.captures.begin({ userId, exerciseId, purpose: 'demo', startAfterS: null });
+    const capture = await this.captures.begin({ userId, exerciseId, purpose: 'demo' });
     await this.replayFiles.lastReplayFinished();
     await this.captures.stop(userId, capture.id);
     return capture.id;
   }
 
-  private async driveBaseline(userId: string, exerciseId: string, fixture: string): Promise<void> {
+  private async driveAttempt(userId: string, exerciseId: string, fixture: string): Promise<void> {
     this.replayFiles.select(this.fixturePath(fixture), AS_FAST_AS_POSSIBLE);
-    await this.training.arm(userId, { exerciseId, mode: 'baseline' });
+    await this.training.arm(userId, { exerciseId });
     await this.replayFiles.lastReplayFinished();
     await this.training.idle();
     await this.training.disarm(userId);

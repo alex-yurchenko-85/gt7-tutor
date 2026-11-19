@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { Corner } from '../src/corners.ts';
-import { turnLosses, turnOf } from '../src/turns.ts';
+import { turnLosses, turnOf, turnZones } from '../src/turns.ts';
 import { kph } from '../src/units.ts';
+import { interlagosAnalysis } from './paths.ts';
 
-function corner(number: number, zoneStartSM: number): Corner {
+function corner(number: number, zoneStartSM: number, turnInSM = zoneStartSM + 20, apexSM = zoneStartSM + 40): Corner {
   return {
     number,
     zoneStartSM,
-    turnInSM: zoneStartSM + 20,
-    apexSM: zoneStartSM + 40,
+    turnInSM,
+    apexSM,
     radiusM: 60,
     apexSpeedMps: kph(90),
     insideSign: 1
@@ -23,12 +24,38 @@ describe('turns', () => {
     expect(turnOf([], 10)).toBeNull();
   });
 
-  it('turn_losses_split_the_section_at_zone_starts', () => {
+  it('turn_zone_runs_from_the_turn_in_to_the_same_distance_after_the_apex', () => {
+    expect(turnZones([corner(1, 100), corner(2, 300)], 500)).toEqual([
+      { turn: 1, fromSM: 120, toSM: 160 },
+      { turn: 2, fromSM: 320, toSM: 360 }
+    ]);
+  });
+
+  it('zones_end_at_the_next_turn_in', () => {
+    const zones = turnZones([corner(1, 100, 120, 160), corner(2, 150, 180, 210)], 500);
+    expect(zones).toEqual([
+      { turn: 1, fromSM: 120, toSM: 180 },
+      { turn: 2, fromSM: 180, toSM: 240 }
+    ]);
+    expect(zones[0]!.toSM).toBeLessThanOrEqual(zones[1]!.fromSM);
+  });
+
+  it('zones_end_at_the_end_of_the_section', () => {
+    expect(turnZones([corner(1, 400, 450, 480)], 500)).toEqual([{ turn: 1, fromSM: 450, toSM: 500 }]);
+    expect(turnZones([], 500)).toEqual([]);
+  });
+
+  it('interlagos_sector_2_turn_1_zone', () => {
+    const { corners, path } = interlagosAnalysis();
+    expect(turnZones(corners, path.lengthM)).toEqual([{ turn: 1, fromSM: 346, toSM: 462 }]);
+  });
+
+  it('turn_losses_count_only_the_turn_zone', () => {
     const t = Array.from({ length: 51 }, (_, i) => i * 100);
     const ref = Array.from({ length: 51 }, (_, i) => i * 100 - i * 20);
     expect(turnLosses([corner(1, 100), corner(2, 300)], 500, 10, t, ref)).toEqual([
-      { turn: 1, fromSM: 0, toSM: 300, lostMs: 600 },
-      { turn: 2, fromSM: 300, toSM: 500, lostMs: 400 }
+      { turn: 1, fromSM: 120, toSM: 160, lostMs: 80 },
+      { turn: 2, fromSM: 320, toSM: 360, lostMs: 80 }
     ]);
   });
 
@@ -36,16 +63,16 @@ describe('turns', () => {
     const t = Array.from({ length: 51 }, (_, i) => (i <= 30 ? i * 100 : null));
     const ref = Array.from({ length: 51 }, (_, i) => i * 90);
     expect(turnLosses([corner(1, 100), corner(2, 300)], 500, 10, t, ref)).toEqual([
-      { turn: 1, fromSM: 0, toSM: 300, lostMs: 300 },
-      { turn: 2, fromSM: 300, toSM: 500, lostMs: null }
+      { turn: 1, fromSM: 120, toSM: 160, lostMs: 40 },
+      { turn: 2, fromSM: 320, toSM: 360, lostMs: null }
     ]);
   });
 
   it('turn_losses_use_the_first_and_last_matched_points_in_the_zone', () => {
-    const t = Array.from({ length: 51 }, (_, i) => (i === 0 || i === 30 ? null : i * 100));
-    const ref = Array.from({ length: 51 }, (_, i) => (i === 29 ? null : i * 90));
+    const t = Array.from({ length: 51 }, (_, i) => (i === 12 ? null : i * 100));
+    const ref = Array.from({ length: 51 }, (_, i) => (i === 16 ? null : i * 90));
     expect(turnLosses([corner(1, 100)], 500, 10, t, ref)).toEqual([
-      { turn: 1, fromSM: 0, toSM: 500, lostMs: 490 }
+      { turn: 1, fromSM: 120, toSM: 160, lostMs: 20 }
     ]);
   });
 

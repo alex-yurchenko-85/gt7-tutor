@@ -15,7 +15,7 @@ import { SelectionBar } from '../../app/SelectionBar.tsx';
 import { useSession } from '../../app/session.tsx';
 import { GetReady } from '../get-ready/GetReady.tsx';
 import { historyText, RemoveExercisesDialog } from './RemoveExercisesDialog.tsx';
-import { medalGap, nextStepText, orderedFamilies, primaryAction, STATUS_LABEL, STEP_LABELS } from './next-step.ts';
+import { nextStepText, orderedFamilies, primaryAction, STATUS_LABEL, STEP_LABELS } from './next-step.ts';
 import './exercises.css';
 
 const ALL = 'All';
@@ -40,7 +40,7 @@ function whereText(details: Details): string {
 
 function StepRail({ exercise }: { exercise: Exercise }) {
   return (
-    <ol className="step-rail" aria-label="Four steps">
+    <ol className="step-rail" aria-label="Three steps">
       {STEP_LABELS.map(({ step, label }) => {
         const state = step < exercise.step ? 'done' : step === exercise.step ? 'now' : 'later';
         return (
@@ -55,7 +55,7 @@ function StepRail({ exercise }: { exercise: Exercise }) {
 
 function ContinueCard({ exercise, details, wide }: { exercise: Exercise; details: Details; wide: boolean }) {
   const primary = primaryAction(exercise);
-  const gap = medalGap(exercise);
+  const gap = exercise.nextMedal;
   const kicker = wide
     ? ['Continue', [exercise.family, details.collection].filter(Boolean).join(', '), details.entry?.track].filter(Boolean).join(' · ')
     : ['Continue', [details.collection, details.entry?.code].filter(Boolean).join(' ')].filter(Boolean).join(' · ');

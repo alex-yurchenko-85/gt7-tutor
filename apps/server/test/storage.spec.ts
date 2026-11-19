@@ -5,6 +5,8 @@ import { KPH_PER_MPS, eventKeyKind, eventKeyPlace } from '@gt7/contracts';
 import { ConfigModule } from '@nestjs/config';
 import { KNEX } from '../src/storage/knex.provider.js';
 import { StorageModule } from '../src/storage/storage.module.js';
+import { exerciseStatuses } from '../src/exercises/exercise-status.js';
+import { exerciseStep } from '../src/exercises/exercise-step.js';
 import { createDisposableDatabase, createMigratedDatabase, migrationConfig, type DisposableDatabase } from './support/database.js';
 
 const applicationTables = ['users', 'sessions', 'settings', 'exercises', 'captures', 'references', 'attempts', 'cue_events', 'attempt_findings', 'attempt_comparisons'];
@@ -115,23 +117,26 @@ describe('database schema', () => {
     const database = await createDisposableDatabase();
     const db = knex({ client: 'pg', connection: database.url });
     const columns = async () => Object.keys(await db('references').columnInfo());
-    const stored = async () => db('references').orderBy('first_raw_index').select('first_raw_index', 'last_raw_index', 'origin', 'start_kind');
+    const stored = async () => db('references').orderBy('first_raw_index').select('first_raw_index', 'last_raw_index', 'origin');
     const old = [
-      { first_raw_index: 0, last_raw_index: 10, origin: 'demo', start_kind: 'flying' },
-      { first_raw_index: 20, last_raw_index: 30, origin: 'attempt', start_kind: 'standing' }
+      { first_raw_index: 0, last_raw_index: 10, origin: 'demo' },
+      { first_raw_index: 20, last_raw_index: 30, origin: 'attempt' }
     ];
     try {
       for (const name of ['001-initial.cjs', '002-add-cue-event-kind.cjs', '003-slow-corner-size-in-mps.cjs']) await db.migrate.up({ ...migrationConfig(), name });
       const [user] = await db('users').insert({ name: 'migrator', password_hash: 'x' }).returning('id');
       const [exercise] = await db('exercises').insert({ user_id: user.id, family: 'Licence', name: 'F-1' }).returning('id');
       const [capture] = await db('captures').insert({ user_id: user.id, purpose: 'demo', raw_path: 'raw/f.ndjson', started_at: db.fn.now() }).returning('id');
-      await db('references').insert(old.map(row => ({ exercise_id: exercise.id, capture_id: capture.id, ...row })));
+      await db('references').insert(old.map(row => ({ exercise_id: exercise.id, capture_id: capture.id, start_kind: 'flying', ...row })));
       await db.migrate.latest(migrationConfig());
       expect(await stored()).toEqual(old);
       expect(await db('references').pluck('timer_ms')).toEqual([null, null]);
-      await db('references').insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 40, last_raw_index: 50, origin: 'demo', start_kind: 'flying', timer_ms: 16082 });
+      await db('references').insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 40, last_raw_index: 50, origin: 'demo', timer_ms: 16082 });
       expect(await db('references').where({ first_raw_index: 40 }).pluck('timer_ms')).toEqual([16082]);
       await db('references').where({ first_raw_index: 40 }).delete();
+      await db.migrate.down(migrationConfig());
+      await db.migrate.down(migrationConfig());
+      await db.migrate.down(migrationConfig());
       await db.migrate.down(migrationConfig());
       await db.migrate.down(migrationConfig());
       expect(await columns()).not.toContain('timer_ms');
@@ -176,9 +181,116 @@ describe('database schema', () => {
       await db('attempts').where({ id: attempts[1].id }).delete();
       expect(await pairs()).toHaveLength(2);
       await db.migrate.down(migrationConfig());
+      await db.migrate.down(migrationConfig());
+      await db.migrate.down(migrationConfig());
+      await db.migrate.down(migrationConfig());
       expect(await tableNames(db)).not.toContain('attempt_comparisons');
       await db.migrate.latest(migrationConfig());
       expect(await pairs()).toEqual(expected.filter(pair => !pair.startsWith(attempts[1].id)));
+    } finally {
+      await db.destroy();
+      await database.drop();
+    }
+  });
+
+  it('old_baseline_attempts_count_after_the_migration', async () => {
+    const database = await createDisposableDatabase();
+    const db = knex({ client: 'pg', connection: database.url });
+    const columns = async () => Object.keys(await db('attempts').columnInfo());
+    const stored = async () => db('attempts').orderBy('first_raw_index').select('first_raw_index', 'last_raw_index', 'completion', 'game_ms');
+    try {
+      for (const name of ['001-initial.cjs', '002-add-cue-event-kind.cjs', '003-slow-corner-size-in-mps.cjs', '004-add-reference-timer.cjs', '005-add-attempt-comparisons.cjs']) await db.migrate.up({ ...migrationConfig(), name });
+      const [user] = await db('users').insert({ name: 'migrator', password_hash: 'x' }).returning('id');
+      const [exercise] = await db('exercises').insert({ user_id: user.id, family: 'Licence', name: 'H-1' }).returning('id');
+      const [capture] = await db('captures').insert({ user_id: user.id, purpose: 'demo', raw_path: 'raw/h.ndjson', started_at: db.fn.now() }).returning('id');
+      const [reference] = await db('references').insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 100, last_raw_index: 110, origin: 'demo', start_kind: 'flying' }).returning('id');
+      await db('exercises').where({ id: exercise.id }).update({ active_reference_id: reference.id });
+      const old = [
+        { first_raw_index: 0, last_raw_index: 5, mode: 'baseline', completion: 'complete', game_ms: 1000 },
+        { first_raw_index: 10, last_raw_index: 15, mode: 'guided', completion: 'complete', game_ms: 1100 },
+        { first_raw_index: 20, last_raw_index: 25, mode: 'baseline', completion: 'aborted', game_ms: null }
+      ];
+      await db('attempts').insert(old.map(row => ({ exercise_id: exercise.id, capture_id: capture.id, reference_id: reference.id, started_at: db.fn.now(), ...row })));
+      const kept = old.map(({ mode: _mode, ...row }) => row);
+      await db.migrate.up({ ...migrationConfig(), name: '006-remove-attempt-mode.cjs' });
+      expect(await columns()).not.toContain('mode');
+      expect(await stored()).toEqual(kept);
+      const found = await request(exercise.id);
+      expect(found).toEqual({ completeAttempts: 2, step: 2 });
+      await db.migrate.down(migrationConfig());
+      expect(await columns()).toContain('mode');
+      expect(await db('attempts').pluck('mode')).toEqual(['guided', 'guided', 'guided']);
+      await expect(db('attempts').insert({ exercise_id: exercise.id, capture_id: capture.id, reference_id: reference.id, first_raw_index: 30, last_raw_index: 35, mode: 'other', completion: 'aborted', started_at: db.fn.now() })).rejects.toMatchObject({ code: '23514' });
+      await db.migrate.latest(migrationConfig());
+      expect(await stored()).toEqual(kept);
+    } finally {
+      await db.destroy();
+      await database.drop();
+    }
+
+    async function request(exerciseId: string) {
+      const rows = await exerciseStatuses(db, (await db('exercises').where({ id: exerciseId }).first()).user_id, exerciseId);
+      const summary = rows[0]!;
+      return { completeAttempts: summary.activeReferenceAttempts, step: exerciseStep({ hasActiveReference: summary.activeReferenceId !== null, activeReferenceAttempts: summary.activeReferenceAttempts }) };
+    }
+  });
+
+  it('reference_start_kind_migration_keeps_old_rows_and_rolls_back', async () => {
+    const database = await createDisposableDatabase();
+    const db = knex({ client: 'pg', connection: database.url });
+    const columns = async () => Object.keys(await db('references').columnInfo());
+    const stored = async () => db('references').orderBy('first_raw_index').select('first_raw_index', 'last_raw_index', 'origin', 'timer_ms');
+    try {
+      for (const name of ['001-initial.cjs', '002-add-cue-event-kind.cjs', '003-slow-corner-size-in-mps.cjs', '004-add-reference-timer.cjs', '005-add-attempt-comparisons.cjs', '006-remove-attempt-mode.cjs']) await db.migrate.up({ ...migrationConfig(), name });
+      const [user] = await db('users').insert({ name: 'migrator', password_hash: 'x' }).returning('id');
+      const [exercise] = await db('exercises').insert({ user_id: user.id, family: 'Licence', name: 'S-1' }).returning('id');
+      const [capture] = await db('captures').insert({ user_id: user.id, purpose: 'demo', raw_path: 'raw/s.ndjson', started_at: db.fn.now() }).returning('id');
+      const old = [
+        { first_raw_index: 0, last_raw_index: 10, origin: 'demo', start_kind: 'flying', timer_ms: 16000 },
+        { first_raw_index: 20, last_raw_index: 30, origin: 'attempt', start_kind: 'standing', timer_ms: 15900 }
+      ];
+      await db('references').insert(old.map(row => ({ exercise_id: exercise.id, capture_id: capture.id, ...row })));
+      const kept = old.map(({ start_kind: _kind, ...row }) => row);
+      await db.migrate.up({ ...migrationConfig(), name: '007-remove-reference-start-kind.cjs' });
+      expect(await columns()).not.toContain('start_kind');
+      expect(await stored()).toEqual(kept);
+      await db.migrate.down(migrationConfig());
+      expect(await columns()).toContain('start_kind');
+      expect(await db('references').orderBy('first_raw_index').pluck('start_kind')).toEqual(['flying', 'flying']);
+      await expect(db('references').insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 40, last_raw_index: 50, origin: 'demo', start_kind: 'other' })).rejects.toMatchObject({ code: '23514' });
+      await db.migrate.latest(migrationConfig());
+      expect(await stored()).toEqual(kept);
+    } finally {
+      await db.destroy();
+      await database.drop();
+    }
+  });
+
+  it('capture_start_cue_migration_keeps_old_rows_and_rolls_back', async () => {
+    const database = await createDisposableDatabase();
+    const db = knex({ client: 'pg', connection: database.url });
+    const columns = async () => Object.keys(await db('captures').columnInfo());
+    const stored = async () => db('captures').orderBy('raw_path').select('raw_path', 'purpose', 'packets', 'complete');
+    try {
+      for (const name of ['001-initial.cjs', '002-add-cue-event-kind.cjs', '003-slow-corner-size-in-mps.cjs', '004-add-reference-timer.cjs', '005-add-attempt-comparisons.cjs', '006-remove-attempt-mode.cjs', '007-remove-reference-start-kind.cjs']) await db.migrate.up({ ...migrationConfig(), name });
+      const [user] = await db('users').insert({ name: 'migrator', password_hash: 'x' }).returning('id');
+      const old = [
+        { raw_path: 'raw/a.ndjson', purpose: 'demo', packets: 100, complete: true, start_cue_mono_ms: 5000 },
+        { raw_path: 'raw/b.ndjson', purpose: 'demo', packets: 200, complete: true, start_cue_mono_ms: null },
+        { raw_path: 'raw/c.ndjson', purpose: 'player', packets: 300, complete: false, start_cue_mono_ms: null }
+      ];
+      await db('captures').insert(old.map(row => ({ user_id: user.id, started_at: db.fn.now(), ...row })));
+      const kept = old.map(({ start_cue_mono_ms: _cue, ...row }) => row);
+      expect(await columns()).toContain('start_cue_mono_ms');
+      await db.migrate.latest(migrationConfig());
+      expect(await columns()).not.toContain('start_cue_mono_ms');
+      expect(await stored()).toEqual(kept);
+      await db.migrate.down(migrationConfig());
+      expect(await columns()).toContain('start_cue_mono_ms');
+      expect(await db('captures').orderBy('raw_path').pluck('start_cue_mono_ms')).toEqual([null, null, null]);
+      await db('captures').where({ raw_path: 'raw/a.ndjson' }).update({ start_cue_mono_ms: 1500.5 });
+      await db.migrate.latest(migrationConfig());
+      expect(await stored()).toEqual(kept);
     } finally {
       await db.destroy();
       await database.drop();
@@ -206,7 +318,7 @@ describe('database schema', () => {
         .insert({ user_id: user.id, exercise_id: exercise.id, purpose: 'demo', raw_path: 'raw/a.ndjson', started_at: db.fn.now() })
         .returning('id');
       const [reference] = await db('references')
-        .insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 352, last_raw_index: 1897, origin: 'demo', start_kind: 'flying' })
+        .insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 352, last_raw_index: 1897, origin: 'demo' })
         .returning('id');
       await db('attempts').insert({
         exercise_id: exercise.id,
@@ -214,7 +326,6 @@ describe('database schema', () => {
         reference_id: reference.id,
         first_raw_index: 1162,
         last_raw_index: 2786,
-        mode: 'baseline',
         completion: 'complete',
         game_ms: 17071,
         started_at: db.fn.now()
@@ -229,9 +340,9 @@ describe('database schema', () => {
       const [exercise] = await db('exercises').insert({ user_id: user.id, family: 'Licence', name: 'C-1' }).returning('id');
       const [capture] = await db('captures').insert({ user_id: user.id, purpose: 'demo', raw_path: 'raw/c.ndjson', started_at: db.fn.now() }).returning('id');
       const [reference] = await db('references')
-        .insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 0, last_raw_index: 10, origin: 'demo', start_kind: 'flying' })
+        .insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 0, last_raw_index: 10, origin: 'demo' })
         .returning('id');
-      const attempt = { exercise_id: exercise.id, capture_id: capture.id, reference_id: reference.id, first_raw_index: 0, last_raw_index: 10, mode: 'baseline', started_at: db.fn.now() };
+      const attempt = { exercise_id: exercise.id, capture_id: capture.id, reference_id: reference.id, first_raw_index: 0, last_raw_index: 10, started_at: db.fn.now() };
       await expect(db('attempts').insert({ ...attempt, completion: 'complete' })).rejects.toMatchObject({ constraint: 'attempts_game_time_check' });
       await expect(db('attempts').insert({ ...attempt, completion: 'aborted', game_ms: 1000 })).rejects.toMatchObject({ constraint: 'attempts_game_time_check' });
       await db('attempts').insert({ ...attempt, completion: 'complete', game_ms: 1000 });
@@ -245,11 +356,11 @@ describe('database schema', () => {
         .insert({ user_id: user.id, exercise_id: exercise.id, purpose: 'demo', raw_path: 'raw/d.ndjson', started_at: db.fn.now() })
         .returning('id');
       const [reference] = await db('references')
-        .insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 0, last_raw_index: 10, origin: 'demo', start_kind: 'flying' })
+        .insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 0, last_raw_index: 10, origin: 'demo' })
         .returning('id');
       await db('exercises').where({ id: exercise.id }).update({ active_reference_id: reference.id });
       const [attempt] = await db('attempts')
-        .insert({ exercise_id: exercise.id, capture_id: capture.id, reference_id: reference.id, first_raw_index: 0, last_raw_index: 10, mode: 'baseline', completion: 'complete', game_ms: 1000, started_at: db.fn.now() })
+        .insert({ exercise_id: exercise.id, capture_id: capture.id, reference_id: reference.id, first_raw_index: 0, last_raw_index: 10, completion: 'complete', game_ms: 1000, started_at: db.fn.now() })
         .returning('id');
       await db('cue_events').insert({ attempt_id: attempt.id, event_key: 'a', kind: 'brake', event_kind: 'brake', decided_mono_ms: 1, outcome: 'played' });
       await db('attempt_findings').insert({ attempt_id: attempt.id, reference_id: reference.id, kind: 'brake-late', s_m: 1, size: 1, unit: 'm' });
@@ -272,7 +383,7 @@ describe('database schema', () => {
       const [exercise] = await db('exercises').insert({ user_id: user.id, family: 'Licence', name: 'B-1' }).returning('id');
       const [capture] = await db('captures').insert({ user_id: user.id, purpose: 'demo', raw_path: 'raw/b.ndjson', started_at: db.fn.now() }).returning('id');
       await expect(
-        db('references').insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 10, last_raw_index: 9, origin: 'demo', start_kind: 'flying' })
+        db('references').insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 10, last_raw_index: 9, origin: 'demo' })
       ).rejects.toMatchObject({ code: '23514' });
     });
   });

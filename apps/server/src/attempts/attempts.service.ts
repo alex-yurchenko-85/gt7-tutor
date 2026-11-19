@@ -3,6 +3,7 @@ import {
   eventKeyPlace,
   type AttemptReaction,
   type BrakeReactionSummary,
+  type CornerInfo,
   type CornerReview,
   type AttemptList,
   type Sample,
@@ -27,7 +28,7 @@ import {
   type PlayedBrakeCue,
   type Review
 } from '@gt7/core';
-import { cornerInfo } from '../references/references.service.js';
+import { cornerInfos } from '../references/references.service.js';
 import { FOCUS_ATTEMPTS, focusOf, focusSummary } from './attempt-focus.js';
 import type { Knex } from 'knex';
 import { ownedAttempt, ownedExercise, type AttemptRow, type CaptureRow, type ReferenceRow } from '../ownership/owned.js';
@@ -58,11 +59,16 @@ function playedBrakeCues(rows: CueRow[]): PlayedBrakeCue[] {
   return rows.map(row => ({ eventKey: row.event_key, clipStartMonoMs: row.decided_mono_ms + (row.start_delay_ms ?? row.device_delay_ms ?? 0) }));
 }
 
-function cornerReview(corner: Corner, review: Review): CornerReview {
+function cornerReviews(review: Review): CornerReview[] {
+  const infos = cornerInfos(review.corners, review.lengthM);
+  return review.corners.map((corner, index) => cornerReview(corner, infos[index]!, review));
+}
+
+function cornerReview(corner: Corner, info: CornerInfo, review: Review): CornerReview {
   const lateralM = seriesAt(review.attempt.lat, review.gridM, corner.apexSM);
   const speedMps = seriesAt(review.attempt.v, review.gridM, corner.apexSM);
   return {
-    ...cornerInfo(corner),
+    ...info,
     outsideM: lateralM === null ? null : outsideM(corner, lateralM),
     speedMps
   };
@@ -117,7 +123,7 @@ export class AttemptsService {
       ...series,
       findings: findings.map(finding => withTurn(finding, corners)),
       turnLosses: turnLosses(corners, review.lengthM, review.gridM, review.attempt.t, review.reference.t),
-      corners: corners.map(corner => cornerReview(corner, review)),
+      corners: cornerReviews(review),
       reactions,
       cues: cues.map(
         (row): StoredCueEvent => ({
@@ -135,7 +141,7 @@ export class AttemptsService {
   async reactions(userId: string, exerciseId: string): Promise<BrakeReactionSummary[]> {
     await ownedExercise(this.db, userId, exerciseId);
     const attempts = await this.db<AttemptRow>('attempts')
-      .where({ exercise_id: exerciseId, completion: 'complete', mode: 'guided' })
+      .where({ exercise_id: exerciseId, completion: 'complete' })
       .orderBy([{ column: 'started_at', order: 'desc' }, { column: 'id', order: 'desc' }])
       .limit(REACTION_ATTEMPTS);
     const byEvent = new Map<string, number[]>();
@@ -236,7 +242,6 @@ export class AttemptsService {
         captureId: row.capture_id,
         first: row.first_raw_index,
         last: row.last_raw_index,
-        mode: row.mode,
         reason: row.reason,
         gapToBestMs: timeMs === null || bestMs === null ? null : timeMs - bestMs,
         largestDifference: largest(own.map(finding => withTurn(finding, corners.get(row.reference_id)!))),

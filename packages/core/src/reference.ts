@@ -1,4 +1,4 @@
-import type { Sample, StartKindName, Vec3 } from '@gt7/contracts';
+import type { Sample, Vec3 } from '@gt7/contracts';
 import { positionBreak, type PositionBreak } from './attempts.ts';
 import { DEFAULT_CONFIG, type CoreConfig } from './config.ts';
 import { distance, isFiniteVec, lerp, normalize, sub } from './geometry.ts';
@@ -18,7 +18,6 @@ export type ReferencePoint = {
 export type ReferencePath = {
   points: ReferencePoint[];
   lengthM: number;
-  startKind: StartKindName;
 };
 
 export type ReferencePathErrorCode = 'too-few-points' | 'nonfinite-field' | 'discontinuity' | 'car-changed';
@@ -131,7 +130,7 @@ function withTangents(points: Omit<ReferencePoint, 'tangent'>[]): ReferencePoint
   });
 }
 
-export function buildReference(samples: Sample[], startKind: StartKindName, config: CoreConfig = DEFAULT_CONFIG): ReferencePath {
+export function buildReference(samples: Sample[], config: CoreConfig = DEFAULT_CONFIG): ReferencePath {
   samples.forEach(assertFinite);
   assertContinuous(samples, config);
   const moving = trimHeldEnds(withActiveTime(samples).filter(timed => isDriven(timed.sample)));
@@ -140,7 +139,7 @@ export function buildReference(samples: Sample[], startKind: StartKindName, conf
   if (moving.length < 2 || lengthM <= 0) {
     throw new ReferencePathError('too-few-points', 'a reference needs at least two different positions');
   }
-  return { points: withTangents(resample(moving, along, lengthM)), lengthM, startKind };
+  return { points: withTangents(resample(moving, along, lengthM)), lengthM };
 }
 
 export function pointAt(path: ReferencePath, sM: number): ReferencePoint {

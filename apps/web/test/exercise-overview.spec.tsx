@@ -7,13 +7,12 @@ import { renderApp, setViewportWidth, USER } from './support.tsx';
 
 const EXPECTED: Record<ExerciseStep, { step: RegExp; action: string }> = {
   1: { step: /^Reference/, action: 'Record the reference' },
-  2: { step: /^Baseline/, action: 'Start a baseline attempt' },
-  3: { step: /^Guided/, action: 'Start a guided attempt' },
-  4: { step: /^Review/, action: 'Open the attempts' }
+  2: { step: /^Attempts/, action: 'Start an attempt' },
+  3: { step: /^Review/, action: 'Open the attempts' }
 };
 
 describe('exercise overview', () => {
-  for (const step of [1, 2, 3, 4] as ExerciseStep[]) {
+  for (const step of [1, 2, 3] as ExerciseStep[]) {
     it(`overview_highlights_current_step ${step}`, async () => {
       setViewportWidth(1280);
       exerciseApi(exerciseAtStep(step)).install();
@@ -27,6 +26,17 @@ describe('exercise overview', () => {
       expect(primary[0]).toHaveTextContent(EXPECTED[step].action);
     });
   }
+
+  it('reference_step_text_says_the_reference_is_recorded_once', async () => {
+    setViewportWidth(1280);
+    exerciseApi(exerciseAtStep(1)).install();
+    rememberExercise();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001' });
+    expect(await screen.findByRole('heading', { name: 'No reference yet' })).toBeInTheDocument();
+    const text = 'The reference is the demonstration that the game shows before the exercise. GT7 Tutor records it once.';
+    expect(screen.getAllByText(text).length).toBeGreaterThan(0);
+    expect(document.body).not.toHaveTextContent(/three times|game timer/);
+  });
 
   it('exercise_header_is_the_same_on_every_tab', async () => {
     setViewportWidth(1280);
@@ -68,16 +78,52 @@ describe('exercise overview', () => {
 
   it('overview_secondary_actions_are_links_not_buttons', async () => {
     setViewportWidth(1440);
-    exerciseApi(exerciseAtStep(3)).install();
+    exerciseApi(exerciseAtStep(2)).install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001' });
     const next = await screen.findByRole('region', { name: /^Next:/ });
     expect(document.querySelectorAll('[data-primary="true"]')).toHaveLength(1);
-    const baseline = within(next).getByRole('link', { name: 'Baseline attempt instead' });
-    expect(baseline).toHaveAttribute('href', '/drive?mode=baseline');
-    expect(baseline).not.toHaveClass('btn');
+    expect(within(next).getAllByRole('link')).toHaveLength(2);
     const cues = within(next).getByRole('link', { name: 'Hear the cues first' });
     expect(cues).toHaveAttribute('href', '/exercises/e0000000-0000-4000-8000-000000000001/cues');
     expect(cues).not.toHaveClass('btn');
+  });
+
+  it('step_two_names_the_cues_and_the_review_rule', async () => {
+    setViewportWidth(1280);
+    exerciseApi(exerciseAtStep(2)).install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001' });
+    const next = await screen.findByRole('region', { name: 'Next: drive attempts' });
+    await waitFor(() =>
+      expect(next).toHaveTextContent('The Drive screen shows the 3 cues of the reference. A voice device also says them. After 3 complete attempts, review them.')
+    );
+    expect(within(next).getByRole('link', { name: 'Start an attempt' })).toHaveAttribute('href', '/drive');
+    expect(within(next).getByRole('link', { name: 'Hear the cues first' })).toBeInTheDocument();
+  });
+
+  it('step_two_without_loaded_cues_has_no_count', async () => {
+    setViewportWidth(1280);
+    exerciseApi(exercise({ step: 2, activeReferenceId: 'ref-without-cues' })).install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001' });
+    const next = await screen.findByRole('region', { name: 'Next: drive attempts' });
+    expect(next).toHaveTextContent('The Drive screen shows the cues of the reference. A voice device also says them. After 3 complete attempts, review them.');
+  });
+
+  it('step_three_links_to_a_new_attempt', async () => {
+    setViewportWidth(1280);
+    exerciseApi(exerciseAtStep(3)).install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001' });
+    const next = await screen.findByRole('region', { name: 'Next: review your attempts' });
+    expect(within(next).getByRole('link', { name: 'Start an attempt' })).toHaveAttribute('href', '/drive');
+    expect(within(next).getByRole('link', { name: 'Open the attempts' })).toBeInTheDocument();
+  });
+
+  it('no_attempt_mode_text_on_the_exercise_page', async () => {
+    setViewportWidth(1280);
+    exerciseApi(exerciseAtStep(2)).install();
+    rememberExercise();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001' });
+    await screen.findByRole('link', { name: 'Start an attempt' });
+    expect(document.body.textContent).not.toMatch(/baseline|guided|without voice|No device plays the voice/i);
   });
 
   it('overview_shows_three_recurring_with_turns', async () => {
@@ -129,9 +175,9 @@ describe('exercise overview', () => {
     exerciseApi(exerciseAtStep(3)).install();
     rememberExercise();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001' });
-    const steps = within(await screen.findByRole('list', { name: 'Four steps' })).getAllByRole('listitem');
-    expect(steps.map(step => step.querySelector('.step-number[aria-hidden="true"]')?.textContent)).toEqual(['1', '2', '3', '4']);
-    expect(steps.map(step => step.querySelector('b')?.textContent)).toEqual(['Reference', 'Baseline', 'Guided', 'Review']);
+    const steps = within(await screen.findByRole('list', { name: 'Three steps' })).getAllByRole('listitem');
+    expect(steps.map(step => step.querySelector('.step-number[aria-hidden="true"]')?.textContent)).toEqual(['1', '2', '3']);
+    expect(steps.map(step => step.querySelector('b')?.textContent)).toEqual(['Reference', 'Attempts', 'Review']);
   });
 
   it('visiting_exercise_remembers_it', async () => {
@@ -144,7 +190,7 @@ describe('exercise overview', () => {
 
   it('exercise_header_has_breadcrumb_and_overview_tab', async () => {
     setViewportWidth(1440);
-    exerciseApi(exercise({ step: 4, completeAttempts: 6 })).install();
+    exerciseApi(exercise({ step: 3, completeAttempts: 6 })).install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001' });
     const breadcrumb = await screen.findByRole('navigation', { name: 'Breadcrumb' });
     expect(within(breadcrumb).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
@@ -167,7 +213,7 @@ describe('exercise overview', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Remove exercise…' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Remove Racing Line: Intermediate?' });
     expect(dialog).toHaveTextContent('The exercise goes, with everything recorded for it:');
-    expect(dialog).toHaveTextContent('6 attempts, with their cue events and differences');
+    expect(dialog).toHaveTextContent('6 attempts, with their cues and differences');
     expect(dialog).toHaveTextContent('2 references, the active one too');
     expect(dialog).toHaveTextContent('your best time 0:27.100 and the bronze medal');
     expect(dialog).toHaveTextContent('The catalogue entry stays. You can add the exercise again from Add exercise. You cannot undo the removal.');
@@ -200,7 +246,7 @@ describe('exercise overview', () => {
     rememberExercise();
     renderApp({ path: PAGE });
     await userEvent.click(await screen.findByRole('button', { name: 'Remove exercise…' }));
-    expect(screen.getByRole('alertdialog')).toHaveTextContent('1 attempt, with its cue events and differences');
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('1 attempt, with its cues and differences');
     await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove exercise' }));
     await waitFor(() => expect(window.location.pathname).toBe('/'));
     expect(window.localStorage.getItem(`gt7.currentExercise.${USER.id}`)).toBeNull();

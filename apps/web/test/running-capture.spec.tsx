@@ -19,7 +19,6 @@ describe('running capture', () => {
           packets: 0,
           complete: true,
           errorReason: null,
-          startCueMonoMs: 5000,
           active: true
         }
       ])

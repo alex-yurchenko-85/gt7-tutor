@@ -10,12 +10,13 @@ const RACING = exercise({
   catalogueId: 'brand-yangwang-racing-lines',
   name: 'Racing Line: Intermediate',
   family: 'Brand Central',
-  step: 3,
+  step: 2,
   status: 'practising',
-  completeAttempts: 4,
+  completeAttempts: 2,
   attemptCount: 6,
   referenceCount: 2,
   bestMs: 26900,
+  nextMedal: { medal: 'bronze', targetMs: 26000, gapMs: 900 },
   targets: { bronzeMs: 26000, silverMs: 25500, goldMs: 25000 }
 });
 
@@ -67,9 +68,17 @@ describe('exercises home', () => {
     expect(card).not.toHaveTextContent('measured');
     expect(card).toHaveTextContent('0.90 s');
     expect(card).toHaveTextContent('to bronze, 0:26.000');
-    expect(within(card).getByRole('list', { name: 'Four steps' }).querySelector('[aria-current="step"]')).toHaveTextContent('Guided');
-    expect(within(card).getByRole('link', { name: 'Start a guided attempt' })).toHaveAttribute('href', '/drive?mode=guided');
+    expect(within(card).getByRole('list', { name: 'Three steps' }).querySelector('[aria-current="step"]')).toHaveTextContent('Attempts');
+    expect(within(card).getByRole('link', { name: 'Start an attempt' })).toHaveAttribute('href', '/drive');
     expect(within(card).getByRole('link', { name: 'Open the exercise' })).toHaveAttribute('href', '/exercises/e0000000-0000-4000-8000-000000000001');
+  });
+
+  it('home_has_no_attempt_mode_text', async () => {
+    setViewportWidth(1440);
+    homeApi();
+    renderApp();
+    await screen.findByRole('link', { name: 'Start an attempt' });
+    expect(document.body.textContent).not.toMatch(/baseline|guided|without voice|No device plays the voice/i);
   });
 
   it('home_lists_exercises_grouped_by_family', async () => {
@@ -86,7 +95,7 @@ describe('exercises home', () => {
     const brand = within(mine).getByRole('group', { name: 'Brand Central' });
     const racing = within(brand).getByRole('link', { name: /Racing Line: Intermediate/ });
     expect(racing).toHaveTextContent('0:26.900');
-    expect(racing).toHaveTextContent('Next: guided attempt');
+    expect(racing).toHaveTextContent('Next: attempt');
     expect(racing).toHaveTextContent('SUGO');
   });
 
@@ -176,7 +185,7 @@ describe('exercises home', () => {
     const dialog = screen.getByRole('alertdialog', { name: 'Remove 2 exercises?' });
     expect(dialog).toHaveTextContent('Racing Line: Intermediate, 6 attempts, 2 references');
     expect(dialog).toHaveTextContent('Cornering Basics 1, no attempts, no reference');
-    expect(dialog).toHaveTextContent('With them go 6 attempts with their cue events and differences, and 2 references.');
+    expect(dialog).toHaveTextContent('With them go 6 attempts with their cues and differences, and 2 references.');
     expect(dialog).toHaveTextContent('The catalogue entries stay. You can add the exercises again from Add exercise. You cannot undo the removal.');
     expect(within(dialog).getByRole('checkbox', { name: 'Also clean up the raw captures that nothing uses afterwards' })).toBeChecked();
     const before = api.calls.filter(call => `${call.method} ${call.path}` === 'GET /api/exercises').length;

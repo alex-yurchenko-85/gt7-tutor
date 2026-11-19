@@ -39,7 +39,7 @@ describe('deleting attempts and history', () => {
 
   async function reference(exerciseId: string, captureId: string, session = cookie): Promise<string> {
     return (
-      await http().post('/api/references').set('Cookie', session).send({ exerciseId, captureId, first: 457, last: 1422, startKind: 'flying' }).expect(201)
+      await http().post('/api/references').set('Cookie', session).send({ exerciseId, captureId, first: 457, last: 1422 }).expect(201)
     ).body.id as string;
   }
 
@@ -51,7 +51,6 @@ describe('deleting attempts and history', () => {
         reference_id: referenceId,
         first_raw_index: 457,
         last_raw_index: 1422,
-        mode: 'baseline',
         completion: 'complete',
         game_ms: 17071,
         started_at: new Date()
@@ -129,7 +128,7 @@ describe('deleting attempts and history', () => {
   it('delete_refuses_while_armed', async () => {
     const { exerciseId, attempts } = await exerciseWithAttempts(1);
     replays.queue.push(new ManualSource());
-    await http().post('/api/training/arm').set('Cookie', cookie).send({ exerciseId, mode: 'baseline' }).expect(201);
+    await http().post('/api/training/arm').set('Cookie', cookie).send({ exerciseId }).expect(201);
     const selected = await http().post('/api/attempts/delete').set('Cookie', cookie).send({ ids: attempts }).expect(409);
     expect(selected.body.code).toBe('busy');
     const history = await http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'attempts', cleanup: false }).expect(409);
@@ -144,7 +143,7 @@ describe('deleting attempts and history', () => {
     const other = await anotherProfile(app!, cookie, 'Second');
     const foreign = await exerciseWithAttempts(0, other);
     replays.queue.push(new ManualSource());
-    await http().post('/api/training/arm').set('Cookie', other).send({ exerciseId: foreign.exerciseId, mode: 'baseline' }).expect(201);
+    await http().post('/api/training/arm').set('Cookie', other).send({ exerciseId: foreign.exerciseId }).expect(201);
     await http().post('/api/attempts/delete').set('Cookie', cookie).send({ ids: own.attempts }).expect(200);
     await http().post('/api/training/disarm').set('Cookie', other).expect(201);
   });
@@ -252,7 +251,7 @@ describe('deleting attempts and history', () => {
     const { exerciseId } = await exerciseWithAttempts(1);
     const idle = await exercise();
     replays.queue.push(new ManualSource());
-    await http().post('/api/training/arm').set('Cookie', cookie).send({ exerciseId, mode: 'baseline' }).expect(201);
+    await http().post('/api/training/arm').set('Cookie', cookie).send({ exerciseId }).expect(201);
     const response = await http().post('/api/exercises/remove').set('Cookie', cookie).send({ ids: [idle], cleanup: false }).expect(409);
     expect(response.body.code).toBe('busy');
     expect(await db('exercises').where({ id: idle })).toHaveLength(1);
@@ -341,7 +340,7 @@ describe('deleting attempts and history', () => {
   it('delete_profile_refused_while_armed', async () => {
     const { exerciseId } = await exerciseWithAttempts(1);
     replays.queue.push(new ManualSource());
-    await http().post('/api/training/arm').set('Cookie', cookie).send({ exerciseId, mode: 'baseline' }).expect(201);
+    await http().post('/api/training/arm').set('Cookie', cookie).send({ exerciseId }).expect(201);
     const response = await http().post('/api/profiles/me/delete').set('Cookie', cookie).send({ password: PASSWORD }).expect(409);
     expect(response.body.code).toBe('busy');
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);

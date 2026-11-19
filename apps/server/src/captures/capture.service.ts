@@ -20,12 +20,11 @@ import { ownedCapture, ownedExercise, type CaptureRow } from '../ownership/owned
 import { SettingsService } from '../settings/settings.service.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { countRows } from './capture-samples.js';
-import { CountdownService } from './countdown.js';
 import { TELEMETRY_SOURCE_FACTORY, type TelemetrySourceFactory } from './telemetry-source.factory.js';
 
 export type SampleListener = (sample: Sample) => void;
 
-export type CaptureRequest = { userId: string; exerciseId: string; purpose: CapturePurpose; startAfterS: number | null };
+export type CaptureRequest = { userId: string; exerciseId: string; purpose: CapturePurpose };
 
 const RECEPTION_CHECK_MS = 2000;
 const RECEPTION_ENOUGH_PACKETS = 30;
@@ -56,7 +55,6 @@ export function captureInfo(row: CaptureRow, activeId: string | null): CaptureIn
     packets: row.packets,
     complete: row.complete,
     errorReason: row.error_reason,
-    startCueMonoMs: row.start_cue_mono_ms,
     active: row.id === activeId
   };
 }
@@ -80,7 +78,6 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     private readonly settings: SettingsService,
     @Inject(MONO_CLOCK) private readonly clock: MonoClock,
     @Inject(RAW_STREAM_OPENER) private readonly openStream: OpenStream | null,
-    private readonly countdown: CountdownService,
     config: ConfigService
   ) {
     this.dataDir = config.getOrThrow<string>('DATA_DIR');
@@ -233,8 +230,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
         exercise_id: request.exerciseId,
         purpose: request.purpose,
         raw_path: rawPath,
-        started_at: startedAt,
-        start_cue_mono_ms: request.startAfterS === null ? null : request.startAfterS * 1000
+        started_at: startedAt
       })
       .returning('*');
     const startedMono = this.clock.now();
@@ -262,9 +258,6 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
       await this.db('captures').where({ id }).update({ ended_at: this.db.fn.now(), complete: false, error_reason: `source-failed: ${reason}` });
       throw conflict('source-failed', reason);
     }
-    if (request.purpose === 'demo' && request.startAfterS !== null) {
-      this.countdown.start({ userId: request.userId, captureId: id, startAfterS: request.startAfterS });
-    }
     return captureInfo(row!, id);
   }
 
@@ -283,7 +276,6 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
   }
 
   private async finish(active: ActiveCapture): Promise<CaptureRow> {
-    this.countdown.cancel(active.id);
     await active.source.stop();
     const result = await active.writer.close();
     if (this.current === active) this.current = null;

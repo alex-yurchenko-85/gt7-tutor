@@ -1,25 +1,15 @@
-import { useEffect, useState } from 'react';
-import { KPH_PER_MPS, type LiveMode, type LiveState } from '@gt7/contracts';
+import { useState } from 'react';
+import type { LiveMode, LiveState } from '@gt7/contracts';
 
-export const MISSED_START_AFTER_MS = 10000;
-export const MOVING_KPH = 10;
-
-type Prompt = { mode: LiveMode | null; missed: boolean; dismissed: boolean };
+type Dismissal = { mode: LiveMode | null; dismissed: boolean };
 
 export function useMissedStart(state: LiveState | null): { missed: boolean; dismiss(): void } {
   const mode = state?.mode ?? null;
-  const moving = mode === 'armed' && (state?.speedMps ?? 0) * KPH_PER_MPS >= MOVING_KPH;
-  const [prompt, setPrompt] = useState<Prompt>({ mode, missed: false, dismissed: false });
-  if (prompt.mode !== mode) setPrompt({ mode, missed: false, dismissed: false });
-
-  useEffect(() => {
-    if (!moving) return;
-    const timer = setTimeout(() => setPrompt(current => (current.mode === 'armed' ? { ...current, missed: true } : current)), MISSED_START_AFTER_MS);
-    return () => clearTimeout(timer);
-  }, [moving]);
+  const [dismissal, setDismissal] = useState<Dismissal>({ mode, dismissed: false });
+  if (dismissal.mode !== mode) setDismissal({ mode, dismissed: false });
 
   return {
-    missed: prompt.mode === mode && mode === 'armed' && prompt.missed && !prompt.dismissed,
-    dismiss: () => setPrompt(current => ({ ...current, dismissed: true }))
+    missed: (state?.startMissed ?? false) && dismissal.mode === mode && !dismissal.dismissed,
+    dismiss: () => setDismissal(current => ({ ...current, dismissed: true }))
   };
 }

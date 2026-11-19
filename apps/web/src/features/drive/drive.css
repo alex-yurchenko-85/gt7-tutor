@@ -10,22 +10,6 @@
   max-width: 560px;
 }
 
-.arm-panel .label {
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: 6px;
-}
-
-.arm-panel .segmented {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  width: 100%;
-}
-
-.arm-panel .segmented label {
-  justify-content: center;
-}
-
 .voice-off {
   border: 2px solid var(--red);
   border-left-width: 2px;

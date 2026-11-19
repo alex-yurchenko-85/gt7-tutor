@@ -3,9 +3,7 @@ import { DEFAULT_CONFIG } from './config.ts';
 import type { Corner } from './corners.ts';
 import type { ReferenceCueEvent } from './cue-events.ts';
 
-export type CountdownKind = 'countdown-three' | 'countdown-two' | 'countdown-one' | 'countdown-start';
-
-export type ClipKind = WordedCueKind | 'voice-check' | CountdownKind;
+export type ClipKind = WordedCueKind | 'voice-check';
 
 export const MIN_TARGET_KPH = 30;
 export const MAX_TARGET_KPH = 350;
@@ -18,14 +16,8 @@ export const SUPPORTED_TARGETS_KPH: readonly number[] = Array.from(
 
 const PHRASES: Record<ClipKind, string> = {
   ...CUE_WORDS,
-  'voice-check': 'Voice check',
-  'countdown-three': 'Three',
-  'countdown-two': 'Two',
-  'countdown-one': 'One',
-  'countdown-start': 'Start'
+  'voice-check': 'Voice check'
 };
-
-const COUNTDOWN_KINDS: readonly CountdownKind[] = ['countdown-three', 'countdown-two', 'countdown-one', 'countdown-start'];
 
 const FOCUS_ACTIONS: Record<FindingKindName, string> = {
   'brake-early': 'Brake later.',
@@ -65,8 +57,6 @@ export function isSupportedTarget(kph: number): boolean {
 export function clipKey(kind: ClipKind): string {
   return kind;
 }
-
-export const COUNTDOWN_CLIPS: string[] = COUNTDOWN_KINDS.map(clipKey);
 
 export function cueText(kind: ClipKind): string {
   return PHRASES[kind];
@@ -130,7 +120,7 @@ export function clipsOf(events: ReferenceCueEvent[], corners: Corner[]): string[
   const bigStop = events.some(event => event.bigStop) ? [clipKey('big-stop')] : [];
   const tighter = corners.length > 0 ? [clipKey('tighter')] : [];
   const focus = FOCUS_KINDS.flatMap(kind => corners.map(corner => focusClipKey(kind, corner.number)).filter(clip => clip !== null));
-  return [...new Set([...actions, ...bigStop, ...tighter, ...ALWAYS_LOADED.map(clipKey), ...focus, ...COUNTDOWN_CLIPS])];
+  return [...new Set([...actions, ...bigStop, ...tighter, ...ALWAYS_LOADED.map(clipKey), ...focus])];
 }
 
 const PHRASE_BASE_MS = 200;

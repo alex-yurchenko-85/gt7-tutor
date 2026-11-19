@@ -4,9 +4,9 @@ export type Status = { tone: 'on' | 'warn' | 'off' | 'idle'; text: string };
 
 export function telemetryStatus(state: LiveState | null, connected: boolean, demo = false): Status {
   if (!connected || !state) return { tone: 'off', text: 'Server not reachable' };
-  if (state.mode === 'idle') return { tone: 'idle', text: 'Not receiving, no training running' };
+  if (state.mode === 'idle') return { tone: 'idle', text: 'No data from the console. No training runs.' };
   if (state.connection === 'connected') return { tone: 'on', text: 'Receiving telemetry' };
-  if (state.connection === 'stale') return { tone: 'warn', text: demo ? 'Waiting for recorded data' : 'Waiting for packets' };
+  if (state.connection === 'stale') return { tone: 'warn', text: demo ? 'Waiting for the recorded data.' : 'Waiting for packets' };
   return { tone: 'off', text: demo ? 'Recorded attempt ended' : 'No packets. Check the console address' };
 }
 

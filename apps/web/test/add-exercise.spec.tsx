@@ -64,6 +64,15 @@ describe('add exercise', () => {
     expect(listed()).toEqual(['licence-b-1', 'ce-tsukuba-1']);
   });
 
+  it('an_empty_search_says_to_clear_the_filters', async () => {
+    setViewportWidth(1280);
+    catalogueApi();
+    renderApp({ path: '/exercises/add' });
+    await screen.findByRole('table', { name: 'Catalogue exercises' });
+    await userEvent.setup().type(screen.getByRole('searchbox', { name: 'Search' }), 'zzzz');
+    expect(screen.getByText('Check the spelling, or clear the filters.')).toBeInTheDocument();
+  });
+
   it('search_filters_by_code', async () => {
     setViewportWidth(1440);
     catalogueApi();
@@ -82,7 +91,7 @@ describe('add exercise', () => {
     const first = row('licence-b-1');
     expect(first).toHaveTextContent('Licence · National B B-1');
     expect(first).toHaveTextContent("Mazda Demio XD Touring '15");
-    expect(first).toHaveTextContent('Gold 20.80 · Silver 21.40 · Bronze 22.80');
+    expect(first).toHaveTextContent('Gold 20.800 · Silver 21.400 · Bronze 22.800');
     expect(row('ce-tsukuba-1')).toHaveTextContent('Not listed');
   });
 

@@ -5,7 +5,7 @@ import { makeCue } from '../src/cue-factory.ts';
 const base = { generation: 7, followClip: null, targetSpeedKph: null, decidedMonoMs: 1234, deviceDelayMs: 60 };
 
 describe('makeCue', () => {
-  it('focus_and_countdown_cues_use_the_policy_priority_and_ttl', () => {
+  it('focus_cue_uses_the_policy_priority_and_ttl', () => {
     const focus = makeCue({ ...base, kind: 'focus', eventKey: 'focus', clip: 'focus-brake-late-1' }, DEFAULT_CONFIG);
     expect(focus).toEqual({
       id: '7:focus',
@@ -18,19 +18,6 @@ describe('makeCue', () => {
       priority: 10,
       decidedMonoMs: 1234,
       ttlMs: 210
-    });
-    const countdown = makeCue({ ...base, kind: 'countdown', eventKey: 'countdown-abc-3', clip: 'countdown-three' }, DEFAULT_CONFIG);
-    expect(countdown).toEqual({
-      id: 'countdown-abc-3',
-      eventKey: 'countdown-abc-3',
-      kind: 'countdown',
-      targetSpeedKph: null,
-      clip: 'countdown-three',
-      followClip: null,
-      generation: 7,
-      priority: 101,
-      decidedMonoMs: 1234,
-      ttlMs: 800
     });
   });
 

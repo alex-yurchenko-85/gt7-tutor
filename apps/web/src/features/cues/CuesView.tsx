@@ -17,6 +17,7 @@ import { useLiveConnection } from '../../api/live.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { TrackMap } from '../../charts/TrackMap.tsx';
 import { LoadProblem } from '../../app/NotFound.tsx';
+import { counted } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths } from '../../app/router.tsx';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
@@ -119,7 +120,7 @@ function CueRow({ cue, number, muted, offsetMs, recurring, reaction, onToggle, o
       <span className="phrase">
         <b>{cue.phrase ?? 'No voice cue'}</b>
         {cue.bigStop ? <small>Big stop first, about 2 s before this point</small> : null}
-        {muted ? <small>Muted. Still recorded as a suppressed cue.</small> : null}
+        {muted ? <small>Muted. The voice does not say this cue.</small> : null}
         {reaction ? (
           <small className="reaction">
             You start to brake {reactionText(reaction.medianMs)} here ({attemptsText(reaction.count)})
@@ -323,7 +324,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
           <SideCueDistance distanceM={sideDistanceM} onChange={changeSideDistance} />
         </div>
         <p className="sub cues-intro">
-          {cues.length} cues and {corners.length} turns found in the reference. Distance is from the section start. A muted cue is not spoken, and its
+          {counted(cues.length, 'cue')} and {counted(corners.length, 'turn')} found in the reference. Distance is from the section start. A muted cue is not spoken, and its
           decision is still recorded. Timing moves one cue earlier or later in steps of 0.1 s.
         </p>
         {problem ? (

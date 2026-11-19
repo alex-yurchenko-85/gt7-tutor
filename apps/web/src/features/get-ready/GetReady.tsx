@@ -153,8 +153,8 @@ export function GetReady({ ps5Ip, exerciseCount }: { ps5Ip: string | null; exerc
         </Step>
         <Step number={3} title="Pick your first exercise" state={stateOf(3, exerciseDone)} summary={exerciseDone ? 'Done' : null}>
           <p>
-            A licence test, a Circuit Experience sector or a Brand Central exercise. GT7 Tutor then leads you through four steps: reference, baseline,
-            guided attempts, review.
+            A licence test, a Circuit Experience sector or a Brand Central exercise. GT7 Tutor then leads you through three steps: reference, attempts,
+            review.
           </p>
           <div className="ready-actions">
             <Link to={paths.addExercise()} className="btn yellow">

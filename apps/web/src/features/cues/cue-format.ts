@@ -17,7 +17,7 @@ export function reactionText(reactionMs: number): string {
 }
 
 export function attemptsText(count: number): string {
-  return counted(count, 'guided attempt');
+  return counted(count, 'attempt');
 }
 
 export function apexPlaceText(outside: number | null): string {

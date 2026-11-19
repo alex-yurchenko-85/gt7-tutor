@@ -68,18 +68,16 @@ describe('demo mode', () => {
     expect(exercise.targets).toEqual({ goldMs: 16400, silverMs: 16700, bronzeMs: 17800 });
     const references = (await http().get(`/api/exercises/${exerciseId}/references`).set('Cookie', cookie).expect(200)).body;
     expect(references).toHaveLength(1);
-    expect(references[0]).toMatchObject({ first: 457, last: 1422, startKind: 'flying', active: true });
+    expect(references[0]).toMatchObject({ first: 457, last: 1422, active: true });
     const cues = (await http().get(`/api/references/${references[0].id}/cues`).set('Cookie', cookie).expect(200)).body;
     expect(cues).toHaveLength(6);
     const corners = (await http().get(`/api/references/${references[0].id}/corners`).set('Cookie', cookie).expect(200)).body;
     expect(corners).toHaveLength(1);
   });
 
-  it('seed_stores_three_complete_baseline_attempts', async () => {
+  it('seed_stores_three_complete_attempts', async () => {
     const attempts = await db('attempts').where({ exercise_id: exerciseId }).orderBy('started_at');
-    expect(attempts.map(row => ({ mode: row.mode, completion: row.completion }))).toEqual(
-      Array.from({ length: 3 }, () => ({ mode: 'baseline', completion: 'complete' }))
-    );
+    expect(attempts.map(row => row.completion)).toEqual(['complete', 'complete', 'complete']);
     expect(attempts.map(row => ({ first_raw_index: row.first_raw_index, last_raw_index: row.last_raw_index }))).toEqual(OFFLINE_ATTEMPT_ROWS);
   });
 

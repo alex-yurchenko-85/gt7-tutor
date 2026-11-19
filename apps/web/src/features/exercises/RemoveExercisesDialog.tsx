@@ -33,7 +33,7 @@ function OneExercise({ exercise }: { exercise: Exercise }) {
       <ul>
         {exercise.attemptCount > 0 ? (
           <li>
-            <b>{counted(exercise.attemptCount, 'attempt')}</b>, with {theirs(exercise.attemptCount)} cue events and differences
+            <b>{counted(exercise.attemptCount, 'attempt')}</b>, with {theirs(exercise.attemptCount)} cues and differences
           </li>
         ) : null}
         {exercise.referenceCount > 0 ? (
@@ -68,7 +68,7 @@ function SeveralExercises({ exercises, currentId }: { exercises: Exercise[]; cur
       </ul>
       {attempts + references > 0 ? (
         <p>
-          With them go <b>{counted(attempts, 'attempt')}</b> with {theirs(attempts)} cue events and differences, and <b>{counted(references, 'reference')}</b>.
+          With them go <b>{counted(attempts, 'attempt')}</b> with {theirs(attempts)} cues and differences, and <b>{counted(references, 'reference')}</b>.
         </p>
       ) : null}
       {current ? <p>{current.name} is your current exercise. The Drive button and Continue move to another exercise.</p> : null}

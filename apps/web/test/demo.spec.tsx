@@ -7,7 +7,7 @@ import { ApiStub, liveState, renderApp, setViewportWidth, signedIn } from './sup
 
 const DEMO_LABEL = 'Demo: recorded data, no console';
 const DEMO: AppInfo = { demo: { profileName: 'demo', password: 'demodemo', ready: true }, consoleRequired: false };
-const ARMED = { captureId: 'cap-9', exerciseId: 'e0000000-0000-4000-8000-000000000001', referenceId: 'ref-demo', mode: 'guided' };
+const ARMED = { captureId: 'cap-9', exerciseId: 'e0000000-0000-4000-8000-000000000001', referenceId: 'ref-demo' };
 
 function withDemo(api: ApiStub, info: AppInfo = DEMO): ApiStub {
   return api.on('GET /api/app-info', info);
@@ -71,7 +71,16 @@ describe('demo mode', () => {
     await waitFor(() => expect(api.calls.find(call => call.path === '/api/auth/sign-in')?.body).toEqual({ name: 'demo', password: 'demodemo' }));
   });
 
-  it('play_a_demo_attempt_selects_then_arms_guided', async () => {
+  it('drive_demo_text_says_what_the_demo_does', async () => {
+    setViewportWidth(1280);
+    driveDemoApi();
+    await openDrive(false);
+    expect(
+      await screen.findByText('The demo replays a recorded attempt in real time. It takes about 40 s. This screen shows the cues, and the voice device also says them.')
+    ).toBeInTheDocument();
+  });
+
+  it('play_a_demo_attempt_selects_then_arms', async () => {
     setViewportWidth(390);
     const api = driveDemoApi();
     await openDrive(true);
@@ -79,19 +88,17 @@ describe('demo mode', () => {
     await waitFor(() => expect(api.called('POST /api/training/arm')).toBe(true));
     const order = api.calls.map(call => `${call.method} ${call.path}`).filter(route => route === 'POST /api/demo/attempt' || route === 'POST /api/training/arm');
     expect(order).toEqual(['POST /api/demo/attempt', 'POST /api/training/arm']);
-    expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'e0000000-0000-4000-8000-000000000001', mode: 'guided' });
+    expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'e0000000-0000-4000-8000-000000000001' });
   });
 
-  it('play_a_demo_attempt_asks_to_confirm_without_voice', async () => {
+  it('play_a_demo_attempt_arms_at_once_without_a_voice_device', async () => {
     setViewportWidth(390);
     const api = driveDemoApi();
     await openDrive(false);
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Play a demo attempt' }));
-    expect(api.called('POST /api/demo/attempt')).toBe(false);
-    expect(await screen.findByRole('alert')).toHaveTextContent('No device plays the voice.');
-    await user.click(screen.getByRole('button', { name: 'Play without voice' }));
-    await waitFor(() => expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'e0000000-0000-4000-8000-000000000001', mode: 'guided', confirmNoVoice: true }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Play a demo attempt' }));
+    await waitFor(() => expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'e0000000-0000-4000-8000-000000000001' }));
+    expect(api.called('POST /api/demo/attempt')).toBe(true);
+    expect(screen.queryByText(/No device plays the voice/)).not.toBeInTheDocument();
   });
 
   it('setup_has_no_console_edit_and_no_catalogue_update_in_demo', async () => {
@@ -136,7 +143,7 @@ describe('demo mode', () => {
     rememberExercise();
     withDemo(exerciseApi(exercise({ step: 3 })), { demo: null, consoleRequired: true }).install();
     await openDrive(true);
-    expect(screen.getByRole('button', { name: 'Start a guided attempt' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start an attempt' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Play a demo attempt' })).not.toBeInTheDocument();
   });
 
@@ -148,9 +155,9 @@ describe('demo mode', () => {
     const socket = await waitFor(() => view.sockets.latest);
     act(() => {
       socket.open();
-      socket.receive({ type: 'state', state: liveState({ mode: 'armed', connection: 'disconnected', exerciseId: 'e0000000-0000-4000-8000-000000000001', trainingMode: 'guided' }) });
+      socket.receive({ type: 'state', state: liveState({ mode: 'armed', connection: 'disconnected', exerciseId: 'e0000000-0000-4000-8000-000000000001' }) });
     });
-    expect(await screen.findByText('The recorded attempt has ended. Select Stop to play another one.')).toBeInTheDocument();
+    expect(await screen.findByText('The demo attempt has ended. Select Stop, then Play a demo attempt again.')).toBeInTheDocument();
     expect(screen.queryByText(/Check that GT7 is running/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Check the console address/)).not.toBeInTheDocument();
   });

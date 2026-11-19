@@ -31,7 +31,7 @@ describe('reference analysis cache', () => {
   const analysed = vi.mocked(analyseReference);
 
   async function reference(): Promise<string> {
-    const response = await http().post('/api/references').set('Cookie', cookie).send({ exerciseId, captureId, first: 457, last: 1422, startKind: 'flying' }).expect(201);
+    const response = await http().post('/api/references').set('Cookie', cookie).send({ exerciseId, captureId, first: 457, last: 1422 }).expect(201);
     return response.body.id as string;
   }
 
@@ -88,7 +88,7 @@ describe('reference analysis cache', () => {
     const service = app.get(ReferencesService);
     const first = await service.analysisOf(row);
     const cached = await service.analysisOf(row);
-    const fresh = analyseReference(await readSamples(fixturePath('demo-a'), { first: 457, last: 1422 }), 'flying', DEFAULT_CONFIG);
+    const fresh = analyseReference(await readSamples(fixturePath('demo-a'), { first: 457, last: 1422 }), DEFAULT_CONFIG);
     expect(cached).toBe(first);
     expect(cached).toEqual(fresh);
   });

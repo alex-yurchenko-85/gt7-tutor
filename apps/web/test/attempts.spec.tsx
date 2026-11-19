@@ -88,42 +88,14 @@ describe('attempts', () => {
     ]);
   });
 
-  it('attempts_show_voice_medians_and_change', async () => {
+  it('attempts_have_no_voice_comparison_and_no_voice_column', async () => {
     setViewportWidth(1280);
     exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
-    const section = await screen.findByRole('region', { name: 'Does the voice help?' });
-    expect(within(section).getByText(/^Complete attempts only, times from the game\./)).toBeInTheDocument();
-    expect(section).not.toHaveTextContent('measured');
-    expect(within(section).getByText('Without voice, median').parentElement).toHaveTextContent('0:27.1001 attempt');
-    expect(within(section).getByText('With voice, median').parentElement).toHaveTextContent('0:26.8001 attempt');
-    const change = within(section).getByText('Change').parentElement!;
-    expect(change).toHaveTextContent('−0.30 s');
-    expect(change).toHaveTextContent('with voice is faster');
-    expect(change.querySelector('.faster')).not.toBeNull();
-  });
-
-  it('attempts_shows_hint_below_three', async () => {
-    setViewportWidth(1280);
-    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
-    const section = await screen.findByRole('region', { name: 'Does the voice help?' });
-    expect(within(section).getByText(/With fewer than 3 attempts in a group, treat the change as a hint only\./)).toBeInTheDocument();
-  });
-
-  it('attempts_without_hint_at_three_each', async () => {
-    setViewportWidth(1280);
-    const attempts = [1, 2, 3, 4, 5, 6].map(number =>
-      attemptSummary({ id: `a0000000-0000-4000-8000-00000000000${number}`, number, mode: number > 3 ? 'guided' : 'baseline', timeMs: 27000 + number * 100 })
-    );
-    exerciseApi()
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', { bestMs: 27100, days: [{ date: '2026-11-17', bestMs: 27100, attempts }] })
-      .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
-    const section = await screen.findByRole('region', { name: 'Does the voice help?' });
-    expect(within(section).getByText('Change').parentElement).toHaveTextContent('+0.30 s');
-    expect(within(section).getByText('Change').parentElement).toHaveTextContent('with voice is slower');
-    expect(within(section).queryByText(/hint only/)).toBeNull();
+    await screen.findByRole('row', { name: /Attempt 2/ });
+    expect(screen.queryByRole('region', { name: 'Does the voice help?' })).toBeNull();
+    expect(screen.queryByRole('columnheader', { name: 'Voice' })).toBeNull();
+    expect(document.body.textContent).not.toMatch(/with voice|without voice|median/i);
   });
 
   it('recurring_shows_three_then_more', async () => {
@@ -179,7 +151,7 @@ describe('attempts', () => {
     expect(bar).toHaveTextContent('2 selected');
     await userEvent.click(within(bar).getByRole('button', { name: 'Delete 2 attempts…' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Delete 2 attempts?' });
-    expect(dialog).toHaveTextContent('Attempts 1, 3, with their cue events and differences.');
+    expect(dialog).toHaveTextContent('Attempts 1, 3, with their cues and differences.');
     expect(dialog).toHaveTextContent('The references stay. The raw captures stay until you clean them up in Setup.');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete 2 attempts' }));
     await waitFor(() => expect(api.called('POST /api/attempts/delete')).toBe(true));
@@ -221,6 +193,15 @@ describe('attempts', () => {
     expect(screen.getByRole('button', { name: 'Delete 0 attempts…' })).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('checkbox', { name: 'Select attempt 3' })).not.toBeInTheDocument();
+  });
+
+  it('quick_select_has_no_without_voice_choice', async () => {
+    setViewportWidth(1280);
+    exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
+    renderApp({ path: ATTEMPTS_PATH });
+    await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
+    const day = screen.getByRole('group', { name: 'Select on 17 November' });
+    expect(within(day).getAllByRole('button').map(button => button.textContent)).toEqual(['Aborted (1)', 'All on this day (2)', 'None']);
   });
 
   it('busy_conflict_shows_message', async () => {

@@ -57,7 +57,7 @@ describe('delete history', () => {
 
     await userEvent.click(within(section).getByRole('radio', { name: /Attempts of one exercise/ }));
     await userEvent.selectOptions(within(section).getByLabelText('Exercise'), 'Cornering Basics 1 (2 attempts)');
-    expect(section).toHaveTextContent('This deletes: 2 attempts of Cornering Basics 1, with their cue events and differences.');
+    expect(section).toHaveTextContent('This deletes: 2 attempts of Cornering Basics 1, with their cues and differences.');
     await userEvent.click(cleanup);
     await typeName(USER.name);
     await userEvent.click(within(section).getByRole('button', { name: 'Delete 2 attempts' }));
@@ -91,8 +91,8 @@ describe('delete history', () => {
     renderApp({ path: '/setup/delete-history' });
     const section = await screen.findByRole('region', { name: 'Delete history' });
     await within(section).findByRole('radio', { name: /^All attempts 1 attempt in 1 exercise/ });
-    expect(section).toHaveTextContent('This deletes: the 1 attempt of this profile, with its cue events and differences.');
+    expect(section).toHaveTextContent('This deletes: the 1 attempt of this profile, with its cues and differences.');
     await userEvent.click(within(section).getByRole('radio', { name: /Attempts of one exercise/ }));
-    expect(section).toHaveTextContent('This deletes: 1 attempt of Racing Line: Intermediate, with its cue events and differences.');
+    expect(section).toHaveTextContent('This deletes: 1 attempt of Racing Line: Intermediate, with its cues and differences.');
   });
 });

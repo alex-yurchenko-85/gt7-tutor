@@ -1,5 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { CreateExerciseRequest, Exercise, ExerciseTargets, UpdateExerciseRequest } from '@gt7/contracts';
+import { nextMedal } from '@gt7/core';
 import type { Knex } from 'knex';
 import { CatalogueService } from '../catalogue/catalogue.service.js';
 import { ownedExercise, type ExerciseRow } from '../ownership/owned.js';
@@ -35,13 +36,13 @@ function exerciseView(row: ExerciseRow, summary: ExerciseStatusSummary): Exercis
     status: summary.status,
     step: exerciseStep({
       hasActiveReference: row.active_reference_id !== null,
-      baselineAttempts: summary.baselineAttempts,
-      guidedAttempts: summary.guidedAttempts
+      activeReferenceAttempts: summary.activeReferenceAttempts
     }),
     attemptCount: summary.attemptCount,
     referenceCount: summary.referenceCount,
     completeAttempts: summary.completeAttempts,
     bestMs: summary.bestMs,
+    nextMedal: nextMedal(summary.bestMs, row.targets),
     createdAt: row.created_at.toISOString()
   };
 }

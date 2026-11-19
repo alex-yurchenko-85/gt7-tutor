@@ -54,7 +54,7 @@ export function StorageSection() {
           {confirming ? (
             <>
               <button className="btn" type="button" onClick={cleanup}>
-                Remove unused capture data
+                Clean up captures
               </button>
               <button className="btn ghost" type="button" onClick={() => setConfirming(false)}>
                 Keep everything

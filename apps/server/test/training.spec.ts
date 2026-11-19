@@ -105,10 +105,9 @@ describe('training pipeline and live protocol', () => {
     return connection;
   }
 
-  async function arm(mode: 'baseline' | 'guided', source: string | ManualSource, confirmNoVoice?: boolean) {
+  async function arm(source: string | ManualSource) {
     replays.queue.push(source);
-    const body = confirmNoVoice === undefined ? { exerciseId, mode } : { exerciseId, mode, confirmNoVoice };
-    return http().post('/api/training/arm').set('Cookie', cookie).send(body);
+    return http().post('/api/training/arm').set('Cookie', cookie).send({ exerciseId });
   }
 
   async function storedAttempts(count = 1) {
@@ -125,9 +124,9 @@ describe('training pipeline and live protocol', () => {
     });
   }
 
-  async function guidedRun(rows: RawDatagram[]): Promise<void> {
+  async function completeRun(rows: RawDatagram[]): Promise<void> {
     const source = new ManualSource();
-    await arm('guided', source, true).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     const before = (await db('attempts').where({ exercise_id: exerciseId })).length;
     source.emit(rows);
     await storedAttempts(before + 1);
@@ -186,7 +185,7 @@ describe('training pipeline and live protocol', () => {
       await http()
         .post('/api/references')
         .set('Cookie', cookie)
-        .send({ exerciseId, captureId: capture.body.id, first: 457, last: 1422, startKind: 'flying' })
+        .send({ exerciseId, captureId: capture.body.id, first: 457, last: 1422 })
         .expect(201)
     ).body.id;
   });
@@ -196,12 +195,12 @@ describe('training pipeline and live protocol', () => {
     if (!closed) await app.close();
   });
 
-  it('replay_slow_run_guided_end_to_end', async () => {
-    await arm('guided', 'ce-slow', true).then(response => expect(response.status).toBe(201));
+  it('replay_slow_run_end_to_end', async () => {
+    await arm('ce-slow').then(response => expect(response.status).toBe(201));
     await replays.finished();
     const [attempt] = await storedAttempts();
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
-    expect(attempt).toMatchObject({ mode: 'guided', completion: 'complete', reason: 'game-timer', first_raw_index: 391, last_raw_index: 1524 });
+    expect(attempt).toMatchObject({ completion: 'complete', reason: 'game-timer', first_raw_index: 391, last_raw_index: 1524 });
     expect(attempt.game_ms).toBe(18824);
     expect(Number((await db('attempt_findings').where({ attempt_id: attempt.id }).count('* as count'))[0]!.count)).toBeGreaterThan(0);
     const cues = (await cueEvents(attempt.id)).filter(row => !String(row.outcome).startsWith('suppressed'));
@@ -211,7 +210,7 @@ describe('training pipeline and live protocol', () => {
   });
 
   it('training_stores_the_game_time', async () => {
-    await arm('baseline', 'ce-clean').then(response => expect(response.status).toBe(201));
+    await arm('ce-clean').then(response => expect(response.status).toBe(201));
     await replays.finished();
     const [attempt] = await storedAttempts();
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
@@ -222,7 +221,7 @@ describe('training pipeline and live protocol', () => {
   });
 
   it('review_gap_uses_the_game_times', async () => {
-    await arm('baseline', 'ce-pause').then(response => expect(response.status).toBe(201));
+    await arm('ce-pause').then(response => expect(response.status).toBe(201));
     await replays.finished();
     const [attempt] = await storedAttempts();
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
@@ -234,7 +233,7 @@ describe('training pipeline and live protocol', () => {
   });
 
   it('left_track_is_stored_as_aborted', async () => {
-    await arm('baseline', 'ce-off-track-reset').then(response => expect(response.status).toBe(201));
+    await arm('ce-off-track-reset').then(response => expect(response.status).toBe(201));
     await replays.finished();
     const [attempt] = await storedAttempts();
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
@@ -245,7 +244,7 @@ describe('training pipeline and live protocol', () => {
   it('replay_slow_run_reports_gap', async () => {
     const source = new ManualSource();
     const watcher = await live();
-    await arm('guided', source, true).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     source.emit(slowRun.slice(0, 1000));
     const driving = await watcher.waitFor('state', message => message.state.mode === 'driving' && typeof message.state.gapMs === 'number');
     expect(Number.isFinite(driving.state.gapMs)).toBe(true);
@@ -257,21 +256,73 @@ describe('training pipeline and live protocol', () => {
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
   });
 
-  it('baseline_mode_sends_no_cue_but_stores_findings', async () => {
-    const voice = await voiceDevice();
-    await arm('baseline', 'ce-slow').then(response => expect(response.status).toBe(201));
-    await replays.finished();
-    const [attempt] = await storedAttempts();
-    expect(attempt).toMatchObject({ mode: 'baseline', completion: 'complete' });
-    expect(Number((await db('attempt_findings').where({ attempt_id: attempt.id }).count('* as count'))[0]!.count)).toBeGreaterThan(0);
-    expect(await cueEvents(attempt.id)).toEqual([]);
-    expect(voice.of('cue')).toEqual([]);
+  it('live_attempt_number_continues_the_exercise_numbering', async () => {
+    await completeRun(slowRun);
+    await completeRun(slowRun);
+    await completeRun(slowRun);
+    const watcher = await live();
+    const source = new ManualSource();
+    await arm(source).then(response => expect(response.status).toBe(201));
+    const armed = await watcher.waitFor('state', message => message.state.mode === 'armed');
+    expect(armed.state.attemptNumber).toBeNull();
+    source.emit(slowRun.slice(0, 1000));
+    const first = await watcher.waitFor('state', message => message.state.mode === 'driving');
+    expect(first.state.attemptNumber).toBe(4);
+    source.emit(slowRun.slice(1000));
+    await storedAttempts(4);
+    const lastId = (await db('attempts').where({ exercise_id: exerciseId }).orderBy([{ column: 'started_at', order: 'desc' }]).first()).id;
+    const summary = await http().get(`/api/attempts/${lastId}`).set('Cookie', cookie).expect(200);
+    expect(summary.body.number).toBe(4);
+    source.emit(slowRun.slice(0, 1000));
+    const next = await watcher.waitFor('state', message => message.state.mode === 'driving' && message.state.generation > first.state.generation);
+    expect(next.state.attemptNumber).toBe(5);
+    await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
   });
 
-  it('focus_cue_after_a_complete_guided_attempt', async () => {
+  it('start_at_once_after_stop_counts_the_stopped_attempt', async () => {
+    const watcher = await live();
+    const first = new ManualSource();
+    await arm(first).then(response => expect(response.status).toBe(201));
+    first.emit(slowRun.slice(0, 1000));
+    const stopped = await watcher.waitFor('state', message => message.state.mode === 'driving');
+    expect(stopped.state.attemptNumber).toBe(1);
+    await db.raw("create function slow_attempt_insert() returns trigger language plpgsql as $$ begin perform pg_sleep(0.5); return new; end $$");
+    await db.raw('create trigger slow_attempt_insert before insert on attempts for each row execute function slow_attempt_insert()');
+    try {
+      await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
+      const second = new ManualSource();
+      await arm(second).then(response => expect(response.status).toBe(201));
+      second.emit(slowRun.slice(0, 1000));
+      const driving = await watcher.waitFor('state', message => message.state.mode === 'driving' && message.state.generation > stopped.state.generation);
+      const stored = await storedAttempts();
+      expect(stored).toHaveLength(1);
+      expect(driving.state.attemptNumber).toBe(stored.length + 1);
+      await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
+    } finally {
+      await db.raw('drop trigger if exists slow_attempt_insert on attempts');
+      await db.raw('drop function if exists slow_attempt_insert()');
+    }
+  });
+
+  it('live_state_shows_a_missed_start_when_armed_in_the_middle_of_a_run', async () => {
+    const watcher = await live();
+    const source = new ManualSource();
+    await arm(source).then(response => expect(response.status).toBe(201));
+    const armed = await watcher.waitFor('state', message => message.state.mode === 'armed');
+    expect(armed.state.startMissed).toBe(false);
+    source.emit(slowRun.filter(row => row.rawIndex >= 6000 && row.rawIndex <= 6300));
+    const missed = await watcher.waitFor('state', message => message.state.startMissed);
+    expect(missed.state.mode).toBe('armed');
+    source.emit(slowRun.filter(row => row.rawIndex > 6300));
+    await watcher.waitFor('state', message => message.state.seq > missed.state.seq && !message.state.startMissed);
+    await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
+    expect(await db('attempts').where({ exercise_id: exerciseId })).toEqual([]);
+  });
+
+  it('focus_cue_after_every_complete_attempt', async () => {
     const voice = await voiceDevice();
     const source = new ManualSource();
-    await arm('guided', source).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     const finishIndex = 1521;
     source.emit(slowRun.slice(0, finishIndex - 20));
     await voice.waitFor('cue', message => message.cue.eventKey === 'ease-off@792');
@@ -290,7 +341,7 @@ describe('training pipeline and live protocol', () => {
 
   it('manual_training_route_does_not_exist', async () => {
     const source = new ManualSource();
-    await arm('baseline', source).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     await http().post('/api/training/manual').set('Cookie', cookie).send({ action: 'abort' }).expect(404);
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
     expect(await db('attempts').where({ exercise_id: exerciseId })).toEqual([]);
@@ -299,18 +350,18 @@ describe('training pipeline and live protocol', () => {
   it('stop_during_a_running_attempt_stores_it_as_aborted_manual', async () => {
     const source = new ManualSource();
     const watcher = await live();
-    await arm('baseline', source).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     source.emit(slowRun.slice(0, 1000));
     await watcher.waitFor('state', message => message.state.mode === 'driving');
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
     const [attempt] = await storedAttempts();
-    expect(attempt).toMatchObject({ mode: 'baseline', completion: 'aborted', reason: 'manual', game_ms: null });
+    expect(attempt).toMatchObject({ completion: 'aborted', reason: 'manual', game_ms: null });
   });
 
   it('no_focus_cue_after_an_aborted_attempt', async () => {
     const source = new ManualSource();
     const voice = await voiceDevice();
-    await arm('guided', source).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     source.emit(slowRun.slice(0, 1000));
     await voice.waitFor('cue', message => message.cue.eventKey === 'brake@291');
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
@@ -322,7 +373,7 @@ describe('training pipeline and live protocol', () => {
   });
 
   it('focus_cue_without_voice_device_is_no_device', async () => {
-    await arm('guided', 'ce-slow', true).then(response => expect(response.status).toBe(201));
+    await arm('ce-slow').then(response => expect(response.status).toBe(201));
     await replays.finished();
     const [attempt] = await storedAttempts();
     expect((await cueEvents(attempt.id)).filter(row => row.event_key === 'focus')).toEqual([
@@ -336,7 +387,7 @@ describe('training pipeline and live protocol', () => {
   it('speak_targets_setting_is_stored_and_snapshotted_at_arm', async () => {
     const voice = await voiceDevice();
     const source = new ManualSource();
-    await arm('guided', source).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     await http().patch(`/api/exercises/${exerciseId}`).set('Cookie', cookie).send({ speakTargets: false }).expect(200);
     source.emit(slowRun);
     const spoken = await voice.waitFor('cue', message => message.cue.eventKey === 'brake@291');
@@ -345,7 +396,7 @@ describe('training pipeline and live protocol', () => {
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
     voice.messages.splice(0);
     const next = new ManualSource();
-    await arm('guided', next).then(response => expect(response.status).toBe(201));
+    await arm(next).then(response => expect(response.status).toBe(201));
     next.emit(slowRun);
     const quiet = await voice.waitFor('cue', message => message.cue.eventKey === 'brake@291');
     expect(quiet.cue).toMatchObject({ clip: 'hard-brake', followClip: null, targetSpeedKph: 115 });
@@ -360,12 +411,12 @@ describe('training pipeline and live protocol', () => {
     };
     await http().patch(`/api/exercises/${exerciseId}`).set('Cookie', cookie).send({ sideCueDistanceM: 1 }).expect(200);
     const source = new ManualSource();
-    await arm('guided', source, true).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     await http().patch(`/api/exercises/${exerciseId}`).set('Cookie', cookie).send({ sideCueDistanceM: null }).expect(200);
     source.emit(slowRun);
     await storedAttempts(1);
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
-    await guidedRun(slowRun);
+    await completeRun(slowRun);
     expect(goldenSideKeysAt1M).toEqual(['keep-left@406', 'keep-right@685']);
     expect(await sideKeys(0)).toEqual(goldenSideKeysAt1M);
     expect(await sideKeys(1)).toEqual([]);
@@ -379,15 +430,15 @@ describe('training pipeline and live protocol', () => {
       return cue.decided_mono_ms as number;
     };
     const source = new ManualSource();
-    await arm('guided', source, true).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     await http().patch(`/api/exercises/${exerciseId}`).set('Cookie', cookie).send({ cueOffsetsMs: { 'brake@291': 1000 } }).expect(200);
     source.emit(slowRun);
     await storedAttempts(1);
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
-    await guidedRun(slowRun);
+    await completeRun(slowRun);
     const goldenBrake = golden.trace.cues.find(cue => cue.id.endsWith(':brake@291'))!;
     expect(Math.round(await decidedAt(0))).toBe(goldenBrake.decidedMonoMs);
-    const analysis = analyseReference(fixtureSamples(await fixtureRows('demo-a'), 457, 1422), 'flying', DEFAULT_CONFIG);
+    const analysis = analyseReference(fixtureSamples(await fixtureRows('demo-a'), 457, 1422), DEFAULT_CONFIG);
     const replayed = replayCoach(fixtureSamples(slowRun, slowRun[0]!.rawIndex, slowRun.at(-1)!.rawIndex), analysis, DEFAULT_CONFIG, {
       deviceDelayMs: 60,
       phraseMs: estimatedPhraseMs,
@@ -401,10 +452,10 @@ describe('training pipeline and live protocol', () => {
     expect(goldenBrake.decidedMonoMs - shifted.decidedMonoMs).toBeGreaterThan(800);
   });
 
-  it('reactions_use_the_last_8_complete_guided_attempts', async () => {
+  it('reactions_count_the_played_brake_cues_of_every_attempt', async () => {
     const voice = await voiceDevice();
     reportPlayed(voice);
-    await guidedRun(slowRun);
+    await completeRun(slowRun);
     const reactions = await http().get(`/api/exercises/${exerciseId}/reactions`).set('Cookie', cookie).expect(200);
     expect(reactions.body.map((entry: { eventKey: string }) => entry.eventKey)).toEqual(['brake@291']);
     for (const entry of reactions.body) {
@@ -419,7 +470,7 @@ describe('training pipeline and live protocol', () => {
 
   it('suppressed_brake_rows_store_event_kind_brake', async () => {
     await http().patch(`/api/exercises/${exerciseId}`).set('Cookie', cookie).send({ mutedCues: ['brake@291'] }).expect(200);
-    await guidedRun(slowRun);
+    await completeRun(slowRun);
     const [attempt] = await storedAttempts();
     const rows = await cueEvents(attempt.id);
     const brake = rows.filter(row => row.event_key === 'brake@291');
@@ -435,7 +486,7 @@ describe('training pipeline and live protocol', () => {
   it('wrong_address_goes_disconnected_after_5_s', async () => {
     clock.manual = 1000;
     const watcher = await live();
-    await arm('baseline', new ManualSource()).then(response => expect(response.status).toBe(201));
+    await arm(new ManualSource()).then(response => expect(response.status).toBe(201));
     await watcher.waitFor('state', message => message.state.mode === 'armed' && message.state.connection === 'stale');
     clock.manual = 1000 + 5001;
     const state = await watcher.waitFor('state', message => message.state.mode === 'armed' && message.state.connection === 'disconnected');
@@ -446,7 +497,7 @@ describe('training pipeline and live protocol', () => {
     const other = await live();
     const voice = await voiceDevice('phone');
     await other.waitFor('state', message => message.state.voiceDeviceId === 'phone' && message.state.voiceReady);
-    await arm('guided', 'ce-slow').then(response => expect(response.status).toBe(201));
+    await arm('ce-slow').then(response => expect(response.status).toBe(201));
     await replays.finished();
     await storedAttempts();
     await voice.waitFor('cue', message => message.cue.eventKey === 'focus');
@@ -460,27 +511,27 @@ describe('training pipeline and live protocol', () => {
     const ping = await voice.waitFor('ping');
     expect(ping.serverMs).toBe(40000);
     clock.manual = null;
-    await arm('guided', 'ce-slow').then(response => expect(response.status).toBe(201));
+    await arm('ce-slow').then(response => expect(response.status).toBe(201));
     await replays.finished();
     await storedAttempts();
     const cue = await voice.waitFor('cue', message => message.cue.eventKey === 'brake@291');
     expect(typeof cue.sentMs).toBe('number');
   });
 
-  it('state_names_the_training_mode_and_reference', async () => {
+  it('state_names_the_reference', async () => {
     const watcher = await live();
-    await arm('baseline', new ManualSource()).then(response => expect(response.status).toBe(201));
+    await arm(new ManualSource()).then(response => expect(response.status).toBe(201));
     const armed = await watcher.waitFor('state', message => message.state.mode === 'armed');
-    expect(armed.state).toMatchObject({ trainingMode: 'baseline', referenceId });
+    expect(armed.state).toMatchObject({ referenceId });
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
     const idle = await watcher.waitFor('state', message => message.state.mode === 'idle');
-    expect(idle.state).toMatchObject({ trainingMode: null, referenceId: null });
+    expect(idle.state).toMatchObject({ referenceId: null });
   });
 
   it('voice_device_drop_keeps_recording', async () => {
     const source = new ManualSource();
     const voice = await voiceDevice();
-    await arm('guided', source).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     source.emit(slowRun.slice(0, 700));
     await voice.waitFor('cue', message => message.cue.eventKey === 'brake@291');
     await voice.close();
@@ -503,33 +554,40 @@ describe('training pipeline and live protocol', () => {
     expect(again.messages[0]!.type).toBe('state');
   });
 
-  it('arm_guided_without_voice_needs_confirmation', async () => {
-    const refused = await arm('guided', 'ce-slow');
-    expect(refused.status).toBe(409);
-    expect(refused.body.code).toBe('voice-not-ready');
-    replays.queue.length = 0;
-    const accepted = await arm('guided', 'ce-slow', true);
+  it('arm_without_a_voice_device_succeeds_and_records_cue_events', async () => {
+    const accepted = await arm('ce-slow');
     expect(accepted.status).toBe(201);
-    const second = await arm('baseline', 'ce-slow');
+    expect(accepted.body).toEqual({ captureId: expect.any(String), exerciseId, referenceId });
+    const second = await arm('ce-slow');
     expect(second.status).toBe(409);
     expect(second.body.code).toBe('busy');
     replays.queue.length = 0;
     await replays.finished();
+    const [attempt] = await storedAttempts();
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
+    const cues = (await cueEvents(attempt.id)).filter(row => !String(row.outcome).startsWith('suppressed'));
+    expect(cues.length).toBeGreaterThan(0);
+    expect(cues.every(row => row.outcome === 'no-device')).toBe(true);
+  });
+
+  it('arm_refuses_a_field_that_is_not_in_the_request', async () => {
+    replays.queue.push('ce-slow');
+    await http().post('/api/training/arm').set('Cookie', cookie).send({ exerciseId, mode: 'guided' }).expect(400);
+    replays.queue.length = 0;
   });
 
   it('concurrent_arm_requests_leave_one_training', async () => {
-    const [first, second] = await Promise.all([arm('baseline', new ManualSource()), arm('baseline', new ManualSource())]);
+    const [first, second] = await Promise.all([arm(new ManualSource()), arm(new ManualSource())]);
     expect([first.status, second.status].sort()).toEqual([201, 409]);
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
     replays.queue.length = 0;
-    expect((await arm('baseline', new ManualSource())).status).toBe(201);
+    expect((await arm(new ManualSource())).status).toBe(201);
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
   });
 
   async function armHeldAtReference(): Promise<{ response: Promise<request.Response> }> {
     samples.close();
-    const response = arm('baseline', new ManualSource()).then(result => result);
+    const response = arm(new ManualSource()).then(result => result);
     await eventually(() => samples.waiting);
     return { response };
   }
@@ -547,12 +605,12 @@ describe('training pipeline and live protocol', () => {
     expect((await disarm).status).toBe(201);
     expect(await openCaptures()).toEqual([]);
     replays.queue.length = 0;
-    expect((await arm('baseline', new ManualSource())).status).toBe(201);
+    expect((await arm(new ManualSource())).status).toBe(201);
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
   });
 
   it('reference_delete_is_refused_while_a_training_uses_it', async () => {
-    expect((await arm('baseline', new ManualSource())).status).toBe(201);
+    expect((await arm(new ManualSource())).status).toBe(201);
     const refused = await http().delete(`/api/references/${referenceId}`).set('Cookie', cookie);
     expect(refused.status).toBe(409);
     expect(refused.body).toMatchObject({ code: 'reference-in-use', reason: 'A training uses this reference. Stop the training first.' });
@@ -575,7 +633,7 @@ describe('training pipeline and live protocol', () => {
   it('reference_delete_after_disarm_keeps_the_last_attempt', async () => {
     const source = new ManualSource();
     const watcher = await live();
-    expect((await arm('baseline', source)).status).toBe(201);
+    expect((await arm(source)).status).toBe(201);
     source.emit(slowRun);
     await watcher.waitFor('state', message => message.state.mode === 'finished');
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
@@ -612,7 +670,7 @@ describe('training pipeline and live protocol', () => {
   it('new_generation_sends_cancel_first', async () => {
     const source = new ManualSource();
     const voice = await voiceDevice();
-    await arm('guided', source).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     source.emit(slowRun.slice(300, 900));
     const firstCue = await voice.waitFor('cue');
     source.emit(slowRun.slice(300, 900), 100000);
@@ -628,7 +686,7 @@ describe('training pipeline and live protocol', () => {
   it('pause_sends_cancel', async () => {
     const source = new ManualSource();
     const voice = await voiceDevice();
-    await arm('guided', source).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     source.emit(pauseRun.slice(0, firstPausedIndex() + 5));
     const paused = await voice.waitFor('state', message => message.state.mode === 'paused');
     const cancel = await voice.waitFor('cancel');
@@ -652,7 +710,7 @@ describe('training pipeline and live protocol', () => {
   it('raw_write_failure_keeps_coaching', async () => {
     const voice = await voiceDevice();
     opener.failing = true;
-    await arm('guided', 'ce-slow').then(response => expect(response.status).toBe(201));
+    await arm('ce-slow').then(response => expect(response.status).toBe(201));
     await replays.finished();
     await voice.waitFor('cue');
     const state = await voice.waitFor('state', message => message.state.recordingComplete === false);
@@ -667,7 +725,7 @@ describe('training pipeline and live protocol', () => {
   it('state_rate_is_at_most_15_hz', async () => {
     const source = new ManualSource();
     const watcher = await live();
-    await arm('baseline', source).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     const before = watcher.of('state').length;
     const started = performance.now();
     let next = 0;
@@ -683,7 +741,7 @@ describe('training pipeline and live protocol', () => {
 
   async function statesDuringDrive(watchers: LiveConnection[]): Promise<number[]> {
     const source = new ManualSource();
-    await arm('baseline', source).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     const before = watchers.map(watcher => watcher.of('state').length);
     const started = performance.now();
     let next = 0;
@@ -755,7 +813,7 @@ describe('training pipeline and live protocol', () => {
     clock.manual = 0;
     const source = new ManualSource();
     const watcher = await live();
-    await arm('guided', source, true).then(response => expect(response.status).toBe(201));
+    await arm(source).then(response => expect(response.status).toBe(201));
     source.emit(slowRun.slice(0, 1000));
     clock.manual = slowRun[999]!.receivedMonoMs;
     const driving = await watcher.waitFor('state', message => message.state.mode === 'driving');
@@ -779,7 +837,7 @@ describe('live gap', () => {
 
   async function gapStates(fixture: string): Promise<{ states: GapState[]; records: AttemptRecord[] }> {
     const reference = await readSamples(fixturePath('demo-a'), { first: 457, last: 1422 });
-    const analysis = analyseReference(reference, 'flying', DEFAULT_CONFIG);
+    const analysis = analyseReference(reference, DEFAULT_CONFIG);
     const records: AttemptRecord[] = [];
     let generation = 0;
     const session = new TrainingSession(
@@ -787,12 +845,12 @@ describe('live gap', () => {
         userId: 'user',
         exerciseId: 'exercise',
         referenceId: 'reference',
-        mode: 'baseline',
         analysis: { ...analysis, events: [], corners: [] },
         mutedKeys: new Set(),
         speakTargets: false,
         offsetsMs: new Map(),
-        sideCueDistanceM: null
+        sideCueDistanceM: null,
+        storedAttempts: 0
       },
       DEFAULT_CONFIG,
       {

@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { Exercise } from '@gt7/contracts';
-import { CUES, exercise, exerciseApi } from './fixtures.ts';
+import { CORNERS, CUES, exercise, exerciseApi } from './fixtures.ts';
 import { renderApp, setViewportWidth } from './support.tsx';
 
 describe('cue list', () => {
@@ -25,6 +25,23 @@ describe('cue list', () => {
     expect(screen.queryByText(/mistake/i)).toBeNull();
   });
 
+  it('cue_list_counts_cues_and_turns_found', async () => {
+    setViewportWidth(1280);
+    exerciseApi().install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    expect(await screen.findByText(/^3 cues and 3 turns found in the reference\./)).toBeInTheDocument();
+  });
+
+  it('cue_list_says_one_turn_for_a_single_turn', async () => {
+    setViewportWidth(1280);
+    exerciseApi()
+      .on('GET /api/references/ref-demo/corners', CORNERS.slice(0, 1))
+      .on('GET /api/references/ref-demo/cues', CUES.slice(0, 1))
+      .install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    expect(await screen.findByText(/^1 cue and 1 turn found in the reference\./)).toBeInTheDocument();
+  });
+
   it('mute_toggles_and_persists', async () => {
     setViewportWidth(1280);
     let current: Exercise = exercise({ mutedCues: ['ease-off@600'] });
@@ -41,7 +58,7 @@ describe('cue list', () => {
     await user.click(within(row).getByRole('button', { name: 'Mute' }));
     await waitFor(() => expect(api.calls.find(call => call.method === 'PATCH')?.body).toEqual({ mutedCues: ['ease-off@600', 'throttle@491'] }));
     expect(within(row).getByRole('button', { name: 'Unmute' })).toHaveAttribute('aria-pressed', 'true');
-    expect(row).toHaveTextContent('Muted');
+    expect(row).toHaveTextContent('Muted. The voice does not say this cue.');
     view.unmount();
 
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
@@ -176,7 +193,7 @@ describe('cue list', () => {
       .install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
-    await waitFor(() => expect(row).toHaveTextContent('You start to brake 0.7 s after the cue here (3 guided attempts)'));
+    await waitFor(() => expect(row).toHaveTextContent('You start to brake 0.7 s after the cue here (3 attempts)'));
     expect(screen.getByRole('listitem', { name: 'Cue 2' })).not.toHaveTextContent('You start to brake');
   });
 
@@ -187,10 +204,10 @@ describe('cue list', () => {
       .install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
-    await waitFor(() => expect(row).toHaveTextContent('You start to brake 0.4 s before the cue here (1 guided attempt)'));
+    await waitFor(() => expect(row).toHaveTextContent('You start to brake 0.4 s before the cue here (1 attempt)'));
   });
 
-  it('cue_list_without_guided_attempts_shows_no_reaction', async () => {
+  it('cue_list_without_attempts_shows_no_reaction', async () => {
     setViewportWidth(1280);
     exerciseApi().install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });

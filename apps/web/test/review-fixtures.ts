@@ -11,7 +11,6 @@ export function attemptSummary(overrides: AttemptOverrides = {}): AttemptSummary
     captureId: 'cap-9',
     first: 1162,
     last: 2786,
-    mode: 'baseline',
     completion: 'complete',
     reason: null,
     timeMs: 27100,
@@ -31,7 +30,7 @@ export const ATTEMPT_LIST: AttemptList = {
       bestMs: 26800,
       attempts: [
         attemptSummary({ id: 'a0000000-0000-4000-8000-000000000003', number: 3, timeMs: null, completion: 'aborted', reason: 'manual', gapToBestMs: null }),
-        attemptSummary({ id: 'a0000000-0000-4000-8000-000000000002', number: 2, timeMs: 26800, gapToBestMs: 0, mode: 'guided' })
+        attemptSummary({ id: 'a0000000-0000-4000-8000-000000000002', number: 2, timeMs: 26800, gapToBestMs: 0 })
       ]
     },
     {

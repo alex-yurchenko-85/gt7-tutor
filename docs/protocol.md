@@ -161,7 +161,25 @@ The field 0x15C is in format `C` only. In licence tests and in Circuit Experienc
 1. **Demonstration timer.** The demonstration runs the value at 0x15C with bit 0 false. The value starts at 0 and stops at a final value inside the demonstration.
 2. **Player start.** The player's run gives a step from 0 to a value from 1 to 50 ms in one packet (`gameTimer.startMaxMs`).
 
-Without fact 1, an exercise cannot get a reference. The proposals API gives no proposal. The server refuses a range set by hand with `no-timer-run`. A training needs an active reference, so no attempt can start either. Without fact 2, no attempt starts: the tracker sees no start. After 10 s of driving, the Drive screen shows the prompt `The game timer did not start`.
+Without fact 1, an exercise cannot get a reference. The proposals API gives no proposal. The server refuses a range set by hand with `no-timer-run`. A training needs an active reference, so no attempt can start either. Without fact 2, no attempt starts: the tracker sees no start. When the value runs, the server finds a missed start, and the Drive screen shows the prompt `The attempt did not start` with the text `The exercise was already running when you pressed Start. Restart the exercise in the game.`
+
+**Missed start.** The server sets `LiveState.startMissed` on each sample (`startMissed` in `packages/core/src/missed-start.ts`). The value is true when all these conditions are true:
+
+1. A training is armed.
+2. No attempt runs. A paused attempt runs.
+3. Bit 0 is set.
+4. The game timer runs: the value is more than the value of the previous sample, and the previous value is more than 0.
+5. The timer run is not the run of an attempt. After an attempt ends, this condition stays false until the value is 0.
+
+The fixtures show why conditions 4 and 5 are necessary:
+
+- **After a finish**, the value stays fixed above 0 with bit 0 set on the result screen (`b1-run`, `b3-run`, `ce-clean`, `ce-slow`, `ce-pause`). A fixed value does not run.
+- **A false jump** gives the final value directly after 0 with bit 0 set (`b3-run`). The previous value is 0.
+- **After a −1**, the value continues to count with bit 0 set until the game resets or ends the run (`ce-off-track-reset`, `ce-off-track-end`). This is the run of the aborted attempt.
+- **A pause** stops the value. A missed run shows no prompt during its pause.
+- **The background scene** counts with bit 0 false.
+
+A training that is armed in the middle of a run shows the prompt while the timer of that run runs. A restart sets the value to 0. Then the tracker sees the start of the new run, and the prompt goes away.
 
 ## Flags
 
@@ -186,7 +204,7 @@ The code depends on these facts.
 - **Fresh packets can hold an old state.** After a demonstration stops, the packet ID increases while the position, speed and pedals stay fixed. The fixed speed can be more than zero. Do not integrate speed to get distance.
 - **The background moves.** Before the player starts, a background car drives across the same coordinates with changing pedals.
 - **Bit 0 separates the player from a demonstration.** It is false in every demonstration, preview and background packet, and true in the player's session. It becomes true shortly before loading ends.
-- **A demonstration has no flag of its own.** It is the same in every run, sample by sample, and the background is not. This is why a reference needs three demonstration recordings.
+- **A demonstration has no flag of its own.** It is the same in every run, sample by sample, and the background is not. A second recording can show that the same part repeats. The game timer gives the range of the demonstration in one recording (see Game timer).
 - **A scene change is a position jump.** The position moves by hundreds of metres in one packet.
 - **The lap value does not mark an attempt.** Background packets have positive lap values.
 - **The packet does not name the exercise.** It gives a car ID only.
@@ -245,7 +263,7 @@ Code: `packages/capture/src/raw-file.ts`, `packages/capture/src/read-samples.ts`
 ## Tools
 
 ```sh
-pnpm capture --ip <PS5 address> --seconds 60 --purpose demo --start-after 5
+pnpm capture --ip <PS5 address> --seconds 60 --purpose demo
 pnpm replay --file <raw capture .ndjson>
 ```
 

@@ -123,6 +123,21 @@ describe('voice test icon', () => {
 });
 
 describe('setup fixes', () => {
+  it('voice_off_message_says_the_drive_screen_still_shows_the_cues', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    const rig = playerRig();
+    const { sockets } = renderApp({ path: '/setup#voice', player: rig.player });
+    await screen.findByRole('heading', { name: 'Voice' });
+    await waitFor(() => sockets.latest);
+    act(() => {
+      sockets.latest.open();
+      sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: true }) });
+    });
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Turn voice off here' }));
+    expect(await screen.findByText('The voice is off on this device. The Drive screen still shows the cues.')).toBeInTheDocument();
+  });
+
   it('voice_test_reports_browser_latency_not_a_measurement', async () => {
     setViewportWidth(1280);
     setupApi();
@@ -436,6 +451,16 @@ describe('setup sections', () => {
     expect(screen.getByRole('button', { name: 'Clean up captures…' })).toBeInTheDocument();
   });
 
+  it('cleanup_confirm_button_says_clean_up_captures', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    renderApp({ path: '/setup#data' });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Clean up captures…' }));
+    expect(screen.getByRole('button', { name: 'Clean up captures' })).toBeInTheDocument();
+    expect(screen.queryByText('Remove unused capture data')).not.toBeInTheDocument();
+  });
+
   it('no_switch_profile_in_setup_or_menu', async () => {
     setViewportWidth(1280);
     setupApi();
@@ -501,7 +526,7 @@ describe('screen updates', () => {
     expect(dialog).toHaveTextContent('Everything of this profile goes:');
     expect(await within(dialog).findByText(/2 exercises/)).toBeInTheDocument();
     expect(dialog).toHaveTextContent('2 exercises with their references');
-    expect(dialog).toHaveTextContent('6 attempts with their cue events and differences');
+    expect(dialog).toHaveTextContent('6 attempts with their cues and differences');
     expect(dialog).toHaveTextContent('3 captures on this computer, 1.0 MB');
     expect(dialog).toHaveTextContent('the sign-in on every device');
     expect(dialog).toHaveTextContent('Other profiles and the settings of this computer stay. You cannot undo this.');
@@ -548,6 +573,6 @@ describe('screen updates', () => {
     const dialog = screen.getByRole('alertdialog');
     expect(await within(dialog).findByText('1 exercise')).toBeInTheDocument();
     expect(dialog).toHaveTextContent('1 exercise with its references');
-    expect(dialog).toHaveTextContent('1 attempt with its cue events and differences');
+    expect(dialog).toHaveTextContent('1 attempt with its cues and differences');
   });
 });

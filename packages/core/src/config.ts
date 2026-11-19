@@ -30,9 +30,8 @@ export type CoreConfig = {
   cue: {
     leadReactionMs: number;
     ttlBaseMs: number;
-    countdownTtlMs: number;
     cooldownMs: number;
-    priority: { brake: number; bigStop: number; easeOff: number; position: number; throttle: number; system: number; countdown: number };
+    priority: { brake: number; bigStop: number; easeOff: number; position: number; throttle: number; system: number };
   };
   position: { holdMs: number };
   acceleration: {
@@ -84,7 +83,6 @@ export type CoreConfig = {
     minRunSamples: number;
     minPieceSamples: number;
     maxGapSamples: number;
-    cueWindowMs: number;
     minMovementM: number;
     confirmMaxLateralM: number;
     confirmMaxLateralP95M: number;
@@ -126,9 +124,8 @@ export const DEFAULT_CONFIG: CoreConfig = {
   cue: {
     leadReactionMs: 500,
     ttlBaseMs: 150,
-    countdownTtlMs: 800,
     cooldownMs: 1500,
-    priority: { brake: 100, bigStop: 95, easeOff: 90, position: 50, throttle: 20, system: 10, countdown: 101 }
+    priority: { brake: 100, bigStop: 95, easeOff: 90, position: 50, throttle: 20, system: 10 }
   },
   position: { holdMs: 300 },
   acceleration: {
@@ -180,7 +177,6 @@ export const DEFAULT_CONFIG: CoreConfig = {
     minRunSamples: 60,
     minPieceSamples: 10,
     maxGapSamples: 2,
-    cueWindowMs: 5000,
     minMovementM: 10,
     confirmMaxLateralM: 0.5,
     confirmMaxLateralP95M: 0.2,

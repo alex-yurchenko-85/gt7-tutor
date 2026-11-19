@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ReferenceInfo } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { formatDay } from '../../app/format.ts';
+import { counted } from '../../app/plural.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
@@ -14,8 +15,7 @@ function originName(reference: ReferenceInfo): string {
 
 function meta(reference: ReferenceInfo): string {
   const version = reference.gameVersion ? `game version ${reference.gameVersion}` : 'no game version';
-  const start = reference.startKind === 'standing' ? 'standing start' : 'flying start';
-  return `${formatDay(reference.createdAt)}, ${version}, ${start}. Frames ${reference.first}–${reference.last}. ${reference.attemptCount} attempts use it.`;
+  return `${formatDay(reference.createdAt)}, ${version}. Frames ${reference.first}–${reference.last}. ${counted(reference.attemptCount, 'attempt')} ${reference.attemptCount === 1 ? 'uses' : 'use'} it.`;
 }
 
 type RowProps = { reference: ReferenceInfo; onActivate(): void; onCheck(): void; onDelete(): void };

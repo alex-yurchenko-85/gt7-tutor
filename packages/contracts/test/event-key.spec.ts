@@ -19,7 +19,6 @@ describe('event keys', () => {
     expect(eventKeyKind('guidance-paused#1')).toBe('guidance');
     expect(eventKeyKind('guidance-resumed#2')).toBe('guidance');
     expect(eventKeyKind('focus')).toBe('focus');
-    expect(eventKeyKind('countdown-c-3')).toBe('countdown');
     expect(eventKeyKind('corner-1')).toBeNull();
     expect(eventKeyKind('other@3')).toBeNull();
   });

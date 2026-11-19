@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import type { AttemptDay, AttemptList, AttemptSummary, Exercise } from '@gt7/contracts';
+import type { AttemptDay, AttemptSummary, Exercise } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
-import { abortReasonText, formatDay, formatGap, formatTime, metres, signedSeconds } from '../../app/format.ts';
+import { abortReasonText, formatDay, formatGap, formatTime, metres } from '../../app/format.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Icon } from '../../app/icons.tsx';
@@ -12,12 +12,10 @@ import { differenceText, recurringAtText } from '../cues/cue-format.ts';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
 import { useExercise } from '../exercise/use-exercise.ts';
 import { DeleteAttemptsDialog } from './DeleteAttemptsDialog.tsx';
-import { compareVoice, type VoiceGroup } from './voice-compare.ts';
 import './attempts.css';
 
 const RECURRING_MINIMUM = 3;
 const RECURRING_SHOWN = 3;
-const HINT_BELOW = 3;
 
 function TurnTag({ turn, muted = false }: { turn: number | null; muted?: boolean }) {
   if (turn === null) return null;
@@ -28,53 +26,7 @@ function TurnTag({ turn, muted = false }: { turn: number | null; muted?: boolean
   );
 }
 
-function attemptCount(count: number): string {
-  return counted(count, 'attempt');
-}
-
 type Selection = { picked: ReadonlySet<string>; toggle(id: string): void };
-
-
-function changeNote(changeMs: number): string {
-  if (changeMs < 0) return 'with voice is faster';
-  return changeMs > 0 ? 'with voice is slower' : 'no change';
-}
-
-function Median({ label, group }: { label: string; group: VoiceGroup }) {
-  return (
-    <div className="voice-cell">
-      <span className="voice-label">{label}</span>
-      <b className="voice-value">{group.medianMs === null ? '–' : formatTime(group.medianMs)}</b>
-      <span className="voice-note">{attemptCount(group.count)}</span>
-    </div>
-  );
-}
-
-function VoiceComparison({ list, referenceId }: { list: AttemptList; referenceId: string | null }) {
-  const { baseline, guided, changeMs } = compareVoice(
-    list.days.flatMap(day => day.attempts),
-    referenceId
-  );
-  const hint = baseline.count < HINT_BELOW || guided.count < HINT_BELOW;
-  const tone = changeMs === null || changeMs === 0 ? '' : changeMs < 0 ? 'faster' : 'slower';
-  return (
-    <section className="panel voice-compare" aria-labelledby="voice-compare-title">
-      <h2 id="voice-compare-title">Does the voice help?</h2>
-      <p className="sub">
-        Complete attempts only, times from the game.{hint ? ' With fewer than 3 attempts in a group, treat the change as a hint only.' : ''}
-      </p>
-      <div className="voice-grid">
-        <Median label="Without voice, median" group={baseline} />
-        <Median label="With voice, median" group={guided} />
-        <div className="voice-cell">
-          <span className="voice-label">Change</span>
-          <b className={`voice-value ${tone}`}>{changeMs === null ? '–' : `${signedSeconds(changeMs)} s`}</b>
-          <span className="voice-note">{changeMs === null ? 'needs attempts with and without voice' : changeNote(changeMs)}</span>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function rowClass(isBest: boolean, complete: boolean, picked: boolean): string | undefined {
   const names = [isBest ? 'best' : complete ? '' : 'aborted', picked ? 'picked' : ''].filter(Boolean);
@@ -110,7 +62,6 @@ function AttemptRow({ attempt, bestMs, selection }: { attempt: AttemptSummary; b
         )}
       </td>
       <td>{complete && !isBest ? formatGap(attempt.gapToBestMs) : ''}</td>
-      <td className="hide-narrow">{attempt.mode === 'guided' ? 'with voice' : 'without voice'}</td>
       <td className="hide-narrow">
         {attempt.largestDifference ? (
           <>
@@ -172,10 +123,8 @@ function Recurring({ exercise }: { exercise: Exercise }) {
 
 function QuickSelect({ day, onPick }: { day: AttemptDay; onPick(ids: string[]): void }) {
   const aborted = day.attempts.filter(attempt => attempt.completion !== 'complete');
-  const baseline = day.attempts.filter(attempt => attempt.mode === 'baseline');
   const choices: { label: string; attempts: AttemptSummary[] }[] = [
     { label: `Aborted (${aborted.length})`, attempts: aborted },
-    { label: `Without voice (${baseline.length})`, attempts: baseline },
     { label: `All on this day (${day.attempts.length})`, attempts: day.attempts },
     { label: 'None', attempts: [] }
   ];
@@ -235,7 +184,6 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
   return (
     <section className={selecting ? 'selecting-page' : undefined}>
       <ExerciseHeader exercise={exercise.data} />
-      {list && list.days.length > 0 ? <VoiceComparison list={list} referenceId={exercise.data.activeReferenceId} /> : null}
       <div className="wide">
         <div>
           {list && list.days.length === 0 ? (
@@ -277,7 +225,6 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
                       <th>#</th>
                       <th>Time from the game</th>
                       <th>Gap to best</th>
-                      <th className="hide-narrow">Voice</th>
                       <th className="hide-narrow">Largest difference</th>
                       <th>
                         <span className="visually-hidden">Review</span>

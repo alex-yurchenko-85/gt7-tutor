@@ -10,7 +10,6 @@
         "last": 6372
       },
       "rows": 2203,
-      "startCueMonoMs": null,
       "peerIp": "0.0.0.0",
       "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. National B licence test B-1, standing start. Screen time 0:20.352."
     },
@@ -23,7 +22,6 @@
         "last": 7840
       },
       "rows": 2741,
-      "startCueMonoMs": null,
       "peerIp": "0.0.0.0",
       "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. National B licence test B-3. Screen time 0:15.839."
     },
@@ -36,7 +34,6 @@
         "last": 9700
       },
       "rows": 1631,
-      "startCueMonoMs": null,
       "peerIp": "0.0.0.0",
       "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. Autódromo de Interlagos, Circuit Experience sector 2. Clean run, screen time 0:17.071."
     },
@@ -49,7 +46,6 @@
         "last": 16480
       },
       "rows": 2111,
-      "startCueMonoMs": null,
       "peerIp": "0.0.0.0",
       "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. Autódromo de Interlagos, Circuit Experience sector 2. Run that leaves the track and ends."
     },
@@ -62,7 +58,6 @@
         "last": 8075
       },
       "rows": 656,
-      "startCueMonoMs": null,
       "peerIp": "0.0.0.0",
       "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. Autódromo de Interlagos, Circuit Experience sector 2. Run that leaves the track and restarts."
     },
@@ -75,7 +70,6 @@
         "last": 14010
       },
       "rows": 2471,
-      "startCueMonoMs": null,
       "peerIp": "0.0.0.0",
       "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. Autódromo de Interlagos, Circuit Experience sector 2. Run with a pause, screen time about 0:17.417."
     },
@@ -88,7 +82,6 @@
         "last": 7060
       },
       "rows": 1961,
-      "startCueMonoMs": null,
       "peerIp": "0.0.0.0",
       "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. Autódromo de Interlagos, Circuit Experience sector 2. Run too slow, not counted by the game."
     },
@@ -101,7 +94,6 @@
         "last": 1727
       },
       "rows": 1728,
-      "startCueMonoMs": 5004.528834,
       "peerIp": "0.0.0.0",
       "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. Autódromo de Interlagos, Circuit Experience sector 2. Demonstration with a wait of 5 s."
     },
@@ -114,7 +106,6 @@
         "last": 2317
       },
       "rows": 2318,
-      "startCueMonoMs": 10003.754500000001,
       "peerIp": "0.0.0.0",
       "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. Autódromo de Interlagos, Circuit Experience sector 2. Demonstration with a wait of 10 s."
     },
@@ -127,7 +118,6 @@
         "last": 2625
       },
       "rows": 2626,
-      "startCueMonoMs": 15003.999666,
       "peerIp": "0.0.0.0",
       "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. Autódromo de Interlagos, Circuit Experience sector 2. Demonstration with a wait of 15 s."
     }

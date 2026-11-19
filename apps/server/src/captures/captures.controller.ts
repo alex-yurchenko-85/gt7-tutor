@@ -13,7 +13,7 @@ export class CapturesController {
 
   @Post('captures')
   begin(@CurrentUser() user: ProfileUser, @Body({ schema: createCaptureSchema }) body: CreateCaptureRequest): Promise<CaptureInfo> {
-    return this.captures.begin({ userId: user.id, exerciseId: body.exerciseId, purpose: body.purpose, startAfterS: body.startAfterS ?? null });
+    return this.captures.begin({ userId: user.id, exerciseId: body.exerciseId, purpose: body.purpose });
   }
 
   @Get('captures')

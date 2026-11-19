@@ -47,7 +47,7 @@ describe('get ready', () => {
     renderApp();
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('PS5 address'), '192.168.1.40');
-    await user.click(screen.getByRole('button', { name: 'Save and check reception' }));
+    await user.click(screen.getByRole('button', { name: 'Save and check' }));
     await waitFor(() => expect(api.called('POST /api/settings/connection/check')).toBe(true));
     expect(api.calls.findIndex(call => call.path === '/api/settings/connection')).toBeLessThan(
       api.calls.findIndex(call => call.path === '/api/settings/connection/check')
@@ -63,7 +63,7 @@ describe('get ready', () => {
     getReadyApi(null);
     renderApp();
     await screen.findByLabelText('PS5 address');
-    const save = screen.getByRole('button', { name: 'Save and check reception' });
+    const save = screen.getByRole('button', { name: 'Save and check' });
     expect(save.textContent).toBe('');
     expect(save.querySelector('[data-icon="check"]')).not.toBeNull();
   });
@@ -74,7 +74,7 @@ describe('get ready', () => {
     renderApp();
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('PS5 address'), '192.168.1.40');
-    await user.click(screen.getByRole('button', { name: 'Save and check reception' }));
+    await user.click(screen.getByRole('button', { name: 'Save and check' }));
     expect(await within(step(/Connect the console/)).findByText('Address saved, no telemetry yet')).toBeInTheDocument();
     expect(step(/Choose the device/)).toHaveAttribute('aria-current', 'step');
     expect(screen.getByText('1 of 3 ready')).toBeInTheDocument();
@@ -86,7 +86,7 @@ describe('get ready', () => {
     renderApp();
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('PS5 address'), '192.168.1.40');
-    await user.click(screen.getByRole('button', { name: 'Save and check reception' }));
+    await user.click(screen.getByRole('button', { name: 'Save and check' }));
     expect(await within(step(/Connect the console/)).findByText('Address saved, no telemetry yet')).toBeInTheDocument();
     expect(step(/Choose the device/)).toHaveAttribute('aria-current', 'step');
   });
@@ -97,7 +97,7 @@ describe('get ready', () => {
     renderApp();
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('PS5 address'), '300.1.1.1');
-    await user.click(screen.getByRole('button', { name: 'Save and check reception' }));
+    await user.click(screen.getByRole('button', { name: 'Save and check' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('This is not an IPv4 address');
     expect(api.called('PUT /api/settings/connection')).toBe(false);
   });
@@ -140,7 +140,7 @@ describe('get ready', () => {
     expect(screen.getByText('2 of 3 ready')).toBeInTheDocument();
   });
 
-  it('claim_preloads_countdown_clips', async () => {
+  it('claim_preloads_the_voice_check_clip', async () => {
     setViewportWidth(1440);
     getReadyApi('192.168.1.40');
     const rig = playerRig();
@@ -153,7 +153,7 @@ describe('get ready', () => {
     });
     await userEvent.setup().click(button);
     await waitFor(() => expect(socket.sent).toContainEqual({ type: 'claim-voice', deviceId: voiceDeviceId(), ready: true }));
-    for (const clip of ['voice-check', 'countdown-three', 'countdown-two', 'countdown-one', 'countdown-start']) expect(rig.player.hasClip(clip)).toBe(true);
+    expect(rig.player.hasClip('voice-check')).toBe(true);
   });
 
   it('voice_step_texts_name_no_device_type', async () => {

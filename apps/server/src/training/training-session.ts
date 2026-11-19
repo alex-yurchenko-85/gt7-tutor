@@ -1,4 +1,4 @@
-import { KPH_PER_MPS, type CueEventKind, type CueOutcome, type LiveCueKind, type LiveGuidance, type Sample, type TrainingMode } from '@gt7/contracts';
+import { KPH_PER_MPS, type CueEventKind, type CueOutcome, type LiveCueKind, type LiveGuidance, type Sample } from '@gt7/contracts';
 import {
   ACTIVE_GUIDANCE,
   TrainingRun,
@@ -17,8 +17,8 @@ export type TrainingSnapshot = CoachSettings & {
   userId: string;
   exerciseId: string;
   referenceId: string;
-  mode: TrainingMode;
   analysis: ReferenceAnalysis;
+  storedAttempts: number;
 };
 
 export type CueRecordOutcome =
@@ -76,6 +76,7 @@ export type SessionView = {
   lastCue: Cue | null;
   nextCue: NextCue | null;
   gapMs: number | null;
+  startMissed: boolean;
 };
 
 const GAP_STEP_MS = 100;
@@ -86,7 +87,7 @@ function shownKey(view: SessionView): string {
   const place = view.sM === null ? '' : Math.round(view.sM);
   const gap = view.gapMs === null ? '' : Math.round(view.gapMs / GAP_STEP_MS) || 0;
   const next = nextCue === null ? '' : `${nextCue.text}@${Math.round(nextCue.inM)}`;
-  return [view.mode, view.generation, view.attemptNumber, guidance.mode, guidance.reason, speed, place, gap, next, view.lastCue?.id].join('|');
+  return [view.mode, view.generation, view.attemptNumber, guidance.mode, guidance.reason, speed, place, gap, next, view.lastCue?.id, view.startMissed].join('|');
 }
 
 type OpenAttempt = { generation: number; startedAt: Date; samples: Sample[]; cues: CueRecord[] };
@@ -110,14 +111,14 @@ export class TrainingSession {
     speedMps: null,
     lastCue: null,
     nextCue: null,
-    gapMs: null
+    gapMs: null,
+    startMissed: false
   };
 
   constructor(snapshot: TrainingSnapshot, config: CoreConfig, effects: TrainingEffects) {
     this.snapshot = snapshot;
     this.effects = effects;
     this.run = new TrainingRun(snapshot.analysis, config, snapshot, {
-      guided: snapshot.mode === 'guided',
       nextGeneration: () => effects.nextGeneration()
     });
   }
@@ -135,7 +136,7 @@ export class TrainingSession {
     const deviceDelayMs = this.effects.deviceDelayMs();
     const step = this.run.step(sample, { deviceDelayMs, phraseMs: this.phraseMs });
     this.handle(step.attemptEvents, step.startSamples);
-    this.view = { ...this.view, sM: step.match?.sM ?? null, speedMps: sample.speedMps, nextCue: step.nextCue, gapMs: step.gapMs, guidance: step.guidance };
+    this.view = { ...this.view, sM: step.match?.sM ?? null, speedMps: sample.speedMps, nextCue: step.nextCue, gapMs: step.gapMs, guidance: step.guidance, startMissed: step.startMissed };
     this.recordCues(step, sample, deviceDelayMs);
     this.notify();
   }
@@ -183,7 +184,7 @@ export class TrainingSession {
     this.cuesById = new Map();
     this.attempt = { generation, startedAt: new Date(), samples, cues: [] };
     this.attempts++;
-    this.view = { ...this.view, mode: 'driving', generation, attemptNumber: this.attempts, lastCue: null };
+    this.view = { ...this.view, mode: 'driving', generation, attemptNumber: this.snapshot.storedAttempts + this.attempts, lastCue: null };
   }
 
   private pause(): void {

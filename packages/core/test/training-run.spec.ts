@@ -28,7 +28,7 @@ describe('TrainingRun', () => {
     let spoken = 0;
     for (const name of FIXTURES) {
       const samples = samplesOf(name);
-      const run = new TrainingRun(analysis, DEFAULT_CONFIG, settings, { guided: true, nextGeneration: counter() });
+      const run = new TrainingRun(analysis, DEFAULT_CONFIG, settings, { nextGeneration: counter() });
       const attempts: unknown[] = [];
       const cues: unknown[] = [];
       const suppressed: unknown[] = [];
@@ -47,29 +47,13 @@ describe('TrainingRun', () => {
     expect(spoken).toBeGreaterThan(20);
   });
 
-  it('training_run_without_guidance_gives_position_and_gap_but_no_cue', () => {
-    const samples = between(samplesOf('ce-slow'), 5400, 6624);
-    const run = new TrainingRun(analysis, DEFAULT_CONFIG, settings, { guided: false, nextGeneration: counter() });
-    const steps = samples.map(sample => ({ sample, step: run.step(sample, now) }));
-    const driving = steps.filter(entry => entry.step.match !== null);
-    expect(driving.length).toBeGreaterThan(500);
-    expect(steps.every(entry => entry.step.cue === null && entry.step.suppressed.length === 0)).toBe(true);
-    expect(steps.every(entry => entry.step.guidance.mode === 'active' && entry.step.guidance.reason === null)).toBe(true);
-    for (const { sample, step } of driving.filter(entry => entry.sample.gameTimerMs > 0)) {
-      expect(step.gapMs).toBeCloseTo(sample.gameTimerMs - step.match!.reference.timerMs, 6);
-    }
-    const first = driving[0]!.step;
-    const next = events.find(event => event.sM > first.match!.sM && !settings.mutedKeys.has(event.key) && cueText(event.voice))!;
-    expect(first.nextCue).toEqual({ text: cueText(next.voice), inM: next.sM - first.match!.sM });
-  });
-
   it('next_cue_is_the_first_unmuted_cue_ahead_also_after_a_restart', () => {
     const session = [samplesOf('ce-off-track-reset'), samplesOf('ce-clean'), samplesOf('ce-pause'), samplesOf('ce-off-track-end')].reduce((all, next) =>
       all.concat(next.filter(sample => sample.rawIndex > all.at(-1)!.rawIndex))
     );
     const shuffled = analysisOf(path, [...events].reverse());
     for (const reference of [analysis, shuffled]) {
-      const run = new TrainingRun(reference, DEFAULT_CONFIG, settings, { guided: false, nextGeneration: counter() });
+      const run = new TrainingRun(reference, DEFAULT_CONFIG, settings, { nextGeneration: counter() });
       let jumpsBack = 0;
       let previousSM: number | null = null;
       for (const sample of session) {
@@ -86,7 +70,7 @@ describe('TrainingRun', () => {
 
   it('training_run_start_samples_hold_the_sample_before_the_start', () => {
     const samples = samplesOf('ce-slow');
-    const run = new TrainingRun(analysis, DEFAULT_CONFIG, settings, { guided: true, nextGeneration: () => 7 });
+    const run = new TrainingRun(analysis, DEFAULT_CONFIG, settings, { nextGeneration: () => 7 });
     let previous: (typeof samples)[number] | null = null;
     for (const sample of samples) {
       const step = run.step(sample, now);

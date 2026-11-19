@@ -3,7 +3,7 @@ import { CUE_WORDS, type CornerInfo, type LiveCue, type LiveGuidance, type LiveS
 export type CueWords = { words: string; number: string | null };
 
 export function shownOnDrive(cue: LiveCue | null): cue is LiveCue & { kind: WordedCueKind } {
-  return cue !== null && cue.kind !== 'focus' && cue.kind !== 'countdown';
+  return cue !== null && cue.kind !== 'focus';
 }
 
 export function cueWords(cue: LiveCue & { kind: WordedCueKind }): CueWords {
@@ -27,7 +27,7 @@ export function connectionProblem(state: LiveState, socketConnected: boolean, de
   if (!socketConnected) return 'Connection to GT7 Tutor lost. Cues are not shown until it returns.';
   if (state.connection === 'disconnected') {
     return demo
-      ? 'The recorded attempt has ended. Select Stop to play another one.'
+      ? 'The demo attempt has ended. Select Stop, then Play a demo attempt again.'
       : 'No packets from the console. Check that GT7 is running and that the address in Setup is right.';
   }
   if (state.connection === 'stale') return demo ? 'Waiting for the recorded data.' : 'Waiting for packets from the console.';
@@ -44,7 +44,7 @@ export function cueNote(cue: LiveCue, spoken: ReferenceCue[], corners: CornerInf
   const index = spoken.findIndex(item => item.key === cue.eventKey);
   const reference = spoken[index];
   if (!reference) return null;
-  const turn = corners.find(corner => corner.apexSM >= reference.sM);
+  const turn = corners.find(corner => reference.sM < corner.zoneToSM);
   return `Cue ${index + 1} of ${spoken.length}${turn ? ` · before T${turn.number}` : ''}`;
 }
 

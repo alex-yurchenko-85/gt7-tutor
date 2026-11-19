@@ -28,46 +28,6 @@ tr.best td {
   }
 }
 
-.voice-compare {
-  margin-bottom: 24px;
-}
-
-.voice-compare h2 {
-  margin-top: 0;
-}
-
-.voice-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 12px;
-}
-
-.voice-cell {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.voice-label,
-.voice-note {
-  font-size: 14px;
-  color: var(--mute);
-}
-
-.voice-value {
-  font: 800 34px/1.1 var(--font-display);
-  font-variant-numeric: tabular-nums;
-}
-
-.voice-value.faster {
-  color: var(--ok);
-}
-
-.voice-value.slower {
-  color: var(--red);
-}
-
 .aborted-toggle {
   display: flex;
   align-items: center;
@@ -94,21 +54,6 @@ tr.aborted td {
   display: flex;
   align-items: baseline;
   gap: 8px;
-}
-
-@media (max-width: 899px) {
-  .voice-grid {
-    gap: 10px;
-  }
-
-  .voice-label,
-  .voice-note {
-    font-size: 13px;
-  }
-
-  .voice-value {
-    font-size: 22px;
-  }
 }
 
 .recurring-more {

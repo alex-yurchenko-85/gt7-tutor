@@ -36,22 +36,21 @@ It is an unofficial fan project (see [Licences](#licences)).
 
 ## How it works
 
-GT7 Tutor leads you through four steps for each exercise:
+GT7 Tutor leads you through three steps for each exercise:
 
-1. **Reference.** Record the demonstration of the exercise three times. GT7 Tutor finds the part that repeats and keeps the part where the timer of the demonstration runs. That part is the reference.
-2. **Baseline.** Drive a few attempts without voice. The game timer starts and finishes each attempt and gives its time.
-3. **Guided attempts.** Drive with voice. GT7 Tutor calls the next action, for example `Hard brake 115`, about half a second before the point where the reference does it.
-4. **Review.** Compare each attempt with the reference: the line, the speed, the pedals and the differences. The differences are grouped by turn, with the time lost in each turn.
+1. **Reference.** Record the demonstration of the exercise once. GT7 Tutor finds the part where the timer of the demonstration runs. That part is the reference. You can record a second time to check that the same part repeats.
+2. **Attempts.** Drive attempts. The game timer starts and finishes each attempt and gives its time. On the voice device, GT7 Tutor calls the next action, for example `Hard brake 115`, about half a second before the point where the reference does it.
+3. **Review.** Compare each attempt with the reference: the line, the speed, the pedals and the differences. The differences are grouped by turn, with the time lost in each turn.
 
 The application has two sections, **Exercises** and **Setup**.
 **Exercises** shows your exercises with their best times and medals. **Add exercise** opens the catalogue.
-Each exercise has its own page with the four steps, the cues, the references and the attempts.
+Each exercise has its own page with the three steps, the cues, the references and the attempts.
 The **Drive** button opens the drive mode for the current exercise. On a phone, **Drive** is in the bottom bar.
 **Setup** has the sections Console, Voice, Profiles, Preferences, Catalogue and Data.
 
 <table>
   <tr>
-    <td width="50%"><img src="https://gt7tutor.app/assets/screenshots/drive-desktop.webp" alt="The drive mode during a guided attempt. The current cue is Hard brake 115, and the map shows the position on the track."></td>
+    <td width="50%"><img src="https://gt7tutor.app/assets/screenshots/drive-desktop.webp" alt="The drive mode during an attempt. The current cue is Hard brake 115, and the map shows the position on the track."></td>
     <td width="50%"><img src="https://gt7tutor.app/assets/screenshots/review-desktop.webp" alt="The review of one attempt. The map shows the reference line and the attempt line. The differences are grouped by turn, with the time lost in the turn, and the speed chart is below the map."></td>
   </tr>
   <tr>
@@ -150,7 +149,7 @@ When the demo is ready, the script shows:
 - the demo profile `demo` and its password `demodemo`.
 
 The demo has the exercise `Autódromo de Interlagos` (Circuit Experience, sector 2), its reference, and three recorded attempts.
-Select the **Drive** button (on a phone, **Drive** in the bottom bar), then select **Play a demo attempt** to hear a guided attempt with voice.
+Select the **Drive** button (on a phone, **Drive** in the bottom bar), then select **Play a demo attempt** to play a recorded attempt. The screen shows the cues, and a voice device also says them.
 To hear the voice, select **Use this device for voice** first. This button is on the Drive screen and in **Setup** → **Voice**.
 The attempt replays in real time and takes 27 to 41 s.
 After it, the summary shows the time from the game and one focus for the next attempt.
@@ -229,7 +228,7 @@ pnpm typecheck
 pnpm test                  # unit and interface tests, no database
 pnpm test:integration      # server tests against PostgreSQL
 pnpm test:coverage         # unit tests with a coverage report in coverage/
-pnpm capture --ip <PS5 address> --seconds 60 --purpose demo --start-after 5
+pnpm capture --ip <PS5 address> --seconds 60 --purpose demo
 pnpm replay --file <raw capture .ndjson>
 pnpm evaluate-coach --attempt ce-slow --reference demo-a --first 457 --last 1422
 pnpm catalogue:build --record fixtures/catalogue-sources   # network, rewrites the catalogue

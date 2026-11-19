@@ -85,9 +85,6 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     const exercise = await ownedExercise(this.db, userId, request.exerciseId);
     if (this.training) throw conflict('busy', 'A capture or training is already active.');
     if (!exercise.active_reference_id) throw conflict('no-reference', 'Record and confirm a reference first.');
-    if (request.mode === 'guided' && !this.hub.voiceReady(userId) && request.confirmNoVoice !== true) {
-      throw conflict('voice-not-ready', 'No voice device is ready. Confirm to train without voice.');
-    }
     const done = this.start({
       userId,
       request,
@@ -115,13 +112,15 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     try {
       const reference = (await this.db<ReferenceRow>('references').where({ id: plan.referenceId }).first())!;
       const analysis = await this.references.analysisOf(reference);
+      await this.storing;
       if (this.stopping) throw shuttingDown();
+      const stored = await this.db('attempts').where({ exercise_id: exerciseId }).count<{ count: string }>({ count: '*' }).first();
       const snapshot: TrainingSnapshot = {
         userId,
         exerciseId,
         referenceId: reference.id,
-        mode: request.mode,
         analysis,
+        storedAttempts: Number(stored!.count),
         ...plan.settings
       };
       const session = new TrainingSession(snapshot, DEFAULT_CONFIG, {
@@ -136,9 +135,9 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
       const training: Training = { userId, session, unsubscribe: this.captures.onSample(sample => session.onSample(sample)) };
       this.training = training;
       try {
-        const capture = await this.captures.beginReserved({ userId, exerciseId, purpose: 'player', startAfterS: null }, reservation);
+        const capture = await this.captures.beginReserved({ userId, exerciseId, purpose: 'player' }, reservation);
         this.hub.changed();
-        return { captureId: capture.id, exerciseId, referenceId: reference.id, mode: request.mode };
+        return { captureId: capture.id, exerciseId, referenceId: reference.id };
       } catch (error) {
         training.unsubscribe();
         this.training = null;
@@ -190,17 +189,17 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
       lastCue: null,
       nextCue: null,
       lastAttemptId: this.lastAttemptIds.get(userId) ?? null,
-      trainingMode: null,
       referenceId: null,
-      gapMs: null
+      gapMs: null,
+      startMissed: false
     };
     if (owner !== userId) return neutral;
     const storageError = this.captures.incompleteReason();
     const base = { ...neutral, connection: this.connection(), exerciseId: capture?.exerciseId ?? null, recordingComplete: storageError === null, storageError };
     if (!this.training) return { ...base, mode: 'capturing' };
     const view = this.training.session.state;
-    const { exerciseId, mode, referenceId } = this.training.session.snapshot;
-    return { ...base, ...view, exerciseId, trainingMode: mode, referenceId };
+    const { exerciseId, referenceId } = this.training.session.snapshot;
+    return { ...base, ...view, exerciseId, referenceId };
   }
 
   private ownTraining(userId: string): Training {
@@ -253,7 +252,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
   }
 
   private async focusCue(snapshot: TrainingSnapshot, record: AttemptRecord, findings: Finding[]): Promise<CueRecord | null> {
-    if (record.completion !== 'complete' || snapshot.mode !== 'guided') return null;
+    if (record.completion !== 'complete') return null;
     const scope = { exerciseId: snapshot.exerciseId, referenceId: snapshot.referenceId };
     const previous = await recentFindings(this.db, scope, FOCUS_ATTEMPTS - 1);
     const focus = focusOf([findings, ...previous], snapshot.analysis.corners);

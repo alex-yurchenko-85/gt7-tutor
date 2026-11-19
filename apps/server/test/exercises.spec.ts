@@ -7,7 +7,6 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { readRaw, readSamples } from '@gt7/capture';
 import { DEFAULT_SIDE_CUE_DISTANCE_M, cutToTimerRun } from '@gt7/core';
 import { KPH_PER_MPS, type RawDatagram } from '@gt7/contracts';
-import { COUNTDOWN_SCHEDULER, type CountdownScheduler } from '../src/captures/countdown.js';
 import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.factory.js';
 import { KNEX } from '../src/storage/knex.provider.js';
 import { createTestApp } from './support/app.js';
@@ -17,24 +16,6 @@ import { testTempDir } from '../../../tools/testing/temp-root.js';
 import { FixtureReplays } from './support/replay-sources.js';
 import { fixturePath } from '../../../tools/testing/fixture-path.js';
 import { anotherProfile, firstProfile } from './support/session.js';
-
-type Scheduled = { ms: number; run: () => void; cancelled: boolean };
-
-class ManualScheduler implements CountdownScheduler {
-  readonly scheduled: Scheduled[] = [];
-
-  after(ms: number, run: () => void): () => void {
-    const entry: Scheduled = { ms, run, cancelled: false };
-    this.scheduled.push(entry);
-    return () => {
-      entry.cancelled = true;
-    };
-  }
-
-  runAll(): void {
-    for (const entry of [...this.scheduled].sort((left, right) => left.ms - right.ms)) if (!entry.cancelled) entry.run();
-  }
-}
 
 const INTERLAGOS_TARGETS = { goldMs: 16400, silverMs: 16700, bronzeMs: 17800 };
 
@@ -53,17 +34,15 @@ describe('exercises, captures and references', () => {
   let dataDir: string;
   let replays: FixtureReplays;
   let cookie: string;
-  let scheduler: ManualScheduler;
   const sockets: LiveConnection[] = [];
   const http = () => request(app!.getHttpServer());
 
   async function start(env: Record<string, string> = {}) {
     await app?.close();
-    scheduler = new ManualScheduler();
     app = await createTestApp(database.url, {
       env: { DATA_DIR: dataDir, TELEMETRY_SOURCE: 'replay', ...env },
       override: builder =>
-        builder.overrideProvider(TELEMETRY_SOURCE_FACTORY).useValue(replays.factory).overrideProvider(COUNTDOWN_SCHEDULER).useValue(scheduler)
+        builder.overrideProvider(TELEMETRY_SOURCE_FACTORY).useValue(replays.factory)
     });
   }
 
@@ -77,10 +56,9 @@ describe('exercises, captures and references', () => {
     return connection;
   }
 
-  async function startDemo(exerciseId: string, startAfterS?: number): Promise<string> {
+  async function startDemo(exerciseId: string): Promise<string> {
     replays.queue.push('demo-a');
-    const body = startAfterS === undefined ? { exerciseId, purpose: 'demo' } : { exerciseId, purpose: 'demo', startAfterS };
-    const started = await http().post('/api/captures').set('Cookie', cookie).send(body).expect(201);
+    const started = await http().post('/api/captures').set('Cookie', cookie).send({ exerciseId, purpose: 'demo' }).expect(201);
     await replays.finished();
     return started.body.id as string;
   }
@@ -93,21 +71,20 @@ describe('exercises, captures and references', () => {
     return (await http().post('/api/exercises').set('Cookie', session).send(body).expect(201)).body.id as string;
   }
 
-  async function capture(exerciseId: string, fixture: string, purpose = 'demo', startAfterS?: number): Promise<string> {
+  async function capture(exerciseId: string, fixture: string, purpose = 'demo'): Promise<string> {
     replays.queue.push(fixture);
-    const body = startAfterS === undefined ? { exerciseId, purpose } : { exerciseId, purpose, startAfterS };
-    const started = await http().post('/api/captures').set('Cookie', cookie).send(body).expect(201);
+    const started = await http().post('/api/captures').set('Cookie', cookie).send({ exerciseId, purpose }).expect(201);
     expect(started.body.active).toBe(true);
     await replays.finished();
     const stopped = await http().post(`/api/captures/${started.body.id}/stop`).set('Cookie', cookie).expect(201);
     return stopped.body.id as string;
   }
 
-  async function reference(exerciseId: string, captureId: string, first: number, last: number, startKind = 'flying'): Promise<string> {
+  async function reference(exerciseId: string, captureId: string, first: number, last: number): Promise<string> {
     const response = await http()
       .post('/api/references')
       .set('Cookie', cookie)
-      .send({ exerciseId, captureId, first, last, startKind })
+      .send({ exerciseId, captureId, first, last })
       .expect(201);
     return response.body.id as string;
   }
@@ -120,7 +97,6 @@ describe('exercises, captures and references', () => {
         reference_id: referenceId,
         first_raw_index: range.first,
         last_raw_index: range.last,
-        mode: 'baseline',
         completion,
         game_ms: completion === 'complete' ? 17071 : null,
         started_at: new Date()
@@ -244,35 +220,59 @@ describe('exercises, captures and references', () => {
     expect((await rows(join(dataDir, 'raw', 'interrupted.ndjson'))).map(item => item.rawIndex)).toEqual([...Array(100).keys()]);
   });
 
-  it('three_demo_captures_propose_the_demonstration', async () => {
+  it('one_demo_capture_proposes_its_timer_run', async () => {
     const exerciseId = await exercise();
-    const captureIds = [
-      await capture(exerciseId, 'demo-a', 'demo', 5),
-      await capture(exerciseId, 'demo-b', 'demo', 10),
-      await capture(exerciseId, 'demo-c', 'demo', 15)
-    ];
-    const stored = await storedCapture(captureIds[0]!);
-    expect(stored.body.startCueMonoMs).toBe(5000);
+    const captureId = await capture(exerciseId, 'demo-a', 'demo');
+    const stored = await storedCapture(captureId);
+    expect(Object.keys(stored.body).sort()).toEqual(['active', 'complete', 'endedAt', 'errorReason', 'exerciseId', 'id', 'packets', 'purpose', 'startedAt']);
+    const response = await http().post(`/api/exercises/${exerciseId}/reference-proposals`).set('Cookie', cookie).send({ captureIds: [captureId] }).expect(201);
+    expect(response.body).toEqual([
+      { ranges: [{ captureId, first: 457, last: 1422 }], sampleCount: 966, ambiguous: false, evidence: ['Timer runs 16.082 s'], timeMs: 16082 }
+    ]);
+  });
+
+  it('one_capture_skips_a_background_run_without_a_scene_change', async () => {
+    const exerciseId = await exercise();
+    const captureId = await capture(exerciseId, 'demo-c', 'demo');
+    const response = await http().post(`/api/exercises/${exerciseId}/reference-proposals`).set('Cookie', cookie).send({ captureIds: [captureId] }).expect(201);
+    expect(response.body).toEqual([
+      { ranges: [{ captureId, first: 1054, last: 2019 }], sampleCount: 966, ambiguous: false, evidence: ['Timer runs 16.082 s'], timeMs: 16082 }
+    ]);
+  });
+
+  it('one_capture_without_a_demonstration_run_gives_no_proposal', async () => {
+    const exerciseId = await exercise();
+    const captureId = await capture(exerciseId, 'ce-clean', 'demo');
+    const response = await http().post(`/api/exercises/${exerciseId}/reference-proposals`).set('Cookie', cookie).send({ captureIds: [captureId] }).expect(201);
+    expect(response.body).toEqual([]);
+  });
+
+  it('two_demo_captures_check_that_the_run_repeats', async () => {
+    const exerciseId = await exercise();
+    const captureIds = [await capture(exerciseId, 'demo-a', 'demo'), await capture(exerciseId, 'demo-b', 'demo')];
     const response = await http().post(`/api/exercises/${exerciseId}/reference-proposals`).set('Cookie', cookie).send({ captureIds }).expect(201);
     expect(response.body[0]).toMatchObject({
       ranges: [
         { captureId: captureIds[0], first: 457, last: 1422 },
-        { captureId: captureIds[1], first: 738, last: 1703 },
-        { captureId: captureIds[2], first: 1054, last: 2019 }
+        { captureId: captureIds[1], first: 738, last: 1703 }
       ],
       sampleCount: 966,
-      ambiguous: false
+      ambiguous: true,
+      timeMs: 16082
     });
-    expect(response.body).toHaveLength(1);
+  });
+
+  it('proposals_take_one_or_two_captures', async () => {
+    const exerciseId = await exercise();
+    const captureId = await capture(exerciseId, 'demo-a', 'demo');
+    for (const captureIds of [[], [captureId, captureId, captureId]]) {
+      await http().post(`/api/exercises/${exerciseId}/reference-proposals`).set('Cookie', cookie).send({ captureIds }).expect(400);
+    }
   });
 
   it('proposals_exclude_untimed_candidates', async () => {
     const exerciseId = await exercise();
-    const captureIds = [
-      await capture(exerciseId, 'ce-off-track-reset'),
-      await capture(exerciseId, 'ce-off-track-reset'),
-      await capture(exerciseId, 'ce-off-track-reset')
-    ];
+    const captureIds = [await capture(exerciseId, 'ce-off-track-reset'), await capture(exerciseId, 'ce-off-track-reset')];
     const response = await http().post(`/api/exercises/${exerciseId}/reference-proposals`).set('Cookie', cookie).send({ captureIds }).expect(201);
     expect(response.body).toEqual([]);
   });
@@ -289,7 +289,7 @@ describe('exercises, captures and references', () => {
       [second, true],
       [first, false]
     ]);
-    expect(history.body[1]).toMatchObject({ origin: 'demo', startKind: 'flying', first: 457, last: 1422, gameVersion: '1.60', needsCheck: false });
+    expect(history.body[1]).toMatchObject({ origin: 'demo', first: 457, last: 1422, gameVersion: '1.60', needsCheck: false });
     await http().post(`/api/references/${first}/activate`).set('Cookie', cookie).expect(201);
     expect((await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie)).body.activeReferenceId).toBe(first);
   });
@@ -300,7 +300,7 @@ describe('exercises, captures and references', () => {
     const created = await http()
       .post('/api/references')
       .set('Cookie', cookie)
-      .send({ exerciseId, captureId, first: 300, last: 1700, startKind: 'flying' })
+      .send({ exerciseId, captureId, first: 300, last: 1700 })
       .expect(201);
     expect(created.body).toMatchObject({ captureId, first: 457, last: 1422, origin: 'demo', active: true });
     const stored = await db('references').where({ id: created.body.id }).first();
@@ -321,9 +321,9 @@ describe('exercises, captures and references', () => {
       const refused = await http()
         .post('/api/references')
         .set('Cookie', cookie)
-        .send({ exerciseId, captureId, first, last, startKind: 'flying' })
+        .send({ exerciseId, captureId, first, last })
         .expect(400);
-      expect(refused.body).toEqual({ code: 'no-timer-run', reason: expect.any(String) });
+      expect(refused.body).toEqual({ code: 'no-timer-run', reason: 'The range does not hold the whole demonstration.' });
     }
     expect(await db('references').where({ exercise_id: exerciseId })).toEqual([]);
   });
@@ -334,7 +334,7 @@ describe('exercises, captures and references', () => {
     const response = await http()
       .post('/api/references')
       .set('Cookie', cookie)
-      .send({ exerciseId: licence, captureId, first: 457, last: 1422, startKind: 'flying' })
+      .send({ exerciseId: licence, captureId, first: 457, last: 1422 })
       .expect(409);
     expect(response.body.code).toBe('car-mismatch');
   });
@@ -345,7 +345,7 @@ describe('exercises, captures and references', () => {
     const playerCapture = await capture(exerciseId, 'ce-clean', 'player');
     const attempt = await storedAttempt(exerciseId, playerCapture, demo);
     const promoted = await http().post(`/api/attempts/${attempt}/promote`).set('Cookie', cookie).expect(201);
-    expect(promoted.body).toMatchObject({ origin: 'attempt', captureId: playerCapture, first: 381, last: 1406, startKind: 'flying', active: true });
+    expect(promoted.body).toMatchObject({ origin: 'attempt', captureId: playerCapture, first: 381, last: 1406, active: true });
     const history = await http().get(`/api/exercises/${exerciseId}/references`).set('Cookie', cookie).expect(200);
     expect(history.body).toHaveLength(2);
     expect(history.body.find((item: { id: string }) => item.id === demo)).toMatchObject({ active: false, attemptCount: 1 });
@@ -403,13 +403,13 @@ describe('exercises, captures and references', () => {
     expect(review.body.referenceTimeMs).toBe(16000);
   });
 
-  it('promote_refuses_an_attempt_without_a_game_time', async () => {
+  it('promote_refuses_an_aborted_attempt', async () => {
     const exerciseId = await exercise();
     const demo = await reference(exerciseId, await capture(exerciseId, 'demo-a'), 457, 1422);
     const playerCapture = await capture(exerciseId, 'ce-clean', 'player');
     const aborted = await storedAttempt(exerciseId, playerCapture, demo, 'aborted');
     const refused = await http().post(`/api/attempts/${aborted}/promote`).set('Cookie', cookie).expect(409);
-    expect(refused.body).toEqual({ code: 'no-game-time', reason: expect.any(String) });
+    expect(refused.body).toEqual({ code: 'not-complete', reason: 'Only a complete attempt can become a reference.' });
     const history = await http().get(`/api/exercises/${exerciseId}/references`).set('Cookie', cookie).expect(200);
     expect(history.body.map((item: { id: string }) => item.id)).toEqual([demo]);
   });
@@ -438,6 +438,24 @@ describe('exercises, captures and references', () => {
     const body = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
     expect(body.bestMs).toBe(16950);
     expect(body).not.toHaveProperty('bestMeasuredMs');
+  });
+
+  it('next_medal_comes_from_the_best_time_and_the_targets', async () => {
+    const exerciseId = await exercise();
+    const captureId = await capture(exerciseId, 'demo-a');
+    const referenceId = await reference(exerciseId, captureId, 457, 1422);
+    const empty = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
+    expect(empty.nextMedal).toBeNull();
+    const attemptId = await storedAttempt(exerciseId, captureId, referenceId);
+    await db('attempts').where({ id: attemptId }).update({ game_ms: 17071 });
+    await db('exercises').where({ id: exerciseId }).update({ targets: { goldMs: 16400, silverMs: 16700, bronzeMs: 17800 } });
+    const silver = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
+    expect(silver.nextMedal).toEqual({ medal: 'silver', targetMs: 16700, gapMs: 371 });
+    const listed = (await http().get('/api/exercises').set('Cookie', cookie).expect(200)).body;
+    expect(listed[0].nextMedal).toEqual({ medal: 'silver', targetMs: 16700, gapMs: 371 });
+    await db('attempts').where({ id: attemptId }).update({ game_ms: 16300 });
+    const gold = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
+    expect(gold.nextMedal).toBeNull();
   });
 
   it('delete_reference_with_attempts_is_409', async () => {
@@ -558,7 +576,7 @@ describe('exercises, captures and references', () => {
       expect(list).toContain(cue.clip);
       if (cue.followClip) expect(list).toContain(cue.followClip);
     }
-    for (const clip of ['big-stop', 'tighter', 'keep-left', 'keep-right', 'guidance-paused', 'guidance-resumed', 'voice-check', 'countdown-three', 'countdown-start']) expect(list).toContain(clip);
+    for (const clip of ['big-stop', 'tighter', 'keep-left', 'keep-right', 'guidance-paused', 'guidance-resumed', 'voice-check']) expect(list).toContain(clip);
     expect(list.filter(clip => clip.startsWith('focus-'))).toHaveLength(6 * Math.min(10, corners.body.length));
   });
 
@@ -602,7 +620,9 @@ describe('exercises, captures and references', () => {
       turnInSM: expect.any(Number),
       apexSM: expect.any(Number),
       radiusM: expect.any(Number),
-      apexSpeedMps: expect.any(Number)
+      apexSpeedMps: expect.any(Number),
+      zoneFromSM: 346,
+      zoneToSM: 462
     });
     const other = await anotherProfile(app!, cookie, 'Other');
     await http().get(`/api/references/${referenceId}/corners`).set('Cookie', other).expect(404);
@@ -639,8 +659,8 @@ describe('exercises, captures and references', () => {
     await as(http().post(`/api/captures/${captureId}/stop`));
     await as(http().post(`/api/exercises/${exerciseId}/reference-proposals`).send({ captureIds }));
     await as(http().post(`/api/exercises/${otherExercise}/reference-proposals`).send({ captureIds }));
-    await as(http().post('/api/references').send({ exerciseId, captureId, first: 457, last: 1422, startKind: 'flying' }));
-    await as(http().post('/api/references').send({ exerciseId: otherExercise, captureId, first: 457, last: 1422, startKind: 'flying' }));
+    await as(http().post('/api/references').send({ exerciseId, captureId, first: 457, last: 1422 }));
+    await as(http().post('/api/references').send({ exerciseId: otherExercise, captureId, first: 457, last: 1422 }));
     await as(http().post(`/api/attempts/${attemptId}/promote`));
     await as(http().get(`/api/exercises/${exerciseId}/references`));
     await as(http().post(`/api/references/${referenceId}/activate`));
@@ -700,47 +720,16 @@ describe('exercises, captures and references', () => {
     await http().put('/api/settings/connection').send({ ps5Ip: '10.0.0.8' }).expect(401);
   });
 
-  it('demo_capture_with_wait_sends_countdown_cues_to_the_voice_device', async () => {
-    const voice = await voiceDevice();
-    const captureId = await startDemo(await exercise(), 5);
-    expect(scheduler.scheduled.map(entry => entry.ms)).toEqual([2000, 3000, 4000, 5000]);
-    scheduler.runAll();
-    await voice.waitFor('cue', message => message.cue.clip === 'countdown-start');
-    const cues = voice.of('cue').map(message => message.cue);
-    expect(cues.map(cue => cue.clip)).toEqual(['countdown-three', 'countdown-two', 'countdown-one', 'countdown-start']);
-    expect(cues.map(cue => cue.eventKey)).toEqual([3, 2, 1, 0].map(n => `countdown-${captureId}-${n}`));
-    for (const cue of cues) {
-      expect(cue).toMatchObject({ kind: 'countdown', ttlMs: 800, followClip: null, targetSpeedKph: null });
-      expect(cue.priority).toBeGreaterThan(100);
-      expect(cue.generation).toBeGreaterThan(0);
-    }
-    expect(new Set(cues.map(cue => cue.id)).size).toBe(4);
-    await http().post(`/api/captures/${captureId}/stop`).set('Cookie', cookie).expect(201);
-  });
-
-  it('short_wait_skips_the_counts_before_the_start', async () => {
-    await voiceDevice();
-    const captureId = await startDemo(await exercise(), 2);
-    expect(scheduler.scheduled.map(entry => entry.ms)).toEqual([0, 1000, 2000]);
-    await http().post(`/api/captures/${captureId}/stop`).set('Cookie', cookie).expect(201);
-  });
-
-  it('stopping_capture_cancels_countdown', async () => {
-    const voice = await voiceDevice();
-    const captureId = await startDemo(await exercise(), 5);
-    await http().post(`/api/captures/${captureId}/stop`).set('Cookie', cookie).expect(201);
-    expect(scheduler.scheduled.every(entry => entry.cancelled)).toBe(true);
-    scheduler.runAll();
-    await settle();
-    expect(voice.of('cue')).toEqual([]);
-  });
-
-  it('capture_without_wait_sends_no_countdown', async () => {
+  it('demo_capture_sends_no_cues_to_the_voice_device', async () => {
     const voice = await voiceDevice();
     const captureId = await startDemo(await exercise());
-    expect(scheduler.scheduled).toEqual([]);
     await http().post(`/api/captures/${captureId}/stop`).set('Cookie', cookie).expect(201);
     await settle();
     expect(voice.of('cue')).toEqual([]);
+  });
+
+  it('capture_request_with_an_unknown_field_is_400', async () => {
+    const exerciseId = await exercise();
+    await http().post('/api/captures').set('Cookie', cookie).send({ exerciseId, purpose: 'demo', wait: 5 }).expect(400);
   });
 });

@@ -52,4 +52,9 @@ describe('api client', () => {
     await api.referenceCorners('r1');
     expect(count(stub, 'GET /api/references/r1/corners')).toBe(2);
   });
+
+  it('an_error_without_a_reason_says_what_to_do', async () => {
+    new ApiStub().on('GET /api/references/r1/path', { status: 500, body: {} }).install();
+    await expect(api.referenceTrace('r1')).rejects.toThrow('Something went wrong in GT7 Tutor (status 500). Reload the page. If it happens again, attach the log of this start to an issue.');
+  });
 });

@@ -50,7 +50,7 @@ export function DeleteAttemptsDialog({ selected, all, onKeep, onDeleted }: Delet
       onKeep={onKeep}
       onConfirm={confirm}
     >
-      <p>{one ? `Attempt ${numbers}, with its cue events and differences.` : `Attempts ${numbers}, with their cue events and differences.`}</p>
+      <p>{one ? `Attempt ${numbers}, with its cues and differences.` : `Attempts ${numbers}, with their cues and differences.`}</p>
       <ul>
         {all ? (
           <li>

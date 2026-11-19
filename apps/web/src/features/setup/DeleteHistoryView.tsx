@@ -20,14 +20,14 @@ function scopeTexts(exercises: Exercise[], chosen: Exercise | null): Record<Scop
     exercise: {
       title: 'Attempts of one exercise',
       detail: 'For a fresh start on one exercise. Its references stay.',
-      deletes: `${counted(chosenAttempts, 'attempt')} of ${chosen?.name ?? 'the exercise'}, with ${theirs(chosenAttempts)} cue events and differences.`,
+      deletes: `${counted(chosenAttempts, 'attempt')} of ${chosen?.name ?? 'the exercise'}, with ${theirs(chosenAttempts)} cues and differences.`,
       keeps: 'the references, the other exercises, the settings.',
       action: `Delete ${counted(chosenAttempts, 'attempt')}`
     },
     attempts: {
       title: 'All attempts',
       detail: `${counted(attempts, 'attempt')} in ${counted(withAttempts, 'exercise')}. References and exercises stay.`,
-      deletes: `${attempts === 1 ? 'the' : 'all'} ${counted(attempts, 'attempt')} of this profile, with ${theirs(attempts)} cue events and differences.`,
+      deletes: `${attempts === 1 ? 'the' : 'all'} ${counted(attempts, 'attempt')} of this profile, with ${theirs(attempts)} cues and differences.`,
       keeps: 'the exercises, the references, the settings.',
       action: 'Delete all attempts'
     },

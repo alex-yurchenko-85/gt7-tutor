@@ -115,7 +115,7 @@ export function ConsoleForm({ layout, onChecked, onSaved }: ConsoleFormProps) {
               <label htmlFor="console-address">PS5 address</label>
               {input}
             </div>
-            <IconButton icon="check" label="Save and check reception" primary type="submit" disabled={checking} />
+            <IconButton icon="check" label="Save and check" primary type="submit" disabled={checking} />
           </div>
           {problemText}
         </form>

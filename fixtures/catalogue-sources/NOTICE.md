@@ -1,6 +1,6 @@
 # Recorded catalogue sources
 
-These files are the answers of the catalogue sources on the retrieval date of `catalogue/catalogue.json`.
+These files are the answers of the catalogue sources on the retrieval date of `content/catalogue/catalogue.json`.
 `pnpm catalogue:build --record fixtures/catalogue-sources` writes them. `index.json` maps each request URL to its file.
 The server tests serve them through a stub `fetch`, so that the tests need no network.
 

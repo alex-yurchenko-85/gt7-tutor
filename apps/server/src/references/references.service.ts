@@ -10,8 +10,7 @@ import {
   type ReferenceOrigin,
   type ReferenceProposal,
   type ReferenceTrace,
-  type Sample,
-  type StartKindName
+  type Sample
 } from '@gt7/contracts';
 import {
   DEFAULT_CONFIG,
@@ -22,11 +21,13 @@ import {
   clipsOf,
   cueText,
   cutToTimerRun,
+  demonstrationRuns,
   eventPhrase,
   findDemoRangeCandidates,
   matchesReference,
   pointAt,
   targetClip,
+  turnZones,
   type Corner,
   type GameTimerSession,
   type ReferenceAnalysis,
@@ -54,7 +55,6 @@ type ReferenceSource = {
   capture: CaptureRow;
   range: RawRange;
   timerMs: number;
-  startKind: StartKindName;
   origin: ReferenceOrigin;
 };
 
@@ -78,7 +78,6 @@ function referenceInfo(row: ReferenceListRow): ReferenceInfo {
     first: row.first_raw_index,
     last: row.last_raw_index,
     origin: row.origin,
-    startKind: row.start_kind,
     gameVersion: row.game_version,
     needsCheck: row.needs_check,
     active: row.active,
@@ -87,14 +86,17 @@ function referenceInfo(row: ReferenceListRow): ReferenceInfo {
   };
 }
 
-export function cornerInfo(corner: Corner): CornerInfo {
-  return {
+export function cornerInfos(corners: Corner[], lengthM: number): CornerInfo[] {
+  const zones = turnZones(corners, lengthM);
+  return corners.map((corner, index) => ({
     number: corner.number,
     turnInSM: corner.turnInSM,
     apexSM: corner.apexSM,
     radiusM: corner.radiusM,
-    apexSpeedMps: corner.apexSpeedMps
-  };
+    apexSpeedMps: corner.apexSpeedMps,
+    zoneFromSM: zones[index]!.fromSM,
+    zoneToSM: zones[index]!.toSM
+  }));
 }
 
 function carOf(samples: Sample[]): number | null {
@@ -140,7 +142,7 @@ export class ReferencesService {
   private async analyse(reference: ReferenceRow): Promise<ReferenceAnalysis> {
     const capture = await this.db<CaptureRow>('captures').where({ id: reference.capture_id }).first();
     const samples = await this.samplesOf(capture!, { first: reference.first_raw_index, last: reference.last_raw_index });
-    const analysis = analyseReference(samples, reference.start_kind, DEFAULT_CONFIG);
+    const analysis = analyseReference(samples, DEFAULT_CONFIG);
     if (reference.timer_ms !== null) return { ...analysis, timeMs: reference.timer_ms };
     await this.db('references').where({ id: reference.id }).whereNull('timer_ms').update({ timer_ms: analysis.timeMs });
     return analysis;
@@ -150,15 +152,26 @@ export class ReferencesService {
     await ownedExercise(this.db, userId, exerciseId);
     const captures = await Promise.all(captureIds.map(id => this.finishedCapture(userId, id)));
     const samples = await Promise.all(captures.map(capture => this.samplesOf(capture)));
-    const candidates = findDemoRangeCandidates(
-      samples,
-      captures.map(capture => capture.start_cue_mono_ms)
-    );
-    return candidates.filter(candidate => candidate.timed).map(candidate => ({
-      ranges: candidate.ranges.map((range, index) => ({ captureId: captures[index]!.id, first: range.first, last: range.last })),
-      sampleCount: candidate.sampleCount,
-      ambiguous: candidate.ambiguous,
-      evidence: candidate.evidence
+    if (captures.length === 1) return this.runProposals(captures[0]!, samples[0]!);
+    return findDemoRangeCandidates(samples)
+      .filter(candidate => candidate.timed)
+      .map(candidate => ({
+        ranges: candidate.ranges.map((range, index) => ({ captureId: captures[index]!.id, first: range.first, last: range.last })),
+        sampleCount: candidate.sampleCount,
+        ambiguous: candidate.ambiguous,
+        evidence: candidate.evidence,
+        timeMs: cutToTimerRun(samples[0]!, candidate.ranges[0]!, 'demonstration')!.gameTimeMs
+      }));
+  }
+
+  private runProposals(capture: CaptureRow, samples: Sample[]): ReferenceProposal[] {
+    const runs = demonstrationRuns(samples);
+    return runs.map(run => ({
+      ranges: [{ captureId: capture.id, first: run.first, last: run.last }],
+      sampleCount: samples.filter(sample => sample.rawIndex >= run.first && sample.rawIndex <= run.last).length,
+      ambiguous: runs.length > 1,
+      evidence: [`Timer runs ${(run.gameTimeMs / 1000).toFixed(3)} s`],
+      timeMs: run.gameTimeMs
     }));
   }
 
@@ -166,19 +179,18 @@ export class ReferencesService {
     const exercise = await ownedExercise(this.db, userId, body.exerciseId);
     const capture = await this.finishedCapture(userId, body.captureId);
     const range = await this.timerRunOf(capture, { first: body.first, last: body.last }, 'demonstration');
-    return this.store({ exercise, capture, range, timerMs: range.gameTimeMs, startKind: body.startKind, origin: 'demo' });
+    return this.store({ exercise, capture, range, timerMs: range.gameTimeMs, origin: 'demo' });
   }
 
   async promote(userId: string, attemptId: string): Promise<ReferenceInfo> {
     const attempt = await ownedAttempt(this.db, userId, attemptId);
-    if (attempt.completion !== 'complete' || attempt.game_ms === null) {
-      throw conflict('no-game-time', 'Only a complete attempt with a game time can become a reference.');
+    if (attempt.completion !== 'complete') {
+      throw conflict('not-complete', 'Only a complete attempt can become a reference.');
     }
     const exercise = await ownedExercise(this.db, userId, attempt.exercise_id);
     const capture = await this.finishedCapture(userId, attempt.capture_id);
-    const used = await this.db<ReferenceRow>('references').where({ id: attempt.reference_id }).first();
     const range = await this.timerRunOf(capture, { first: attempt.first_raw_index, last: attempt.last_raw_index }, 'player');
-    return this.store({ exercise, capture, range, timerMs: attempt.game_ms, startKind: used!.start_kind, origin: 'attempt' });
+    return this.store({ exercise, capture, range, timerMs: attempt.game_ms!, origin: 'attempt' });
   }
 
   async history(userId: string, exerciseId: string): Promise<ReferenceInfo[]> {
@@ -248,7 +260,8 @@ export class ReferencesService {
   }
 
   async corners(userId: string, id: string): Promise<CornerInfo[]> {
-    return (await this.analysisOf(await ownedReference(this.db, userId, id))).corners.map(cornerInfo);
+    const { corners, path } = await this.analysisOf(await ownedReference(this.db, userId, id));
+    return cornerInfos(corners, path.lengthM);
   }
 
   async trace(userId: string, id: string): Promise<ReferenceTrace> {
@@ -270,7 +283,7 @@ export class ReferencesService {
   private async store(source: ReferenceSource): Promise<ReferenceInfo> {
     const samples = await this.samplesOf(source.capture, source.range);
     try {
-      buildReference(samples, source.startKind);
+      buildReference(samples);
     } catch (error) {
       if (error instanceof ReferencePathError) throw new BadRequestException({ code: error.code, message: error.message });
       throw error;
@@ -288,7 +301,6 @@ export class ReferencesService {
           first_raw_index: source.range.first,
           last_raw_index: source.range.last,
           origin: source.origin,
-          start_kind: source.startKind,
           game_version: gameVersion,
           timer_ms: source.timerMs
         })
@@ -303,7 +315,7 @@ export class ReferencesService {
 
   private async timerRunOf(capture: CaptureRow, range: RawRange, session: GameTimerSession): Promise<TimerRunRange> {
     const run = cutToTimerRun(await this.samplesOf(capture), range, session);
-    if (!run) throw badRequest('no-timer-run', 'The range has no complete game timer run.');
+    if (!run) throw badRequest('no-timer-run', 'The range does not hold the whole demonstration.');
     return run;
   }
 

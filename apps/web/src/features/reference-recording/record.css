@@ -90,8 +90,8 @@
   font-size: 17px;
 }
 
-.record-message .proposal {
-  max-width: 640px;
+.record-message .choice {
+  margin: 0 0 18px;
 }
 
 .record-actions {
@@ -103,10 +103,6 @@
 .record-count {
   font: 800 clamp(120px, 14vw, 200px) / 0.9 var(--font-display);
   font-variant-numeric: tabular-nums;
-  color: var(--stage-ink);
-}
-
-.record-count.go {
   color: #ffd60a;
 }
 
@@ -116,11 +112,6 @@
   gap: 10px;
   margin: 18px 0 20px;
   font-size: 18px;
-}
-
-.record-line .icon {
-  color: #ffd60a;
-  flex: none;
 }
 
 .record-note {
@@ -277,15 +268,11 @@
   font-size: 15px;
 }
 
-.record-phone .record-message .proposal {
+.record-phone .record-message .choice {
   text-align: left;
 }
 
 .record-phone .record-count {
-  font-size: 180px;
-}
-
-.record-phone .record-count.go {
   font-size: min(130px, 30vw);
 }
 
@@ -357,7 +344,6 @@
   overflow-wrap: anywhere;
 }
 
-.proposal h2,
 .manual h2 {
   margin-top: 0;
 }

@@ -34,7 +34,7 @@ export function VoiceSection() {
   const disable = () => {
     setMovedFromOther(false);
     voice.release();
-    setMessage('Voice is off on this device. Cues are recorded but not played.');
+    setMessage('The voice is off on this device. The Drive screen still shows the cues.');
   };
 
   const runTest = async () => {

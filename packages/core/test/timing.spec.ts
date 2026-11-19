@@ -13,7 +13,7 @@ function constantSpeedPath(lengthM: number, speedMps: number): ReferencePath {
     timeMs: (sM / speedMps) * 1000,
     timerMs: (sM / speedMps) * 1000 + 17
   }));
-  return { points, lengthM, startKind: 'flying' };
+  return { points, lengthM };
 }
 
 describe('gapToReferenceMs', () => {

@@ -27,4 +27,17 @@ describe('reference history', () => {
     expect(screen.queryByRole('button', { name: 'Return to the demonstration' })).not.toBeInTheDocument();
     expect(screen.getByText('A reference is never overwritten.', { exact: false })).toBeInTheDocument();
   });
+
+  it('reference_history_counts_the_attempts_that_use_a_reference', async () => {
+    setViewportWidth(1280);
+    exerciseApi()
+      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/references', () => [
+        reference({ id: 'ref-demo', active: true, attemptCount: 1 }),
+        reference({ id: 'ref-attempt', origin: 'attempt', active: false, createdAt: '2026-11-17T10:00:00.000Z', attemptCount: 3 })
+      ])
+      .install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/references' });
+    expect(await screen.findByText(/1 attempt uses it\./)).toBeInTheDocument();
+    expect(screen.getByText(/3 attempts use it\./)).toBeInTheDocument();
+  });
 });

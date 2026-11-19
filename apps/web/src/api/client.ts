@@ -60,7 +60,7 @@ function messageOf(body: ErrorBody | null, status: number): string {
   if (typeof body?.reason === 'string') return body.reason;
   if (typeof body?.message === 'string') return body.message;
   if (Array.isArray(body?.message)) return body.message.join(' ');
-  return `The server answered with status ${status}.`;
+  return `Something went wrong in GT7 Tutor (status ${status}). Reload the page. If it happens again, attach the log of this start to an issue.`;
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {

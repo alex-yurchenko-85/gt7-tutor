@@ -6,9 +6,6 @@ export const capturePurposeSchema = z.enum(['demo', 'player']);
 
 export type CapturePurpose = z.infer<typeof capturePurposeSchema>;
 
-export const startKindSchema = z.enum(['standing', 'flying']);
-
-export type StartKindName = z.infer<typeof startKindSchema>;
 
 export const exerciseTargetsSchema = medalTargetsSchema.partial();
 
@@ -22,7 +19,7 @@ const PLACED_KINDS = ['brake', 'ease-off', 'throttle', 'big-stop', 'keep-left', 
 
 export type PlacedKind = (typeof PLACED_KINDS)[number];
 
-export type CueEventKind = PlacedKind | 'tighter' | 'guidance' | 'countdown' | 'focus';
+export type CueEventKind = PlacedKind | 'tighter' | 'guidance' | 'focus';
 
 function isPlacedKind(kind: string | null): kind is PlacedKind {
   return PLACED_KINDS.some(placed => placed === kind);
@@ -34,7 +31,6 @@ export function eventKey(kind: PlacedKind, sM: number): string {
 
 export function eventKeyKind(key: string): CueEventKind | null {
   if (key === 'focus') return 'focus';
-  if (key.startsWith('countdown-')) return 'countdown';
   if (key.startsWith('guidance-')) return 'guidance';
   const at = key.indexOf('@');
   const kind = at > 0 ? key.slice(0, at) : null;
@@ -77,7 +73,7 @@ export const updateExerciseSchema = z
 
 export type UpdateExerciseRequest = z.infer<typeof updateExerciseSchema>;
 
-export type ExerciseStep = 1 | 2 | 3 | 4;
+export type ExerciseStep = 1 | 2 | 3;
 
 export type Exercise = {
   id: string;
@@ -97,6 +93,7 @@ export type Exercise = {
   referenceCount: number;
   completeAttempts: number;
   bestMs: number | null;
+  nextMedal: { medal: MedalName; targetMs: number; gapMs: number } | null;
   createdAt: string;
 };
 
@@ -113,8 +110,7 @@ export type Settings = { ps5Ip: string | null; gameVersion: string | null };
 export const createCaptureSchema = z
   .object({
     exerciseId: z.uuid(),
-    purpose: capturePurposeSchema,
-    startAfterS: z.number().min(0).max(120).optional()
+    purpose: capturePurposeSchema
   })
   .strict();
 
@@ -129,11 +125,10 @@ export type CaptureInfo = {
   packets: number;
   complete: boolean;
   errorReason: string | null;
-  startCueMonoMs: number | null;
   active: boolean;
 };
 
-export const referenceProposalSchema = z.object({ captureIds: z.array(z.uuid()).min(2).max(3) }).strict();
+export const referenceProposalSchema = z.object({ captureIds: z.array(z.uuid()).min(1).max(2) }).strict();
 
 export type ReferenceProposalRequest = z.infer<typeof referenceProposalSchema>;
 
@@ -142,6 +137,7 @@ export type ReferenceProposal = {
   sampleCount: number;
   ambiguous: boolean;
   evidence: string[];
+  timeMs: number;
 };
 
 export const createReferenceSchema = z
@@ -149,8 +145,7 @@ export const createReferenceSchema = z
     exerciseId: z.uuid(),
     captureId: z.uuid(),
     first: z.number().int().nonnegative(),
-    last: z.number().int().nonnegative(),
-    startKind: startKindSchema
+    last: z.number().int().nonnegative()
   })
   .strict()
   .refine(body => body.last >= body.first, { message: 'last must not be less than first', path: ['last'] });
@@ -166,7 +161,6 @@ export type ReferenceInfo = {
   first: number;
   last: number;
   origin: ReferenceOrigin;
-  startKind: StartKindName;
   gameVersion: string | null;
   needsCheck: boolean;
   active: boolean;
@@ -195,7 +189,7 @@ export type ReferenceCue = {
   text: string;
 };
 
-export type CornerInfo = { number: number; turnInSM: number; apexSM: number; radiusM: number; apexSpeedMps: number };
+export type CornerInfo = { number: number; turnInSM: number; apexSM: number; radiusM: number; apexSpeedMps: number; zoneFromSM: number; zoneToSM: number };
 
 export type CornerReview = CornerInfo & { outsideM: number | null; speedMps: number | null };
 
@@ -254,7 +248,6 @@ type AttemptSummaryBase = {
   captureId: string;
   first: number;
   last: number;
-  mode: 'baseline' | 'guided';
   reason: string | null;
   gapToBestMs: number | null;
   largestDifference: Difference | null;

@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { LiveCue, ServerMsg } from '@gt7/contracts';
-import { COUNTDOWN_CLIPS } from '../src/voice/clips.ts';
 import { shownOnDrive } from '../src/features/drive/cue-display.ts';
-import { cue, liveState, playerRig, type PlayerRig } from './support.tsx';
+import { VoicePlayer } from '../src/voice/VoicePlayer.ts';
+import { audioFetch, cue, FakeAudio, liveState, playerRig, type PlayerRig } from './support.tsx';
+
+const CLIPS_TEXT = 'The voice clips did not load. Reload the page.';
+
+function failingPlayer(fetch: (url: string) => Promise<{ ok: boolean; json: () => Promise<unknown>; arrayBuffer: () => Promise<ArrayBuffer> }>) {
+  return new VoicePlayer({ createContext: () => new FakeAudio(), fetch, now: () => 0, report: () => undefined });
+}
 
 async function readyRig() {
   const rig = playerRig();
@@ -120,14 +126,19 @@ describe('voice player', () => {
     expect(outcomes(rig)).toEqual([['missing', 'failed']]);
   });
 
-  it('countdown_cue_plays_its_clip', async () => {
+  it('an_unknown_clip_shows_the_one_clips_text', async () => {
     const rig = playerRig();
-    await rig.player.unlock();
-    await rig.player.preload(COUNTDOWN_CLIPS);
-    const countdown = cue({ id: 'countdown-c-3', eventKey: 'countdown-c-3', kind: 'countdown', targetSpeedKph: null, clip: 'countdown-three', priority: 101, ttlMs: 800 });
-    rig.player.handle({ type: 'cue', cue: countdown, sentMs: 0 });
-    expect(rig.audio.played()).toHaveLength(1);
-    expect(outcomes(rig)).toEqual([['countdown-c-3', 'played']]);
-    expect(shownOnDrive(countdown)).toBe(false);
+    await expect(rig.player.preload(['no-such-clip'])).rejects.toThrow(CLIPS_TEXT);
+  });
+
+  it('a_clip_that_does_not_download_shows_the_one_clips_text', async () => {
+    const ok = audioFetch();
+    const player = failingPlayer(async url => (url.endsWith('manifest.json') ? ok(url) : { ok: false, json: async () => ({}), arrayBuffer: async () => new ArrayBuffer(0) }));
+    await expect(player.preload(['brake-80'])).rejects.toThrow(CLIPS_TEXT);
+  });
+
+  it('a_clip_list_that_does_not_download_shows_the_one_clips_text', async () => {
+    const player = failingPlayer(async () => ({ ok: false, json: async () => ({}), arrayBuffer: async () => new ArrayBuffer(0) }));
+    await expect(player.preload(['brake-80'])).rejects.toThrow(CLIPS_TEXT);
   });
 });

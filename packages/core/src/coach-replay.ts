@@ -44,7 +44,7 @@ export function replayCoach(
 ): CoachTrace {
   const { deviceDelayMs, phraseMs, ...settings } = options;
   let generations = 0;
-  const run = new TrainingRun(analysis, config, settings, { guided: true, nextGeneration: () => ++generations });
+  const run = new TrainingRun(analysis, config, settings, { nextGeneration: () => ++generations });
   const trace: CoachTrace = { attemptEvents: [], cues: [], suppressed: [], guidance: [] };
   let lastGuidance = '';
   for (const sample of samples) {

@@ -9,8 +9,7 @@ export type ExerciseStatusSummary = {
   attemptCount: number;
   referenceCount: number;
   completeAttempts: number;
-  baselineAttempts: number;
-  guidedAttempts: number;
+  activeReferenceAttempts: number;
   bestMs: number | null;
   createdAt: Date;
   activeReferenceId: string | null;
@@ -25,8 +24,7 @@ type StatusRow = {
   attempt_count: number;
   reference_count: number;
   complete_attempts: number;
-  baseline_attempts: number;
-  guided_attempts: number;
+  active_reference_attempts: number;
   best_ms: number | null;
 };
 
@@ -48,8 +46,7 @@ export async function exerciseStatuses(db: Knex, userId: string, exerciseId?: st
       db.raw('count(a.id)::int as attempt_count'),
       db.raw('(select count(*) from "references" r where r.exercise_id = e.id)::int as reference_count'),
       db.raw("(count(a.id) filter (where a.completion = 'complete'))::int as complete_attempts"),
-      db.raw("(count(a.id) filter (where a.completion = 'complete' and a.mode = 'baseline'))::int as baseline_attempts"),
-      db.raw("(count(a.id) filter (where a.completion = 'complete' and a.mode = 'guided'))::int as guided_attempts"),
+      db.raw("(count(a.id) filter (where a.completion = 'complete' and a.reference_id = e.active_reference_id))::int as active_reference_attempts"),
       db.raw("min(a.game_ms) filter (where a.completion = 'complete') as best_ms")
     );
   return rows.map(row => ({
@@ -58,8 +55,7 @@ export async function exerciseStatuses(db: Knex, userId: string, exerciseId?: st
     attemptCount: row.attempt_count,
     referenceCount: row.reference_count,
     completeAttempts: row.complete_attempts,
-    baselineAttempts: row.baseline_attempts,
-    guidedAttempts: row.guided_attempts,
+    activeReferenceAttempts: row.active_reference_attempts,
     bestMs: row.best_ms,
     createdAt: row.created_at,
     activeReferenceId: row.active_reference_id,

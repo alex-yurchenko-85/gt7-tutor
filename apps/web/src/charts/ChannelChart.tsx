@@ -1,13 +1,14 @@
-import { memo, type KeyboardEvent, type PointerEvent } from 'react';
+import { Fragment, memo, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { WIDTH, seriesSegments } from './geometry.ts';
 import { distanceTicks } from './ticks.ts';
+import { LABEL_ROW_STEP_PX, LABEL_TOP_PX, turnLabelPlaces } from './turn-labels.ts';
 import './charts.css';
 
 export type ChartSeries = { name: 'ref' | 'you' | 'ink'; values: (number | null)[] };
 
 export type ChartBand = { fromSM: number; toSM: number; label: string };
 
-export type ChartTick = { value: number; label: string };
+export type ChartTick = { value: number; label: string; tone?: 'ref' };
 
 type ChannelChartProps = {
   id: string;
@@ -25,16 +26,21 @@ type ChannelChartProps = {
   height?: number;
   bands?: ChartBand[];
   turnLabels?: boolean;
+  marks?: number[];
+  area?: boolean;
+  legend?: ReactNode;
 };
 
 const CHART_HEIGHT = 120;
 const NO_BANDS: ChartBand[] = [];
+const NO_MARKS: number[] = [];
+const FALLBACK_PLOT_WIDTH = 800;
 
 function percent(value: number): string {
   return `${(value * 100).toFixed(2)}%`;
 }
 
-const DistanceAxis = memo(function DistanceAxis({ lengthM, bands, turnLabels }: { lengthM: number; bands: ChartBand[]; turnLabels: boolean }) {
+const DistanceAxis = memo(function DistanceAxis({ lengthM }: { lengthM: number }) {
   return (
     <div className="distance-axis" aria-hidden="true">
       <div>
@@ -43,21 +49,20 @@ const DistanceAxis = memo(function DistanceAxis({ lengthM, bands, turnLabels }: 
             {tick === 0 ? '0 m' : tick}
           </span>
         ))}
-        {turnLabels
-          ? bands.map(band => (
-              <b key={band.label} style={{ left: percent((band.fromSM + band.toSM) / 2 / lengthM) }}>
-                {band.label}
-              </b>
-            ))
-          : null}
       </div>
     </div>
   );
 });
 
-type PlotLayerProps = Pick<ChannelChartProps, 'series' | 'ticks' | 'bands' | 'min' | 'max' | 'gridM' | 'lengthM'> & { height: number };
+function areaPoints(points: string, zeroY: number): string {
+  const list = points.split(' ');
+  const x = (point: string) => point.split(',')[0];
+  return `${points} ${x(list.at(-1)!)},${zeroY} ${x(list[0]!)},${zeroY}`;
+}
 
-const PlotLayer = memo(function PlotLayer({ series, ticks, bands = [], min, max, gridM, lengthM, height }: PlotLayerProps) {
+type PlotLayerProps = Pick<ChannelChartProps, 'series' | 'ticks' | 'bands' | 'marks' | 'area' | 'min' | 'max' | 'gridM' | 'lengthM'> & { height: number };
+
+const PlotLayer = memo(function PlotLayer({ series, ticks, bands = [], marks = NO_MARKS, area = false, min, max, gridM, lengthM, height }: PlotLayerProps) {
   const span = max - min || 1;
   const toX = (index: number) => ((index * gridM) / lengthM) * WIDTH;
   const toY = (value: number) => height - 4 - ((value - min) / span) * (height - 8);
@@ -78,19 +83,40 @@ const PlotLayer = memo(function PlotLayer({ series, ticks, bands = [], min, max,
       {ticks.map(tick => (
         <line key={tick.value} className="chart-grid" x1={0} x2={WIDTH} y1={toY(tick.value)} y2={toY(tick.value)} />
       ))}
+      {marks.map(value => (
+        <line key={value} className="chart-threshold" x1={0} x2={WIDTH} y1={toY(value)} y2={toY(value)} />
+      ))}
       {zeroY === null ? null : <line className="chart-zero" x1={0} x2={WIDTH} y1={zeroY} y2={zeroY} />}
       {series.map(item =>
         seriesSegments(item.values, toX, toY).map((points, index) => (
-          <polyline key={`${item.name}-${index}`} className={`chart-line ${item.name}`} data-series={item.name} points={points} />
+          <Fragment key={`${item.name}-${index}`}>
+            {area && item.name === 'you' ? <polygon className="chart-area" points={areaPoints(points, toY(0))} /> : null}
+            <polyline className={`chart-line ${item.name}`} data-series={item.name} points={points} />
+          </Fragment>
         ))
       )}
     </>
   );
 });
 
-export function ChannelChart({ id, label, series, min, max, gridM, lengthM, cursorSM, onCursor, onScrub = onCursor, readout, ticks, height = CHART_HEIGHT, bands = NO_BANDS, turnLabels = false }: ChannelChartProps) {
+export function ChannelChart({ id, label, series, min, max, gridM, lengthM, cursorSM, onCursor, onScrub = onCursor, readout, ticks, height = CHART_HEIGHT, bands = NO_BANDS, turnLabels = false, marks = NO_MARKS, area = false, legend = null }: ChannelChartProps) {
+  const zones = useMemo(() => bands.filter(band => band.toSM > band.fromSM), [bands]);
   const span = max - min || 1;
   const toY = (value: number) => height - 4 - ((value - min) / span) * (height - 8);
+  const plotRef = useRef<HTMLDivElement>(null);
+  const [plotWidth, setPlotWidth] = useState(FALLBACK_PLOT_WIDTH);
+  useLayoutEffect(() => {
+    const element = plotRef.current;
+    if (!element || !turnLabels) return;
+    const measure = () => {
+      if (element.clientWidth > 0) setPlotWidth(element.clientWidth);
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [turnLabels]);
   const cursorX = (cursorSM / lengthM) * WIDTH;
   const clamp = (sM: number) => Math.max(0, Math.min(lengthM, sM));
   const fromPointer = (event: PointerEvent<HTMLDivElement>, report: (sM: number) => void) => {
@@ -108,6 +134,7 @@ export function ChannelChart({ id, label, series, min, max, gridM, lengthM, curs
   };
   return (
     <div className="channel">
+      {legend}
       <div className="channel-label">
         <span id={`${id}-label`}>{label}</span>
         <span>{readout}</span>
@@ -115,12 +142,13 @@ export function ChannelChart({ id, label, series, min, max, gridM, lengthM, curs
       <div className="channel-body">
         <div className="y-axis" aria-hidden="true">
           {ticks.map(tick => (
-            <span key={tick.value} style={{ top: percent(toY(tick.value) / height) }}>
+            <span key={tick.value} className={tick.tone === 'ref' ? 'tone-ref' : undefined} style={{ top: percent(toY(tick.value) / height) }}>
               {tick.label}
             </span>
           ))}
         </div>
         <div
+          ref={plotRef}
           className="plot channel-plot"
           data-chart={id}
           role="slider"
@@ -137,12 +165,24 @@ export function ChannelChart({ id, label, series, min, max, gridM, lengthM, curs
           onKeyDown={fromKey}
         >
           <svg viewBox={`0 0 ${WIDTH} ${height}`} preserveAspectRatio="none" style={{ height }} aria-hidden="true">
-            <PlotLayer series={series} ticks={ticks} bands={bands} min={min} max={max} gridM={gridM} lengthM={lengthM} height={height} />
+            <PlotLayer series={series} ticks={ticks} bands={zones} marks={marks} area={area} min={min} max={max} gridM={gridM} lengthM={lengthM} height={height} />
             <line className="chart-cursor" x1={cursorX.toFixed(1)} x2={cursorX.toFixed(1)} y1={0} y2={height} />
           </svg>
+          {turnLabels
+            ? turnLabelPlaces(zones, lengthM, plotWidth).map(place => (
+                <b
+                  key={place.label}
+                  className="turn-label"
+                  aria-hidden="true"
+                  style={{ left: percent(place.centre / plotWidth), top: LABEL_TOP_PX + place.row * LABEL_ROW_STEP_PX }}
+                >
+                  {place.label}
+                </b>
+              ))
+            : null}
         </div>
       </div>
-      <DistanceAxis lengthM={lengthM} bands={bands} turnLabels={turnLabels} />
+      <DistanceAxis lengthM={lengthM} />
     </div>
   );
 }

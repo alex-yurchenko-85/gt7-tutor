@@ -1,5 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
-import type { CapturePurpose, ReferenceOrigin, StartKindName, TrainingMode } from '@gt7/contracts';
+import type { CapturePurpose, ReferenceOrigin } from '@gt7/contracts';
 import type { Knex } from 'knex';
 
 export type ExerciseRow = {
@@ -29,7 +29,6 @@ export type CaptureRow = {
   packets: number;
   complete: boolean;
   error_reason: string | null;
-  start_cue_mono_ms: number | null;
 };
 
 export type ReferenceRow = {
@@ -39,7 +38,6 @@ export type ReferenceRow = {
   first_raw_index: number;
   last_raw_index: number;
   origin: ReferenceOrigin;
-  start_kind: StartKindName;
   game_version: string | null;
   needs_check: boolean;
   timer_ms: number | null;
@@ -53,7 +51,6 @@ export type AttemptRow = {
   reference_id: string;
   first_raw_index: number;
   last_raw_index: number;
-  mode: TrainingMode;
   completion: 'complete' | 'aborted';
   reason: string | null;
   game_ms: number | null;

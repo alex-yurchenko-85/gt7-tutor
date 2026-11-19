@@ -43,8 +43,6 @@ export function cuePriority(kind: LiveCueKind, config: CoreConfig): number {
     case 'throttle':
     case 'full-throttle':
       return priority.throttle;
-    case 'countdown':
-      return priority.countdown;
     case 'guidance-paused':
     case 'guidance-resumed':
     case 'focus':
@@ -53,9 +51,8 @@ export function cuePriority(kind: LiveCueKind, config: CoreConfig): number {
 }
 
 export function makeCue(input: CueInput, config: CoreConfig): Cue {
-  const countdown = input.kind === 'countdown';
   return {
-    id: countdown ? input.eventKey : `${input.generation}:${input.eventKey}`,
+    id: `${input.generation}:${input.eventKey}`,
     eventKey: input.eventKey,
     kind: input.kind,
     targetSpeedKph: input.targetSpeedKph,
@@ -64,6 +61,6 @@ export function makeCue(input: CueInput, config: CoreConfig): Cue {
     generation: input.generation,
     priority: cuePriority(input.kind, config),
     decidedMonoMs: input.decidedMonoMs,
-    ttlMs: countdown ? config.cue.countdownTtlMs : config.cue.ttlBaseMs + input.deviceDelayMs
+    ttlMs: config.cue.ttlBaseMs + input.deviceDelayMs
   };
 }

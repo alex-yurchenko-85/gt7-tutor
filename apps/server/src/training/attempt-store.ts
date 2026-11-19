@@ -42,7 +42,6 @@ export async function storeAttempt(
         reference_id: snapshot.referenceId,
         first_raw_index: record.firstRawIndex,
         last_raw_index: record.lastRawIndex,
-        mode: snapshot.mode,
         completion: record.completion,
         reason: record.reason,
         game_ms: complete ? record.gameTimeMs : null,

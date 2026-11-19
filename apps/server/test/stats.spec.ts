@@ -56,7 +56,7 @@ describe('attempts, review and statistics', () => {
     const response = await http()
       .post('/api/references')
       .set('Cookie', cookie)
-      .send({ exerciseId: exercise, captureId, first, last, startKind: 'flying' })
+      .send({ exerciseId: exercise, captureId, first, last })
       .expect(201);
     return response.body.id as string;
   }
@@ -67,7 +67,7 @@ describe('attempts, review and statistics', () => {
     return id;
   }
 
-  type AttemptOptions = { completion?: string; gameMs?: number | null; startedAt?: Date; mode?: string; exercise?: string; reference?: string };
+  type AttemptOptions = { completion?: string; gameMs?: number | null; startedAt?: Date; exercise?: string; reference?: string };
 
   async function attempt(options: AttemptOptions = {}): Promise<string> {
     const completion = options.completion ?? 'complete';
@@ -78,7 +78,6 @@ describe('attempts, review and statistics', () => {
         reference_id: options.reference ?? referenceId,
         first_raw_index: CLEAN_ATTEMPT.first,
         last_raw_index: CLEAN_ATTEMPT.last,
-        mode: options.mode ?? 'baseline',
         completion,
         reason: completion === 'complete' ? 'game-timer' : 'left-track',
         game_ms: options.gameMs === undefined ? (completion === 'complete' ? 17071 : null) : options.gameMs,
@@ -168,7 +167,6 @@ describe('attempts, review and statistics', () => {
         reference_id: referenceId,
         first_raw_index: 457,
         last_raw_index: 1422,
-        mode: 'baseline',
         completion: 'complete',
         reason: 'game-timer',
         game_ms: 16082,
@@ -186,7 +184,7 @@ describe('attempts, review and statistics', () => {
 
   it('review_matches_core_output', async () => {
     const attemptId = await attempt();
-    const analysis = analyseReference(await fixtureSamples('demo-a', 457, 1422), 'flying', DEFAULT_CONFIG);
+    const analysis = analyseReference(await fixtureSamples('demo-a', 457, 1422), DEFAULT_CONFIG);
     const expected = buildReview(await fixtureSamples('ce-clean', 8451, 9479), analysis, DEFAULT_CONFIG);
     const response = await http().get(`/api/attempts/${attemptId}/review`).set('Cookie', cookie).expect(200);
     const { corners, ...comparable } = expected;
@@ -203,7 +201,7 @@ describe('attempts, review and statistics', () => {
   it('review_with_other_reference_recomputes', async () => {
     const attemptId = await attempt();
     const otherReference = await reference(await capture('demo-b', 'demo'), 738, 1703);
-    const analysis = analyseReference(await fixtureSamples('demo-b', 738, 1703), 'flying', DEFAULT_CONFIG);
+    const analysis = analyseReference(await fixtureSamples('demo-b', 738, 1703), DEFAULT_CONFIG);
     const expected = buildReview(await fixtureSamples('ce-clean', 8451, 9479), analysis, DEFAULT_CONFIG);
     const response = await http().get(`/api/attempts/${attemptId}/review?referenceId=${otherReference}`).set('Cookie', cookie).expect(200);
     expect(response.body.referenceId).toBe(otherReference);
@@ -302,6 +300,8 @@ describe('attempts, review and statistics', () => {
         apexSM: expect.any(Number),
         radiusM: expect.any(Number),
         apexSpeedMps: expect.any(Number),
+        zoneFromSM: 346,
+        zoneToSM: 462,
         outsideM: expect.any(Number),
         speedMps: expect.any(Number)
       });
@@ -318,7 +318,7 @@ describe('attempts, review and statistics', () => {
   it('review_reports_turns_and_turn_losses', async () => {
     const attemptId = await attempt();
     const response = await http().get(`/api/attempts/${attemptId}/review`).set('Cookie', cookie).expect(200);
-    const { corners, findings, turnLosses, lengthM } = response.body;
+    const { corners, findings, turnLosses } = response.body;
     expect(corners.length).toBeGreaterThan(0);
     expect(findings.length).toBeGreaterThan(0);
     for (const finding of findings) {
@@ -326,9 +326,11 @@ describe('attempts, review and statistics', () => {
       expect(finding.turn).toBeGreaterThanOrEqual(1);
     }
     expect(turnLosses).toHaveLength(corners.length);
-    expect(turnLosses[0].fromSM).toBe(0);
-    expect(turnLosses.at(-1).toSM).toBe(lengthM);
-    for (let index = 0; index + 1 < turnLosses.length; index++) expect(turnLosses[index].toSM).toBe(turnLosses[index + 1].fromSM);
+    expect(turnLosses[0]).toMatchObject({ turn: 1, fromSM: 346, toSM: 462 });
+    turnLosses.forEach((loss: { fromSM: number; toSM: number }, index: number) => {
+      expect(loss.fromSM).toBe(corners[index].zoneFromSM);
+      expect(loss.toSM).toBe(corners[index].zoneToSM);
+    });
     expect(turnLosses.map((loss: { turn: number }) => loss.turn)).toEqual(corners.map((corner: { number: number }) => corner.number));
     expect(turnLosses.some((loss: { lostMs: number | null }) => typeof loss.lostMs === 'number')).toBe(true);
   });

@@ -15,6 +15,7 @@ export * from './game-timer.ts';
 export * from './geometry.ts';
 export * from './guidance.ts';
 export * from './match.ts';
+export * from './missed-start.ts';
 export * from './packet-clock.ts';
 export * from './progress.ts';
 export * from './reference-analysis.ts';

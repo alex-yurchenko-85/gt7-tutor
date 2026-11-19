@@ -1,4 +1,3 @@
-import type { TrainingMode } from '@gt7/contracts';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
 
 export type SetupSection = 'console' | 'voice' | 'profiles' | 'preferences' | 'catalogue' | 'data';
@@ -49,7 +48,7 @@ export const paths = {
   exercises: () => '/',
   exercise: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}`,
   addExercise: () => '/exercises/add',
-  drive: (mode?: TrainingMode) => (mode ? `/drive?mode=${mode}` : '/drive'),
+  drive: () => '/drive',
   setup: (section?: SetupSection) => (section ? `/setup#${section}` : '/setup'),
   deleteHistory: () => '/setup/delete-history',
   cues: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}/cues`,

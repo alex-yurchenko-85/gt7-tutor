@@ -56,7 +56,7 @@ function samplesOf(name: string, range?: { first: number; last: number }): Promi
 
 async function main() {
   const options = readArguments();
-  const analysis = analyseReference(await samplesOf(options.reference, options), 'flying', DEFAULT_CONFIG);
+  const analysis = analyseReference(await samplesOf(options.reference, options), DEFAULT_CONFIG);
   const { path, events } = analysis;
   const trace = replayCoach(await samplesOf(options.attempt), analysis, DEFAULT_CONFIG, {
     deviceDelayMs: options.deviceDelayMs,

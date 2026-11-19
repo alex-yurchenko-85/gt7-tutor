@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BASELINE_ATTEMPTS, type CornerInfo, type Exercise, type ExerciseStep, type RecurringDifference, type ReferenceCue, type ReferenceTrace } from '@gt7/contracts';
+import { type CornerInfo, type Exercise, type ExerciseStep, type RecurringDifference, type ReferenceCue, type ReferenceTrace } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { MapDialog } from '../../charts/MapDialog.tsx';
@@ -30,17 +30,14 @@ type NextText = { title: string; detail(spokenCues: number | null): string };
 const NEXT: Record<ExerciseStep, NextText> = {
   1: {
     title: 'Next: record the reference',
-    detail: () => 'The reference is the demonstration that the game shows before the exercise. GT7 Tutor records it three times and uses the part that repeats.'
+    detail: () => 'The reference is the demonstration that the game shows before the exercise. GT7 Tutor records it once.'
   },
   2: {
-    title: 'Next: baseline attempts without voice',
-    detail: () => `Drive ${BASELINE_ATTEMPTS} attempts without voice so the differences show. You can skip this step.`
+    title: 'Next: drive attempts',
+    detail: spoken =>
+      `The Drive screen shows the ${spoken === null ? '' : `${spoken} `}cues of the reference. A voice device also says them. After 3 complete attempts, review them.`
   },
   3: {
-    title: 'Next: a guided attempt with voice',
-    detail: spoken => (spoken === null ? 'The voice says the cues of the reference.' : `The voice says the ${spoken} cues of the reference.`)
-  },
-  4: {
     title: 'Next: review your attempts',
     detail: () => 'Compare your attempts with the reference and find the differences that repeat.'
   }
@@ -51,20 +48,9 @@ function secondaryActions(exercise: Exercise): Action[] {
     case 1:
       return [{ label: 'Choose another exercise', to: paths.addExercise() }];
     case 2:
-      return [
-        { label: 'Guided attempt instead', to: paths.drive('guided') },
-        { label: 'Hear the cues first', to: paths.cues(exercise.id) }
-      ];
+      return [{ label: 'Hear the cues first', to: paths.cues(exercise.id) }];
     case 3:
-      return [
-        { label: 'Baseline attempt instead', to: paths.drive('baseline') },
-        { label: 'Hear the cues first', to: paths.cues(exercise.id) }
-      ];
-    case 4:
-      return [
-        { label: 'Guided attempt', to: paths.drive('guided') },
-        { label: 'Baseline attempt', to: paths.drive('baseline') }
-      ];
+      return [{ label: 'Start an attempt', to: paths.drive() }];
   }
 }
 
@@ -79,7 +65,7 @@ function NextPanel({ exercise, reference }: { exercise: Exercise; reference: Ref
   const next = NEXT[exercise.step];
   return (
     <section className="panel overview-next" aria-labelledby="next-title">
-      <ol className="compact-rail" aria-label="Four steps">
+      <ol className="compact-rail" aria-label="Three steps">
         {STEP_LABELS.map(({ step, label }) => {
           const note = stepNote(step, exercise.step);
           return (
@@ -212,8 +198,7 @@ function NoReference() {
     <section className="panel" aria-labelledby="no-reference-title">
       <h2 id="no-reference-title">No reference yet</h2>
       <p className="lede">
-        The reference is the demonstration that the game shows before the exercise. GT7 Tutor records it three times, finds the part that repeats, and
-        uses it as the target for the voice cues.
+        The reference is the demonstration that the game shows before the exercise. GT7 Tutor records it once.
       </p>
     </section>
   );

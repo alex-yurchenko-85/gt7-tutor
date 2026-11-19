@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
-import { KPH_PER_MPS, type CornerInfo, type Exercise, type LiveCue, type LiveState, type ReferenceCue, type ReferenceTrace, type TrainingMode } from '@gt7/contracts';
+import { KPH_PER_MPS, type CornerInfo, type Exercise, type LiveCue, type LiveState, type ReferenceCue, type ReferenceTrace } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
 import { useLiveConnection, useLiveState } from '../../api/live.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
@@ -10,11 +10,12 @@ import { signedSeconds } from '../../app/format.ts';
 import { useImmersive } from '../../app/immersive.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
-import { Link, paths, useRouter } from '../../app/router.tsx';
+import { Link, paths } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
 import { StatusDot } from '../../app/Shell.tsx';
 import { telemetryStatus, voiceState, voiceStatus, type Status } from '../../app/status.ts';
 import { AttemptSummary } from '../attempt-summary/AttemptSummary.tsx';
+import { CLIPS_TEXT } from '../../voice/VoicePlayer.ts';
 import { useVoiceClaim } from '../../voice/use-voice-claim.ts';
 import { ARMED_MODES, connectionProblem, cueNote, cueWords, guidanceText, nextCueProgress, shownOnDrive, spokenCues } from './cue-display.ts';
 import { SeenCues } from './seen-cues.ts';
@@ -59,17 +60,12 @@ function useReferenceData(referenceId: string | null) {
 }
 
 
-function modeLabel(mode: TrainingMode): string {
-  return mode === 'guided' ? 'Guided' : 'Baseline';
-}
-
 type CueContent = { word: ReactNode; note: string | null; tone: 'cue' | 'armed' | 'idle' };
 
-function cueContent(state: LiveState, mode: TrainingMode, problem: string | null, fresh: LiveCue | null, reference: ReferenceData | null): CueContent {
+function cueContent(state: LiveState, problem: string | null, fresh: LiveCue | null, reference: ReferenceData | null): CueContent {
   const idle = (text: string): CueContent => ({ word: text, note: null, tone: 'idle' });
   if (problem) return idle('');
   if (state.mode === 'armed') return { word: 'READY', note: 'Waiting for the start', tone: 'armed' };
-  if (mode === 'baseline') return idle('Recording without voice');
   if (state.mode === 'paused') return idle('Paused. Cues stop until you continue.');
   if (state.mode === 'finished') return idle('Finished.');
   const guidance = guidanceText(state.guidance);
@@ -88,9 +84,9 @@ function cueContent(state: LiveState, mode: TrainingMode, problem: string | null
   };
 }
 
-function CueArea({ state, mode, problem, reference }: { state: LiveState; mode: TrainingMode; problem: string | null; reference: ReferenceData | null }) {
+function CueArea({ state, problem, reference }: { state: LiveState; problem: string | null; reference: ReferenceData | null }) {
   const fresh = useFreshCue(shownOnDrive(state.lastCue) ? state.lastCue : null);
-  const content = cueContent(state, mode, problem, fresh, reference);
+  const content = cueContent(state, problem, fresh, reference);
   return (
     <div className={`cue ${content.tone}`} role="status" aria-label="Current cue" aria-live="assertive">
       <div className="cue-word">{content.word}</div>
@@ -99,11 +95,11 @@ function CueArea({ state, mode, problem, reference }: { state: LiveState; mode: 
   );
 }
 
-function NextCue({ state, mode, problem, reference }: { state: LiveState; mode: TrainingMode; problem: string | null; reference: ReferenceData | null }) {
+function NextCue({ state, problem, reference }: { state: LiveState; problem: string | null; reference: ReferenceData | null }) {
   let text = '';
   let distance = '';
   let progress = 0;
-  if (mode === 'guided' && !problem) {
+  if (!problem) {
     const first = reference?.spoken[0];
     if (state.mode === 'armed' && first) {
       text = `First cue: ${first.phrase}`;
@@ -158,8 +154,8 @@ function MissedStart({ onDismiss }: { onDismiss(): void }) {
   const titleId = useId();
   return (
     <div className="missed-start" role="alert" aria-labelledby={titleId}>
-      <h2 id={titleId}>The game timer did not start</h2>
-      <p>The car has moved for 10 s, but the game timer has not started. Restart the exercise in the game. The attempt starts with the game timer.</p>
+      <h2 id={titleId}>The attempt did not start</h2>
+      <p>The exercise was already running when you pressed Start. Restart the exercise in the game.</p>
       <div className="missed-actions">
         <button type="button" className="stage-button primary" onClick={onDismiss}>
           OK
@@ -169,9 +165,9 @@ function MissedStart({ onDismiss }: { onDismiss(): void }) {
   );
 }
 
-type StageProps = { state: LiveState; mode: TrainingMode; exercise: Exercise; finishedAttempt: string | null; onDriveAgain(): void; onStop(): void };
+type StageProps = { state: LiveState; exercise: Exercise; finishedAttempt: string | null; clipsFailed: boolean; onDriveAgain(): void; onStop(): void };
 
-function Stage({ state, mode, exercise, finishedAttempt, onDriveAgain, onStop }: StageProps) {
+function Stage({ state, exercise, finishedAttempt, clipsFailed, onDriveAgain, onStop }: StageProps) {
   const { deviceId } = useLiveConnection();
   const { connected } = useLiveState(snapshot => snapshot);
   const demo = useDemo() !== null;
@@ -187,10 +183,10 @@ function Stage({ state, mode, exercise, finishedAttempt, onDriveAgain, onStop }:
     <div className="drive-stage" data-surface="night">
       <div className="stage-top">
         <div className="stage-title">
-          <p>{`${modeLabel(mode)} attempt${state.attemptNumber === null ? '' : ` ${state.attemptNumber}`} · ${exercise.name}`}</p>
+          <p>{`${state.attemptNumber === null ? 'Ready' : `Attempt ${state.attemptNumber}`} · ${exercise.name}`}</p>
           <div className="stage-row">
             <StageStatus status={telemetry} label="Telemetry" />
-            {mode === 'baseline' ? <span className="stage-status">No voice</span> : <StageStatus status={voice} label="Voice" />}
+            <StageStatus status={voice} label="Voice" />
           </div>
         </div>
         <button type="button" className="stage-button" onClick={onStop}>
@@ -204,14 +200,19 @@ function Stage({ state, mode, exercise, finishedAttempt, onDriveAgain, onStop }:
           </div>
         ) : (
           <>
-            <CueArea state={state} mode={mode} problem={problem} reference={reference} />
-            <NextCue state={state} mode={mode} problem={problem} reference={reference} />
+            <CueArea state={state} problem={problem} reference={reference} />
+            <NextCue state={state} problem={problem} reference={reference} />
             <LiveNumbers state={state} live={live} reference={reference} />
           </>
         )}
         {problem ? (
           <p className="stage-alert" role="alert">
             {problem}
+          </p>
+        ) : null}
+        {clipsFailed && state.voiceDeviceId === deviceId ? (
+          <p className="stage-alert" role="alert">
+            {CLIPS_TEXT}
           </p>
         ) : null}
         {!state.recordingComplete ? (
@@ -255,7 +256,7 @@ function useReferenceClips(referenceId: string | null) {
   }, [referenceId, player]);
 }
 
-function VoiceBlock({ ensureClips }: { ensureClips(): Promise<number> }) {
+function VoiceBlock({ ensureClips, clipsFailed }: { ensureClips(): Promise<number>; clipsFailed: boolean }) {
   const { player, deviceId } = useLiveConnection();
   const { state } = useLiveState(snapshot => snapshot);
   const voice = useVoiceClaim();
@@ -292,9 +293,12 @@ function VoiceBlock({ ensureClips }: { ensureClips(): Promise<number> }) {
         <StatusDot status={{ tone: 'on', text: '' }} />
         <div>
           <p className="voice-ready-title">This device plays the voice</p>
-          <p className="sub">
-            {loaded === null ? 'Loading the cues…' : `${loaded} cues loaded.`}
-          </p>
+          {loaded === null && clipsFailed ? null : <p className="sub">{loaded === null ? 'Loading the cues…' : `${loaded} cues loaded.`}</p>}
+          {clipsFailed ? (
+            <p className="error" role="alert">
+              {CLIPS_TEXT}
+            </p>
+          ) : null}
           {testProblem ? <p className="error">{testProblem}</p> : null}
         </div>
         <IconButton icon="speaker" label="Test" onClick={() => void test()} />
@@ -319,36 +323,41 @@ function VoiceBlock({ ensureClips }: { ensureClips(): Promise<number> }) {
   );
 }
 
-function ArmPanel({ exercise, onArmed }: { exercise: Exercise; onArmed(mode: TrainingMode): void }) {
-  const { search } = useRouter();
+type ArmPanelProps = { exercise: Exercise; clipsFailed: boolean; onClipsFailed(failed: boolean): void; onArmed(): void };
+
+function ArmPanel({ exercise, clipsFailed, onClipsFailed, onArmed }: ArmPanelProps) {
   const { deviceId } = useLiveConnection();
   const { state } = useLiveState(snapshot => snapshot);
   const demo = useDemo() !== null;
-  const [chosenMode, setMode] = useState<TrainingMode>(search.get('mode') === 'baseline' ? 'baseline' : 'guided');
-  const mode: TrainingMode = demo ? 'guided' : chosenMode;
-  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const ensure = useReferenceClips(exercise.activeReferenceId);
-  const voiceReady = state?.voiceDeviceId !== null && state?.voiceDeviceId !== undefined && state.voiceReady;
+  const loadClips = useCallback(
+    () =>
+      ensure().then(
+        count => {
+          onClipsFailed(false);
+          return count;
+        },
+        (error: unknown) => {
+          onClipsFailed(true);
+          throw error;
+        }
+      ),
+    [ensure, onClipsFailed]
+  );
   const voiceHere = state?.voiceDeviceId === deviceId;
 
-  const arm = async (confirmNoVoice: boolean) => {
-    if (mode === 'guided' && !voiceReady && !confirmNoVoice) {
-      setConfirming(true);
-      return;
-    }
+  const arm = async () => {
     setBusy(true);
     setProblem(null);
     try {
-      if (mode === 'guided' && voiceHere) await ensure();
+      if (voiceHere) await loadClips().catch(() => undefined);
       if (demo) await api.demoAttempt();
-      await api.arm({ exerciseId: exercise.id, mode, ...(confirmNoVoice ? { confirmNoVoice: true } : {}) });
-      setConfirming(false);
-      onArmed(mode);
+      await api.arm({ exerciseId: exercise.id });
+      onArmed();
     } catch (error) {
-      if (error instanceof ApiError && error.code === 'voice-not-ready') setConfirming(true);
-      else setProblem(errorText(error));
+      setProblem(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -356,44 +365,15 @@ function ArmPanel({ exercise, onArmed }: { exercise: Exercise; onArmed(mode: Tra
 
   return (
     <div className="panel arm-panel">
-      {demo ? null : (
-        <fieldset className="plain">
-          <legend className="label">Attempt type</legend>
-          <div className="segmented">
-            <label>
-              <input type="radio" name="training-mode" checked={mode === 'baseline'} onChange={() => setMode('baseline')} />
-              Baseline, no voice
-            </label>
-            <label>
-              <input type="radio" name="training-mode" checked={mode === 'guided'} onChange={() => setMode('guided')} />
-              Guided, with voice
-            </label>
-          </div>
-        </fieldset>
-      )}
-      {mode === 'guided' ? <VoiceBlock ensureClips={ensure} /> : null}
+      <VoiceBlock ensureClips={loadClips} clipsFailed={clipsFailed} />
       <p className="sub">
         {demo
-          ? 'The demo replays a recorded guided attempt in real time. It takes about one minute, and the voice plays the cues on the voice device.'
+          ? 'The demo replays a recorded attempt in real time. It takes about 40 s. This screen shows the cues, and the voice device also says them.'
           : 'After you start, open the exercise in GT7 and drive. GT7 Tutor finds the start and the finish by itself.'}
       </p>
-      {confirming ? (
-        <div className="notice bad" role="alert">
-          <p>No device plays the voice. If you start now, the attempt is recorded and no cue is played.</p>
-          <div className="btn-row" style={{ marginTop: 8 }}>
-            <button className="btn inline" type="button" onClick={() => void arm(true)} disabled={busy}>
-              {demo ? 'Play without voice' : 'Start without voice'}
-            </button>
-            <Link to={paths.setup('voice')} className="btn inline ghost">
-              Set up voice
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <button className="btn arm-button" type="button" onClick={() => void arm(false)} disabled={busy}>
-          {demo ? 'Play a demo attempt' : `Start a ${mode} attempt`}
-        </button>
-      )}
+      <button className="btn arm-button" type="button" onClick={() => void arm()} disabled={busy}>
+        {demo ? 'Play a demo attempt' : 'Start an attempt'}
+      </button>
       {problem ? (
         <p className="error" role="alert">
           {problem}
@@ -405,23 +385,23 @@ function ArmPanel({ exercise, onArmed }: { exercise: Exercise; onArmed(mode: Tra
 
 function DriveExercise({ exercise }: { exercise: Exercise }) {
   const { state } = useLiveState(snapshot => snapshot);
-  const [justArmed, setJustArmed] = useState<TrainingMode | null>(null);
+  const [justArmed, setJustArmed] = useState(false);
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const [clipsFailed, setClipsFailed] = useState(false);
   const liveArmed = state !== null && ARMED_MODES.includes(state.mode) && state.exerciseId === exercise.id;
-  const armed = liveArmed || justArmed !== null;
-  const mode: TrainingMode = (liveArmed ? state.trainingMode : null) ?? justArmed ?? 'guided';
+  const armed = liveArmed || justArmed;
   useImmersive(armed);
 
   const armedAt = useRef(0);
   useEffect(() => {
-    if (justArmed === null) return;
-    if (liveArmed || (state?.mode === 'idle' && Date.now() - armedAt.current > ARM_SETTLE_MS)) setJustArmed(null);
+    if (!justArmed) return;
+    if (liveArmed || (state?.mode === 'idle' && Date.now() - armedAt.current > ARM_SETTLE_MS)) setJustArmed(false);
   }, [liveArmed, state?.mode, state?.seq, justArmed]);
 
-  const onArmed = (chosen: TrainingMode) => {
+  const onArmed = () => {
     armedAt.current = Date.now();
-    setJustArmed(chosen);
+    setJustArmed(true);
   };
   const disarm = async () => {
     setProblem(null);
@@ -430,7 +410,7 @@ function DriveExercise({ exercise }: { exercise: Exercise }) {
     } catch (error) {
       if (!(error instanceof ApiError && error.code === 'not-armed')) setProblem(errorText(error));
     }
-    setJustArmed(null);
+    setJustArmed(false);
   };
 
   const [earlierAttempt, setEarlierAttempt] = useState<string | null | undefined>(undefined);
@@ -451,9 +431,9 @@ function DriveExercise({ exercise }: { exercise: Exercise }) {
         {state ? (
           <Stage
             state={state}
-            mode={mode}
             exercise={exercise}
             finishedAttempt={finishedAttempt}
+            clipsFailed={clipsFailed}
             onDriveAgain={() => finishedAttempt && setDismissed(finishedAttempt)}
             onStop={() => void disarm()}
           />
@@ -470,7 +450,7 @@ function DriveExercise({ exercise }: { exercise: Exercise }) {
         <h1>Drive</h1>
       </div>
       {errorLine}
-      <ArmPanel exercise={exercise} onArmed={onArmed} />
+      <ArmPanel exercise={exercise} clipsFailed={clipsFailed} onClipsFailed={setClipsFailed} onArmed={onArmed} />
     </>
   );
 }

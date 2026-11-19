@@ -28,7 +28,6 @@ type Span = { from: number; to: number };
 type Ranked = {
   spans: Span[];
   sampleCount: number;
-  followsCue: boolean;
   entersScene: boolean;
   moves: boolean;
   timed: boolean;
@@ -155,35 +154,27 @@ function travelled(capture: Sample[], first: number, last: number): number {
   return total;
 }
 
+function entersSceneAt(capture: Sample[], index: number, config: CoreConfig): boolean {
+  const before = capture[index - 1];
+  return before !== undefined && continuityBreak(before, capture[index]!, config) !== null;
+}
+
+function movesEnough(movementM: number, config: CoreConfig): boolean {
+  return movementM > config.demoRange.minMovementM;
+}
+
 function describe(
   captures: Sample[][],
-  cues: (number | null)[],
   sampleSpans: Span[],
   config: CoreConfig
 ): Omit<Ranked, 'spans' | 'sampleCount' | 'timed'> {
   const evidence: string[] = [];
-  let cueChecks = 0;
-  let cueFailures = 0;
   let sceneFailures = 0;
   sampleSpans.forEach((span, index) => {
     const capture = captures[index]!;
-    const first = capture[span.from]!;
     const label = `Capture ${index + 1}`;
-    const cue = cues[index] ?? null;
-    if (cue === null) {
-      evidence.push(`${label}: START cue missing`);
-    } else {
-      cueChecks += 1;
-      const afterMs = first.receivedMonoMs - cue;
-      const inside = afterMs >= 0 && afterMs <= config.demoRange.cueWindowMs;
-      if (!inside) cueFailures += 1;
-      const window = inside ? '' : `, outside 0–${round(config.demoRange.cueWindowMs / 1000, 0)} s`;
-      evidence.push(`${label}: starts ${round(afterMs / 1000, 2)} s after START${window}`);
-    }
-    const before = capture[span.from - 1];
-    const broken = before ? continuityBreak(before, first, config) : null;
-    if (before && broken) {
-      evidence.push(`${label}: position jumps ${round(distance(before.position, first.position), 1)} m before the start`);
+    if (entersSceneAt(capture, span.from, config)) {
+      evidence.push(`${label}: position jumps ${round(distance(capture[span.from - 1]!.position, capture[span.from]!.position), 1)} m before the start`);
     } else {
       sceneFailures += 1;
       evidence.push(`${label}: no scene change before the start`);
@@ -193,19 +184,18 @@ function describe(
   evidence.push(`Moves ${round(movementM, 1)} m`);
   if (captures.length < 3) evidence.push(`Only ${captures.length} captures: repeated background cannot be excluded`);
   return {
-    followsCue: cueChecks > 0 && cueFailures === 0,
     entersScene: sceneFailures === 0,
-    moves: movementM > config.demoRange.minMovementM,
+    moves: movesEnough(movementM, config),
     evidence
   };
 }
 
 function score(candidate: Ranked): number {
-  return (candidate.followsCue ? 4 : 0) + (candidate.entersScene ? 2 : 0) + (candidate.moves ? 1 : 0);
+  return (candidate.entersScene ? 2 : 0) + (candidate.moves ? 1 : 0);
 }
 
 function isEligible(candidate: Ranked): boolean {
-  return candidate.followsCue && candidate.entersScene && candidate.moves && candidate.timed;
+  return candidate.entersScene && candidate.moves && candidate.timed;
 }
 
 type TimerRun = { span: Span; gameTimeMs: number };
@@ -233,6 +223,26 @@ export function cutToTimerRun(capture: Sample[], range: RawRange, session: GameT
   const run = timerRun(capture, { from, to }, session);
   if (!run) return null;
   return { first: capture[run.span.from]!.rawIndex, last: capture[run.span.to]!.rawIndex, gameTimeMs: run.gameTimeMs };
+}
+
+function sceneEntered(capture: Sample[], from: number, runStart: number, config: CoreConfig): boolean {
+  for (let index = runStart; index >= from; index--) if (entersSceneAt(capture, index, config)) return true;
+  return false;
+}
+
+export function demonstrationRuns(capture: Sample[], config: CoreConfig = DEFAULT_CONFIG): TimerRunRange[] {
+  const runs: TimerRunRange[] = [];
+  let from = 0;
+  while (from < capture.length) {
+    const run = timerRun(capture, { from, to: capture.length - 1 }, 'demonstration');
+    if (!run) break;
+    const { span } = run;
+    if (sceneEntered(capture, from, span.from, config) && movesEnough(travelled(capture, span.from, span.to), config)) {
+      runs.push({ first: capture[span.from]!.rawIndex, last: capture[span.to]!.rawIndex, gameTimeMs: run.gameTimeMs });
+    }
+    from = span.to + 1;
+  }
+  return runs;
 }
 
 function cutToTimer(captures: Sample[][], candidate: Ranked): Ranked {
@@ -269,7 +279,6 @@ function withoutEqualCuts(ranked: Ranked[]): Ranked[] {
 
 export function findDemoRangeCandidates(
   captures: Sample[][],
-  startCueMonoMs: (number | null)[],
   config: CoreConfig = DEFAULT_CONFIG
 ): DemoRangeCandidate[] {
   if (captures.length < 2) return [];
@@ -286,7 +295,7 @@ export function findDemoRangeCandidates(
     return {
       spans: sampleSpans,
       sampleCount: sampleSpans[0]!.to - sampleSpans[0]!.from + 1,
-      ...describe(captures, startCueMonoMs, sampleSpans, config),
+      ...describe(captures, sampleSpans, config),
       timed: false
     };
   });

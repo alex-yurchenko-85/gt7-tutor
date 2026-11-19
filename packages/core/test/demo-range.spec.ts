@@ -1,18 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Sample } from '@gt7/contracts';
-import { cutToTimerRun, findDemoRangeCandidates, matchesReference, type DemoRangeCandidate } from '../src/demo-range.ts';
+import { cutToTimerRun, demonstrationRuns, findDemoRangeCandidates, matchesReference, type DemoRangeCandidate } from '../src/demo-range.ts';
 import { samplesOf, type FixtureName } from './fixtures.ts';
 import { interlagosReference } from './paths.ts';
 import { drive, renumber, straightLine } from './synthetic.ts';
-import manifest from '../../../fixtures/manifest.json' with { type: 'json' };
 
 const demos: FixtureName[] = ['demo-a', 'demo-b', 'demo-c'];
-
-function cueOf(name: FixtureName): number {
-  const cue = manifest.fixtures.find(fixture => fixture.name === name)!.startCueMonoMs;
-  if (cue === null) throw new Error(`${name} has no START cue`);
-  return cue;
-}
 
 function rangesOf(candidate: DemoRangeCandidate | undefined): [number, number][] {
   return (candidate?.ranges ?? []).map(range => [range.first, range.last]);
@@ -30,18 +23,17 @@ function timerAt(capture: Sample[], rawIndex: number): number {
 
 describe('findDemoRangeCandidates', () => {
   const captures = demos.map(name => samplesOf(name));
-  const cues = demos.map(cueOf);
 
   it('three_captures_give_the_demonstration', () => {
-    const [best] = findDemoRangeCandidates(captures, cues);
+    const [best] = findDemoRangeCandidates(captures);
     expect(rangesOf(best)).toEqual(demonstration);
     expect(best!.sampleCount).toBe(966);
     expect(best!.ambiguous).toBe(false);
-    expect(best!.evidence.some(line => line.includes('after START'))).toBe(true);
+    expect(best!.evidence.some(line => line.includes('START'))).toBe(false);
   });
 
   it('cut_the_reference_to_the_demonstration_timer', () => {
-    const candidates = findDemoRangeCandidates(captures, cues);
+    const candidates = findDemoRangeCandidates(captures);
     const eligible = candidates.filter(candidate => !candidate.ambiguous);
     expect(eligible).toHaveLength(1);
     expect(eligible[0]!.timed).toBe(true);
@@ -57,13 +49,13 @@ describe('findDemoRangeCandidates', () => {
   it('cut_ignores_a_background_timer_outside_the_candidate', () => {
     const backgroundStart = captures[2]!.find(sample => sample.rawIndex === 759)!;
     expect(backgroundStart.gameTimerMs).toBeGreaterThan(0);
-    const [best] = findDemoRangeCandidates(captures, cues);
+    const [best] = findDemoRangeCandidates(captures);
     expect(best!.ranges[2]).toEqual({ first: 1054, last: 2019 });
   });
 
   it('candidate_without_a_timer_run_is_not_eligible', () => {
     const untimed = captures[1]!.map(sample => ({ ...sample, gameTimerMs: 0 }));
-    const candidates = findDemoRangeCandidates([captures[0]!, untimed, captures[2]!], cues);
+    const candidates = findDemoRangeCandidates([captures[0]!, untimed, captures[2]!]);
     expect(candidates.length).toBeGreaterThan(0);
     expect(candidates.every(candidate => candidate.ambiguous && !candidate.timed)).toBe(true);
     expect(candidates[0]!.evidence).toContain('Capture 2: no complete timer run');
@@ -90,8 +82,7 @@ describe('findDemoRangeCandidates', () => {
         }));
       return [...capture, ...copy];
     });
-    const copyCues = withCopy.map((capture, index) => capture.find(sample => sample.rawIndex === captures[index]!.at(-1)!.rawIndex + 1)!.receivedMonoMs - 1000);
-    const candidates = findDemoRangeCandidates(withCopy, copyCues);
+    const candidates = findDemoRangeCandidates(withCopy);
     const untimed = candidates.findIndex(candidate => candidate.evidence.includes('Capture 1: no complete timer run') && candidate.sampleCount === 1216);
     expect(untimed).toBeGreaterThan(0);
     expect(candidates[untimed]!.timed).toBe(false);
@@ -100,7 +91,7 @@ describe('findDemoRangeCandidates', () => {
   });
 
   it('background_candidate_ranks_lower', () => {
-    const candidates = findDemoRangeCandidates(captures, cues);
+    const candidates = findDemoRangeCandidates(captures);
     const background = candidates.findIndex(candidate => {
       const range = candidate.ranges[0]!;
       return range.first === 1606 && range.last === 1727;
@@ -109,14 +100,8 @@ describe('findDemoRangeCandidates', () => {
     expect(candidates[background]!.ambiguous).toBe(true);
   });
 
-  it('missing_start_cue_is_allowed', () => {
-    const [best] = findDemoRangeCandidates(captures, [cues[0]!, null, cues[2]!]);
-    expect(rangesOf(best)).toEqual(demonstration);
-    expect(best!.evidence.some(line => line.includes('START cue missing'))).toBe(true);
-  });
-
   it('two_captures_mark_ambiguous', () => {
-    const candidates = findDemoRangeCandidates(captures.slice(0, 2), cues.slice(0, 2));
+    const candidates = findDemoRangeCandidates(captures.slice(0, 2));
     expect(rangesOf(candidates[0])).toEqual(demonstration.slice(0, 2));
     expect(candidates.every(candidate => candidate.ambiguous)).toBe(true);
   });
@@ -130,14 +115,14 @@ describe('findDemoRangeCandidates', () => {
       flags: sample.flags ^ 0x400,
       lap: sample.lap + 5
     }));
-    const [best] = findDemoRangeCandidates([captures[0]!, relabelled, captures[2]!], [cues[0]!, cues[1]! + offsetMs, cues[2]!]);
+    const [best] = findDemoRangeCandidates([captures[0]!, relabelled, captures[2]!]);
     expect(rangesOf(best)).toEqual(demonstration);
     expect(best!.ambiguous).toBe(false);
   });
 
   it('missing_frame_does_not_split_the_demonstration', () => {
     const gapped = captures[2]!.filter(sample => sample.rawIndex !== 1500);
-    const [best] = findDemoRangeCandidates([captures[0]!, captures[1]!, gapped], cues);
+    const [best] = findDemoRangeCandidates([captures[0]!, captures[1]!, gapped]);
     expect(rangesOf(best)).toEqual(demonstration);
     expect(best!.sampleCount).toBe(966);
   });
@@ -153,7 +138,7 @@ describe('findDemoRangeCandidates', () => {
     const away = (fromX: number) => drive(straightLine({ fromX, toX: fromX + 5, speedMps: 20 }).slice(0, 5), { playerSession: false });
     const whole = renumber([...away(5000), ...line]);
     const split = renumber([...away(5000), ...line.slice(0, 471), ...away(-5000), ...line.slice(250)]);
-    const candidates = findDemoRangeCandidates([whole, whole, split], [null, null, null]);
+    const candidates = findDemoRangeCandidates([whole, whole, split]);
     expect(candidates.filter(candidate => candidate.timed)).toHaveLength(1);
     expect(rangesOf(candidates[0])).toEqual([
       [305, 425],
@@ -164,7 +149,59 @@ describe('findDemoRangeCandidates', () => {
 
   it('no_common_movement_gives_no_candidate', () => {
     const elsewhere = captures[1]!.map(sample => ({ ...sample, position: { ...sample.position, x: sample.position.x + 5000 } }));
-    expect(findDemoRangeCandidates([captures[0]!, elsewhere, captures[2]!], cues)).toEqual([]);
+    expect(findDemoRangeCandidates([captures[0]!, elsewhere, captures[2]!])).toEqual([]);
+  });
+});
+
+describe('demonstrationRuns', () => {
+  const demoA = samplesOf('demo-a');
+
+  it('one_recording_gives_the_demonstration_run', () => {
+    expect(demonstrationRuns(demoA)).toEqual([{ first: 457, last: 1422, gameTimeMs: 16082 }]);
+  });
+
+  it('cut_recording_gives_no_proposal', () => {
+    expect(demonstrationRuns(demoA.filter(sample => sample.rawIndex <= 1421))).toEqual([]);
+  });
+
+  it('each_demonstration_recording_gives_one_run', () => {
+    expect(demonstrationRuns(samplesOf('demo-b'))).toEqual([{ first: 738, last: 1703, gameTimeMs: 16082 }]);
+    expect(demonstrationRuns(samplesOf('demo-c'))).toEqual([{ first: 1054, last: 2019, gameTimeMs: 16082 }]);
+  });
+
+  it('background_run_without_a_scene_change_before_it_is_not_a_demonstration', () => {
+    const cut = samplesOf('demo-c').filter(sample => sample.rawIndex <= 2018);
+    expect(cutToTimerRun(cut, { first: 0, last: 2018 }, 'demonstration')).toEqual({ first: 758, last: 970, gameTimeMs: 3533 });
+    expect(demonstrationRuns(cut)).toEqual([]);
+  });
+
+  it('timer_run_that_does_not_move_is_not_a_demonstration', () => {
+    const still = demoA.map(sample => (sample.rawIndex >= 382 ? { ...sample, position: demoA[382]!.position } : sample));
+    expect(cutToTimerRun(still, { first: 0, last: 1727 }, 'demonstration')).toEqual({ first: 457, last: 1422, gameTimeMs: 16082 });
+    expect(demonstrationRuns(still)).toEqual([]);
+  });
+
+  it('empty_recording_gives_no_run', () => {
+    expect(demonstrationRuns([])).toEqual([]);
+  });
+
+  it('every_run_in_one_recording_is_listed_in_order', () => {
+    const end = demoA.at(-1)!;
+    const again = demoA.map((sample, offset) => ({
+      ...sample,
+      rawIndex: end.rawIndex + 1 + offset,
+      packetId: end.packetId + 1 + offset,
+      receivedMonoMs: end.receivedMonoMs + 2000 + offset * (1000 / 60)
+    }));
+    const shift = end.rawIndex + 1 - demoA[0]!.rawIndex;
+    expect(demonstrationRuns([...demoA, ...again])).toEqual([
+      { first: 457, last: 1422, gameTimeMs: 16082 },
+      { first: 457 + shift, last: 1422 + shift, gameTimeMs: 16082 }
+    ]);
+  });
+
+  it('player_runs_are_not_demonstration_runs', () => {
+    expect(demonstrationRuns(samplesOf('ce-clean'))).toEqual([]);
   });
 });
 

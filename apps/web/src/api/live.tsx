@@ -64,7 +64,7 @@ function reportedLatencyMs(player: VoicePlayer): number {
 }
 
 function useArmedClips(deviceId: string, player: VoicePlayer): void {
-  const referenceId = useLiveState(({ state }) => (state?.voiceDeviceId === deviceId && state.trainingMode === 'guided' ? state.referenceId : null));
+  const referenceId = useLiveState(({ state }) => (state?.voiceDeviceId === deviceId ? state.referenceId : null));
   useEffect(() => {
     if (!referenceId) return;
     api

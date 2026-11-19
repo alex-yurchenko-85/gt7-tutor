@@ -1,4 +1,5 @@
 .plot {
+  position: relative;
   border: 1px solid var(--line);
   background: var(--paper);
   min-width: 0;
@@ -206,6 +207,13 @@
   vector-effect: non-scaling-stroke;
 }
 
+.chart-threshold {
+  stroke: var(--mute);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+}
+
 .chart-cursor {
   stroke: var(--ink);
   stroke-width: 1.5;
@@ -273,8 +281,7 @@
   color: var(--mute);
 }
 
-.distance-axis span,
-.distance-axis b {
+.distance-axis span {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
@@ -285,6 +292,68 @@
   transform: none;
 }
 
-.distance-axis b {
+.turn-label {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
   color: var(--ink);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.chart-area {
+  fill: var(--you);
+  fill-opacity: 0.18;
+}
+
+.y-axis .tone-ref {
+  color: var(--ref);
+  font-weight: 700;
+}
+
+.legend .dash {
+  height: 0;
+  border-top: 2px dashed var(--mute);
+}
+
+.track-far {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.track-callout rect {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.track-callout .callout-leader {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.track-callout .callout-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  fill: var(--ink);
+}
+
+.track-callout .callout-detail {
+  font-family: var(--font-body);
+  fill: var(--mute);
+}
+
+.track-callout .callout-dot {
+  fill: var(--ink);
+  stroke: var(--paper);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
 }

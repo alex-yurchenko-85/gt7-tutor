@@ -3,17 +3,18 @@ import { KPH_PER_MPS, WIDE_APEX_M, eventKeyPlace, type AttemptReaction, type Att
 import { api, ApiError } from '../../api/client.ts';
 import { ChannelChart, type ChartBand, type ChartSeries, type ChartTick } from '../../charts/ChannelChart.tsx';
 import { signedTickLabel, tickLabel, tickStep, valueTicks } from '../../charts/ticks.ts';
-import { TrackMap, type TrackLine } from '../../charts/TrackMap.tsx';
+import { TrackMap, type TrackCallout, type TrackLine } from '../../charts/TrackMap.tsx';
+import { SIDE_FACTOR, beyondSide, largestSideInZones, sideScaledLine } from '../../charts/geometry.ts';
 import { DangerRow } from '../../app/DangerRow.tsx';
 import { useWideLayout } from '../../app/layout.ts';
-import { formatDateTime, formatDay, formatTime, metres, signedSeconds } from '../../app/format.ts';
+import { abortReasonText, formatDateTime, formatDay, formatTime, metres, signedSeconds } from '../../app/format.ts';
 import { rememberedExerciseId, rememberExercise } from '../../app/current-exercise.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { useSession } from '../../app/session.tsx';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
-import { apexPlaceText, apexSpeedText, differenceText, reactionText } from '../cues/cue-format.ts';
+import { ON_THE_LINE_M, apexPlaceText, apexSpeedText, differenceText, reactionText } from '../cues/cue-format.ts';
 import { DeleteAttemptsDialog } from '../attempts/DeleteAttemptsDialog.tsx';
 import { groupByTurn, type TurnGroup, type TurnOrder } from './turn-groups.ts';
 import './review.css';
@@ -44,11 +45,7 @@ function timeLossS(review: AttemptReview): (number | null)[] {
 
 
 function turnBands(review: AttemptReview): ChartBand[] {
-  return review.corners.map((corner, index) => {
-    const nextTurnInSM = review.corners[index + 1]?.turnInSM ?? review.lengthM;
-    const toSM = Math.min(corner.apexSM + (corner.apexSM - corner.turnInSM), nextTurnInSM, review.lengthM);
-    return { fromSM: corner.turnInSM, toSM, label: `T${corner.number}` };
-  });
+  return review.corners.map(corner => ({ fromSM: corner.zoneFromSM, toSM: corner.zoneToSM, label: `T${corner.number}` }));
 }
 
 function percent(value: number | null): string {
@@ -77,13 +74,56 @@ function ticksOf(min: number, max: number, label: (value: number, step: number) 
   return values.map(value => ({ value, label: label(value, step) }));
 }
 
-type ChartsProps = { review: AttemptReview; cursorSM: number; onCursor(sM: number): void; onScrub(sM: number): void };
+const SIDE_LIMIT_MIN_M = 1;
+const SIDE_LIMIT_MARGIN = 1.1;
+const SIDE_LIMIT_OF_CUE = 1.5;
+const SIDE_HEIGHT_PHONE = 140;
+const SIDE_HEIGHT_WIDE = 180;
 
-type Channel = { id: string; label: string; series: ChartSeries[]; min: number; max: number; ticks: ChartTick[]; turnLabels?: boolean };
+function sideTicks(limit: number): ChartTick[] {
+  const inner = valueTicks(-limit, limit, VALUE_TICK_COUNT).filter(value => Math.abs(value) < limit - 1e-9);
+  const step = tickStep(inner);
+  return [
+    { value: limit, label: 'right' },
+    ...inner.map(value => (value === 0 ? { value, label: 'line', tone: 'ref' as const } : { value, label: tickLabel(Math.abs(value), step) })),
+    { value: -limit, label: 'left' }
+  ];
+}
+
+function sideText(lateral: number | null): string {
+  if (lateral === null) return 'no match here';
+  if (Math.abs(lateral) <= ON_THE_LINE_M) return 'on the line';
+  return `${Math.abs(lateral).toFixed(1)} m ${lateral > 0 ? 'right' : 'left'} of the line`;
+}
+
+function SideLegend({ sideCueDistanceM }: { sideCueDistanceM: number | null }) {
+  return (
+    <div className="legend side-legend">
+      <span>
+        <i className="ref" />
+        reference line
+      </span>
+      <span>
+        <i className="you" />
+        you
+      </span>
+      {sideCueDistanceM === null ? null : (
+        <span>
+          <i className="dash" />
+          side cue distance, {sideCueDistanceM} m
+        </span>
+      )}
+    </div>
+  );
+}
+
+type ChartsProps = { review: AttemptReview; sideCueDistanceM: number | null; cursorSM: number; onCursor(sM: number): void; onScrub(sM: number): void };
+
+type Channel = { id: string; label: string; series: ChartSeries[]; min: number; max: number; ticks: ChartTick[]; turnLabels?: boolean; marks?: number[]; height?: number; area?: boolean };
 
 type Derived = { refSpeed: (number | null)[]; youSpeed: (number | null)[]; loss: (number | null)[]; bands: ChartBand[]; channels: Channel[] };
 
-function derive(review: AttemptReview): Derived {
+function derive(review: AttemptReview, sideCueDistanceM: number | null, sideHeight: number): Derived {
   const refSpeed = scaled(review.reference.v, KPH_PER_MPS);
   const youSpeed = scaled(review.attempt.v, KPH_PER_MPS);
   const speeds = finite([refSpeed, youSpeed]);
@@ -91,6 +131,7 @@ function derive(review: AttemptReview): Derived {
   const lossLimit = Math.max(0.1, ...finite([loss]).map(Math.abs)) * 1.1;
   const speedMin = Math.min(...speeds) * 0.9;
   const speedMax = Math.max(...speeds) * 1.05;
+  const sideLimit = Math.max(SIDE_LIMIT_MIN_M, (sideCueDistanceM ?? 0) * SIDE_LIMIT_OF_CUE, ...finite([review.attempt.lat]).map(Math.abs).map(value => value * SIDE_LIMIT_MARGIN));
   const pair = (ref: (number | null)[], you: (number | null)[]): ChartSeries[] => [
     { name: 'ref', values: ref },
     { name: 'you', values: you }
@@ -104,14 +145,29 @@ function derive(review: AttemptReview): Derived {
       { id: 'speed', label: 'Speed, km/h', series: pair(refSpeed, youSpeed), min: speedMin, max: speedMax, ticks: ticksOf(speedMin, speedMax, tickLabel), turnLabels: true },
       { id: 'throttle', label: 'Throttle', series: pair(review.reference.th, review.attempt.th), min: 0, max: 1, ticks: SHARE_TICKS },
       { id: 'brake', label: 'Brake', series: pair(review.reference.br, review.attempt.br), min: 0, max: 1, ticks: SHARE_TICKS },
+      {
+        id: 'side',
+        label: 'Distance from the reference line, m',
+        series: [
+          { name: 'ref', values: review.attempt.lat.map(value => (value === null ? null : 0)) },
+          { name: 'you', values: review.attempt.lat }
+        ],
+        min: -sideLimit,
+        max: sideLimit,
+        ticks: sideTicks(sideLimit),
+        marks: sideCueDistanceM === null ? [] : [sideCueDistanceM, -sideCueDistanceM],
+        height: sideHeight,
+        area: true
+      },
       { id: 'time', label: 'Time lost to the reference, s', series: [{ name: 'ink', values: loss }], min: -lossLimit, max: lossLimit, ticks: ticksOf(-lossLimit, lossLimit, signedTickLabel) }
     ]
   };
 }
 
-function Charts({ review, cursorSM, onCursor, onScrub }: ChartsProps) {
+function Charts({ review, sideCueDistanceM, cursorSM, onCursor, onScrub }: ChartsProps) {
+  const wide = useWideLayout();
   const index = Math.min(review.reference.v.length - 1, Math.round(cursorSM / review.gridM));
-  const { refSpeed, youSpeed, loss, bands, channels } = useMemo(() => derive(review), [review]);
+  const { refSpeed, youSpeed, loss, bands, channels } = useMemo(() => derive(review, sideCueDistanceM, wide ? SIDE_HEIGHT_WIDE : SIDE_HEIGHT_PHONE), [review, sideCueDistanceM, wide]);
   const kph = (value: number | null) => (value === null ? 'no data' : `${Math.round(value)}`);
   const lossAt = at(loss, index);
   const lateral = at(review.attempt.lat, index);
@@ -119,13 +175,15 @@ function Charts({ review, cursorSM, onCursor, onScrub }: ChartsProps) {
     speed: both(kph(at(refSpeed, index)), kph(at(youSpeed, index))),
     throttle: both(percent(at(review.reference.th, index)), percent(at(review.attempt.th, index))),
     brake: both(percent(at(review.reference.br, index)), percent(at(review.attempt.br, index))),
-    time: lossAt === null ? 'no match here' : `${lossAt >= 0 ? '+' : ''}${lossAt.toFixed(2)} s${lateral === null ? '' : `, ${Math.abs(lateral).toFixed(1)} m from the line`}`
+    time: lossAt === null ? 'no match here' : `${lossAt >= 0 ? '+' : ''}${lossAt.toFixed(2)} s`,
+    side: sideText(lateral)
   };
   return (
     <div className="charts">
       {channels.map(channel => (
         <ChannelChart
           key={channel.id}
+          legend={channel.id === 'side' ? <SideLegend sideCueDistanceM={sideCueDistanceM} /> : null}
           gridM={review.gridM}
           lengthM={review.lengthM}
           cursorSM={cursorSM}
@@ -153,13 +211,11 @@ function lostText(lostMs: number | null): string | null {
 
 function TurnGroupList({ group, selected, onSelect }: { group: TurnGroup; selected: number | null; onSelect(index: number): void }) {
   const badge = group.turn === null ? 'Whole section' : `T${group.turn}`;
-  const range = group.fromSM === null || group.toSM === null ? null : `${Math.round(group.fromSM)}–${Math.round(group.toSM)} m`;
   const lost = lostText(group.lostMs);
   return (
-    <div className="turn-group" role="group" aria-label={[badge, range, lost].filter(Boolean).join(' ')}>
+    <div className="turn-group" role="group" aria-label={[badge, lost].filter(Boolean).join(' · ')}>
       <div className="turn-head" aria-hidden="true">
         <span className="turn-badge">{badge}</span>
-        <span className="turn-range">{range}</span>
         {lost ? <b className={group.lostMs! > 0 ? 'turn-lost' : 'turn-gained'}>{lost}</b> : null}
       </div>
       {group.items.map(({ difference, index }) => (
@@ -257,9 +313,43 @@ const Reactions = memo(function Reactions({ reactions }: { reactions: AttemptRea
   );
 });
 
-function ReviewMap({ review, cursorSM, selected, onSelect }: { review: AttemptReview; cursorSM: number; selected: number | null; onSelect(index: number): void }) {
+type MapScale = 'true' | 'side';
+
+const MAP_LABEL = 'Map of the reference line and your line';
+
+function sideCallouts(review: AttemptReview): TrackCallout[] {
+  return largestSideInZones(review.corners, review.attempt.lat, review.gridM).map(peak => ({
+    turn: peak.turn,
+    sM: peak.sM,
+    side: peak.lat < 0 ? -1 : 1,
+    title: `T${peak.turn} · ${Math.abs(peak.lat).toFixed(1)} m ${peak.lat < 0 ? 'left' : 'right'}`,
+    detail: `at ${metres(peak.sM)}`
+  }));
+}
+
+function MapSwitch({ scale, onScale }: { scale: MapScale; onScale(scale: MapScale): void }) {
+  return (
+    <div className="map-switch" role="group" aria-label="Side distance on the map">
+      <button type="button" aria-pressed={scale === 'true'} onClick={() => onScale('true')}>
+        True scale
+      </button>
+      <button type="button" aria-pressed={scale === 'side'} onClick={() => onScale('side')}>
+        Side distance × {SIDE_FACTOR}
+      </button>
+    </div>
+  );
+}
+
+type ReviewMapProps = { review: AttemptReview; sideCueDistanceM: number | null; cursorSM: number; selected: number | null; onSelect(index: number): void };
+
+function ReviewMap({ review, sideCueDistanceM, cursorSM, selected, onSelect }: ReviewMapProps) {
+  const [scale, setScale] = useState<MapScale>('true');
+  const side = scale === 'side';
   const reference = useMemo(() => line(review, review.reference), [review]);
-  const attempt = useMemo(() => line(review, review.attempt), [review]);
+  const trueAttempt = useMemo(() => line(review, review.attempt), [review]);
+  const sideAttempt = useMemo(() => (side ? sideScaledLine(reference, review.attempt.lat, SIDE_FACTOR) : null), [side, reference, review]);
+  const far = useMemo(() => (sideAttempt && sideCueDistanceM !== null ? beyondSide(sideAttempt, review.attempt.lat, sideCueDistanceM) : null), [sideAttempt, sideCueDistanceM, review]);
+  const callouts = useMemo(() => (side ? sideCallouts(review) : []), [side, review]);
   const corners = useMemo(() => cornerMarks(review.corners), [review.corners]);
   const marks = useMemo(
     () => [
@@ -274,20 +364,47 @@ function ReviewMap({ review, cursorSM, selected, onSelect }: { review: AttemptRe
     ],
     [corners, review.findings, selected, onSelect]
   );
+  const label = side
+    ? `${MAP_LABEL}. The side distance of your line is drawn ${SIDE_FACTOR} times larger.${callouts.length > 0 ? ` ${callouts.map(callout => callout.title.replace(' · ', ' ')).join(', ')}.` : ''}`
+    : MAP_LABEL;
   return (
     <div className="review-map">
-      <div className="plot">
-        <TrackMap label="Map of the reference line and your line" reference={reference} attempt={attempt} cursorSM={cursorSM} marks={marks} />
+      <div className="map-head">
+        <div className="legend map-legend">
+          <span>
+            <i className="ref" />
+            reference line
+          </span>
+          <span>
+            <i className="you" />
+            you
+          </span>
+          {side && sideCueDistanceM !== null ? (
+            <span>
+              <i className="far" />
+              more than {sideCueDistanceM} m from the line
+            </span>
+          ) : null}
+        </div>
+        <MapSwitch scale={scale} onScale={setScale} />
       </div>
+      <div className="plot">
+        <TrackMap
+          label={label}
+          reference={reference}
+          attempt={sideAttempt ?? trueAttempt}
+          far={far}
+          callouts={callouts}
+          cursorSM={cursorSM}
+          marks={marks}
+        />
+      </div>
+      {side ? (
+        <p className="map-note">
+          Your line is drawn {SIDE_FACTOR} times farther from the reference line than it was, so that a difference of 1 m shows. The labels give the true distance at the largest point of each turn.
+        </p>
+      ) : null}
       <div className="legend">
-        <span>
-          <i className="ref" />
-          reference
-        </span>
-        <span>
-          <i className="you" />
-          you
-        </span>
         <span>A gap in your line is a place without a match</span>
         <span>Map orientation is not confirmed</span>
       </div>
@@ -295,23 +412,17 @@ function ReviewMap({ review, cursorSM, selected, onSelect }: { review: AttemptRe
   );
 }
 
-const NO_GAME_TIME_TEXT = 'This attempt has no time from the game. Only a complete attempt with a time from the game can become a reference.';
-
-function promoteProblem(error: unknown): string {
-  return error instanceof ApiError && error.code === 'no-game-time' ? NO_GAME_TIME_TEXT : errorText(error);
-}
-
 function AttemptFacts({ attempt }: { attempt: AttemptSummary }) {
   const [message, setMessage] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
-  const promotable = attempt.completion === 'complete' && attempt.timeMs !== null;
+  const promotable = attempt.completion === 'complete';
   const promote = async () => {
     setProblem(null);
     try {
       await api.promoteAttempt(attempt.id);
       setMessage('This attempt is now the active reference. The demonstration stays in the reference history.');
     } catch (error) {
-      setProblem(promoteProblem(error));
+      setProblem(errorText(error));
     }
   };
   return (
@@ -322,16 +433,12 @@ function AttemptFacts({ attempt }: { attempt: AttemptSummary }) {
           frames {attempt.first}–{attempt.last}
         </b>
       </div>
-      <div className="kv">
-        <span>Voice</span>
-        <b>{attempt.mode === 'guided' ? 'with voice' : 'without voice'}</b>
-      </div>
       {promotable ? (
         <button className="btn ghost" type="button" onClick={() => void promote()}>
           Use this attempt as a reference
         </button>
       ) : (
-        <p className="sub">Only a complete attempt with a time from the game can become a reference.</p>
+        <p className="sub">Only a complete attempt can become a reference.</p>
       )}
       {problem ? (
         <p className="error" role="alert">
@@ -374,7 +481,7 @@ function useFrameCursor(): [number, (sM: number) => void, (sM: number) => void] 
   return [cursorSM, setNow, scrub];
 }
 
-function ReviewBody({ attempt, review, references }: { attempt: AttemptSummary; review: AttemptReview; references: ReferenceInfo[] }) {
+function ReviewBody({ attempt, review, references, sideCueDistanceM }: { attempt: AttemptSummary; review: AttemptReview; references: ReferenceInfo[]; sideCueDistanceM: number | null }) {
   const wide = useWideLayout();
   const { navigate } = useRouter();
   const [cursorSM, setCursorNow, scrub] = useFrameCursor();
@@ -387,8 +494,8 @@ function ReviewBody({ attempt, review, references }: { attempt: AttemptSummary; 
     [review.findings, setCursorNow]
   );
   const switchReference = (referenceId: string) => navigate(paths.review(attempt.id, referenceId === attempt.referenceId ? undefined : referenceId));
-  const map = <ReviewMap review={review} cursorSM={cursorSM} selected={selected} onSelect={select} />;
-  const charts = <Charts review={review} cursorSM={cursorSM} onCursor={setCursorNow} onScrub={scrub} />;
+  const map = <ReviewMap review={review} sideCueDistanceM={sideCueDistanceM} cursorSM={cursorSM} selected={selected} onSelect={select} />;
+  const charts = <Charts review={review} sideCueDistanceM={sideCueDistanceM} cursorSM={cursorSM} onCursor={setCursorNow} onScrub={scrub} />;
   const differences = (
     <>
       <Differences findings={review.findings} losses={review.turnLosses} selected={selected} onSelect={select} />
@@ -403,7 +510,7 @@ function ReviewBody({ attempt, review, references }: { attempt: AttemptSummary; 
         {references.map(reference => (
           <option key={reference.id} value={reference.id}>
             {referenceName(reference)}
-            {reference.id === attempt.referenceId ? ' (driven against)' : ''}
+            {reference.id === attempt.referenceId ? ' (used for this attempt)' : ''}
           </option>
         ))}
       </select>
@@ -438,9 +545,9 @@ function ReviewBody({ attempt, review, references }: { attempt: AttemptSummary; 
 
 function ReviewHeader({ attempt, exercise, review }: { attempt: AttemptSummary; exercise: Exercise | null; review: AttemptReview | null }) {
   const { user } = useSession();
-  const gapMs = attempt.completion === 'complete' && attempt.timeMs !== null && review ? attempt.timeMs - review.referenceTimeMs : null;
-  const time = attempt.completion === 'complete' ? formatTime(attempt.timeMs) : 'no time';
-  const timed = attempt.completion === 'complete' && attempt.timeMs !== null;
+  const complete = attempt.completion === 'complete';
+  const gapMs = complete && review ? attempt.timeMs - review.referenceTimeMs : null;
+  const time = complete ? formatTime(attempt.timeMs) : 'no time';
   return (
     <header className="review-header">
       <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -464,12 +571,12 @@ function ReviewHeader({ attempt, exercise, review }: { attempt: AttemptSummary; 
             )}
           </h1>
           <p className="lede">
-            {attempt.mode === 'guided' ? 'With voice' : 'Without voice'}, {formatDateTime(attempt.startedAt)}.{' '}
-            {attempt.completion !== 'complete' ? 'The attempt did not finish.' : timed ? 'Times from the game.' : 'No time from the game.'}
+            {formatDateTime(attempt.startedAt)}.{' '}
+            {complete ? 'Times from the game.' : `The attempt did not finish${attempt.reason ? ` (${abortReasonText(attempt.reason)})` : ''}.`}
             {gapMs === null ? '' : ' Gap to the compared reference.'}
           </p>
         </div>
-        <Link to={paths.drive(attempt.mode)} className="btn inline" onNavigate={() => rememberExercise(user.id, attempt.exerciseId)}>
+        <Link to={paths.drive()} className="btn inline" onNavigate={() => rememberExercise(user.id, attempt.exerciseId)}>
           Drive again
         </Link>
       </div>
@@ -483,7 +590,7 @@ function DeleteThisAttempt({ attempt }: { attempt: AttemptSummary }) {
   const list = useResource(() => (confirming ? api.attempts(attempt.exerciseId) : Promise.resolve(null)), [attempt.exerciseId, confirming]);
   return (
     <>
-      <DangerRow title="Delete this attempt" hint="Removes the attempt with its cue events and differences." action="Delete this attempt…" onAction={() => setConfirming(true)} />
+      <DangerRow title="Delete this attempt" hint="Removes the attempt with its cues and differences." action="Delete this attempt…" onAction={() => setConfirming(true)} />
       {confirming ? (
         <DeleteAttemptsDialog
           selected={[attempt]}
@@ -513,7 +620,7 @@ export function ReviewView({ attemptId }: { attemptId: string }) {
   return (
     <section>
       <ReviewHeader attempt={data} exercise={exercise.data ?? null} review={review.data ?? null} />
-      {review.data ? <ReviewBody key={review.data.referenceId} attempt={data} review={review.data} references={references.data ?? []} /> : <p className="sub">Comparing with the reference…</p>}
+      {review.data && !exercise.loading ? <ReviewBody key={review.data.referenceId} attempt={data} review={review.data} references={references.data ?? []} sideCueDistanceM={exercise.data?.sideCueDistanceM ?? null} /> : <p className="sub">Comparing with the reference…</p>}
       <DeleteThisAttempt attempt={data} />
     </section>
   );

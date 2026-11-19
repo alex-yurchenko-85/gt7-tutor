@@ -24,8 +24,7 @@ describe('router', () => {
     expect(paths.setup()).toBe('/setup');
   });
 
-  it('drive_path_with_mode', () => {
+  it('drive_path', () => {
     expect(paths.drive()).toBe('/drive');
-    expect(paths.drive('baseline')).toBe('/drive?mode=baseline');
   });
 });

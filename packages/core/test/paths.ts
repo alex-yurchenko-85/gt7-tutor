@@ -10,7 +10,7 @@ import { drive, FRAME_MS, type Waypoint } from './synthetic.ts';
 let interlagos: ReferencePath | null = null;
 
 export function interlagosReference(): ReferencePath {
-  interlagos ??= buildReference(between(samplesOf('demo-a'), 457, 1422), 'flying');
+  interlagos ??= buildReference(between(samplesOf('demo-a'), 457, 1422));
   return interlagos;
 }
 
@@ -61,7 +61,7 @@ export function hairpinCorners(separationM: number): Vec3[] {
 }
 
 export function pathFromCorners(corners: Vec3[], speedMps = 20): ReferencePath {
-  return buildReference(drive(polyline(corners, speedMps)), 'flying');
+  return buildReference(drive(polyline(corners, speedMps)));
 }
 
 export function shift(samples: Sample[], offset: Partial<Vec3>): Sample[] {
@@ -96,7 +96,7 @@ export function profiledSamples(lengthM: number, at: (sM: number) => ProfilePoin
 }
 
 export function profiledPath(lengthM: number, at: (sM: number) => ProfilePoint): ReferencePath {
-  return buildReference(profiledSamples(lengthM, at), 'flying');
+  return buildReference(profiledSamples(lengthM, at));
 }
 
 export type Zone = { fromM: number; toM: number };
@@ -135,5 +135,5 @@ export function bendWaypoints(bend: 1 | -1, speedMps: number, outsideM: (sM: num
 }
 
 export function bendPath(bend: 1 | -1, speedMps = 20): ReferencePath {
-  return buildReference(drive(bendWaypoints(bend, speedMps)), 'flying');
+  return buildReference(drive(bendWaypoints(bend, speedMps)));
 }

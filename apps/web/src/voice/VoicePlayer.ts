@@ -34,6 +34,7 @@ type Manifest = { clips: Record<string, { file: string; durationMs: number }> };
 type Playing = { sources: VoiceSource[]; cueId: string | null; generation: number };
 
 const CLOCK_SAMPLES = 30;
+export const CLIPS_TEXT = 'The voice clips did not load. Reload the page.';
 
 export type VoiceTestResult = { reportedLatencyMs: number };
 
@@ -79,9 +80,9 @@ export class VoicePlayer {
         .filter(key => !this.buffers.has(key))
         .map(async key => {
           const entry = manifest.clips[key];
-          if (!entry) throw new Error(`No clip for ${key}`);
+          if (!entry) throw new Error(CLIPS_TEXT, { cause: `No clip for ${key}` });
           const response = await this.options.fetch(`${this.audioBase}${entry.file}`);
-          if (!response.ok) throw new Error(`Clip ${key} did not load`);
+          if (!response.ok) throw new Error(CLIPS_TEXT, { cause: `Clip ${key} did not load` });
           this.buffers.set(key, await context.decodeAudioData(await response.arrayBuffer()));
         })
     );
@@ -125,7 +126,7 @@ export class VoicePlayer {
     this.manifest ??= this.options
       .fetch(`${this.audioBase}manifest.json`)
       .then(async response => {
-        if (!response.ok) throw new Error('The clip list did not load');
+        if (!response.ok) throw new Error(CLIPS_TEXT, { cause: 'The clip list did not load' });
         return (await response.json()) as Manifest;
       })
       .catch(error => {

@@ -7,6 +7,7 @@ import type { ReferenceCueEvent } from './cue-events.ts';
 import { cueText } from './cue-text.ts';
 import { ACTIVE_GUIDANCE } from './guidance.ts';
 import { Matcher, type Match } from './match.ts';
+import { startMissed } from './missed-start.ts';
 import type { ReferenceAnalysis } from './reference-analysis.ts';
 import { StepCursor, type Step } from './step-cursor.ts';
 import { gapToReferenceMs } from './timing.ts';
@@ -15,7 +16,7 @@ export type RunNow = { deviceDelayMs: number; phraseMs: (clip: string) => number
 
 export type NextCue = { text: string; inM: number };
 
-export type TrainingRunOptions = { guided: boolean; nextGeneration: () => number };
+export type TrainingRunOptions = { nextGeneration: () => number };
 
 export type RunStep = {
   attemptEvents: AttemptEvent[];
@@ -27,6 +28,7 @@ export type RunStep = {
   suppressed: Suppressed[];
   guidance: LiveGuidance;
   startSamples: Sample[];
+  startMissed: boolean;
 };
 
 type Upcoming = { event: ReferenceCueEvent; text: string };
@@ -52,6 +54,8 @@ export class TrainingRun {
   private current = 0;
   private previous: Sample | null = null;
   private guidance: LiveGuidance = ACTIVE_GUIDANCE;
+  private previousTimerMs: number | null = null;
+  private attemptRunEnded = false;
 
   constructor(analysis: ReferenceAnalysis, config: CoreConfig, settings: CoachSettings, options: TrainingRunOptions) {
     this.nextCues = nextCueCursor(analysis.events, settings.mutedKeys);
@@ -70,26 +74,42 @@ export class TrainingRun {
   }
 
   step(sample: Sample, now: RunNow): RunStep {
-    const attemptEvents = this.tracker.step(sample);
+    const attemptEvents = this.ended(this.tracker.step(sample));
     const startSamples = attemptEvents.some(event => event.type === 'started') ? this.start(sample) : [];
     this.previous = sample;
-    const idle: RunStep = { attemptEvents, match: null, gapMs: null, nextCue: null, cue: null, target: null, suppressed: [], guidance: this.guidance, startSamples };
-    if (this.state !== 'driving' && this.state !== 'paused') return idle;
+    const missed = this.startMissed(sample);
+    const idle: RunStep = { attemptEvents, match: null, gapMs: null, nextCue: null, cue: null, target: null, suppressed: [], guidance: this.guidance, startSamples, startMissed: missed };
+    if (!this.attemptRunning()) return idle;
     const match = this.matcher.step(sample);
     const gapMs = match && sample.gameTimerMs > 0 ? gapToReferenceMs(match, sample.gameTimerMs) : null;
     const located = { ...idle, match, gapMs, nextCue: this.nextCue(match) };
-    if (!this.options.guided) return located;
     const output = this.coach.step({ sample, match, nowMonoMs: sample.receivedMonoMs, generation: this.current, ...now });
     this.guidance = output.guidance;
     return { ...located, cue: output.cue, target: output.target, suppressed: output.suppressed, guidance: output.guidance };
   }
 
   tick(nowMonoMs: number): AttemptEvent[] {
-    return this.tracker.tick(nowMonoMs);
+    return this.ended(this.tracker.tick(nowMonoMs));
   }
 
   abortByUser(nowMonoMs: number): AttemptEvent[] {
-    return this.tracker.abortByUser(nowMonoMs);
+    return this.ended(this.tracker.abortByUser(nowMonoMs));
+  }
+
+  private ended(events: AttemptEvent[]): AttemptEvent[] {
+    if (events.some(event => event.type === 'finished' || event.type === 'aborted')) this.attemptRunEnded = true;
+    return events;
+  }
+
+  private startMissed(sample: Sample): boolean {
+    const watch = { attemptRunning: this.attemptRunning(), attemptRunEnded: this.attemptRunEnded, previousTimerMs: this.previousTimerMs };
+    if (sample.gameTimerMs === 0) this.attemptRunEnded = false;
+    this.previousTimerMs = sample.gameTimerMs;
+    return startMissed(watch, sample);
+  }
+
+  private attemptRunning(): boolean {
+    return this.state === 'driving' || this.state === 'paused';
   }
 
   private start(sample: Sample): Sample[] {
