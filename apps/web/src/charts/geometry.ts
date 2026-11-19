@@ -1,7 +1,7 @@
 import type { TrackLine } from './TrackMap.tsx';
 
 export const WIDTH = 800;
-const PAD = 30;
+const PAD = 48;
 const MIN_HEIGHT = 220;
 
 export type Point = [number, number];

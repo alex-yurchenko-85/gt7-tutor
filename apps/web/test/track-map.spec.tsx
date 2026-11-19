@@ -90,6 +90,29 @@ describe('track map', () => {
     expect(apart(boxes[0]!, boxes[2]!)).toBe(true);
   });
 
+  it('apex_mark_on_the_outer_edge_stays_inside_the_map', () => {
+    const points: [number, number][] = [];
+    for (let z = 100; z > 0; z -= 2) points.push([-100, z]);
+    for (let step = 0; step <= 157; step++) {
+      const angle = Math.PI + (step / 157) * Math.PI;
+      points.push([100 * Math.cos(angle), 100 * Math.sin(angle)]);
+    }
+    for (let z = 2; z <= 100; z += 2) points.push([100, z]);
+    const horseshoe: TrackLine = { gridM: 2, x: points.map(point => point[0]), z: points.map(point => point[1]) };
+    const topIndex = points.reduce((best, point, index) => (point[1] < points[best]![1] ? index : best), 0);
+    render(<TrackMap label="Map" reference={horseshoe} marks={[{ sM: topIndex * 2, kind: 'apex', label: '1', title: 'Apex of turn 1' }]} />);
+    const [, , width, height] = document.querySelector('svg')!.getAttribute('viewBox')!.split(' ').map(Number);
+    const badge = document.querySelectorAll('.track-mark.apex circle')[1]!;
+    const cx = Number(badge.getAttribute('cx'));
+    const cy = Number(badge.getAttribute('cy'));
+    const r = Number(badge.getAttribute('r'));
+    const stroke = 2;
+    expect(cy - r - stroke).toBeGreaterThanOrEqual(0);
+    expect(cy + r + stroke).toBeLessThanOrEqual(height!);
+    expect(cx - r - stroke).toBeGreaterThanOrEqual(0);
+    expect(cx + r + stroke).toBeLessThanOrEqual(width!);
+  });
+
   it('callouts_at_the_same_distance_keep_their_own_turn', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const both = [
