@@ -5,5 +5,5 @@
     "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": ["*.ts", "demo/*.ts", "setup/*.ts", "testing/*.ts", "../vitest.config.ts"]
+  "include": ["*.ts", "setup/*.ts", "start/*.ts", "testing/*.ts", "../vitest.config.ts"]
 }

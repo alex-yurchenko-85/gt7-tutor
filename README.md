@@ -62,89 +62,88 @@ The **Drive** button opens the drive mode for the current exercise. On a phone, 
 
 ## What you need
 
-- A computer with macOS or Linux for the quick setup. Windows works with the manual setup.
-- Docker, which runs the database.
-- Node.js 26 or later and pnpm. On macOS, the setup script can install them with Homebrew.
+- A computer with macOS or Linux.
+- Docker Desktop (or Docker Engine on Linux), which runs the database.
+- Node.js 26 or later. Install it with the installer from <https://nodejs.org/en/download>. You do not need pnpm or Homebrew.
 - A current browser on that computer or on a phone on the same home network.
 - For training: a PS5 with Gran Turismo 7 on the same home network. The demo needs no PS5.
 
 ## Install Docker
 
-Install Docker before you run the setup. The setup script does not install it.
+Install Docker before you run `./start.sh`. The start script does not install it.
 
 - macOS: install [Docker Desktop](https://www.docker.com/products/docker-desktop/). Open it once and wait until it shows that it is running.
 - Linux: install [Docker Desktop](https://www.docker.com/products/docker-desktop/) or [Docker Engine](https://docs.docker.com/engine/install/). Make sure that your user can run `docker info` without an error.
 
 ## Quick setup (macOS and Linux)
 
-1. Download GT7 Tutor. On the GitHub page of the project, select **Code**, then **Download ZIP**, and unpack the file. If you use Git, clone the repository instead.
-2. Open a terminal. On macOS, open **Terminal** from Applications → Utilities.
-3. Go to the GT7 Tutor folder. Type `cd` with a space, drag the folder into the terminal window, and press Enter.
-4. Start the setup:
+1. Install Docker Desktop (see [Install Docker](#install-docker)) and [Node.js 26 or later](https://nodejs.org/en/download) with their installers.
+2. Download GT7 Tutor. On the GitHub page of the project, select **Code**, then **Download ZIP**, and unpack the file. If you use Git, clone the repository instead.
+3. Start GT7 Tutor in a terminal:
+   - On macOS, open **Terminal** from Applications → Utilities.
+   - Type `cd` with a space, drag the folder into the terminal window, and press Enter.
+   - Run this command:
 
-   ```sh
-   sh tools/setup/setup.sh
-   ```
+     ```sh
+     ./start.sh
+     ```
 
-The script checks Docker, Node.js and pnpm, and then prepares GT7 Tutor.
-It prints each step in plain English.
-On macOS with [Homebrew](https://brew.sh), it installs Node.js and pnpm if they are missing.
-On Linux, it stops and gives the install link for a missing tool. Install the tool, then run the script again.
-The script is safe to run again.
-To see the steps without a change to your computer, run `sh tools/setup/setup.sh --dry-run`.
+The script checks Node.js and Docker.
+If one of them is missing or Docker is not running, the script stops and tells you what to do.
+The script does not install programs on your computer.
+It copies `.env.example` to `.env` if `.env` does not exist. It never changes an existing `.env`.
 
-When the script finishes, start GT7 Tutor:
+The first start installs the packages and builds GT7 Tutor. This takes a few minutes.
+Then the script starts the database, prepares it and starts GT7 Tutor.
+When GT7 Tutor is ready, the script shows the addresses, for example:
 
-```sh
-pnpm start
+```text
+✓ Server started
+
+On this computer:  http://localhost:3000
+On your phone:     http://192.0.2.10:3000
+                   [QR code]
+
+Log of this start: data/logs/2026-11-19_12-04-31.log
+Press Ctrl+C to stop.
 ```
 
-Then open <http://localhost:3000> in a browser on the same computer.
+Open the address of `On this computer` in a browser on the same computer.
 The first visit asks you to create a profile.
+Run `./start.sh` for each start. After an update, the script prepares GT7 Tutor again.
 
 ## Manual setup
 
-Use this path on Windows, or when you want to do each step yourself.
-The guided setup is not available on Windows yet.
+Use this path when you want to do each step yourself.
 
 1. Install Docker (see above), [Node.js 26 or later](https://nodejs.org/en/download) and [pnpm](https://pnpm.io/installation).
 2. Open a terminal in the GT7 Tutor folder.
 3. Run these commands one by one:
 
    ```sh
-   pnpm setup:local
+   cp .env.example .env
+   pnpm install
+   docker compose up -d --wait postgres
+   pnpm db:migrate
+   pnpm build
    pnpm start
    ```
 
-`pnpm setup:local` does the same work as the last step of the setup script.
-It copies `.env.example` to `.env` if `.env` does not exist, installs the packages, starts the database, prepares it and builds the application.
-It never changes an existing `.env`.
-
-If you prefer the single commands, they are:
-
-```sh
-cp .env.example .env
-pnpm install
-pnpm db:up
-pnpm db:migrate
-pnpm build
-pnpm start
-```
-
-On Windows, use `copy .env.example .env` for the first command.
+The first command copies the example settings. Do not run it if you already have a `.env` file.
 
 ## Try the demo without a console
 
 The demo shows GT7 Tutor with recorded data.
 You need no PS5 and no game.
-After the setup, run:
+Run:
 
 ```sh
-pnpm demo
+./start.sh --demo
 ```
 
-The first start records a demo history, which takes a few seconds.
-Then the command prints:
+The first start prepares GT7 Tutor, as in the quick setup.
+Then the script records a demo history, which takes a few seconds.
+When the demo is ready, the script shows:
 
 - the address for this computer: <http://localhost:3001>
 - the address for a phone on the same network, and a QR code of it
@@ -159,10 +158,9 @@ After it, the summary shows the time from the game and one focus for the next at
 
 The demo uses its own database and the folder `.demo/`.
 It never changes your own profiles and attempts.
-The demo server writes its messages to `.demo/server.log`.
+The log of each demo start is in `data/logs/`. Its name ends with `-demo.log`.
 Press Ctrl+C to stop the demo.
-To start the demo again from the beginning, run `pnpm demo --reset`.
-You can also run the setup and the demo in one step: `sh tools/setup/setup.sh --demo`.
+To start the demo again from the beginning, run `./start.sh --demo --reset`.
 
 ## Connect the PS5
 
@@ -174,14 +172,12 @@ The console address can change after a router restart. Check it again if recepti
 The computer must accept UDP on port 33740.
 On macOS, allow incoming connections for Node.js when the system asks.
 On Linux with `ufw`, run `sudo ufw allow 33740/udp`.
-On Windows, allow Node.js in the firewall for private networks.
 
 ## Use a phone
 
 The phone and the computer must be on the same home network.
-Open the address that the computer shows, for example `http://192.0.2.10:3000`.
-`pnpm demo` prints this address and a QR code for the demo.
-For your own server, use the address of the computer on the home network, with port 3000.
+`./start.sh` shows the address for the phone and a QR code of it, for example `http://192.0.2.10:3000`.
+Scan the QR code with the phone camera, or type the address in the phone browser.
 Your computer firewall must accept TCP on that port.
 
 Two limits come from the phone browser, not from GT7 Tutor:
@@ -198,16 +194,22 @@ Until GT7 Tutor has a fix, turn off auto-lock on the iPhone for the whole sessio
 
 - Press Ctrl+C in the terminal to stop GT7 Tutor or the demo.
 - The database keeps running in Docker. It starts again with Docker.
-- To start GT7 Tutor again, open a terminal in its folder and run `pnpm start`.
+- To start GT7 Tutor again, open a terminal in its folder and run `./start.sh`.
 - To stop the database too, run `docker compose stop`.
 
 ## Common problems
 
+Each start writes a log file to `data/logs/`. The folder keeps the newest 10 logs.
+If you report a problem in an issue, attach the log of that start.
+Read the log before you attach it. It can contain addresses on your home network.
+
 | Problem | What to do |
 | --- | --- |
-| `Docker is not running` | Start Docker Desktop (macOS) or the Docker service (Linux). Then run the command again. |
-| `Node.js 26 or later is required` | Install Node.js from <https://nodejs.org/en/download>. Then run the command again. |
-| Port 3000 or 3001 is in use | Stop the other program that uses the port. For the demo, you can also run `pnpm demo --port 3002`. |
+| `Docker is not running` | Start Docker Desktop (macOS) or the Docker service (Linux). Then run `./start.sh` again. |
+| `Install Node.js 26 or later` | Install Node.js from <https://nodejs.org/en/download>. Then run `./start.sh` again. |
+| `Port 3000 is in use` | Stop the other program that uses the port, or run `./start.sh --port 3002`. To change the port for every start, set `HTTP_PORT` in `.env`. |
+| `The database cannot be updated` | A database from an old development version cannot be migrated. Run `./start.sh --reset`. The script asks you to type `yes`. This removes all GT7 Tutor data. For the demo, run `./start.sh --demo --reset`. The demo reset asks no question. |
+| `GT7 Tutor did not start` | Read the last lines of the log that the script shows. |
 | The phone cannot open the address | Check that the phone is on the same network as the computer, not on mobile data. Check the computer firewall. |
 | No sound on the phone | Tap **Use this device for voice** (in **Setup** → **Voice** or on the Drive screen). On an iPhone after a screen lock, reload the page first. Turn off silent mode. Keep the screen on. |
 | `No packets` in **Setup** → **Console** | Check the console address, the firewall rule for UDP 33740, and that GT7 is open past the title screen. |
@@ -264,8 +266,8 @@ Stop a running server before `pnpm test`: only one program can receive telemetry
 `packages/` holds the core logic, the shared contracts, the capture code and the catalogue builder.
 `content/` holds the catalogue file (`content/catalogue/`) and the voice clips (`content/audio/`).
 `apps/server/db/migrations/` holds the database migrations. Each schema change is a new migration file.
-`tools/setup/` holds the guided setup. `tools/demo/` holds the demo command.
-`fixtures/` holds short recorded captures for tests and for the demo. They do not contain the console address.
+`start.sh` and `tools/start/` hold the start script. `tools/setup/` holds `pnpm db:reset`.
+`fixtures/` holds short recorded captures for tests and for `./start.sh --demo`. They do not contain the console address.
 `tools/` holds the capture, replay and evaluation commands.
 The landing page at gt7tutor.app lives in <https://github.com/alex-yurchenko-85/gt7-tutor-site>. `.github/assets/` holds the logo files of this README.
 PostgreSQL stores metadata, attempts and statistics. Raw capture files remain the source of truth for telemetry.

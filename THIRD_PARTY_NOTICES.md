@@ -59,4 +59,4 @@ No file in this repository contains code from another GPL project.
 
 ## Packages used by tools
 
-- `uqr` 0.1.3 (<https://github.com/unjs/uqr>), licence MIT, no dependencies, no network access. `pnpm demo` (`tools/demo/addresses.ts`) uses it to print the QR code of the phone address. The package is a dependency. No code is copied.
+- `uqr` 0.1.3 (<https://github.com/unjs/uqr>), licence MIT, no dependencies, no network access. `./start.sh` (`tools/start/ready.ts`) uses it to print the QR code of the phone address. The package is a dependency. No code is copied.

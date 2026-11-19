@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_DATABASE_URL } from '../../../../tools/demo/demo-plan.js';
+import { DEFAULT_DATABASE_URL } from '../../../../tools/start/database.js';
 import knex, { type Knex } from 'knex';
 
 export const migrationsDirectory = fileURLToPath(new URL('../../db/migrations', import.meta.url));
