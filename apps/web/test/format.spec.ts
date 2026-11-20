@@ -1,15 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { formatDateTime, formatGap, shortName, signedSeconds } from '../src/app/format.ts';
+import { formatDateTime, formatGap, signedSeconds } from '../src/app/format.ts';
 
 describe('format', () => {
-  it('short_name_cuts_at_colon_and_length', () => {
-    expect(shortName('Racing Line: Intermediate')).toBe('Racing Line');
-    expect(shortName('  Racing Line  : Intermediate')).toBe('Racing Line');
-    expect(shortName('Starting & Stopping 1')).toBe('Starting & Stopping…');
-    expect(shortName('Cornering Basics 1')).toBe('Cornering Basics 1');
-    expect(shortName('Yangwang Experience / Racing Lines')).toBe('Yangwang Experience…');
-  });
-
   it('signed_seconds_rounds_and_has_no_sign_at_zero', () => {
     expect(signedSeconds(1630)).toBe('+1.63');
     expect(signedSeconds(-300)).toBe('\u22120.30');

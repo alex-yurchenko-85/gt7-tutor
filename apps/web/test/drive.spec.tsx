@@ -74,19 +74,100 @@ describe('drive', () => {
     expect(document.querySelector('.drive-stage')).toHaveAttribute('data-surface', 'night');
   });
 
-  it('voice_off_is_visible_and_one_click_arms_without_a_voice_device', async () => {
+  it('ready_voice_shows_nothing_on_drive', async () => {
+    setViewportWidth(1280);
+    driveApi().install();
+    const rig = playerRig();
+    await rig.player.unlock();
+    vi.spyOn(rig.player, 'preload').mockResolvedValue(undefined);
+    const view = renderApp({ path: '/drive', player: rig.player });
+    await screen.findByRole('heading', { name: 'Drive' });
+    await waitFor(() => view.sockets.latest);
+    act(() => {
+      view.sockets.latest.open();
+      view.sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: true }) });
+    });
+    await screen.findByRole('button', { name: 'Start an attempt' });
+    await act(async () => undefined);
+    expect(screen.queryByText(/plays the voice/)).toBeNull();
+    expect(screen.queryByText(/cues loaded/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Test' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Voice' })).toBeNull();
+  });
+
+  it('voice_on_another_device_shows_nothing_on_drive', async () => {
+    setViewportWidth(1280);
+    driveApi().install();
+    await openDrive('/drive', liveState({ voiceDeviceId: 'phone', voiceReady: true }));
+    await screen.findByRole('button', { name: 'Start an attempt' });
+    expect(screen.queryByRole('heading', { name: 'The voice is on another device' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Use this device for voice' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Voice' })).toBeNull();
+  });
+
+  it('no_voice_shows_one_notice_with_one_button', async () => {
+    setViewportWidth(390);
+    driveApi().install();
+    const rig = playerRig();
+    vi.spyOn(rig.player, 'preload').mockResolvedValue(undefined);
+    const view = renderApp({ path: '/drive', player: rig.player });
+    await screen.findByRole('heading', { name: 'Drive' });
+    const socket = await waitFor(() => view.sockets.latest);
+    act(() => {
+      socket.open();
+      socket.receive({ type: 'state', state: liveState({ voiceDeviceId: null }) });
+    });
+    const notice = await screen.findByRole('group', { name: 'Voice' });
+    expect(notice).toHaveTextContent('No device plays the voice. The screen still shows the cues.');
+    expect(notice).toHaveClass('notice');
+    expect(notice).not.toHaveClass('bad');
+    expect(within(notice).queryByRole('heading')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'The voice is off' })).toBeNull();
+    expect(screen.queryByText(/A phone must stay unlocked/)).toBeNull();
+    expect(within(notice).getAllByRole('button')).toHaveLength(1);
+    await userEvent.setup().click(within(notice).getByRole('button', { name: 'Use this device for voice' }));
+    await waitFor(() => expect(socket.sent).toContainEqual({ type: 'claim-voice', deviceId: voiceDeviceId(), ready: true }));
+    act(() => socket.receive({ type: 'state', state: liveState({ seq: 2, voiceDeviceId: voiceDeviceId(), voiceReady: true }) }));
+    await waitFor(() => expect(screen.queryByRole('group', { name: 'Voice' })).toBeNull());
+  });
+
+  it('sound_not_started_shows_the_notice', async () => {
+    setViewportWidth(1280);
+    driveApi().install();
+    await openDrive('/drive', liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: false }));
+    const notice = await screen.findByRole('group', { name: 'Voice' });
+    expect(notice).toHaveTextContent('No device plays the voice. The screen still shows the cues.');
+    expect(within(notice).getByRole('button', { name: 'Use this device for voice' })).toBeEnabled();
+  });
+
+  it('attempt_starts_without_a_voice', async () => {
     setViewportWidth(1280);
     const api = driveApi().install();
     await openDrive('/drive', liveState({ voiceDeviceId: null }));
-    expect(screen.getByRole('heading', { name: 'The voice is off' })).toBeInTheDocument();
     expect(screen.queryByRole('group', { name: 'Attempt type' })).not.toBeInTheDocument();
-    expect(screen.queryByText('Attempt type')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start an attempt' })).toBeEnabled();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Start an attempt' }));
-    await waitFor(() => expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'e0000000-0000-4000-8000-000000000001' }));
-    expect(screen.queryByText(/No device plays the voice/)).not.toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(/baseline|guided|without voice|No device plays the voice/i);
+    await waitFor(() => expect(api.calls.filter(call => call.method === 'POST' && call.path === '/api/training/arm')).toHaveLength(1));
+    expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'e0000000-0000-4000-8000-000000000001' });
+    expect(screen.queryByText(/^No device plays the voice\./)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/baseline|guided|without voice/i);
   });
 
+  it('failed_claim_shows_the_error_in_the_notice', async () => {
+    setViewportWidth(1280);
+    driveApi().install();
+    const rig = playerRig();
+    vi.spyOn(rig.player, 'preload').mockRejectedValue(new Error('HTTP 500'));
+    const view = renderApp({ path: '/drive', player: rig.player });
+    await screen.findByRole('heading', { name: 'Drive' });
+    await waitFor(() => view.sockets.latest);
+    act(() => {
+      view.sockets.latest.open();
+      view.sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: null }) });
+    });
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Use this device for voice' }));
+    expect(await within(screen.getByRole('group', { name: 'Voice' })).findByRole('alert')).toHaveTextContent('HTTP 500');
+  });
   it('arming_preloads_reference_clips_first', async () => {
     setViewportWidth(1280);
     const api = driveApi().install();
@@ -127,27 +208,37 @@ describe('drive', () => {
       view.sockets.latest.open();
       view.sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: true }) });
     });
-    expect(await screen.findByText('The voice clips did not load. Reload the page.')).toBeInTheDocument();
+    await screen.findByRole('button', { name: 'Start an attempt' });
+    await act(async () => undefined);
+    expect(screen.queryByText('The voice clips did not load. Reload the page.')).toBeNull();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Start an attempt' }));
     await waitFor(() => expect(api.called('POST /api/training/arm')).toBe(true));
     expect(await screen.findByText('The voice clips did not load. Reload the page.')).toBeInTheDocument();
   });
 
-  it('clip_load_failure_hides_the_loading_line', async () => {
+  it('clip_failure_shows_under_the_start_button_after_stop', async () => {
     setViewportWidth(1280);
-    driveApi().install();
+    const api = driveApi().install();
     const rig = playerRig();
     await rig.player.unlock();
     vi.spyOn(rig.player, 'preload').mockRejectedValue(new Error('The voice clips did not load. Reload the page.'));
     const view = renderApp({ path: '/drive', player: rig.player });
     await screen.findByRole('heading', { name: 'Drive' });
     await waitFor(() => view.sockets.latest);
+    const ready = { voiceDeviceId: voiceDeviceId(), voiceReady: true };
     act(() => {
       view.sockets.latest.open();
-      view.sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: true }) });
+      view.sockets.latest.receive({ type: 'state', state: liveState(ready) });
     });
-    expect(await screen.findByText('The voice clips did not load. Reload the page.')).toBeInTheDocument();
-    expect(screen.queryByText('Loading the cues…')).not.toBeInTheDocument();
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Start an attempt' }));
+    await waitFor(() => expect(api.called('POST /api/training/arm')).toBe(true));
+    act(() => view.sockets.latest.receive({ type: 'state', state: liveState({ ...ready, seq: 2, mode: 'armed', exerciseId: 'e0000000-0000-4000-8000-000000000001' }) }));
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Stop training' }));
+    act(() => view.sockets.latest.receive({ type: 'state', state: liveState({ ...ready, seq: 3 }) }));
+    const start = await screen.findByRole('button', { name: 'Start an attempt' });
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('The voice clips did not load. Reload the page.');
+    expect(start.compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('clip_failure_alert_goes_when_the_voice_moves_to_another_device', async () => {
@@ -163,8 +254,7 @@ describe('drive', () => {
       view.sockets.latest.open();
       view.sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: true }) });
     });
-    await screen.findByText('The voice clips did not load. Reload the page.');
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Start an attempt' }));
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Start an attempt' }));
     await waitFor(() => expect(api.called('POST /api/training/arm')).toBe(true));
     const armed = { seq: 2, mode: 'armed' as const, exerciseId: 'e0000000-0000-4000-8000-000000000001', referenceId: 'ref-demo', voiceReady: true };
     act(() => view.sockets.latest.receive({ type: 'state', state: liveState({ ...armed, voiceDeviceId: voiceDeviceId() }) }));
@@ -406,31 +496,6 @@ afterEach(() => {
 });
 
 describe('drive mode', () => {
-  it('arm_panel_claims_voice_in_place', async () => {
-    setViewportWidth(390);
-    driveApi().install();
-    const rig = playerRig();
-    vi.spyOn(rig.player, 'preload').mockResolvedValue(undefined);
-    const view = renderApp({ path: '/drive', player: rig.player });
-    await screen.findByRole('heading', { name: 'Drive' });
-    const socket = await waitFor(() => view.sockets.latest);
-    act(() => {
-      socket.open();
-      socket.receive({ type: 'state', state: liveState({ voiceDeviceId: null }) });
-    });
-    expect(screen.getByRole('heading', { name: 'The voice is off' })).toBeInTheDocument();
-    expect(screen.getByText('This device can play the cues. A phone must stay unlocked during the attempt.')).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Use this device for voice' }));
-    await waitFor(() => expect(socket.sent).toContainEqual({ type: 'claim-voice', deviceId: voiceDeviceId(), ready: true }));
-    act(() => socket.receive({ type: 'state', state: liveState({ seq: 2, voiceDeviceId: voiceDeviceId(), voiceReady: true }) }));
-    expect(await screen.findByText('This device plays the voice')).toBeInTheDocument();
-    expect(await screen.findByText(/3 cues loaded\./)).toBeInTheDocument();
-    const test = screen.getByRole('button', { name: 'Test' });
-    expect(test.textContent).toBe('');
-    expect(test.querySelector('[data-icon="speaker"]')).not.toBeNull();
-    expect(screen.queryByRole('heading', { name: 'The voice is off' })).not.toBeInTheDocument();
-  });
-
   it('drive_mode_hides_navigation_when_armed', async () => {
     setViewportWidth(390);
     driveApi().install();
@@ -576,5 +641,128 @@ describe('drive mode', () => {
     send(socket, driving({ seq: 3, gapMs: null }));
     expect(screen.queryByText('+0.4')).not.toBeInTheDocument();
     expect(screen.queryByText('\u22120.3')).not.toBeInTheDocument();
+  });
+});
+
+describe('drive start', () => {
+  const HINT = 'Select Start an attempt. Then open the exercise in GT7 and drive. GT7 Tutor finds the start and the finish.';
+
+  function startApi(overrides: Parameters<typeof exercise>[0] = {}): ApiStub {
+    rememberExercise();
+    return exerciseApi(exercise({ step: 3, bestMs: 12073, nextMedal: { medal: 'gold', targetMs: 12000, gapMs: 73 }, ...overrides }))
+      .on('GET /api/progress', { collections: [], exercises: [{ id: 'e0000000-0000-4000-8000-000000000001', collection: 'Yangwang' }] })
+      .on('GET /api/catalogue', [])
+      .on('POST /api/training/arm', { status: 201, body: ARMED });
+  }
+
+  it('start_names_the_exercise_with_links', async () => {
+    setViewportWidth(1280);
+    startApi().install();
+    await openDrive();
+    const line = await screen.findByText(/^Exercise:/);
+    expect(within(line).getByRole('link', { name: exercise().name })).toHaveAttribute('href', `/exercises/${exercise().id}`);
+    expect(screen.getByRole('link', { name: 'Change exercise' })).toHaveAttribute('href', '/');
+    await waitFor(() => expect(line).toHaveTextContent('Brand Central · Yangwang'));
+  });
+
+  it('phone_start_names_the_exercise_without_where', async () => {
+    setViewportWidth(390);
+    startApi().install();
+    await openDrive();
+    const line = await screen.findByText(/^Exercise:/);
+    await act(async () => undefined);
+    expect(line).not.toHaveTextContent('Brand Central');
+    expect(screen.getByRole('link', { name: 'Change exercise' })).toBeInTheDocument();
+  });
+
+  it('start_shows_the_hint_in_the_order_of_the_steps', async () => {
+    setViewportWidth(1280);
+    startApi().install();
+    await openDrive();
+    expect(await screen.findByText(HINT)).toBeInTheDocument();
+    expect(screen.queryByText(/finds the start and the finish by itself/)).toBeNull();
+  });
+
+  it('start_shows_the_times_and_the_map', async () => {
+    setViewportWidth(1280);
+    startApi().install();
+    await openDrive();
+    const times = await screen.findByRole('region', { name: 'Times from the game' });
+    expect(times).toHaveTextContent('your best');
+    expect(times).toHaveTextContent('0:12.073');
+    expect(times).toHaveTextContent('reference');
+    expect(times).toHaveTextContent('to gold, 0:12.000');
+    const map = await screen.findByRole('region', { name: /^Reference line, \d+ m$/ });
+    expect(map).toHaveTextContent('voice cue');
+    await userEvent.setup().click(within(map).getByRole('button', { name: 'View the map in full screen' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('phone_times_name_only_the_medal', async () => {
+    setViewportWidth(390);
+    startApi().install();
+    await openDrive();
+    const times = await screen.findByRole('region', { name: 'Times from the game' });
+    await waitFor(() => expect(times).toHaveTextContent('to gold'));
+    expect(times).not.toHaveTextContent('to gold,');
+  });
+
+  it('start_links_to_the_cues', async () => {
+    setViewportWidth(1280);
+    startApi().install();
+    await openDrive();
+    expect(await screen.findByRole('link', { name: 'Hear the cues first' })).toHaveAttribute('href', expect.stringMatching(/\/cues$/));
+  });
+
+  it('times_panel_shows_only_what_exists', async () => {
+    setViewportWidth(1280);
+    startApi({ bestMs: null, nextMedal: null }).install();
+    await openDrive();
+    const times = await screen.findByRole('region', { name: 'Times from the game' });
+    await waitFor(() => expect(times).toHaveTextContent('reference'));
+    expect(times).not.toHaveTextContent('your best');
+    expect(times).not.toHaveTextContent('to ');
+  });
+
+  it('no_reference_keeps_the_old_text', async () => {
+    setViewportWidth(1280);
+    startApi({ activeReferenceId: null }).install();
+    await openDrive();
+    expect(await screen.findByText('This exercise has no reference yet. Record it first.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Record the reference' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Times from the game' })).toBeNull();
+    expect(screen.queryByRole('region', { name: /^Reference line/ })).toBeNull();
+  });
+
+  it('no_exercise_keeps_the_old_text', async () => {
+    setViewportWidth(1280);
+    startApi().on('GET /api/exercises', []).install();
+    await openDrive();
+    expect(await screen.findByText('Select an exercise first.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Select an exercise' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Times from the game' })).toBeNull();
+  });
+
+  it('map_load_failure_shows_the_error_in_place_of_the_map', async () => {
+    setViewportWidth(1280);
+    startApi().on('GET /api/references/ref-demo/path', { status: 500, body: { message: 'Disk full' } }).install();
+    await openDrive();
+    await screen.findByRole('button', { name: 'Start an attempt' });
+    expect(await screen.findByText(/Disk full/)).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: /^Reference line/ })).toBeNull();
+  });
+
+  it('training_of_another_exercise_wins', async () => {
+    setViewportWidth(1280);
+    const other = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 2' });
+    startApi()
+      .on('GET /api/exercises', [exercise(), other])
+      .on(`GET /api/exercises/${other.id}`, other)
+      .install();
+    const { socket } = await openDrive('/drive', liveState({ mode: 'armed', exerciseId: other.id, connection: 'connected' }));
+    expect(await screen.findByText(/Cornering Basics 2/)).toBeInTheDocument();
+    send(socket, liveState({ mode: 'idle', exerciseId: null, seq: 9 }));
+    const line = await screen.findByText(/^Exercise:/);
+    expect(within(line).getByRole('link', { name: 'Cornering Basics 2' })).toBeInTheDocument();
   });
 });

@@ -11,7 +11,6 @@ import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { consoleState, type ConsoleState, type Status } from '../../app/status.ts';
 import { useExercise } from '../exercise/use-exercise.ts';
-import { ReadinessChip } from '../setup/SetupView.tsx';
 import './record.css';
 
 type Active = { capture: CaptureInfo; startedAt: number };
@@ -563,9 +562,6 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
       </nav>
       <h1>{title}</h1>
       <p className="lede">{lede}</p>
-      <ul className="setup-chips" aria-label="Readiness">
-        <ReadinessChip status={consoleChip} />
-      </ul>
       <div className="record-cols">
         <div className="record-stage">
           <Slots slots={slots} />

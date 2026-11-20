@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useLiveConnection, useLiveState } from '../../api/live.tsx';
 import { errorText } from '../../app/resource.ts';
-import { StatusDot } from '../../app/Shell.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
-import { voiceStatus } from '../../app/status.ts';
 import { clampCorrection, delayCorrectionMs, MAX_CORRECTION_MS, MIN_CORRECTION_MS, setDelayCorrectionMs } from '../../voice/device.ts';
 import { useVoiceClaim } from '../../voice/use-voice-claim.ts';
 
@@ -22,7 +20,6 @@ export function VoiceSection() {
 
   const holder = state?.voiceDeviceId ?? null;
   const here = voice.here;
-  const status = voiceStatus(state, deviceId);
   const playing = here && state?.voiceReady === true;
 
   const enable = async () => {
@@ -63,21 +60,20 @@ export function VoiceSection() {
         <span className="pref-text">
           <span>Voice device</span>
           {playing ? null : (
-            <span className="voice-state" role="status">
-              <StatusDot status={status} />
-              {here ? 'This device has the voice, but the browser has not started audio.' : holder !== null ? 'Voice is on another device. This device stays silent.' : 'No device plays the voice.'}
+            <span className={`voice-state${here ? ' error' : ''}`} role="status">
+              {here
+                ? 'The browser did not start the sound on this device. Select Use this device for voice again.'
+                : holder !== null
+                  ? 'Another device plays the voice. This device stays silent.'
+                  : 'No device plays the voice.'}
             </span>
           )}
-          {here && !state?.voiceReady ? (
-            <span className="notice bad">The browser has not started audio on this device. Select Use this device for voice again.</span>
-          ) : null}
         </span>
         <div className="pref-control">
           {playing ? (
             <>
               <div className="field-pair">
                 <span className="voice-state playing" role="status">
-                  <StatusDot status={status} />
                   {movedFromOther ? 'This device plays the voice. The other device no longer plays cues.' : 'This device plays the voice.'}
                 </span>
                 <IconButton icon="speaker" label="Test" onClick={() => void runTest()} />
@@ -96,7 +92,6 @@ export function VoiceSection() {
                   Turn voice off here
                 </button>
               ) : null}
-              <p className="sub">The test appears here when this device plays the voice.</p>
             </>
           )}
           {voice.problem ? (
@@ -115,8 +110,7 @@ export function VoiceSection() {
       <div className="pref">
         <span className="pref-text">
           <label htmlFor="delay-correction">Delay correction for wireless headphones</label>
-          <span className="sub">Wireless headphones add delay that the browser does not report. Cues start earlier by this amount.</span>
-          <span className="device-tag">On this device</span>
+          <span className="sub">Wireless headphones add delay that the browser does not report. Cues start earlier by this amount on this device.</span>
         </span>
         <div className="pref-control">
           <span className="correction-value">{signed(correction)}</span>

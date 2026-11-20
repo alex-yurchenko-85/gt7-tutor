@@ -83,7 +83,6 @@ function StateRateRow() {
     <div className="pref">
       <span className="pref-text">
         <span id="state-rate-title">Screen updates while driving</span>
-        <span className="device-tag">On this device</span>
         <span className="sub">
           How often this device gets the speed, the distance, the gap and the map point while you drive. Higher values move them more smoothly, but
           use more battery and network and can make the page slower on an older phone. With the voice on this device, a busy page can also delay a

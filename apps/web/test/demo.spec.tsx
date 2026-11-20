@@ -98,7 +98,7 @@ describe('demo mode', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Play a demo attempt' }));
     await waitFor(() => expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: 'e0000000-0000-4000-8000-000000000001' }));
     expect(api.called('POST /api/demo/attempt')).toBe(true);
-    expect(screen.queryByText(/No device plays the voice/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^No device plays the voice\./)).not.toBeInTheDocument();
   });
 
   it('setup_has_no_console_edit_and_no_catalogue_update_in_demo', async () => {

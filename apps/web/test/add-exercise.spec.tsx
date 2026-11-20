@@ -95,7 +95,7 @@ describe('add exercise', () => {
     expect(row('ce-tsukuba-1')).toHaveTextContent('Not listed');
   });
 
-  it('drive_button_shows_an_added_exercise', async () => {
+  it('added_exercise_becomes_the_current_one', async () => {
     setViewportWidth(1440);
     const added = exercise({ id: 'e0000000-0000-4000-8000-000000000009', name: 'Cornering Basics 1', activeReferenceId: null, step: 1 });
     let created = false;
@@ -108,9 +108,9 @@ describe('add exercise', () => {
       .on('GET /api/exercises/e0000000-0000-4000-8000-000000000009', added);
     renderApp({ path: '/exercises/add' });
     await screen.findByRole('table', { name: 'Catalogue exercises' });
-    expect(screen.queryByRole('link', { name: /^Drive/ })).toBeNull();
+    expect(window.localStorage.getItem('gt7.currentExercise.user-1')).toBeNull();
     await userEvent.setup().click(within(row('licence-b-3')).getByRole('button', { name: 'Add Cornering Basics 1' }));
-    expect(await screen.findByRole('link', { name: /^Drive/ })).toHaveTextContent('Cornering Basics 1');
+    await waitFor(() => expect(window.localStorage.getItem('gt7.currentExercise.user-1')).toBe(added.id));
   });
 
   it('add_navigates_to_exercise_page', async () => {

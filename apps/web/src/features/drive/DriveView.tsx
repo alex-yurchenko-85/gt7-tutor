@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
-import { KPH_PER_MPS, type CornerInfo, type Exercise, type LiveCue, type LiveState, type ReferenceCue, type ReferenceTrace } from '@gt7/contracts';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { KPH_PER_MPS, type Exercise, type LiveCue, type LiveState } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
 import { useLiveConnection, useLiveState } from '../../api/live.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
@@ -7,26 +7,23 @@ import { TrackMap } from '../../charts/TrackMap.tsx';
 import { currentExercise, liveExerciseId, TRAINING_MODES } from '../../app/current-exercise.ts';
 import { useDemo } from '../../app/demo.tsx';
 import { signedSeconds } from '../../app/format.ts';
-import { counted } from '../../app/plural.ts';
 import { useImmersive } from '../../app/immersive.tsx';
-import { IconButton } from '../../app/IconButton.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
 import { StatusDot } from '../../app/Shell.tsx';
-import { telemetryStatus, voiceState, voiceStatus, type Status } from '../../app/status.ts';
+import { telemetryStatus, voiceStatus, type Status } from '../../app/status.ts';
 import { AttemptSummary } from '../attempt-summary/AttemptSummary.tsx';
 import { CLIPS_TEXT } from '../../voice/VoicePlayer.ts';
-import { useVoiceClaim } from '../../voice/use-voice-claim.ts';
-import { connectionProblem, cueNote, cueWords, guidanceText, nextCueProgress, shownOnDrive, spokenCues } from './cue-display.ts';
+import { connectionProblem, cueNote, cueWords, guidanceText, nextCueProgress, shownOnDrive } from './cue-display.ts';
 import { SeenCues } from './seen-cues.ts';
+import { DriveStart } from './DriveStart.tsx';
 import { useMissedStart } from './missed-start.ts';
+import { type ReferenceData, useReferenceData } from './use-reference-data.ts';
 import './drive.css';
 
 const CUE_VISIBLE_MS = 3000;
 const ARM_SETTLE_MS = 2000;
-
-type ReferenceData = { trace: ReferenceTrace; corners: CornerInfo[]; spoken: ReferenceCue[] };
 
 function useTicker(running: boolean, everyMs: number): number {
   const [now, setNow] = useState(() => Date.now());
@@ -45,21 +42,6 @@ function useFreshCue(cue: LiveCue | null): LiveCue | null {
   const first = seen.current.firstSeenMs(cue, Date.now());
   return Math.max(now, Date.now()) - first <= CUE_VISIBLE_MS ? cue : null;
 }
-
-function useReferenceData(referenceId: string | null) {
-  return useResource<ReferenceData | null>(
-    () =>
-      referenceId
-        ? Promise.all([api.referenceTrace(referenceId), api.referenceCorners(referenceId), api.referenceCues(referenceId)]).then(([trace, corners, cues]) => ({
-            trace,
-            corners,
-            spoken: spokenCues(cues)
-          }))
-        : Promise.resolve(null),
-    [referenceId]
-  );
-}
-
 
 type CueContent = { word: ReactNode; note: string | null; tone: 'cue' | 'armed' | 'idle' };
 
@@ -238,152 +220,6 @@ function Stage({ state, exercise, finishedAttempt, clipsFailed, onDriveAgain, on
   );
 }
 
-function useReferenceClips(referenceId: string | null) {
-  const { player } = useLiveConnection();
-  const loading = useRef<{ referenceId: string; done: Promise<number> } | null>(null);
-  return useCallback((): Promise<number> => {
-    if (!referenceId) return Promise.resolve(0);
-    if (loading.current?.referenceId !== referenceId) {
-      const done = Promise.all([api.referenceCues(referenceId), api.referenceClips(referenceId)]).then(async ([cues, clips]) => {
-        await player.preload(clips);
-        return spokenCues(cues).length;
-      });
-      done.catch(() => {
-        if (loading.current?.done === done) loading.current = null;
-      });
-      loading.current = { referenceId, done };
-    }
-    return loading.current.done;
-  }, [referenceId, player]);
-}
-
-function VoiceBlock({ ensureClips, clipsFailed }: { ensureClips(): Promise<number>; clipsFailed: boolean }) {
-  const { player, deviceId } = useLiveConnection();
-  const { state } = useLiveState(snapshot => snapshot);
-  const voice = useVoiceClaim();
-  const [loaded, setLoaded] = useState<number | null>(null);
-  const [testProblem, setTestProblem] = useState<string | null>(null);
-  const titleId = useId();
-
-  useEffect(() => {
-    if (!voice.ready) return;
-    let active = true;
-    ensureClips().then(
-      count => {
-        if (active) setLoaded(count);
-      },
-      () => undefined
-    );
-    return () => {
-      active = false;
-    };
-  }, [voice.ready, ensureClips]);
-
-  const test = async () => {
-    setTestProblem(null);
-    try {
-      await player.test();
-    } catch (error) {
-      setTestProblem(`The test did not play: ${errorText(error)}`);
-    }
-  };
-
-  if (voice.ready) {
-    return (
-      <div className="voice-ready">
-        <StatusDot status={{ tone: 'on', text: '' }} />
-        <div>
-          <p className="voice-ready-title">This device plays the voice</p>
-          {loaded === null && clipsFailed ? null : <p className="sub">{loaded === null ? 'Loading the cues…' : `${counted(loaded, 'cue')} loaded.`}</p>}
-          {clipsFailed ? (
-            <p className="error" role="alert">
-              {CLIPS_TEXT}
-            </p>
-          ) : null}
-          {testProblem ? <p className="error">{testProblem}</p> : null}
-        </div>
-        <IconButton icon="speaker" label="Test" onClick={() => void test()} />
-      </div>
-    );
-  }
-
-  const elsewhere = voiceState(state, deviceId) === 'elsewhere';
-  return (
-    <div className="notice bad voice-off" aria-labelledby={titleId} role="group">
-      <h2 id={titleId}>{elsewhere ? 'The voice is on another device' : 'The voice is off'}</h2>
-      <p>{`${elsewhere ? 'That device plays the cues. ' : ''}This device can play the cues. A phone must stay unlocked during the attempt.`}</p>
-      <button className="btn" type="button" onClick={() => void voice.claim()} disabled={voice.busy}>
-        Use this device for voice
-      </button>
-      {voice.problem ? (
-        <p className="error" role="alert">
-          {voice.problem}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-type ArmPanelProps = { exercise: Exercise; clipsFailed: boolean; onClipsFailed(failed: boolean): void; onArmed(): void };
-
-function ArmPanel({ exercise, clipsFailed, onClipsFailed, onArmed }: ArmPanelProps) {
-  const { deviceId } = useLiveConnection();
-  const { state } = useLiveState(snapshot => snapshot);
-  const demo = useDemo() !== null;
-  const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
-  const ensure = useReferenceClips(exercise.activeReferenceId);
-  const loadClips = useCallback(
-    () =>
-      ensure().then(
-        count => {
-          onClipsFailed(false);
-          return count;
-        },
-        (error: unknown) => {
-          onClipsFailed(true);
-          throw error;
-        }
-      ),
-    [ensure, onClipsFailed]
-  );
-  const voiceHere = state?.voiceDeviceId === deviceId;
-
-  const arm = async () => {
-    setBusy(true);
-    setProblem(null);
-    try {
-      if (voiceHere) await loadClips().catch(() => undefined);
-      if (demo) await api.demoAttempt();
-      await api.arm({ exerciseId: exercise.id });
-      onArmed();
-    } catch (error) {
-      setProblem(errorText(error));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="panel arm-panel">
-      <VoiceBlock ensureClips={loadClips} clipsFailed={clipsFailed} />
-      <p className="sub">
-        {demo
-          ? 'The demo replays a recorded attempt in real time. It takes about 40 s. This screen shows the cues, and the voice device also says them.'
-          : 'After you start, open the exercise in GT7 and drive. GT7 Tutor finds the start and the finish by itself.'}
-      </p>
-      <button className="btn arm-button" type="button" onClick={() => void arm()} disabled={busy}>
-        {demo ? 'Play a demo attempt' : 'Start an attempt'}
-      </button>
-      {problem ? (
-        <p className="error" role="alert">
-          {problem}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 function DriveExercise({ exercise }: { exercise: Exercise }) {
   const { state } = useLiveState(snapshot => snapshot);
   const [justArmed, setJustArmed] = useState(false);
@@ -446,12 +282,8 @@ function DriveExercise({ exercise }: { exercise: Exercise }) {
   }
   return (
     <>
-      <div className="drive-head">
-        <p className="sub">{exercise.name}</p>
-        <h1>Drive</h1>
-      </div>
       {errorLine}
-      <ArmPanel exercise={exercise} clipsFailed={clipsFailed} onClipsFailed={setClipsFailed} onArmed={onArmed} />
+      <DriveStart exercise={exercise} clipsFailed={clipsFailed} onClipsFailed={setClipsFailed} onArmed={onArmed} />
     </>
   );
 }

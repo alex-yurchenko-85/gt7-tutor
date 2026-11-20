@@ -285,14 +285,15 @@ describe('reference recording', () => {
     expect(await screen.findByText('Enter the PS5 address in Setup first.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start recording' })).toBeDisabled();
     expect(screen.getByRole('link', { name: 'Open Setup' })).toHaveAttribute('href', '/setup#console');
-    expect(screen.getByText('Console: no address')).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Readiness' })).toBeNull();
   });
 
   it('start_allowed_with_replay_without_address', async () => {
     setViewportWidth(1280);
     recordingApi({ ps5Ip: null, consoleRequired: false });
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    expect(await screen.findByText('Console: recorded data')).toBeInTheDocument();
+    await screen.findByRole('button', { name: 'Start recording' });
+    expect(screen.queryByRole('list', { name: 'Readiness' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Start recording' })).toBeEnabled();
     expect(screen.queryByText('Enter the PS5 address in Setup first.')).toBeNull();
   });

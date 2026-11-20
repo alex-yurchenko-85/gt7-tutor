@@ -26,34 +26,6 @@ fieldset.plain {
   padding-top: 6px;
 }
 
-.setup-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 14px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.setup-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 12px;
-  background: var(--paper);
-  border: 2px solid transparent;
-  font-size: 15px;
-}
-
-.setup-chip.bad {
-  border-color: var(--red);
-}
-
-.setup-chip .dot {
-  margin: 0;
-}
-
 .setup-layout {
   display: flex;
   align-items: flex-start;
@@ -87,15 +59,6 @@ fieldset.plain {
   background: var(--paper);
   font-weight: 700;
   box-shadow: inset 4px 0 0 var(--yellow);
-}
-
-.setup-nav-link .dot {
-  margin: 0;
-  flex: none;
-}
-
-.dot.none {
-  background: transparent;
 }
 
 .setup-panel {
@@ -255,19 +218,6 @@ fieldset.plain {
 
 }
 
-.device-tag {
-  align-self: flex-start;
-  margin-top: 4px;
-  padding: 1px 8px;
-  border: 1px solid var(--line);
-  font-size: 13px;
-  color: var(--mute);
-}
-
-.pref-text .device-tag + .sub {
-  margin-top: 6px;
-}
-
 .pref-control .theme-switch {
   display: flex;
 }
@@ -345,10 +295,6 @@ fieldset.plain {
   font-size: 15px;
 }
 
-.telemetry-line .dot {
-  margin: 0;
-}
-
 .pref-control .correction-value {
   align-self: flex-end;
   margin: 0;
@@ -365,10 +311,6 @@ fieldset.plain {
   align-items: center;
   gap: 8px;
   margin-top: 6px;
-}
-
-.voice-state .dot {
-  margin: 0;
 }
 
 @media (max-width: 760px) {

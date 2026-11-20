@@ -3,11 +3,11 @@ import type { LiveState } from '@gt7/contracts';
 export type Status = { tone: 'on' | 'warn' | 'off' | 'idle'; text: string };
 
 export function telemetryStatus(state: LiveState | null, connected: boolean, demo = false): Status {
-  if (!connected || !state) return { tone: 'off', text: 'Server not reachable' };
-  if (state.mode === 'idle') return { tone: 'idle', text: 'No data from the console. No training runs.' };
+  if (!connected || !state) return { tone: 'off', text: 'GT7 Tutor does not answer. Check that it runs on the computer.' };
+  if (state.mode === 'idle') return { tone: 'idle', text: 'No telemetry now. It starts with a recording, a training or a check.' };
   if (state.connection === 'connected') return { tone: 'on', text: 'Receiving telemetry' };
   if (state.connection === 'stale') return { tone: 'warn', text: demo ? 'Waiting for the recorded data.' : 'Waiting for packets' };
-  return { tone: 'off', text: demo ? 'Recorded attempt ended' : 'No packets. Check the console address' };
+  return { tone: 'off', text: demo ? 'Recorded attempt ended' : 'No packets. Check the console address.' };
 }
 
 export type ConsoleState = 'recorded-data' | 'no-address' | 'receiving' | 'address-saved';
@@ -28,12 +28,17 @@ export function voiceState(state: LiveState | null, deviceId: string): VoiceStat
 }
 
 const VOICE_STATUS: Record<VoiceState, Status> = {
-  none: { tone: 'off', text: 'Voice not ready' },
-  elsewhere: { tone: 'idle', text: 'Voice on another device' },
-  here: { tone: 'on', text: 'Voice on this device' },
-  'here-not-ready': { tone: 'warn', text: 'Voice not ready on this device' }
+  none: { tone: 'off', text: 'No device plays the voice' },
+  elsewhere: { tone: 'on', text: 'Another device plays the voice' },
+  here: { tone: 'on', text: 'This device plays the voice' },
+  'here-not-ready': { tone: 'warn', text: 'The sound did not start on this device' }
 };
 
 export function voiceStatus(state: LiveState | null, deviceId: string): Status {
   return VOICE_STATUS[voiceState(state, deviceId)];
+}
+
+export function statusLabel(name: string, status: Status): string {
+  const sentence = status.text.endsWith('.') ? status.text : `${status.text}.`;
+  return `${name}: ${sentence} Open Setup`;
 }

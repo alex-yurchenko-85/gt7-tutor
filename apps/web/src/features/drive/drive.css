@@ -1,57 +1,68 @@
-.drive-head {
-  margin-bottom: 14px;
-}
-
-.drive-head .sub {
+.drive-exercise {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px;
   margin: 0;
+  color: var(--mute);
+  font-size: 16px;
 }
 
-.arm-panel {
-  max-width: 560px;
+.drive-exercise .text-link {
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.voice-off {
-  border: 2px solid var(--red);
-  border-left-width: 2px;
-  background: var(--paper);
-  padding: 16px 18px;
+.drive-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 24px;
+  align-items: start;
   margin-top: 16px;
 }
 
-.voice-off h2 {
-  font: 700 22px/1.1 var(--font-display);
-  margin: 0;
+.drive-stack {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
 }
 
-.voice-off p {
-  margin: 8px 0 0;
+.arm-panel,
+.drive-times {
+  padding: 22px;
+}
+
+.drive-times h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.arm-panel .text-links {
+  margin-top: 4px;
+}
+
+.voice-notice {
+  margin: 0 0 14px;
   font-size: 15px;
 }
 
-.voice-ready {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  background: var(--paper);
-  padding: 14px 16px;
-  margin-top: 16px;
-}
-
-.voice-ready p {
+.voice-notice p {
   margin: 0;
 }
 
-.voice-ready-title {
-  font-weight: 700;
-}
-
-.voice-ready .btn {
-  margin-top: 0;
+.voice-notice .btn {
+  margin-top: 10px;
+  background: var(--paper);
+  min-height: 44px;
+  font-size: 17px;
+  white-space: normal;
 }
 
 .arm-panel > .sub {
-  margin-top: 14px;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .arm-button {
@@ -335,18 +346,18 @@ main.view.immersive {
 }
 
 @media (max-width: 899px) {
-  .arm-panel {
-    background: transparent;
-    padding: 0 0 84px;
+  .drive-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
   }
 
-  .arm-panel .arm-button {
-    position: fixed;
-    left: var(--gutter);
-    right: var(--gutter);
-    bottom: calc(var(--nav-height) + 12px + env(safe-area-inset-bottom, 0px));
-    width: auto;
-    z-index: 2;
+  .drive-stack {
+    gap: 16px;
+  }
+
+  .arm-panel,
+  .drive-times {
+    padding: 16px;
   }
 
   .drive-stage {

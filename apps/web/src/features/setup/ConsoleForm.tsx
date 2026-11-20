@@ -5,10 +5,9 @@ import { useLiveState } from '../../api/live.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
 import { formatClock } from '../../app/format.ts';
 import { errorText, useResource } from '../../app/resource.ts';
-import { StatusDot } from '../../app/Shell.tsx';
 import { telemetryStatus, type Status } from '../../app/status.ts';
 
-const FIREWALL_NOTE = 'The computer must accept UDP on port 33740. Allow it in the firewall if the check finds no packets.';
+const FIREWALL_NOTE = 'The computer must accept UDP on port 33740. If the check finds no packets, allow the port in the firewall.';
 
 export function addressProblem(value: string): string | null {
   if (!value.trim()) return 'Enter the console address.';
@@ -139,7 +138,7 @@ export function ConsoleForm({ layout, onChecked, onSaved }: ConsoleFormProps) {
         <span className="pref-text">
           <label htmlFor="console-address">PS5 address</label>
           <span className="sub" id="console-address-hint">
-            GT7 Tutor asks the console for telemetry at this address. Saving also checks the reception.
+            GT7 Tutor asks the console for telemetry at this address. Save also checks the reception.
           </span>
         </span>
         <div className="pref-control">
@@ -163,8 +162,7 @@ export function ConsoleForm({ layout, onChecked, onSaved }: ConsoleFormProps) {
         <div className="pref-control">
           <div className="field-pair telemetry-pair">
             <span className="telemetry-status" role="status">
-              <span className="telemetry-line">
-                <StatusDot status={status} />
+              <span className={`telemetry-line${status.tone === 'off' ? ' error' : ''}`}>
                 {checking ? 'Listening…' : status.text}
               </span>
               {caption && !checking ? <span className="sub">{caption}</span> : null}

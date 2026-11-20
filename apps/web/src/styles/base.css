@@ -153,24 +153,6 @@ a {
   margin: 0;
 }
 
-.drive-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 0 16px;
-  background: var(--yellow);
-  color: #14181f;
-  border: 2px solid #14181f;
-  font: 700 17px/1 var(--font-display);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.drive-button-name {
-  font: 600 14px/1 var(--font-body);
-}
-
 .profile-menu {
   position: relative;
 }

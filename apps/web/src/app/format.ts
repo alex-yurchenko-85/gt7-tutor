@@ -57,10 +57,3 @@ export function formatClock(at: Date): string {
 export function metres(value: number): string {
   return `${Math.round(value)} m`;
 }
-
-const SHORT_NAME_LENGTH = 20;
-
-export function shortName(name: string): string {
-  const head = name.split(':')[0]!.trim();
-  return head.length > SHORT_NAME_LENGTH ? `${head.slice(0, SHORT_NAME_LENGTH - 1).trimEnd()}…` : head;
-}

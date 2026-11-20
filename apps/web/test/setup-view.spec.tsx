@@ -63,7 +63,7 @@ describe('setup', () => {
       socket.open();
       socket.receive({ type: 'state', state: liveState({ voiceDeviceId: 'phone', voiceReady: true }) });
     });
-    expect(screen.getByText('Voice is on another device. This device stays silent.')).toBeInTheDocument();
+    expect(screen.getByText('Another device plays the voice. This device stays silent.')).toBeInTheDocument();
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Use this device for voice' }));
     await waitFor(() => expect(socket.sent).toContainEqual({ type: 'claim-voice', deviceId: voiceDeviceId(), ready: true }));
@@ -114,7 +114,7 @@ describe('voice test icon', () => {
       sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: null }) });
     });
     expect(screen.queryByRole('button', { name: 'Test' })).not.toBeInTheDocument();
-    expect(screen.getByText('The test appears here when this device plays the voice.')).toBeInTheDocument();
+    expect(screen.queryByText('The test appears here when this device plays the voice.')).not.toBeInTheDocument();
     expect(screen.getByText('One device plays the cues: this device, or another one with GT7 Tutor open. A phone must stay unlocked during an attempt.')).toBeInTheDocument();
     act(() => sockets.latest.receive({ type: 'state', state: liveState({ seq: 2, voiceDeviceId: voiceDeviceId(), voiceReady: true }) }));
     expect(screen.getByRole('button', { name: 'Test' })).toBeInTheDocument();
@@ -207,7 +207,8 @@ describe('voice after a reload', () => {
       sockets.latest.open();
       sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: false }) });
     });
-    expect(screen.getByText(/The browser has not started audio on this device/)).toBeInTheDocument();
+    expect(screen.getByText('The browser did not start the sound on this device. Select Use this device for voice again.')).toHaveClass('error');
+    expect(document.querySelector('.setup-panel .dot')).toBeNull();
     expect(screen.getByRole('button', { name: 'Use this device for voice' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Turn voice off here' })).toBeInTheDocument();
   });
@@ -273,15 +274,83 @@ describe('setup sections', () => {
     expect(screen.queryByRole('heading', { level: 2, name: 'Voice' })).not.toBeInTheDocument();
   });
 
-  it('readiness_chips_show_console_and_voice', async () => {
+  it('setup_has_no_readiness_block', async () => {
     setViewportWidth(1280);
     setupApi();
-    const { sockets } = renderApp({ path: '/setup' });
+    renderApp({ path: '/setup' });
+    await screen.findByRole('heading', { name: 'Setup' });
+    expect(screen.queryByText(/Two things are needed/)).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Readiness' })).toBeNull();
+  });
+
+  it('setup_menu_has_no_dots', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    renderApp({ path: '/setup' });
+    const nav = await screen.findByRole('navigation', { name: 'Setup sections' });
+    expect(nav.querySelector('.dot')).toBeNull();
+  });
+
+  it('sections_show_the_state_as_text_without_a_dot', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    const { sockets } = renderApp({ path: '/setup#console' });
+    await waitFor(() => sockets.latest);
+    openSocket(sockets, { voiceDeviceId: null, mode: 'idle' });
+    expect(await screen.findByText('No telemetry now. It starts with a recording, a training or a check.')).toBeInTheDocument();
+    expect(document.querySelector('.setup-panel .dot')).toBeNull();
+  });
+
+  it('server_not_answering_is_red_text', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    renderApp({ path: '/setup#console' });
+    expect(await screen.findByText('GT7 Tutor does not answer. Check that it runs on the computer.')).toHaveClass('error');
+  });
+
+  it('no_packets_is_red_text', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    const { sockets } = renderApp({ path: '/setup#console' });
+    await waitFor(() => sockets.latest);
+    openSocket(sockets, { mode: 'capturing', connection: 'disconnected' });
+    expect(await screen.findByText('No packets. Check the console address.')).toHaveClass('error');
+  });
+
+  it('console_help_texts_are_new', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    renderApp({ path: '/setup#console' });
+    expect(await screen.findByText('GT7 Tutor asks the console for telemetry at this address. Save also checks the reception.')).toBeInTheDocument();
+    expect(screen.getByText('The computer must accept UDP on port 33740. If the check finds no packets, allow the port in the firewall.')).toBeInTheDocument();
+  });
+
+  it('voice_without_a_device_has_text_without_a_dot', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    const { sockets } = renderApp({ path: '/setup#voice' });
     await waitFor(() => sockets.latest);
     openSocket(sockets, { voiceDeviceId: null });
-    const chips = await screen.findByRole('list', { name: 'Readiness' });
-    expect(within(chips).getByText('Console: no address')).toBeInTheDocument();
-    expect(within(chips).getByText('Voice: no device')).toBeInTheDocument();
+    expect(await screen.findByText('No device plays the voice.')).toBeInTheDocument();
+    expect(document.querySelector('.setup-panel .dot')).toBeNull();
+  });
+
+  it('this_device_plays_the_voice_without_a_dot', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    const { sockets } = renderApp({ path: '/setup#voice' });
+    await waitFor(() => sockets.latest);
+    openSocket(sockets, { voiceDeviceId: voiceDeviceId(), voiceReady: true });
+    expect(await screen.findByText('This device plays the voice.')).toBeInTheDocument();
+    expect(document.querySelector('.setup-panel .dot')).toBeNull();
+  });
+
+  it('no_setting_has_a_device_tag', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    renderApp({ path: '/setup#voice' });
+    expect(screen.queryByText('On this device')).toBeNull();
+    expect(await screen.findByText(/Cues start earlier by this amount on this device\./)).toBeInTheDocument();
   });
 
   it('phone_setup_stacks_all_sections', async () => {
@@ -498,7 +567,7 @@ describe('screen updates', () => {
     const group = await screen.findByRole('radiogroup', { name: 'Screen updates while driving' });
     expect(within(group).getAllByRole('radio').map(radio => radio.textContent)).toEqual(['15/s', '30/s', '60/s']);
     expect(within(group).getByRole('radio', { name: '15 per second' })).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByText('On this device')).toBeInTheDocument();
+    expect(screen.queryByText('On this device')).not.toBeInTheDocument();
     expect(screen.getByText(/The voice cues themselves are sent at once, whatever you choose\./)).toBeInTheDocument();
     await userEvent.setup().click(within(group).getByRole('radio', { name: '60 per second' }));
     expect(within(group).getByRole('radio', { name: '60 per second' })).toHaveAttribute('aria-checked', 'true');

@@ -45,18 +45,14 @@ describe('shell', () => {
     expect(commits).toBe(settled);
   });
 
-  it('wide_nav_has_exercises_setup_and_drive_button', async () => {
+  it('wide_nav_links_open_their_pages', async () => {
     setViewportWidth(1440);
-    rememberExercise();
-    exerciseApi(exercise({ name: 'Racing Line: Intermediate' })).install();
+    exerciseApi().install();
     renderApp();
     const nav = await screen.findByRole('navigation', { name: 'Main' });
-    expect(nav).toHaveAttribute('data-placement', 'top');
     expect(within(nav).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
+    expect(within(nav).getByRole('link', { name: 'Drive' })).toHaveAttribute('href', '/drive');
     expect(within(nav).getByRole('link', { name: 'Setup' })).toHaveAttribute('href', '/setup');
-    const drive = await screen.findByRole('link', { name: /^Drive/ });
-    expect(drive).toHaveTextContent('Racing Line');
-    expect(drive).toHaveAttribute('href', '/drive');
     expect(screen.getByRole('link', { name: /^Console/ })).toHaveAttribute('href', '/setup#console');
     expect(screen.getByRole('link', { name: /^Voice/ })).toHaveAttribute('href', '/setup#voice');
   });
@@ -82,26 +78,15 @@ describe('shell', () => {
     rememberExercise(basics.id);
     exerciseApi(racing).on('GET /api/exercises', [racing, basics]).install();
     const view = renderApp();
-    expect(await screen.findByRole('link', { name: /^Drive/ })).toHaveTextContent('Cornering Basics 1');
     const socket = await waitFor(() => view.sockets.latest);
     act(() => {
       socket.open();
       socket.receive({ type: 'state', state: liveState({ mode: 'armed', exerciseId: racing.id, connection: 'connected' }) });
     });
-    await waitFor(() => expect(screen.getByRole('link', { name: /^Drive/ })).toHaveTextContent('Racing Line'));
-    expect(window.localStorage.getItem('gt7.currentExercise.user-1')).toBe(racing.id);
+    await waitFor(() => expect(window.localStorage.getItem('gt7.currentExercise.user-1')).toBe(racing.id));
     act(() => socket.receive({ type: 'state', state: liveState({ mode: 'idle', exerciseId: null, seq: 9 }) }));
     await new Promise(resolve => setTimeout(resolve, 50));
-    expect(screen.getByRole('link', { name: /^Drive/ })).toHaveTextContent('Racing Line');
-  });
-
-  it('drive_button_hidden_without_current_exercise', async () => {
-    setViewportWidth(1440);
-    signedIn(new ApiStub()).on('GET /api/exercises', []).on('GET /api/progress', { collections: [], exercises: [] }).install();
-    renderApp();
-    await screen.findByRole('navigation', { name: 'Main' });
-    await waitFor(() => expect(screen.queryByText('Reading your exercises…')).toBeNull());
-    expect(screen.queryByRole('link', { name: /^Drive/ })).toBeNull();
+    expect(window.localStorage.getItem('gt7.currentExercise.user-1')).toBe(racing.id);
   });
 
   it('phone_shell_does_not_read_the_exercises', async () => {
@@ -113,25 +98,13 @@ describe('shell', () => {
     expect(api.called('GET /api/exercises')).toBe(false);
   });
 
-  it('drive_button_follows_navigation_without_reading_the_list_again', async () => {
+  it('header_reads_the_exercises_only_during_a_training', async () => {
     setViewportWidth(1440);
-    const racing = exercise({ name: 'Racing Line: Intermediate' });
-    const basics = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', activeReferenceId: null });
-    rememberExercise(basics.id);
-    const api = exerciseApi(racing).on('GET /api/exercises', [racing, basics]).install();
+    const api = exerciseApi().install();
     renderApp({ path: '/no-such-page' });
-    expect(await screen.findByRole('link', { name: /^Drive/ })).toHaveTextContent('Cornering Basics 1');
-    act(() => {
-      window.history.pushState(null, '', `/exercises/${racing.id}`);
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    });
-    await waitFor(() => expect(screen.getByRole('link', { name: /^Drive/ })).toHaveTextContent('Racing Line'));
-    act(() => {
-      window.history.pushState(null, '', '/no-such-page');
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    });
     await screen.findByRole('heading', { level: 1 });
-    expect(api.calls.filter(call => call.method === 'GET' && call.path === '/api/exercises')).toHaveLength(1);
+    await act(async () => undefined);
+    expect(api.called('GET /api/exercises')).toBe(false);
   });
 
   it('exercises_nav_current_on_exercise_pages', async () => {
@@ -163,8 +136,66 @@ describe('shell', () => {
     renderApp();
     const banner = await screen.findByRole('banner');
     expect(within(banner).getByRole('link', { name: /^Console/ })).toHaveAttribute('href', '/setup#console');
-    expect(within(banner).getByRole('link', { name: 'Voice: Voice not ready. Open Setup' })).toHaveAttribute('href', '/setup#voice');
+    expect(within(banner).getByRole('link', { name: 'Voice: No device plays the voice. Open Setup' })).toHaveAttribute('href', '/setup#voice');
     expect(within(banner).getByRole('button', { name: 'Profile Driver' })).toBeInTheDocument();
+  });
+
+  it('voice_dot_is_green_when_another_device_plays', async () => {
+    setViewportWidth(1440);
+    exerciseApi().install();
+    const view = renderApp();
+    await waitFor(() => view.sockets.latest);
+    act(() => {
+      view.sockets.latest.open();
+      view.sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: 'another-device', voiceReady: true }) });
+    });
+    const link = await screen.findByRole('link', { name: 'Voice: Another device plays the voice. Open Setup' });
+    expect(link.querySelector('.dot')).toHaveClass('on');
+    expect(link).toHaveAttribute('href', '/setup#voice');
+  });
+
+  it('console_dot_opens_the_console_section', async () => {
+    setViewportWidth(1440);
+    exerciseApi().install();
+    renderApp();
+    expect(await screen.findByRole('link', { name: /^Console: / })).toHaveAttribute('href', '/setup#console');
+  });
+
+  it('status_label_has_one_full_stop', async () => {
+    setViewportWidth(1440);
+    exerciseApi().install();
+    renderApp();
+    expect(await screen.findByRole('link', { name: 'Console: GT7 Tutor does not answer. Check that it runs on the computer. Open Setup' })).toBeInTheDocument();
+  });
+
+  it('wide_menu_has_exercises_drive_setup', async () => {
+    setViewportWidth(1280);
+    exerciseApi().install();
+    renderApp();
+    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    expect(nav).toHaveAttribute('data-placement', 'top');
+    expect(within(nav).getAllByRole('link').map(link => link.textContent)).toEqual(['Exercises', 'Drive', 'Setup']);
+    expect(nav.querySelector('[data-icon]')).toBeNull();
+  });
+
+  it('header_has_no_drive_button', async () => {
+    setViewportWidth(1280);
+    const api = exerciseApi().install();
+    renderApp();
+    await screen.findByRole('navigation', { name: 'Main' });
+    await waitFor(() => expect(api.called('GET /api/exercises')).toBe(true));
+    await act(async () => undefined);
+    expect(document.querySelector('.drive-button')).toBeNull();
+    expect(screen.getAllByRole('link', { name: /^Drive/ })).toHaveLength(1);
+  });
+
+  it('drive_item_is_current_on_drive', async () => {
+    setViewportWidth(1280);
+    exerciseApi().install();
+    renderApp({ path: '/drive' });
+    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    expect(within(nav).getByRole('link', { name: 'Drive' })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav).getByRole('link', { name: 'Exercises' })).not.toHaveAttribute('aria-current');
   });
 
   it('profile_menu_signs_out', async () => {

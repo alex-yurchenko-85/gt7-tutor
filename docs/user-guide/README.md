@@ -119,22 +119,29 @@ Select **Add an exercise**. The next section tells you how to find the exercise.
 
 ![The Exercises home on a computer: the Continue card, then My exercises over the full width with Select and + Add exercise, and one exercise row with its status and best time.](images/exercises-home.webp)
 
-The application has two sections and the Drive screen:
+The application has three items in the menu:
 
 | Item | On a computer | On a phone |
 | --- | --- | --- |
 | **Exercises**: your exercises, the catalogue and each exercise | Top bar | Bottom bar |
+| **Drive**: the screen that you use while you drive | Top bar | Bottom bar |
 | **Setup**: console, voice, profiles, preferences, catalogue, data | Top bar | Bottom bar |
-| **Drive**: the screen that you use while you drive | Yellow button `Drive · <exercise>` in the top bar. It shows when you have a current exercise. | **Drive** in the bottom bar |
 
 The top bar also has:
 
-- **Console** and **Voice** with a coloured dot. Green means ready. Select one of them to open its Setup section.
+- **Console** and **Voice**, each with a dot. The dot shows the state. Select one of them to open its Setup section.
 - Your profile button with your initial and name. It opens a menu with **Manage profiles**, **Voice on this device**, **Theme** and **Sign out**.
+
+The dots have these states:
+
+| Dot | Green | Yellow | Red | Grey |
+| --- | --- | --- | --- | --- |
+| **Console** | `Receiving telemetry` | `Waiting for packets` | `No packets. Check the console address.` or `GT7 Tutor does not answer. Check that it runs on the computer.` | `No telemetry now. It starts with a recording, a training or a check.` |
+| **Voice** | `This device plays the voice` or `Another device plays the voice` | `The sound did not start on this device` | `No device plays the voice` | |
 
 ![The profile menu with Manage profiles, Voice on this device, Theme and Sign out.](images/profile-menu.webp)
 
-The **current exercise** is the exercise that you opened last. The Drive button and the **Continue** card on the Exercises home use it.
+The **current exercise** is the exercise that you opened last. **Drive** and the **Continue** card on the Exercises home use it.
 
 Each exercise has a page with a header and four tabs.
 The header has the breadcrumb `Exercises / <exercise name>`. Select **Exercises** in it to go back to the Exercises home.
@@ -269,13 +276,23 @@ Changes apply from the next **Start an attempt**. A training that already runs k
 
 ### Start
 
-1. Select **Drive** (on a computer, the yellow Drive button).
-2. Check the voice block:
-   - `This device plays the voice` and `6 cues loaded.`: the voice is ready on this device.
-   - `The voice is off` or `The voice is on another device`: select **Use this device for voice** if this device must speak.
-3. Select **Start an attempt**.
+1. Select **Drive** in the menu.
+2. Read the line `Exercise: <name>`. The name is a link to the exercise. On a computer, the line also shows where the exercise is. To pick another exercise, select **Change exercise**. It opens **Exercises**.
+3. Look at the notice. If you see `No device plays the voice. The screen still shows the cues.`, select **Use this device for voice** when this device must speak. The notice also shows when this device has the voice but the sound did not start. If another device plays the voice, the notice does not show.
+4. Select **Start an attempt**.
 
-![Drive before the start: This device plays the voice, 6 cues loaded, and the button Start an attempt.](images/drive-start.webp)
+![Drive before the start: the line Exercise, the hint, the button Start an attempt, the link Hear the cues first, the times from the game and the map of the reference line.](images/drive-start.webp)
+
+The screen has these parts:
+
+| Part | Content |
+| --- | --- |
+| Hint | `Select Start an attempt. Then open the exercise in GT7 and drive. GT7 Tutor finds the start and the finish.` |
+| **Hear the cues first** | Opens the **Cues** tab of the exercise. |
+| **Times from the game** | Your best time, the time of the reference, and the time to the next medal. The panel shows only the times that GT7 Tutor knows. |
+| **Reference line** | The map of the reference with its length, for example `Reference line, 818 m`. Select **View** to open it larger. |
+
+An attempt can start without a voice device. If GT7 Tutor cannot load the voice clips, the message shows under **Start an attempt**.
 
 **Result:** the dark Drive screen shows `READY` and `Waiting for the start`, and the first cue.
 
@@ -339,7 +356,7 @@ An attempt that does not finish shows `No time` and the reason, for example `lef
 You decide which help you use:
 
 - **With the voice:** a voice device is set. The voice says the cues.
-- **Without the voice:** select **Turn voice off here** in **Setup** → **Voice**, or do not choose a voice device. The Drive screen still shows the cues.
+- **Without the voice:** select **Turn voice off here** in **Setup** → **Voice**, or do not choose a voice device. The Drive screen shows `No device plays the voice. The screen still shows the cues.` The attempt starts and the screen shows the cues.
 - **Without some cues:** mute them in the **Cues** tab.
 
 GT7 Tutor compares every attempt with the reference from the game demonstration. It does not compare attempts with the voice against attempts without the voice.
@@ -494,7 +511,9 @@ See [Delete data](#delete-data).
 
 ### Console
 
-**Setup** → **Console** shows the **PS5 address** and the **Telemetry** status. **Check again** listens for packets again and shows the number of packets and the car.
+**Setup** → **Console** shows the **PS5 address** and the **Telemetry** state as text. A red text marks a problem: `GT7 Tutor does not answer. Check that it runs on the computer.` or `No packets. Check the console address.` **Save and check** saves the address and checks the reception. **Check again** listens for packets again and shows the number of packets and the car.
+
+The computer must accept UDP on port 33740. If the check finds no packets, allow the port in the firewall.
 
 ![Setup, Console: the PS5 address, and Receiving: 30 packets in 0.5 s, Car: Nissan GT-R NISMO GT3 '13. The data in this screenshot is recorded data.](images/setup-console.webp)
 
@@ -504,10 +523,17 @@ The PS5 address can change after a router restart. Then type the new address and
 
 ![Setup, Voice: This device plays the voice, the Test button, Turn voice off here, and the slider Delay correction for wireless headphones.](images/setup-voice.webp)
 
+The **Voice device** line shows one of these texts:
+
+- `This device plays the voice.`
+- `Another device plays the voice. This device stays silent.`
+- `No device plays the voice.`
+- `The browser did not start the sound on this device. Select Use this device for voice again.` The text is red.
+
 - **Use this device for voice** moves the voice to this device. The other device stops to play cues.
 - The speaker button (**Test**) plays `Voice check`. The message gives the output delay that the browser reports. This is not a measurement.
 - **Turn voice off here** stops the voice on this device. The Drive screen still shows the cues.
-- **Delay correction for wireless headphones**: −200 ms to +400 ms, for this device only. Wireless headphones add a delay that the browser does not know. A positive value starts the cues earlier. If the voice sounds late, increase the value.
+- **Delay correction for wireless headphones**: −200 ms to +400 ms. It applies on this device. Wireless headphones add a delay that the browser does not know. A positive value starts the cues earlier. If the voice sounds late, increase the value.
 
 ### Preferences
 
@@ -623,7 +649,7 @@ You see `No packets`, `Address saved, no telemetry yet` or `No packets from the 
 
 ### No sound
 
-1. Look at the **Voice** dot in the top bar. Yellow means that the browser has not started the sound on this device.
+1. Look at the **Voice** dot in the top bar. Yellow means `The sound did not start on this device`. Red means `No device plays the voice`.
 2. Select **Use this device for voice** again, then the speaker button.
 3. Turn off the silent mode of the phone, and turn up the volume.
 4. On an iPhone after a screen lock, reload the page, then select **Use this device for voice** again. See the [README](../../README.md#use-a-phone).
