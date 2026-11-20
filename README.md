@@ -254,7 +254,7 @@ pnpm audio:generate        # network, about 400 MB, rewrites the voice clips
 
 Always pass `--ip` with the current console address.
 `pnpm db:reset` drops the database of `DATABASE_URL` (by default `gt7_tutor`), creates it again and migrates it. It deletes all data of that database. Use it only for a broken development database.
-Stop a running server before `pnpm test`: only one program can receive telemetry on UDP port 33740.
+`pnpm test:integration` checks that UDP port 33740 is free. Stop a recording or a training of a running server before you start it.
 
 ## Data terms
 

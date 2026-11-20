@@ -1,7 +1,7 @@
 import { readSamples } from '@gt7/capture';
 import { describe, expect, it } from 'vitest';
-import { SAMPLE_CACHE_MAX_SAMPLES, SampleCache } from '../src/captures/sample-cache.js';
-import { fixturePath } from '../../../tools/testing/fixture-path.js';
+import { SAMPLE_CACHE_MAX_SAMPLES, SampleCache } from '../../src/captures/sample-cache.js';
+import { fixturePath } from '../../../../tools/testing/fixture-path.js';
 
 const range = { first: 5100, last: 5199 };
 const tiny = { first: 5100, last: 5105 };

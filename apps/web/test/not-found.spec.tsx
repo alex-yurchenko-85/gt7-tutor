@@ -15,7 +15,6 @@ describe('not found', () => {
   });
 
   it('bad_exercise_id_shows_exercise_not_found_without_request', async () => {
-    setViewportWidth(1440);
     const api = exerciseApi().install();
     renderApp({ path: '/exercises/abc/attempts' });
     expect(await screen.findByRole('heading', { level: 1, name: 'This exercise is not here' })).toBeInTheDocument();
@@ -38,7 +37,6 @@ describe('not found', () => {
   });
 
   it('missing_exercise_shows_exercise_not_found', async () => {
-    setViewportWidth(1440);
     const missing = 'e0000000-0000-4000-8000-0000000000ff';
     exerciseApi().on(`GET /api/exercises/${missing}`, { status: 404, body: { message: 'Exercise not found' } }).install();
     renderApp({ path: `/exercises/${missing}` });
@@ -46,7 +44,6 @@ describe('not found', () => {
   });
 
   it('deleted_attempt_shows_attempt_not_found', async () => {
-    setViewportWidth(1440);
     rememberExercise();
     exerciseApi()
       .on(`GET /api/attempts/${DELETED_ATTEMPT}`, { status: 404, body: { message: 'Attempt not found' } })
@@ -60,7 +57,6 @@ describe('not found', () => {
   });
 
   it('bad_attempt_id_shows_attempt_not_found_without_request', async () => {
-    setViewportWidth(1440);
     const api = exerciseApi().install();
     renderApp({ path: '/attempts/not-a-uuid/review' });
     expect(await screen.findByRole('heading', { level: 1, name: 'This attempt is not here' })).toBeInTheDocument();
@@ -69,7 +65,6 @@ describe('not found', () => {
   });
 
   it('unknown_path_shows_page_not_found', async () => {
-    setViewportWidth(1440);
     exerciseApi().install();
     renderApp({ path: '/no-such-page' });
     expect(await screen.findByRole('heading', { level: 1, name: 'This page does not exist' })).toBeInTheDocument();

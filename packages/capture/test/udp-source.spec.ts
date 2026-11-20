@@ -1,6 +1,6 @@
 import { createSocket, type Socket } from 'node:dgram';
 import { afterEach, describe, expect, it } from 'vitest';
-import { UdpSource, type Datagram } from '../src/index.ts';
+import { CAPTURE_CONFIG, UdpSource, type Datagram } from '../src/index.ts';
 import { eventually } from '../../../tools/testing/eventually.ts';
 
 const sockets: Socket[] = [];
@@ -57,11 +57,16 @@ describe('UdpSource', () => {
     expect(received[0]!.payload.byteLength).toBe(368);
   });
 
-  it('busy_port_names_33740', async () => {
-    const first = track(new UdpSource({ ps5Ip: '127.0.0.1', bindPort: 33740, heartbeatPort: 9, heartbeatMs: 1000 }));
+  it('receive_port_is_33740', () => {
+    expect(CAPTURE_CONFIG.udp.receivePort).toBe(33740);
+  });
+
+  it('busy_port_names_the_port', async () => {
+    const first = track(new UdpSource({ ps5Ip: '127.0.0.1', bindPort: 0, heartbeatPort: 9, heartbeatMs: 1000 }));
     await first.start(() => {});
-    const second = track(new UdpSource({ ps5Ip: '127.0.0.1', bindPort: 33740, heartbeatPort: 9, heartbeatMs: 1000 }));
-    await expect(second.start(() => {})).rejects.toThrow(/33740/);
+    const port = first.boundPort()!;
+    const second = track(new UdpSource({ ps5Ip: '127.0.0.1', bindPort: port, heartbeatPort: 9, heartbeatMs: 1000 }));
+    await expect(second.start(() => {})).rejects.toThrow(`UDP port ${port}`);
   });
 
   it('foreign_peer_is_ignored', async () => {

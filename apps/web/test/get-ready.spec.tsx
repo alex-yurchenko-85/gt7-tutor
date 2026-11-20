@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Exercise } from '@gt7/contracts';
 import { voiceDeviceId } from '../src/voice/device.ts';
 import { exercise } from './fixtures.ts';
-import { ApiStub, liveState, playerRig, renderApp, setViewportWidth, signedIn, USER } from './support.tsx';
+import { ApiStub, liveState, playerRig, renderApp, setViewportWidth, signedIn, USER, openLive } from './support.tsx';
 
 function getReadyApi(ps5Ip: string | null, exercises: Exercise[] = []): ApiStub {
   let address = ps5Ip;
@@ -27,7 +27,6 @@ function step(name: RegExp): HTMLElement {
 
 describe('get ready', () => {
   it('steps_follow_order_console_first', async () => {
-    setViewportWidth(1440);
     getReadyApi(null);
     renderApp();
     expect(await screen.findByRole('heading', { level: 1, name: 'Get ready to train' })).toBeInTheDocument();
@@ -42,7 +41,6 @@ describe('get ready', () => {
   });
 
   it('saving_address_checks_reception_and_opens_voice', async () => {
-    setViewportWidth(1440);
     const api = getReadyApi(null);
     renderApp();
     const user = userEvent.setup();
@@ -59,7 +57,6 @@ describe('get ready', () => {
   });
 
   it('console_step_uses_an_icon_button', async () => {
-    setViewportWidth(1440);
     getReadyApi(null);
     renderApp();
     await screen.findByLabelText('PS5 address');
@@ -69,7 +66,6 @@ describe('get ready', () => {
   });
 
   it('no_packets_does_not_block_the_next_step', async () => {
-    setViewportWidth(1440);
     getReadyApi(null).on('POST /api/settings/connection/check', { status: 201, body: { packets: 0, decoded: 0, durationMs: 2000, carId: null } });
     renderApp();
     const user = userEvent.setup();
@@ -81,7 +77,6 @@ describe('get ready', () => {
   });
 
   it('failed_check_does_not_block_the_next_step', async () => {
-    setViewportWidth(1440);
     getReadyApi(null).on('POST /api/settings/connection/check', { status: 409, body: { code: 'busy', reason: 'A recording is running.' } });
     renderApp();
     const user = userEvent.setup();
@@ -92,7 +87,6 @@ describe('get ready', () => {
   });
 
   it('wrong_address_stays_on_the_console_step', async () => {
-    setViewportWidth(1440);
     const api = getReadyApi(null);
     renderApp();
     const user = userEvent.setup();
@@ -123,11 +117,7 @@ describe('get ready', () => {
     const { sockets } = renderApp({ player: rig.player });
     const button = await screen.findByRole('button', { name: 'Use this device for voice' });
     expect(within(step(/Choose the device/)).queryByRole('button', { name: /Test/ })).toBeNull();
-    const socket = await waitFor(() => sockets.latest);
-    act(() => {
-      socket.open();
-      socket.receive({ type: 'state', state: liveState() });
-    });
+    const socket = await openLive(sockets);
     await userEvent.setup().click(button);
     await waitFor(() => expect(socket.sent).toContainEqual({ type: 'claim-voice', deviceId: voiceDeviceId(), ready: true }));
     act(() => socket.receive({ type: 'state', state: liveState({ seq: 2, voiceDeviceId: voiceDeviceId(), voiceReady: true }) }));
@@ -141,23 +131,17 @@ describe('get ready', () => {
   });
 
   it('claim_preloads_the_voice_check_clip', async () => {
-    setViewportWidth(1440);
     getReadyApi('192.168.1.40');
     const rig = playerRig();
     const { sockets } = renderApp({ player: rig.player });
     const button = await screen.findByRole('button', { name: 'Use this device for voice' });
-    const socket = await waitFor(() => sockets.latest);
-    act(() => {
-      socket.open();
-      socket.receive({ type: 'state', state: liveState() });
-    });
+    const socket = await openLive(sockets);
     await userEvent.setup().click(button);
     await waitFor(() => expect(socket.sent).toContainEqual({ type: 'claim-voice', deviceId: voiceDeviceId(), ready: true }));
     expect(rig.player.hasClip('voice-check')).toBe(true);
   });
 
   it('voice_step_texts_name_no_device_type', async () => {
-    setViewportWidth(1440);
     getReadyApi('192.168.1.40');
     renderApp();
     const voiceStep = await screen.findByRole('listitem', { name: /Choose the device/ });
@@ -166,7 +150,6 @@ describe('get ready', () => {
   });
 
   it('exercise_step_links_add_exercise', async () => {
-    setViewportWidth(1440);
     window.localStorage.setItem(`gt7.getReady.voiceLater.${USER.id}`, '1');
     getReadyApi('192.168.1.40');
     renderApp();
@@ -175,7 +158,6 @@ describe('get ready', () => {
   });
 
   it('exercise_step_done_when_exercises_exist', async () => {
-    setViewportWidth(1440);
     getReadyApi(null, [exercise()]);
     renderApp();
     expect(await screen.findByRole('heading', { level: 1, name: 'Get ready to train' })).toBeInTheDocument();

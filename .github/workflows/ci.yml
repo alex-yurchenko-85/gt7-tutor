@@ -69,7 +69,7 @@ jobs:
       - run: pnpm build
       - run: pnpm test:coverage
       - run: pnpm db:migrate
-      - run: pnpm test:integration:coverage
+      - run: pnpm --filter @gt7/server run test:integration --coverage
       - name: Upload unit test coverage
         if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v7

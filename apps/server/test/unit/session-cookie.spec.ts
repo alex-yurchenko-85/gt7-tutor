@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readCookie } from '../src/auth/session-cookie.js';
+import { readCookie } from '../../src/auth/session-cookie.js';
 
 describe('session cookie', () => {
   it('reads_the_named_cookie', () => {

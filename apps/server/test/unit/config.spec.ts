@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { parseAppConfig } from '../src/config/app-config.js';
+import { parseAppConfig } from '../../src/config/app-config.js';
 
 describe('AppConfig', () => {
   it('defaults_follow_the_specification', () => {
@@ -13,11 +13,11 @@ describe('AppConfig', () => {
       TELEMETRY_SOURCE: 'udp',
       DEV_REPLAY: false,
       DEMO_MODE: false,
-      CATALOGUE_DIR: fileURLToPath(new URL('../../../content/catalogue', import.meta.url)),
+      CATALOGUE_DIR: fileURLToPath(new URL('../../../../content/catalogue', import.meta.url)),
       CATALOGUE_TIMEOUT_MS: 30000,
-      AUDIO_DIR: fileURLToPath(new URL('../../../content/audio', import.meta.url)),
-      FIXTURES_DIR: fileURLToPath(new URL('../../../fixtures', import.meta.url)),
-      WEB_DIR: fileURLToPath(new URL('../../web/dist', import.meta.url))
+      AUDIO_DIR: fileURLToPath(new URL('../../../../content/audio', import.meta.url)),
+      FIXTURES_DIR: fileURLToPath(new URL('../../../../fixtures', import.meta.url)),
+      WEB_DIR: fileURLToPath(new URL('../../../web/dist', import.meta.url))
     });
   });
 

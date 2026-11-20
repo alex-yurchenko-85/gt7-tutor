@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ATTEMPTS_BEFORE_REVIEW, exerciseStep } from '../src/exercises/exercise-step.js';
+import { ATTEMPTS_BEFORE_REVIEW, exerciseStep } from '../../src/exercises/exercise-step.js';
 
 describe('exerciseStep', () => {
   it.each([

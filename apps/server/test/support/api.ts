@@ -1,0 +1,98 @@
+import { join } from 'node:path';
+import type { INestApplication } from '@nestjs/common';
+import type { TestingModuleBuilder } from '@nestjs/testing';
+import type { Knex } from 'knex';
+import request from 'supertest';
+import { TELEMETRY_SOURCE_FACTORY } from '../../src/captures/telemetry-source.factory.js';
+import { testTempDir } from '../../../../tools/testing/temp-root.js';
+import { createTestApp } from './app.js';
+import { FixtureReplays } from './replay-sources.js';
+
+export const INTERLAGOS = 'ce-autodromo-de-interlagos';
+export const INTERLAGOS_TARGETS = { goldMs: 16400, silverMs: 16700, bronzeMs: 17800 };
+export const DEMONSTRATION = { first: 457, last: 1422 };
+export const CLEAN_ATTEMPT = { first: 381, last: 1409 };
+
+export type Range = { first: number; last: number };
+
+export type ReplayApp = { app: INestApplication; replays: FixtureReplays; dataDir: string };
+
+export type ReplayAppOptions = {
+  dataDir?: string;
+  env?: Record<string, string>;
+  override?: (builder: TestingModuleBuilder) => TestingModuleBuilder;
+};
+
+export async function createReplayApp(databaseUrl: string, options: ReplayAppOptions = {}): Promise<ReplayApp> {
+  const replays = new FixtureReplays();
+  const dataDir = options.dataDir ?? testTempDir('gt7-server-');
+  const app = await createTestApp(databaseUrl, {
+    env: { DATA_DIR: dataDir, TELEMETRY_SOURCE: 'replay', ...options.env },
+    override: builder => {
+      const replaced = builder.overrideProvider(TELEMETRY_SOURCE_FACTORY).useValue(replays.factory);
+      return options.override ? options.override(replaced) : replaced;
+    }
+  });
+  return { app, replays, dataDir };
+}
+
+export class TestApi {
+  constructor(
+    private readonly app: () => INestApplication,
+    private readonly replays: () => FixtureReplays,
+    private readonly session: () => string
+  ) {}
+
+  http() {
+    return request(this.app().getHttpServer());
+  }
+
+  async exercise(body: object = { catalogueId: INTERLAGOS }, session = this.session()): Promise<string> {
+    return (await this.http().post('/api/exercises').set('Cookie', session).send(body).expect(201)).body.id as string;
+  }
+
+  async capture(exerciseId: string, fixture: string, purpose = 'demo', session = this.session()): Promise<string> {
+    this.replays().queue.push(fixture);
+    const started = await this.http().post('/api/captures').set('Cookie', session).send({ exerciseId, purpose }).expect(201);
+    await this.replays().finished();
+    await this.http().post(`/api/captures/${started.body.id}/stop`).set('Cookie', session).expect(201);
+    return started.body.id as string;
+  }
+
+  async reference(exerciseId: string, captureId: string, range: Range = DEMONSTRATION, session = this.session()): Promise<string> {
+    return (await this.http().post('/api/references').set('Cookie', session).send({ exerciseId, captureId, ...range }).expect(201)).body.id as string;
+  }
+}
+
+export type StoredAttempt = {
+  exerciseId: string;
+  captureId: string;
+  referenceId: string;
+  completion?: 'complete' | 'aborted';
+  range?: Range;
+  gameMs?: number | null;
+  startedAt?: Date;
+};
+
+export async function insertAttempt(db: Knex, attempt: StoredAttempt): Promise<string> {
+  const completion = attempt.completion ?? 'complete';
+  const range = attempt.range ?? CLEAN_ATTEMPT;
+  const [row] = await db('attempts')
+    .insert({
+      exercise_id: attempt.exerciseId,
+      capture_id: attempt.captureId,
+      reference_id: attempt.referenceId,
+      first_raw_index: range.first,
+      last_raw_index: range.last,
+      completion,
+      reason: completion === 'complete' ? 'game-timer' : 'left-track',
+      game_ms: attempt.gameMs === undefined ? (completion === 'complete' ? 17071 : null) : attempt.gameMs,
+      started_at: attempt.startedAt ?? new Date()
+    })
+    .returning('id');
+  return row.id as string;
+}
+
+export async function rawPathOf(db: Knex, dataDir: string, captureId: string): Promise<string> {
+  return join(dataDir, (await db('captures').where({ id: captureId }).first()).raw_path as string);
+}

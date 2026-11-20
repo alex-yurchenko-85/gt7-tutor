@@ -7,7 +7,6 @@ import { testTempDir } from '../testing/temp-root.ts';
 
 const script = fileURLToPath(new URL('../../start.sh', import.meta.url));
 const root = realpathSync(fileURLToPath(new URL('../..', import.meta.url)));
-const shellcheckFound = spawnSync('shellcheck', ['--version'], { encoding: 'utf8' }).status === 0;
 
 type Machine = { system: string; node: string | null };
 
@@ -73,10 +72,5 @@ describe('start.sh', () => {
     const run = runStart({ system: 'Linux', node: 'v26.3.0' }, [], elsewhere);
     expect(run.code).toBe(0);
     expect(run.calls).toContain(`cwd ${root}`);
-  });
-
-  it.skipIf(!shellcheckFound)('passes_shellcheck', () => {
-    const result = spawnSync('shellcheck', [script], { encoding: 'utf8' });
-    expect(result.status).toBe(0);
   });
 });

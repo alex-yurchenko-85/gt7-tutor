@@ -2,11 +2,11 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { Exercise, Progress } from '@gt7/contracts';
-import { catalogueEntry, exercise, exerciseApi, rememberExercise } from './fixtures.ts';
-import { liveState, renderApp, setViewportWidth } from './support.tsx';
+import { catalogueEntry, exercise, exerciseApi, rememberExercise, EXERCISE_ID } from './fixtures.ts';
+import { liveState, renderApp, setViewportWidth, openLive } from './support.tsx';
 
 const RACING = exercise({
-  id: 'e0000000-0000-4000-8000-000000000001',
+  id: EXERCISE_ID,
   catalogueId: 'brand-yangwang-racing-lines',
   name: 'Racing Line: Intermediate',
   family: 'Brand Central',
@@ -37,7 +37,7 @@ const PROGRESS: Progress = {
     { family: 'Licence', collection: 'National B', counts: { new: 2, ready: 1, practising: 0, bronze: 1, silver: 1, gold: 0 } }
   ],
   exercises: [
-    { id: 'e0000000-0000-4000-8000-000000000001', name: RACING.name, family: 'Brand Central', collection: 'Yangwang', status: 'practising', bestMs: 27100, bestByDay: [] },
+    { id: EXERCISE_ID, name: RACING.name, family: 'Brand Central', collection: 'Yangwang', status: 'practising', bestMs: 27100, bestByDay: [] },
     { id: 'e0000000-0000-4000-8000-000000000002', name: BASICS.name, family: 'Licence', collection: 'National B', status: 'new', bestMs: null, bestByDay: [] }
   ]
 };
@@ -48,7 +48,7 @@ const CATALOGUE = [
 ];
 
 function homeApi(exercises: Exercise[] = [RACING, BASICS], ps5Ip: string | null = '192.0.2.10') {
-  rememberExercise('e0000000-0000-4000-8000-000000000001');
+  rememberExercise(EXERCISE_ID);
   return exerciseApi(RACING)
     .on('GET /api/exercises', exercises)
     .on('GET /api/progress', PROGRESS)
@@ -59,7 +59,6 @@ function homeApi(exercises: Exercise[] = [RACING, BASICS], ps5Ip: string | null 
 
 describe('exercises home', () => {
   it('home_shows_continue_card_for_current_exercise', async () => {
-    setViewportWidth(1440);
     homeApi();
     renderApp();
     const card = await screen.findByRole('region', { name: 'Racing Line: Intermediate' });
@@ -71,11 +70,10 @@ describe('exercises home', () => {
     expect(within(card).getByText('Next: drive attempts')).toBeInTheDocument();
     expect(within(card).queryByRole('list', { name: 'Three steps' })).toBeNull();
     expect(within(card).getByRole('link', { name: 'Start an attempt' })).toHaveAttribute('href', '/drive');
-    expect(within(card).getByRole('link', { name: 'Open the exercise' })).toHaveAttribute('href', '/exercises/e0000000-0000-4000-8000-000000000001');
+    expect(within(card).getByRole('link', { name: 'Open the exercise' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}`);
   });
 
   it('home_has_no_attempt_mode_text', async () => {
-    setViewportWidth(1440);
     homeApi();
     renderApp();
     await screen.findByRole('link', { name: 'Start an attempt' });
@@ -83,7 +81,6 @@ describe('exercises home', () => {
   });
 
   it('home_lists_exercises_grouped_by_family', async () => {
-    setViewportWidth(1440);
     homeApi();
     renderApp();
     const mine = await screen.findByRole('region', { name: /My exercises/ });
@@ -101,7 +98,6 @@ describe('exercises home', () => {
   });
 
   it('home_filter_by_family', async () => {
-    setViewportWidth(1440);
     homeApi();
     renderApp();
     const mine = await screen.findByRole('region', { name: /My exercises/ });
@@ -121,7 +117,6 @@ describe('exercises home', () => {
   });
 
   it('home_without_console_shows_get_ready', async () => {
-    setViewportWidth(1440);
     homeApi([RACING, BASICS], null);
     renderApp();
     expect(await screen.findByRole('heading', { level: 1, name: 'Get ready to train' })).toBeInTheDocument();
@@ -130,28 +125,21 @@ describe('exercises home', () => {
   });
 
   it('home_without_exercise_shows_get_ready', async () => {
-    setViewportWidth(1440);
     homeApi([]);
     renderApp();
     expect(await screen.findByRole('heading', { level: 1, name: 'Get ready to train' })).toBeInTheDocument();
   });
 
   it('home_redirects_to_drive_when_armed', async () => {
-    setViewportWidth(1440);
     homeApi();
     const view = renderApp();
     await screen.findByRole('region', { name: /My exercises/ });
-    await waitFor(() => view.sockets.latest);
-    act(() => {
-      view.sockets.latest.open();
-      view.sockets.latest.receive({ type: 'state', state: liveState({ mode: 'armed', exerciseId: 'e0000000-0000-4000-8000-000000000001', connection: 'connected' }) });
-    });
+    await openLive(view.sockets, liveState({ mode: 'armed', exerciseId: EXERCISE_ID, connection: 'connected' }));
     await waitFor(() => expect(window.location.pathname).toBe('/drive'));
     window.history.back();
   });
 
   it('home_has_no_collections_and_no_next_column', async () => {
-    setViewportWidth(1440);
     homeApi();
     renderApp();
     await screen.findByRole('link', { name: /Cornering Basics 1/ });
@@ -170,7 +158,6 @@ describe('exercises home', () => {
   });
 
   it('filter_lists_only_families_with_exercises', async () => {
-    setViewportWidth(1440);
     homeApi();
     renderApp();
     const filter = await screen.findByRole('group', { name: 'Filter' });
@@ -178,7 +165,6 @@ describe('exercises home', () => {
   });
 
   it('filter_is_hidden_with_one_family', async () => {
-    setViewportWidth(1440);
     homeApi([RACING]);
     renderApp();
     await screen.findByRole('link', { name: /Racing Line: Intermediate/ });
@@ -186,7 +172,6 @@ describe('exercises home', () => {
   });
 
   it('select_and_remove_exercises', async () => {
-    setViewportWidth(1440);
     const api = homeApi().on('POST /api/exercises/remove', { exercises: 2, attempts: 6, references: 2, cleanup: null });
     renderApp();
     const mine = await screen.findByRole('region', { name: /My exercises/ });
@@ -217,7 +202,6 @@ describe('exercises home', () => {
   });
 
   it('no_delete_button_ends_with_an_ellipsis', async () => {
-    setViewportWidth(1440);
     homeApi();
     renderApp();
     const mine = await screen.findByRole('region', { name: /My exercises/ });
@@ -227,7 +211,6 @@ describe('exercises home', () => {
   });
 
   it('quick_select_without_history', async () => {
-    setViewportWidth(1440);
     homeApi();
     renderApp();
     const mine = await screen.findByRole('region', { name: /My exercises/ });
@@ -266,7 +249,6 @@ describe('exercises home', () => {
   });
 
   it('remove_one_exercise_without_history_has_no_cleanup_box', async () => {
-    setViewportWidth(1440);
     homeApi();
     renderApp();
     const mine = await screen.findByRole('region', { name: /My exercises/ });
@@ -280,7 +262,6 @@ describe('exercises home', () => {
   });
 
   it('remove_busy_shows_message', async () => {
-    setViewportWidth(1440);
     homeApi().on('POST /api/exercises/remove', { status: 409, body: { code: 'busy', reason: 'Busy.' } });
     renderApp();
     const mine = await screen.findByRole('region', { name: /My exercises/ });

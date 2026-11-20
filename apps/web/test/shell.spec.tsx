@@ -2,12 +2,12 @@ import { Profiler } from 'react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
-import { exercise, exerciseApi, rememberExercise } from './fixtures.ts';
+import { exercise, exerciseApi, rememberExercise, EXERCISE_ID } from './fixtures.ts';
 import { LiveProvider } from '../src/api/live.tsx';
 import { RouterProvider } from '../src/app/router.tsx';
 import { SessionContext } from '../src/app/session.tsx';
 import { Shell } from '../src/app/Shell.tsx';
-import { ApiStub, FakeSockets, liveState, renderApp, setViewportWidth, signedIn, USER } from './support.tsx';
+import { ApiStub, FakeSockets, liveState, renderApp, setViewportWidth, signedIn, USER, openLive } from './support.tsx';
 
 afterEach(() => {
   delete document.documentElement.dataset.theme;
@@ -16,7 +16,6 @@ afterEach(() => {
 
 describe('shell', () => {
   it('shell_does_not_render_on_a_speed_change', async () => {
-    setViewportWidth(1440);
     window.history.replaceState(null, '', '/no-such-page');
     signedIn(new ApiStub()).on('GET /api/exercises', []).on('GET /api/progress', { collections: [], exercises: [] }).install();
     const sockets = new FakeSockets();
@@ -46,7 +45,6 @@ describe('shell', () => {
   });
 
   it('wide_nav_links_open_their_pages', async () => {
-    setViewportWidth(1440);
     exerciseApi().install();
     renderApp();
     const nav = await screen.findByRole('navigation', { name: 'Main' });
@@ -58,7 +56,6 @@ describe('shell', () => {
   });
 
   it('shell_header_shows_logo', async () => {
-    setViewportWidth(1440);
     signedIn(new ApiStub()).on('GET /api/exercises', []).on('GET /api/progress', { collections: [], exercises: [] }).install();
     renderApp();
     const banner = await screen.findByRole('banner');
@@ -72,17 +69,12 @@ describe('shell', () => {
   });
 
   it('training_exercise_becomes_current_on_this_device', async () => {
-    setViewportWidth(1440);
     const racing = exercise({ name: 'Racing Line: Intermediate' });
     const basics = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', activeReferenceId: null });
     rememberExercise(basics.id);
     exerciseApi(racing).on('GET /api/exercises', [racing, basics]).install();
     const view = renderApp();
-    const socket = await waitFor(() => view.sockets.latest);
-    act(() => {
-      socket.open();
-      socket.receive({ type: 'state', state: liveState({ mode: 'armed', exerciseId: racing.id, connection: 'connected' }) });
-    });
+    const socket = await openLive(view.sockets, liveState({ mode: 'armed', exerciseId: racing.id, connection: 'connected' }));
     await waitFor(() => expect(window.localStorage.getItem('gt7.currentExercise.user-1')).toBe(racing.id));
     act(() => socket.receive({ type: 'state', state: liveState({ mode: 'idle', exerciseId: null, seq: 9 }) }));
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -99,7 +91,6 @@ describe('shell', () => {
   });
 
   it('header_reads_the_exercises_only_during_a_training', async () => {
-    setViewportWidth(1440);
     const api = exerciseApi().install();
     renderApp({ path: '/no-such-page' });
     await screen.findByRole('heading', { level: 1 });
@@ -108,9 +99,8 @@ describe('shell', () => {
   });
 
   it('exercises_nav_current_on_exercise_pages', async () => {
-    setViewportWidth(1440);
     exerciseApi().install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const nav = await screen.findByRole('navigation', { name: 'Main' });
     expect(within(nav).getByRole('link', { name: 'Exercises' })).toHaveAttribute('aria-current', 'page');
     expect(within(nav).getByRole('link', { name: 'Setup' })).not.toHaveAttribute('aria-current');
@@ -141,35 +131,27 @@ describe('shell', () => {
   });
 
   it('voice_dot_is_green_when_another_device_plays', async () => {
-    setViewportWidth(1440);
     exerciseApi().install();
     const view = renderApp();
-    await waitFor(() => view.sockets.latest);
-    act(() => {
-      view.sockets.latest.open();
-      view.sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: 'another-device', voiceReady: true }) });
-    });
+    await openLive(view.sockets, liveState({ voiceDeviceId: 'another-device', voiceReady: true }));
     const link = await screen.findByRole('link', { name: 'Voice: Another device plays the voice. Open Setup' });
     expect(link.querySelector('.dot')).toHaveClass('on');
     expect(link).toHaveAttribute('href', '/setup#voice');
   });
 
   it('console_dot_opens_the_console_section', async () => {
-    setViewportWidth(1440);
     exerciseApi().install();
     renderApp();
     expect(await screen.findByRole('link', { name: /^Console: / })).toHaveAttribute('href', '/setup#console');
   });
 
   it('status_label_has_one_full_stop', async () => {
-    setViewportWidth(1440);
     exerciseApi().install();
     renderApp();
     expect(await screen.findByRole('link', { name: 'Console: GT7 Tutor does not answer. Check that it runs on the computer. Open Setup' })).toBeInTheDocument();
   });
 
   it('wide_menu_has_exercises_drive_setup', async () => {
-    setViewportWidth(1280);
     exerciseApi().install();
     renderApp();
     const nav = await screen.findByRole('navigation', { name: 'Main' });
@@ -179,7 +161,6 @@ describe('shell', () => {
   });
 
   it('header_has_no_drive_button', async () => {
-    setViewportWidth(1280);
     const api = exerciseApi().install();
     renderApp();
     await screen.findByRole('navigation', { name: 'Main' });
@@ -190,7 +171,6 @@ describe('shell', () => {
   });
 
   it('drive_item_is_current_on_drive', async () => {
-    setViewportWidth(1280);
     exerciseApi().install();
     renderApp({ path: '/drive' });
     const nav = await screen.findByRole('navigation', { name: 'Main' });
@@ -199,7 +179,6 @@ describe('shell', () => {
   });
 
   it('profile_menu_signs_out', async () => {
-    setViewportWidth(1440);
     const api = exerciseApi().on('POST /api/auth/sign-out', { status: 204 }).install();
     renderApp();
     const user = userEvent.setup();
@@ -214,7 +193,6 @@ describe('shell', () => {
   });
 
   it('profile_menu_closes_on_escape_and_returns_focus', async () => {
-    setViewportWidth(1440);
     exerciseApi().install();
     renderApp();
     const user = userEvent.setup();
@@ -230,19 +208,13 @@ describe('shell', () => {
   });
 
   it('running_capture_banner_stays_on_normal_pages', async () => {
-    setViewportWidth(1440);
     exerciseApi().install();
     const view = renderApp({ path: '/setup' });
-    await waitFor(() => view.sockets.latest);
-    act(() => {
-      view.sockets.latest.open();
-      view.sockets.latest.receive({ type: 'state', state: liveState({ mode: 'capturing', exerciseId: 'e0000000-0000-4000-8000-000000000001', connection: 'connected' }) });
-    });
+    await openLive(view.sockets, liveState({ mode: 'capturing', exerciseId: EXERCISE_ID, connection: 'connected' }));
     expect(await screen.findByText(/A recording is running/)).toBeInTheDocument();
   });
 
   it('theme_switch_in_menu_sets_dark', async () => {
-    setViewportWidth(1440);
     exerciseApi().install();
     renderApp();
     const user = userEvent.setup();

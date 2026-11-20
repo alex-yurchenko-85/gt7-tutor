@@ -1,11 +1,10 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { act } from 'react';
 import { describe, expect, it } from 'vitest';
 import type { CatalogueDiff, CatalogueEntry } from '@gt7/contracts';
 import { voiceDeviceId } from '../src/voice/device.ts';
 import { exercise } from './fixtures.ts';
-import { ApiStub, liveState, playerRig, renderApp, setViewportWidth, signedIn, USER } from './support.tsx';
+import { ApiStub, liveState, playerRig, renderApp, setViewportWidth, signedIn, USER, openLive } from './support.tsx';
 
 const INFO = {
   retrieved: '2026-11-16T10:00:00.000Z',
@@ -36,7 +35,6 @@ function setupApi(diff?: CatalogueDiff, ps5Ip: string | null = null): ApiStub {
 
 describe('setup', () => {
   it('setup_rejects_invalid_address_with_reason', async () => {
-    setViewportWidth(1280);
     const api = setupApi();
     renderApp({ path: '/setup' });
     const user = userEvent.setup();
@@ -53,16 +51,11 @@ describe('setup', () => {
   });
 
   it('enabling_voice_here_shows_other_device_disabled', async () => {
-    setViewportWidth(1280);
     setupApi();
     const rig = playerRig();
     const { sockets } = renderApp({ path: '/setup#voice', player: rig.player });
     await screen.findByRole('heading', { name: 'Voice' });
-    const socket = await waitFor(() => sockets.latest);
-    act(() => {
-      socket.open();
-      socket.receive({ type: 'state', state: liveState({ voiceDeviceId: 'phone', voiceReady: true }) });
-    });
+    const socket = await openLive(sockets, liveState({ voiceDeviceId: 'phone', voiceReady: true }));
     expect(screen.getByText('Another device plays the voice. This device stays silent.')).toBeInTheDocument();
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Use this device for voice' }));
@@ -75,7 +68,6 @@ describe('setup', () => {
   });
 
   it('catalogue_update_shows_diff_before_apply', async () => {
-    setViewportWidth(1280);
     const api = setupApi({ added: [entry('licence-b-11', 'New test')], removed: [], changed: [{ id: 'licence-b-1', fields: ['targets'] }], rejected: null });
     renderApp({ path: '/setup#catalogue' });
     const user = userEvent.setup();
@@ -91,7 +83,6 @@ describe('setup', () => {
   });
 
   it('rejected_update_shows_reason_and_no_apply_action', async () => {
-    setViewportWidth(1280);
     setupApi({ added: [], removed: [entry('licence-b-1', 'Old test')], changed: [], rejected: 'Licence would lose 60% of its entries.' });
     renderApp({ path: '/setup#catalogue' });
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Check for updates' }));
@@ -103,16 +94,11 @@ describe('setup', () => {
 
 describe('voice test icon', () => {
   it('setup_test_icon_appears_after_the_claim', async () => {
-    setViewportWidth(1280);
     setupApi();
     const rig = playerRig();
     const { sockets } = renderApp({ path: '/setup#voice', player: rig.player });
     await screen.findByRole('heading', { name: 'Voice' });
-    await waitFor(() => sockets.latest);
-    act(() => {
-      sockets.latest.open();
-      sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: null }) });
-    });
+    await openLive(sockets, liveState({ voiceDeviceId: null }));
     expect(screen.queryByRole('button', { name: 'Test' })).not.toBeInTheDocument();
     expect(screen.queryByText('The test appears here when this device plays the voice.')).not.toBeInTheDocument();
     expect(screen.getByText('One device plays the cues: this device, or another one with GT7 Tutor open. A phone must stay unlocked during an attempt.')).toBeInTheDocument();
@@ -124,31 +110,21 @@ describe('voice test icon', () => {
 
 describe('setup fixes', () => {
   it('voice_off_message_says_the_drive_screen_still_shows_the_cues', async () => {
-    setViewportWidth(1280);
     setupApi();
     const rig = playerRig();
     const { sockets } = renderApp({ path: '/setup#voice', player: rig.player });
     await screen.findByRole('heading', { name: 'Voice' });
-    await waitFor(() => sockets.latest);
-    act(() => {
-      sockets.latest.open();
-      sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: true }) });
-    });
+    await openLive(sockets, liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: true }));
     await userEvent.setup().click(screen.getByRole('button', { name: 'Turn voice off here' }));
     expect(await screen.findByText('The voice is off on this device. The Drive screen still shows the cues.')).toBeInTheDocument();
   });
 
   it('voice_test_reports_browser_latency_not_a_measurement', async () => {
-    setViewportWidth(1280);
     setupApi();
     const rig = playerRig();
     const { sockets } = renderApp({ path: '/setup#voice', player: rig.player });
     await screen.findByRole('heading', { name: 'Voice' });
-    await waitFor(() => sockets.latest);
-    act(() => {
-      sockets.latest.open();
-      sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: true }) });
-    });
+    await openLive(sockets, liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: true }));
     await userEvent.setup().click(screen.getByRole('button', { name: 'Test' }));
     const result = await screen.findByText(/The browser reports an output delay of 25 ms/);
     expect(result).toHaveTextContent('wireless headphones');
@@ -156,7 +132,6 @@ describe('setup fixes', () => {
   });
 
   it('console_saves_and_checks_with_one_icon_button', async () => {
-    setViewportWidth(1280);
     const api = setupApi().on('POST /api/settings/connection/check', { packets: 31, decoded: 31, durationMs: 520, carId: null });
     renderApp({ path: '/setup' });
     const user = userEvent.setup();
@@ -173,7 +148,6 @@ describe('setup fixes', () => {
   });
 
   it('telemetry_check_again_is_an_icon_button', async () => {
-    setViewportWidth(1280);
     const api = setupApi(undefined, '10.0.0.5').on('POST /api/settings/connection/check', { packets: 31, decoded: 31, durationMs: 520, carId: null });
     renderApp({ path: '/setup#console' });
     const again = await screen.findByRole('button', { name: 'Check again' });
@@ -184,7 +158,6 @@ describe('setup fixes', () => {
   });
 
   it('reception_check_without_address_shows_the_server_reason', async () => {
-    setViewportWidth(1280);
     setupApi().on('POST /api/settings/connection/check', {
       status: 409,
       body: { code: 'console-address-missing', reason: 'Enter the PS5 address in Setup before a capture.' }
@@ -197,16 +170,11 @@ describe('setup fixes', () => {
 
 describe('voice after a reload', () => {
   it('voice_claimed_but_not_ready_offers_to_start_audio_again', async () => {
-    setViewportWidth(1280);
     setupApi();
     const rig = playerRig();
     const { sockets } = renderApp({ path: '/setup#voice', player: rig.player });
     await screen.findByRole('heading', { name: 'Voice' });
-    await waitFor(() => sockets.latest);
-    act(() => {
-      sockets.latest.open();
-      sockets.latest.receive({ type: 'state', state: liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: false }) });
-    });
+    await openLive(sockets, liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: false }));
     expect(screen.getByText('The browser did not start the sound on this device. Select Use this device for voice again.')).toHaveClass('error');
     expect(document.querySelector('.setup-panel .dot')).toBeNull();
     expect(screen.getByRole('button', { name: 'Use this device for voice' })).toBeInTheDocument();
@@ -227,7 +195,6 @@ function openSocket(sockets: ReturnType<typeof renderApp>['sockets'], overrides:
 
 describe('setup sections', () => {
   it('wide_setup_shows_one_section_at_a_time', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup' });
     expect(await screen.findByRole('heading', { level: 2, name: 'Console' })).toBeInTheDocument();
@@ -245,7 +212,6 @@ describe('setup sections', () => {
   });
 
   it('hash_opens_voice_section', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#voice' });
     expect(await screen.findByRole('heading', { level: 2, name: 'Voice' })).toBeInTheDocument();
@@ -253,7 +219,6 @@ describe('setup sections', () => {
   });
 
   it('default_section_is_voice_without_a_voice_device_and_stays', async () => {
-    setViewportWidth(1280);
     setupApi(undefined, '10.0.0.5');
     const { sockets } = renderApp({ path: '/setup' });
     await waitFor(() => sockets.latest);
@@ -265,7 +230,6 @@ describe('setup sections', () => {
   });
 
   it('default_section_is_profiles_when_ready', async () => {
-    setViewportWidth(1280);
     setupApi(undefined, '10.0.0.5');
     const { sockets } = renderApp({ path: '/setup' });
     await waitFor(() => sockets.latest);
@@ -275,7 +239,6 @@ describe('setup sections', () => {
   });
 
   it('setup_has_no_readiness_block', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup' });
     await screen.findByRole('heading', { name: 'Setup' });
@@ -284,7 +247,6 @@ describe('setup sections', () => {
   });
 
   it('setup_menu_has_no_dots', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup' });
     const nav = await screen.findByRole('navigation', { name: 'Setup sections' });
@@ -292,7 +254,6 @@ describe('setup sections', () => {
   });
 
   it('sections_show_the_state_as_text_without_a_dot', async () => {
-    setViewportWidth(1280);
     setupApi();
     const { sockets } = renderApp({ path: '/setup#console' });
     await waitFor(() => sockets.latest);
@@ -302,14 +263,12 @@ describe('setup sections', () => {
   });
 
   it('server_not_answering_is_red_text', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#console' });
     expect(await screen.findByText('GT7 Tutor does not answer. Check that it runs on the computer.')).toHaveClass('error');
   });
 
   it('no_packets_is_red_text', async () => {
-    setViewportWidth(1280);
     setupApi();
     const { sockets } = renderApp({ path: '/setup#console' });
     await waitFor(() => sockets.latest);
@@ -318,7 +277,6 @@ describe('setup sections', () => {
   });
 
   it('console_help_texts_are_new', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#console' });
     expect(await screen.findByText('GT7 Tutor asks the console for telemetry at this address. Save also checks the reception.')).toBeInTheDocument();
@@ -326,7 +284,6 @@ describe('setup sections', () => {
   });
 
   it('voice_without_a_device_has_text_without_a_dot', async () => {
-    setViewportWidth(1280);
     setupApi();
     const { sockets } = renderApp({ path: '/setup#voice' });
     await waitFor(() => sockets.latest);
@@ -336,7 +293,6 @@ describe('setup sections', () => {
   });
 
   it('this_device_plays_the_voice_without_a_dot', async () => {
-    setViewportWidth(1280);
     setupApi();
     const { sockets } = renderApp({ path: '/setup#voice' });
     await waitFor(() => sockets.latest);
@@ -346,7 +302,6 @@ describe('setup sections', () => {
   });
 
   it('no_setting_has_a_device_tag', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#voice' });
     expect(screen.queryByText('On this device')).toBeNull();
@@ -365,7 +320,6 @@ describe('setup sections', () => {
   });
 
   it('add_profile_form_is_collapsed', async () => {
-    setViewportWidth(1280);
     const api = setupApi().on('POST /api/profiles', { status: 201, body: { user: { id: 'user-2', name: 'Maria' } } });
     renderApp({ path: '/setup#profiles' });
     const user = userEvent.setup();
@@ -386,7 +340,6 @@ describe('setup sections', () => {
   });
 
   it('profile_row_shows_the_signed_in_profile', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#profiles' });
     const row = await screen.findByRole('group', { name: USER.name });
@@ -395,7 +348,6 @@ describe('setup sections', () => {
   });
 
   it('change_password_flow', async () => {
-    setViewportWidth(1280);
     let reply: { status: number; body?: unknown } = { status: 204 };
     const api = setupApi().on('PUT /api/profiles/me/password', () => reply);
     renderApp({ path: '/setup#profiles' });
@@ -425,7 +377,6 @@ describe('setup sections', () => {
   });
 
   it('change_password_checks_the_new_password_length', async () => {
-    setViewportWidth(1280);
     const api = setupApi();
     renderApp({ path: '/setup#profiles' });
     const user = userEvent.setup();
@@ -438,7 +389,6 @@ describe('setup sections', () => {
   });
 
   it('restore_is_a_button_with_the_undo_icon', async () => {
-    setViewportWidth(1280);
     const api = setupApi().on('GET /api/catalogue/info', { ...INFO, hasPrevious: true, previousRetrieved: '2026-11-02T10:00:00.000Z' });
     api.on('POST /api/catalogue/update/restore', { ok: true });
     renderApp({ path: '/setup#catalogue' });
@@ -451,7 +401,6 @@ describe('setup sections', () => {
   });
 
   it('catalogue_check_is_remembered_on_this_device', async () => {
-    setViewportWidth(1280);
     setupApi({ added: [], removed: [], changed: [], rejected: null });
     const first = renderApp({ path: '/setup#catalogue' });
     expect(await screen.findByText('Not checked on this device yet.')).toBeInTheDocument();
@@ -467,7 +416,6 @@ describe('setup sections', () => {
   });
 
   it('catalogue_version_row_shows_the_date', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#catalogue' });
     expect(await screen.findByText('16 November 2026')).toBeInTheDocument();
@@ -475,7 +423,6 @@ describe('setup sections', () => {
   });
 
   it('game_version_saves_with_an_icon_button', async () => {
-    setViewportWidth(1280);
     const api = setupApi().on('PUT /api/settings/game-version', { ps5Ip: null, gameVersion: '1.65' });
     renderApp({ path: '/setup#preferences' });
     const user = userEvent.setup();
@@ -488,7 +435,6 @@ describe('setup sections', () => {
   });
 
   it('no_restore_without_a_previous_catalogue', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#catalogue' });
     await screen.findByRole('button', { name: 'Check for updates' });
@@ -496,7 +442,6 @@ describe('setup sections', () => {
   });
 
   it('catalogue_counts_follow_the_family_order', async () => {
-    setViewportWidth(1280);
     setupApi().on('GET /api/catalogue/info', { ...INFO, counts: { ...INFO.counts, entries: { 'Brand Central': 20, Licence: 100, 'Circuit Experience': 58 } } });
     renderApp({ path: '/setup#catalogue' });
     await screen.findByText('Brand Central');
@@ -505,7 +450,6 @@ describe('setup sections', () => {
   });
 
   it('theme_switch_has_labels_in_setup', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#preferences' });
     const group = await screen.findByRole('radiogroup', { name: 'Theme' });
@@ -513,7 +457,6 @@ describe('setup sections', () => {
   });
 
   it('data_section_links_delete_history', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#data' });
     expect(await screen.findByRole('link', { name: 'Delete history' })).toHaveAttribute('href', '/setup/delete-history');
@@ -521,7 +464,6 @@ describe('setup sections', () => {
   });
 
   it('no_delete_button_ends_with_an_ellipsis', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#data' });
     await screen.findByRole('link', { name: 'Delete history' });
@@ -529,7 +471,6 @@ describe('setup sections', () => {
   });
 
   it('profile_delete_button_has_no_ellipsis', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#profiles' });
     await screen.findByRole('button', { name: 'Delete profile' });
@@ -537,7 +478,6 @@ describe('setup sections', () => {
   });
 
   it('cleanup_confirm_button_says_clean_up_captures', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#data' });
     const user = userEvent.setup();
@@ -547,7 +487,6 @@ describe('setup sections', () => {
   });
 
   it('no_switch_profile_in_setup_or_menu', async () => {
-    setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#profiles' });
     await screen.findByRole('heading', { level: 2, name: 'Profiles' });
@@ -559,7 +498,6 @@ describe('setup sections', () => {
 
 describe('screen updates', () => {
   it('preferences_set_screen_updates', async () => {
-    setViewportWidth(1280);
     setupApi();
     const { sockets } = renderApp({ path: '/setup#preferences' });
     await waitFor(() => sockets.latest);
@@ -576,7 +514,6 @@ describe('screen updates', () => {
   });
 
   it('socket_sends_stored_state_rate_on_open', async () => {
-    setViewportWidth(1280);
     window.localStorage.setItem('gt7.stateRate', '30');
     setupApi();
     const { sockets } = renderApp({ path: '/setup#preferences' });
@@ -602,7 +539,6 @@ describe('screen updates', () => {
   }
 
   it('delete_profile_confirms_with_password', async () => {
-    setViewportWidth(1280);
     const api = deleteProfileApi({ status: 200, body: { exercises: 2, attempts: 6, references: 2, cleanup: null } });
     renderApp({ path: '/setup#profiles' });
     const user = userEvent.setup();
@@ -639,7 +575,6 @@ describe('screen updates', () => {
   });
 
   it('delete_profile_busy_shows_message', async () => {
-    setViewportWidth(1280);
     deleteProfileApi({ status: 409, body: { code: 'busy', reason: 'Busy.' } });
     renderApp({ path: '/setup#profiles' });
     const user = userEvent.setup();
@@ -651,7 +586,6 @@ describe('screen updates', () => {
   });
 
   it('delete_profile_names_one_exercise_and_one_attempt', async () => {
-    setViewportWidth(1280);
     setupApi().on('GET /api/exercises', [exercise({ attemptCount: 1, referenceCount: 1 })]);
     renderApp({ path: '/setup#profiles' });
     await userEvent.click(await screen.findByRole('button', { name: 'Delete profile' }));

@@ -6,8 +6,9 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['test/**/*.spec.ts'],
+    exclude: ['test/unit/**'],
     globalSetup: ['../../tools/testing/temp-root.ts'],
-    fileParallelism: false,
+    setupFiles: ['test/support/setup.ts'],
     testTimeout: 30000,
     hookTimeout: 60000,
     coverage: {

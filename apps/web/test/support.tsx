@@ -1,4 +1,5 @@
 import { act, render, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import type { ClientMsg, LiveCue, LiveState, ServerMsg } from '@gt7/contracts';
 import { App } from '../src/app/App.tsx';
@@ -235,6 +236,19 @@ export function renderApp(options: { path?: string; sockets?: FakeSockets; playe
   const sockets = options.sockets ?? new FakeSockets();
   const view = render(<App socketFactory={sockets.factory} {...(options.player ? { player: options.player } : {})} />);
   return { ...view, sockets };
+}
+
+export function timedUser() {
+  return userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+}
+
+export async function openLive(sockets: FakeSockets, state: LiveState = liveState()): Promise<FakeSocket> {
+  const socket = await waitFor(() => sockets.latest);
+  act(() => {
+    socket.open();
+    socket.receive({ type: 'state', state });
+  });
+  return socket;
 }
 
 export async function sendLiveState(view: { sockets: FakeSockets }, overrides: Partial<LiveState>): Promise<void> {

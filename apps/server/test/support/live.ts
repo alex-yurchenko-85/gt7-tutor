@@ -1,3 +1,4 @@
+import type { INestApplication } from '@nestjs/common';
 import type { RawDatagram, ServerMsg } from '@gt7/contracts';
 import { readRaw, type DatagramHandler, type TelemetrySource } from '@gt7/capture';
 import { WebSocket } from 'ws';
@@ -36,6 +37,11 @@ export class LiveConnection {
     this.socket.close();
     return this.closed;
   }
+}
+
+export async function listen(app: INestApplication): Promise<number> {
+  await app.listen(0, '127.0.0.1');
+  return (app.getHttpServer().address() as { port: number }).port;
 }
 
 export function openLive(port: number, cookie?: string, headers: Record<string, string> = {}): Promise<LiveConnection> {

@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { catalogueEntry, exercise } from './fixtures.ts';
+import { catalogueEntry, exercise, EXERCISE_ID } from './fixtures.ts';
 import { ApiStub, renderApp, setViewportWidth, signedIn, USER } from './support.tsx';
 
 const ENTRIES = [
@@ -16,7 +16,7 @@ const ENTRIES = [
   }),
   catalogueEntry({ id: 'licence-b-3', code: 'B-3', name: 'Cornering Basics 1', track: 'Alsace - Village', collection: 'National B' }),
   catalogueEntry({ id: 'ce-tsukuba-1', family: 'Circuit Experience', collection: 'Japan', name: 'Tsukuba Circuit Sector 1', track: 'Tsukuba Circuit' }),
-  catalogueEntry({ id: 'brand-yangwang-racing-lines', family: 'Brand Central', collection: 'Yangwang', code: 'EXP-1', name: 'Racing Lines', exerciseId: 'e0000000-0000-4000-8000-000000000001', status: 'ready' })
+  catalogueEntry({ id: 'brand-yangwang-racing-lines', family: 'Brand Central', collection: 'Yangwang', code: 'EXP-1', name: 'Racing Lines', exerciseId: EXERCISE_ID, status: 'ready' })
 ];
 
 function catalogueApi(): ApiStub {
@@ -39,7 +39,6 @@ function row(id: string): HTMLElement {
 
 describe('add exercise', () => {
   it('add_exercise_has_breadcrumb_and_sources', async () => {
-    setViewportWidth(1440);
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Add an exercise' })).toBeInTheDocument();
@@ -50,7 +49,6 @@ describe('add exercise', () => {
   });
 
   it('catalogue_filters_and_search_combine', async () => {
-    setViewportWidth(1280);
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     const user = userEvent.setup();
@@ -65,7 +63,6 @@ describe('add exercise', () => {
   });
 
   it('an_empty_search_says_to_clear_the_filters', async () => {
-    setViewportWidth(1280);
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     await screen.findByRole('table', { name: 'Catalogue exercises' });
@@ -74,7 +71,6 @@ describe('add exercise', () => {
   });
 
   it('search_filters_by_code', async () => {
-    setViewportWidth(1440);
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     await screen.findByRole('table', { name: 'Catalogue exercises' });
@@ -84,7 +80,6 @@ describe('add exercise', () => {
   });
 
   it('rows_show_track_car_and_targets', async () => {
-    setViewportWidth(1440);
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     await screen.findByRole('table', { name: 'Catalogue exercises' });
@@ -96,7 +91,6 @@ describe('add exercise', () => {
   });
 
   it('added_exercise_becomes_the_current_one', async () => {
-    setViewportWidth(1440);
     const added = exercise({ id: 'e0000000-0000-4000-8000-000000000009', name: 'Cornering Basics 1', activeReferenceId: null, step: 1 });
     let created = false;
     catalogueApi()
@@ -114,7 +108,6 @@ describe('add exercise', () => {
   });
 
   it('add_navigates_to_exercise_page', async () => {
-    setViewportWidth(1440);
     const api = catalogueApi()
       .on('POST /api/exercises', { status: 201, body: exercise({ id: 'e0000000-0000-4000-8000-000000000009', name: 'Cornering Basics 1' }) })
       .on('GET /api/exercises/e0000000-0000-4000-8000-000000000009', exercise({ id: 'e0000000-0000-4000-8000-000000000009', name: 'Cornering Basics 1', activeReferenceId: null, step: 1 }));
@@ -127,19 +120,17 @@ describe('add exercise', () => {
   });
 
   it('added_entry_links_to_its_page', async () => {
-    setViewportWidth(1440);
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     await screen.findByRole('table', { name: 'Catalogue exercises' });
     const open = within(row('brand-yangwang-racing-lines')).getByRole('link', { name: 'Added · open Racing Lines' });
-    expect(open).toHaveAttribute('href', '/exercises/e0000000-0000-4000-8000-000000000001');
+    expect(open).toHaveAttribute('href', `/exercises/${EXERCISE_ID}`);
     expect(within(row('brand-yangwang-racing-lines')).queryByRole('button')).toBeNull();
     expect(screen.queryByText(/checked/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/verified/i)).not.toBeInTheDocument();
   });
 
   it('empty_search_shows_hint', async () => {
-    setViewportWidth(1280);
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     const user = userEvent.setup();
@@ -158,7 +149,6 @@ describe('add exercise', () => {
   });
 
   it('own_exercise_is_created_with_an_icon_button', async () => {
-    setViewportWidth(1280);
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     const form = await screen.findByRole('form', { name: 'Your own exercise' });

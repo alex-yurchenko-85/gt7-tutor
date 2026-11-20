@@ -7,10 +7,10 @@ import { SESSION_COOKIE, readCookie } from '../src/auth/session-cookie.js';
 import { PING_INTERVAL_MS } from '../src/live/live-hub.service.js';
 import { createTestApp } from './support/app.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
-import { openLive } from './support/live.js';
-import { cookiePair, sessionCookie } from './support/session.js';
+import { listen, openLive } from './support/live.js';
+import { PASSWORD, cookiePair, firstProfile as createFirstProfile, sessionCookie } from './support/session.js';
 
-const credentials = { name: 'Driver', password: 'correct horse' };
+const credentials = { name: 'Driver', password: PASSWORD };
 
 describe('profiles and sessions', () => {
   let database: DisposableDatabase;
@@ -37,10 +37,7 @@ describe('profiles and sessions', () => {
     await app.close();
   });
 
-  async function firstProfile() {
-    const response = await http().post('/api/auth/first-profile').send(credentials).expect(201);
-    return cookiePair(sessionCookie(response));
-  }
+  const firstProfile = () => createFirstProfile(app, credentials.name);
 
   it('state_reports_empty_installation', async () => {
     const response = await http().get('/api/auth/state').expect(200);
@@ -163,8 +160,7 @@ describe('profiles and sessions', () => {
   it('change_password_closes_the_live_connections_of_other_sessions', async () => {
     const cookie = await firstProfile();
     const other = cookiePair(sessionCookie(await http().post('/api/auth/sign-in').send(credentials).expect(200)));
-    await app.listen(0, '127.0.0.1');
-    const port = (app.getHttpServer().address() as { port: number }).port;
+    const port = await listen(app);
     const mine = await openLive(port, cookie);
     const theirs = await openLive(port, other);
     await mine.waitFor('state');
@@ -185,8 +181,7 @@ describe('profiles and sessions', () => {
   it('sign_out_closes_only_the_live_connections_of_that_session', async () => {
     const cookie = await firstProfile();
     const other = cookiePair(sessionCookie(await http().post('/api/auth/sign-in').send(credentials).expect(200)));
-    await app.listen(0, '127.0.0.1');
-    const port = (app.getHttpServer().address() as { port: number }).port;
+    const port = await listen(app);
     const mine = await openLive(port, cookie);
     const theirs = await openLive(port, other);
     await mine.waitFor('state');
@@ -202,8 +197,7 @@ describe('profiles and sessions', () => {
 
   it('handshake_database_failure_closes_the_socket', async () => {
     const cookie = await firstProfile();
-    await app.listen(0, '127.0.0.1');
-    const port = (app.getHttpServer().address() as { port: number }).port;
+    const port = await listen(app);
     vi.spyOn(app.get(AuthService), 'userForToken').mockRejectedValueOnce(new Error('database down'));
     const mine = await openLive(port, cookie);
     expect((await mine.closed).code).toBe(1011);
@@ -214,8 +208,7 @@ describe('profiles and sessions', () => {
 
   it('signed_out_session_closes_its_live_connection_within_one_ping', async () => {
     const cookie = await firstProfile();
-    await app.listen(0, '127.0.0.1');
-    const port = (app.getHttpServer().address() as { port: number }).port;
+    const port = await listen(app);
     const mine = await openLive(port, cookie);
     await mine.waitFor('state');
     const signedOutAt = Date.now();
@@ -226,8 +219,7 @@ describe('profiles and sessions', () => {
 
   it('expired_session_closes_its_live_connection_within_one_ping', async () => {
     const cookie = await firstProfile();
-    await app.listen(0, '127.0.0.1');
-    const port = (app.getHttpServer().address() as { port: number }).port;
+    const port = await listen(app);
     const mine = await openLive(port, cookie);
     await mine.waitFor('state');
     const expiredAt = Date.now();

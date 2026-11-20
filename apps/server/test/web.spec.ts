@@ -1,8 +1,10 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import type { INestApplication } from '@nestjs/common';
+import knex from 'knex';
 import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.factory.js';
 import { createTestApp } from './support/app.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
@@ -16,6 +18,13 @@ function webBuild(): string {
   mkdirSync(join(dir, 'assets'), { recursive: true });
   writeFileSync(join(dir, 'index.html'), '<!doctype html><title>GT7 Tutor</title><div id="root"></div>');
   writeFileSync(join(dir, 'assets', 'app.js'), 'export {};');
+  return dir;
+}
+
+function webSource(): string {
+  const dir = testTempDir('gt7-server-');
+  cpSync(fileURLToPath(new URL('../../web/public', import.meta.url)), dir, { recursive: true });
+  cpSync(fileURLToPath(new URL('../../web/index.html', import.meta.url)), join(dir, 'index.html'));
   return dir;
 }
 
@@ -39,19 +48,25 @@ describe('web interface and reception check', () => {
   async function start(env: Record<string, string> = {}) {
     replays = new FixtureReplays();
     app = await createTestApp(database.url, {
-      env: { TELEMETRY_SOURCE: 'replay', ...env },
+      env: { TELEMETRY_SOURCE: 'replay', WEB_DIR: webSource(), ...env },
       override: builder => builder.overrideProvider(TELEMETRY_SOURCE_FACTORY).useValue(replays.factory)
     });
   }
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     database = await createMigratedDatabase();
+  });
+
+  afterAll(async () => {
+    await database.drop();
   });
 
   afterEach(async () => {
     await app?.close();
     app = null;
-    await database.drop();
+    const db = knex({ client: 'pg', connection: database.url });
+    await db.raw('truncate table users, sessions, settings cascade');
+    await db.destroy();
   });
 
   it('serves_the_web_build_and_falls_back_to_index_for_views', async () => {

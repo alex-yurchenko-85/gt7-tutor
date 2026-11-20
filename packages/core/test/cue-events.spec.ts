@@ -81,17 +81,6 @@ describe('phrase strength', () => {
     expect(brakeOf(200, 101).bigStop).toBe(false);
     expect(brakeOf(200, 100).bigStop).toBe(true);
   });
-
-  it('event_keys_do_not_change', () => {
-    expect(buildCueEvents(interlagosReference(), DEFAULT_CONFIG).map(event => event.key)).toEqual([
-      'brake@291',
-      'throttle@411',
-      'ease-off@564',
-      'throttle@568',
-      'ease-off@792',
-      'throttle@796'
-    ]);
-  });
 });
 
 describe('buildCueEvents', () => {

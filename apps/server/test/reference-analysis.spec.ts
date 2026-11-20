@@ -4,13 +4,11 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readSamples } from '@gt7/capture';
 import { DEFAULT_CONFIG, analyseReference } from '@gt7/core';
-import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.factory.js';
 import type { ReferenceRow } from '../src/ownership/owned.js';
 import { ReferencesService } from '../src/references/references.service.js';
-import { createTestApp } from './support/app.js';
+import { DEMONSTRATION, TestApi, createReplayApp } from './support/api.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
-import { testTempDir } from '../../../tools/testing/temp-root.js';
-import { FixtureReplays } from './support/replay-sources.js';
+import type { FixtureReplays } from './support/replay-sources.js';
 import { fixturePath } from '../../../tools/testing/fixture-path.js';
 import { firstProfile } from './support/session.js';
 
@@ -27,12 +25,12 @@ describe('reference analysis cache', () => {
   let cookie: string;
   let exerciseId: string;
   let captureId: string;
-  const http = () => request(app.getHttpServer());
+  const api = new TestApi(() => app, () => replays, () => cookie);
+  const http = () => api.http();
   const analysed = vi.mocked(analyseReference);
 
   async function reference(): Promise<string> {
-    const response = await http().post('/api/references').set('Cookie', cookie).send({ exerciseId, captureId, first: 457, last: 1422 }).expect(201);
-    return response.body.id as string;
+    return api.reference(exerciseId, captureId);
   }
 
   async function readAll(referenceId: string): Promise<void> {
@@ -51,17 +49,10 @@ describe('reference analysis cache', () => {
 
   beforeEach(async () => {
     await db.raw('truncate table users, sessions, settings cascade');
-    replays = new FixtureReplays();
-    app = await createTestApp(database.url, {
-      env: { DATA_DIR: testTempDir('gt7-server-'), TELEMETRY_SOURCE: 'replay' },
-      override: builder => builder.overrideProvider(TELEMETRY_SOURCE_FACTORY).useValue(replays.factory)
-    });
+    ({ app, replays } = await createReplayApp(database.url));
     cookie = await firstProfile(app);
-    exerciseId = (await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'ce-autodromo-de-interlagos' }).expect(201)).body.id;
-    replays.queue.push('demo-a');
-    captureId = (await http().post('/api/captures').set('Cookie', cookie).send({ exerciseId, purpose: 'demo' }).expect(201)).body.id;
-    await replays.finished();
-    await http().post(`/api/captures/${captureId}/stop`).set('Cookie', cookie).expect(201);
+    exerciseId = await api.exercise();
+    captureId = await api.capture(exerciseId, 'demo-a');
     analysed.mockClear();
   });
 
@@ -88,7 +79,7 @@ describe('reference analysis cache', () => {
     const service = app.get(ReferencesService);
     const first = await service.analysisOf(row);
     const cached = await service.analysisOf(row);
-    const fresh = analyseReference(await readSamples(fixturePath('demo-a'), { first: 457, last: 1422 }), DEFAULT_CONFIG);
+    const fresh = analyseReference(await readSamples(fixturePath('demo-a'), DEMONSTRATION), DEFAULT_CONFIG);
     expect(cached).toBe(first);
     expect(cached).toEqual(fresh);
   });

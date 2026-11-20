@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseRoute, paths } from '../src/app/router.tsx';
+import { EXERCISE_ID } from './fixtures.ts';
 
 describe('router', () => {
   it('parse_add_before_exercise_id', () => {
@@ -8,9 +9,9 @@ describe('router', () => {
   });
 
   it('parse_exercise_page', () => {
-    expect(parseRoute('/exercises/e0000000-0000-4000-8000-000000000001')).toEqual({ name: 'exercise', exerciseId: 'e0000000-0000-4000-8000-000000000001' });
-    expect(parseRoute('/exercises/e0000000-0000-4000-8000-000000000001/')).toEqual({ name: 'exercise', exerciseId: 'e0000000-0000-4000-8000-000000000001' });
-    expect(parseRoute('/exercises/e0000000-0000-4000-8000-000000000001/attempts')).toEqual({ name: 'attempts', exerciseId: 'e0000000-0000-4000-8000-000000000001' });
+    expect(parseRoute(`/exercises/${EXERCISE_ID}`)).toEqual({ name: 'exercise', exerciseId: EXERCISE_ID });
+    expect(parseRoute(`/exercises/${EXERCISE_ID}/`)).toEqual({ name: 'exercise', exerciseId: EXERCISE_ID });
+    expect(parseRoute(`/exercises/${EXERCISE_ID}/attempts`)).toEqual({ name: 'attempts', exerciseId: EXERCISE_ID });
     expect(parseRoute('/')).toEqual({ name: 'exercises' });
     expect(parseRoute('/setup/delete-history')).toEqual({ name: 'delete-history' });
     expect(parseRoute('/nowhere')).toEqual({ name: 'not-found' });

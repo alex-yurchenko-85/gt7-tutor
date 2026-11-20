@@ -42,7 +42,6 @@ Each commit message follows [Conventional Commits](https://www.conventionalcommi
 Examples: `fix(core): keep the side cue silent before the apex`, `docs: describe the packet layout`.
 
 `pnpm install` sets two Git hooks. The `commit-msg` hook checks the message. The `pre-push` hook runs `pnpm typecheck` and `pnpm test`.
-Stop a running server before a push, because the tests need UDP port 33740.
 
 ## Releases
 

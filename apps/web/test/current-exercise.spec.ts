@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { currentExercise, liveExerciseId, rememberExercise } from '../src/app/current-exercise.ts';
-import { exercise } from './fixtures.ts';
+import { exercise, EXERCISE_ID } from './fixtures.ts';
 import { liveState } from './support.tsx';
 
-const RACING = exercise({ id: 'e0000000-0000-4000-8000-000000000001', createdAt: '2026-11-16T10:00:00.000Z' });
+const RACING = exercise({ id: EXERCISE_ID, createdAt: '2026-11-16T10:00:00.000Z' });
 const BASICS = exercise({ id: 'e0000000-0000-4000-8000-000000000002', createdAt: '2026-11-17T10:00:00.000Z' });
 
 describe('current exercise', () => {

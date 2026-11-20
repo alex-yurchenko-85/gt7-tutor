@@ -2,24 +2,23 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { ReferenceInfo } from '@gt7/contracts';
-import { exerciseApi, reference } from './fixtures.ts';
-import { renderApp, setViewportWidth } from './support.tsx';
+import { exerciseApi, reference, EXERCISE_ID } from './fixtures.ts';
+import { renderApp } from './support.tsx';
 
 describe('reference history', () => {
   it('reference_history_can_return_to_demonstration', async () => {
-    setViewportWidth(1280);
     let references: ReferenceInfo[] = [
       reference({ id: 'ref-demo', active: false, attemptCount: 3 }),
       reference({ id: 'ref-attempt', origin: 'attempt', active: true, createdAt: '2026-11-17T10:00:00.000Z', attemptCount: 0 })
     ];
     const api = exerciseApi()
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/references', () => references)
+      .on(`GET /api/exercises/${EXERCISE_ID}/references`, () => references)
       .on('POST /api/references/ref-demo/activate', () => {
         references = references.map(item => ({ ...item, active: item.id === 'ref-demo' }));
         return references[0];
       })
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/references' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/references` });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Return to the demonstration' }));
     await waitFor(() => expect(api.called('POST /api/references/ref-demo/activate')).toBe(true));
@@ -29,28 +28,26 @@ describe('reference history', () => {
   });
 
   it('reference_history_counts_the_attempts_that_use_a_reference', async () => {
-    setViewportWidth(1280);
     exerciseApi()
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/references', () => [
+      .on(`GET /api/exercises/${EXERCISE_ID}/references`, () => [
         reference({ id: 'ref-demo', active: true, attemptCount: 1 }),
         reference({ id: 'ref-attempt', origin: 'attempt', active: false, createdAt: '2026-11-17T10:00:00.000Z', attemptCount: 3 })
       ])
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/references' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/references` });
     expect(await screen.findByText(/1 attempt uses it\./)).toBeInTheDocument();
     expect(screen.getByText(/3 attempts use it\./)).toBeInTheDocument();
   });
 
-  const REFERENCES = 'GET /api/exercises/e0000000-0000-4000-8000-000000000001/references';
+  const REFERENCES = `GET /api/exercises/${EXERCISE_ID}/references`;
   const unused = () => [
     reference({ id: 'ref-demo', active: true, attemptCount: 1 }),
     reference({ id: 'ref-attempt', origin: 'attempt', active: false, createdAt: '2026-11-17T10:00:00.000Z', attemptCount: 0 })
   ];
 
   it('reference_delete_asks_in_a_dialog', async () => {
-    setViewportWidth(1280);
     const api = exerciseApi().on(REFERENCES, unused).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/references' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/references` });
     const user = userEvent.setup();
     const button = await screen.findByRole('button', { name: 'Delete' });
     expect(button).toHaveClass('btn', 'inline', 'danger');
@@ -66,7 +63,6 @@ describe('reference history', () => {
   });
 
   it('reference_delete_sends_the_request_and_reloads', async () => {
-    setViewportWidth(1280);
     let references = unused();
     const api = exerciseApi()
       .on(REFERENCES, () => references)
@@ -75,7 +71,7 @@ describe('reference history', () => {
         return { ok: true };
       })
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/references' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/references` });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Delete' }));
     await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Delete reference' }));
@@ -85,12 +81,11 @@ describe('reference history', () => {
   });
 
   it('reference_delete_error_shows_in_the_dialog', async () => {
-    setViewportWidth(1280);
     exerciseApi()
       .on(REFERENCES, unused)
       .on('DELETE /api/references/ref-attempt', { status: 409, body: { code: 'busy', reason: 'Busy.' } })
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/references' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/references` });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Delete' }));
     const dialog = await screen.findByRole('alertdialog');

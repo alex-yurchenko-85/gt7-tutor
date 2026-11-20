@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dropOldest } from '../src/drop-oldest.js';
+import { dropOldest } from '../../src/drop-oldest.js';
 
 describe('dropOldest', () => {
   it('drop_oldest_keeps_the_newest_entries_up_to_the_limit', () => {

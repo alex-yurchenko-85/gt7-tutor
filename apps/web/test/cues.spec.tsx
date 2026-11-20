@@ -1,19 +1,18 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { CuePreview, Exercise } from '@gt7/contracts';
-import { CORNERS, CUES, NO_DROP_PREVIEW, REFERENCE_ID, exercise, exerciseApi } from './fixtures.ts';
+import { CORNERS, CUES, NO_DROP_PREVIEW, REFERENCE_ID, exercise, exerciseApi, EXERCISE_ID } from './fixtures.ts';
 import { playerRig, renderApp, setViewportWidth } from './support.tsx';
 
 describe('cue list', () => {
   it('cue_list_rows_show_distance_phrase_and_recurring_difference', async () => {
-    setViewportWidth(1280);
     exerciseApi()
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/recurring', [
+      .on(`GET /api/exercises/${EXERCISE_ID}/recurring`, [
         { kind: 'brake-early', eventKey: 'brake@332', sM: 332, size: 15, unit: 'm', count: 6, of: 8, medianSize: 14 }
       ])
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const rows = await screen.findAllByRole('listitem', { name: /^Cue \d/ });
     expect(rows).toHaveLength(3);
     expect(rows[0]).toHaveTextContent('332 m');
@@ -26,33 +25,30 @@ describe('cue list', () => {
   });
 
   it('cue_list_counts_cues_and_turns_found', async () => {
-    setViewportWidth(1280);
     exerciseApi().install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     expect(await screen.findByText(/^3 cues and 3 turns found in the reference\./)).toBeInTheDocument();
   });
 
   it('cue_list_says_one_turn_for_a_single_turn', async () => {
-    setViewportWidth(1280);
     exerciseApi()
       .on('GET /api/references/ref-demo/corners', CORNERS.slice(0, 1))
       .on('GET /api/references/ref-demo/cues', CUES.slice(0, 1))
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     expect(await screen.findByText(/^1 cue and 1 turn found in the reference\./)).toBeInTheDocument();
   });
 
   it('mute_toggles_and_persists', async () => {
-    setViewportWidth(1280);
     let current: Exercise = exercise({ mutedCues: ['ease-off@600'] });
     const api = exerciseApi(current)
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001', () => current)
-      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', (body: unknown) => {
+      .on(`GET /api/exercises/${EXERCISE_ID}`, () => current)
+      .on(`PATCH /api/exercises/${EXERCISE_ID}`, (body: unknown) => {
         current = { ...current, mutedCues: (body as { mutedCues: string[] }).mutedCues };
         return current;
       })
       .install();
-    const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    const view = renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const user = userEvent.setup();
     const row = await screen.findByRole('listitem', { name: 'Cue 2' });
     expect(within(row).getByRole('button', { name: 'Hear Full throttle' }).querySelector('[data-icon="play"]')).not.toBeNull();
@@ -71,7 +67,7 @@ describe('cue list', () => {
     expect(within(row).getByRole('slider')).toBeInTheDocument();
     view.unmount();
 
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const again = await screen.findByRole('listitem', { name: 'Cue 2' });
     expect(within(again).getByRole('button', { name: 'Unmute cue 2' })).toBeInTheDocument();
   });
@@ -79,17 +75,16 @@ describe('cue list', () => {
   function patchingApi(start: Exercise = exercise()) {
     let current = start;
     return exerciseApi(current)
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001', () => current)
-      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', (body: unknown) => {
+      .on(`GET /api/exercises/${EXERCISE_ID}`, () => current)
+      .on(`PATCH /api/exercises/${EXERCISE_ID}`, (body: unknown) => {
         current = { ...current, ...(body as Partial<Exercise>) };
         return current;
       });
   }
 
   it('cue_list_has_phrase_and_target_columns', async () => {
-    setViewportWidth(1280);
     exerciseApi().install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
     const throttle = screen.getByRole('listitem', { name: 'Cue 2' });
     expect(within(row).getByText('Hard brake. Eighty five')).toBeInTheDocument();
@@ -103,9 +98,8 @@ describe('cue list', () => {
   });
 
   it('cue_list_has_speak_targets_switch', async () => {
-    setViewportWidth(1280);
     const api = patchingApi().install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const toggle = await screen.findByRole('switch', { name: 'Speak target speeds' });
     expect(toggle).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByText('After a brake phrase, the voice says the lowest speed of the reference in that place, for example “Hard brake. Eighty five”.')).toBeInTheDocument();
@@ -115,9 +109,8 @@ describe('cue list', () => {
   });
 
   it('side_cue_distance_control_saves_the_value', async () => {
-    setViewportWidth(1280);
     const api = patchingApi().install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const control = await screen.findByRole('combobox', { name: 'Side cue distance' });
     const name = screen.getByText('Side cue distance', { selector: 'label' });
     expect(control.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -132,9 +125,8 @@ describe('cue list', () => {
   });
 
   it('side_cue_distance_off_is_shown_as_off', async () => {
-    setViewportWidth(1280);
     const api = patchingApi(exercise({ sideCueDistanceM: null })).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const control = await screen.findByRole('combobox', { name: 'Side cue distance' });
     expect(control).toHaveDisplayValue('Off');
     expect(screen.getByText('The voice does not say “More left” or “More right”.')).toBeInTheDocument();
@@ -147,14 +139,16 @@ describe('cue list', () => {
   });
 
   it('cue_offset_slider_per_cue', async () => {
-    setViewportWidth(1280);
     const api = patchingApi(exercise({ cueOffsetsMs: { 'brake@332': 200 } })).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
     const slider = within(row).getByRole('slider', { name: 'Move cue 1 earlier or later' });
     expect(slider).toHaveAttribute('aria-valuetext', '0.2 s earlier');
     expect(within(row).getByRole('status', { name: 'Timing of cue 1' })).toHaveTextContent('0.2 s earlier');
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const saveDelay = () => act(() => vi.advanceTimersByTime(500));
     fireEvent.change(slider, { target: { value: '-300' } });
+    saveDelay();
     expect(within(row).getByRole('status', { name: 'Timing of cue 1' })).toHaveTextContent('0.3 s earlier');
     await waitFor(() => expect(api.calls.filter(call => call.method === 'PATCH').at(-1)?.body).toEqual({ cueOffsetsMs: { 'brake@332': 300 } }));
 
@@ -163,6 +157,7 @@ describe('cue list', () => {
     expect(within(other).getByRole('status', { name: 'Timing of cue 2' })).toHaveTextContent('On time');
     fireEvent.change(second, { target: { value: '100' } });
     fireEvent.change(second, { target: { value: '200' } });
+    saveDelay();
     await waitFor(() =>
       expect(api.calls.filter(call => call.method === 'PATCH').at(-1)?.body).toEqual({ cueOffsetsMs: { 'brake@332': 300, 'throttle@491': -200 } })
     );
@@ -171,9 +166,8 @@ describe('cue list', () => {
   });
 
   it('cue_offset_is_saved_when_leaving_the_view_at_once', async () => {
-    setViewportWidth(1280);
     const api = patchingApi().install();
-    const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    const view = renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const slider = await screen.findByRole('slider', { name: 'Move cue 1 earlier or later' });
     fireEvent.change(slider, { target: { value: '-300' } });
     view.unmount();
@@ -181,12 +175,11 @@ describe('cue list', () => {
   });
 
   it('a_mute_response_does_not_reset_a_moved_slider', async () => {
-    setViewportWidth(1280);
     const stale = exercise();
     exerciseApi(stale)
-      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', (body: unknown) => ({ ...stale, ...(body as Partial<Exercise>) }))
+      .on(`PATCH /api/exercises/${EXERCISE_ID}`, (body: unknown) => ({ ...stale, ...(body as Partial<Exercise>) }))
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
     fireEvent.change(within(row).getByRole('slider', { name: 'Move cue 1 earlier or later' }), { target: { value: '-300' } });
     const second = screen.getByRole('listitem', { name: 'Cue 2' });
@@ -196,9 +189,8 @@ describe('cue list', () => {
   });
 
   it('cue_offset_slider_covers_one_second_earlier_to_half_a_second_later', async () => {
-    setViewportWidth(1280);
     patchingApi().install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const slider = await screen.findByRole('slider', { name: 'Move cue 1 earlier or later' });
     expect(slider).toHaveAttribute('min', '-1000');
     expect(slider).toHaveAttribute('max', '500');
@@ -207,38 +199,34 @@ describe('cue list', () => {
   });
 
   it('cue_list_shows_brake_reaction', async () => {
-    setViewportWidth(1280);
     exerciseApi()
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/reactions', [{ eventKey: 'brake@332', medianMs: 690, count: 3 }])
+      .on(`GET /api/exercises/${EXERCISE_ID}/reactions`, [{ eventKey: 'brake@332', medianMs: 690, count: 3 }])
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
     await waitFor(() => expect(row).toHaveTextContent('You start to brake 0.7 s after the cue here (3 attempts)'));
     expect(screen.getByRole('listitem', { name: 'Cue 2' })).not.toHaveTextContent('You start to brake');
   });
 
   it('cue_list_shows_braking_before_the_cue', async () => {
-    setViewportWidth(1280);
     exerciseApi()
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/reactions', [{ eventKey: 'brake@332', medianMs: -420, count: 1 }])
+      .on(`GET /api/exercises/${EXERCISE_ID}/reactions`, [{ eventKey: 'brake@332', medianMs: -420, count: 1 }])
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
     await waitFor(() => expect(row).toHaveTextContent('You start to brake 0.4 s before the cue here (1 attempt)'));
   });
 
   it('cue_list_without_attempts_shows_no_reaction', async () => {
-    setViewportWidth(1280);
     exerciseApi().install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     await screen.findByRole('listitem', { name: 'Cue 1' });
     expect(screen.queryByText(/You start to brake/)).not.toBeInTheDocument();
   });
 
   it('cue_list_shows_corner_rows', async () => {
-    setViewportWidth(1280);
     exerciseApi().install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const turns = await screen.findAllByRole('listitem', { name: /^Turn \d/ });
     expect(turns.map(turn => turn.getAttribute('aria-label'))).toEqual(['Turn 1', 'Turn 2', 'Turn 3']);
     expect(turns[0]).toHaveTextContent('Turn-in 461 m');
@@ -251,7 +239,6 @@ describe('cue list', () => {
   });
 
   it('maps_show_each_turn_as_a_band_with_its_label', async () => {
-    setViewportWidth(1280);
     exerciseApi()
       .on(`GET /api/references/${REFERENCE_ID}/corners`, [
         { ...CORNERS[0]!, zoneFromSM: 2, zoneToSM: 6 },
@@ -259,7 +246,7 @@ describe('cue list', () => {
         { ...CORNERS[2]!, zoneFromSM: 14, zoneToSM: 18 }
       ])
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     await screen.findByRole('listitem', { name: 'Turn 1' });
     expect(document.querySelectorAll('.track-map .track-turn')).toHaveLength(3);
     expect([...document.querySelectorAll('.track-map .track-turn-label')].map(label => label.textContent)).toEqual(['T1', 'T2', 'T3']);
@@ -271,9 +258,8 @@ describe('cue list', () => {
 
 describe('cues map frame', () => {
   it('cues_map_panel_has_the_view_and_the_mute_note', async () => {
-    setViewportWidth(1440);
     exerciseApi().install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const user = userEvent.setup();
     const panel = await screen.findByRole('region', { name: 'Reference line, 20 m' });
     expect([...panel.querySelectorAll('.legend span')].map(span => span.textContent)).toEqual(['reference line', 'turn', 'voice cue', 'muted cue', 'cue not spoken', 'Select a number to mute that cue']);
@@ -284,11 +270,10 @@ describe('cues map frame', () => {
   });
 
   it('cues_map_number_still_mutes', async () => {
-    setViewportWidth(1440);
     const api = exerciseApi()
-      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', exercise({ mutedCues: [CUES[0]!.key] }))
+      .on(`PATCH /api/exercises/${EXERCISE_ID}`, exercise({ mutedCues: [CUES[0]!.key] }))
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const panel = await screen.findByRole('region', { name: 'Reference line, 20 m' });
     const mark = within(panel).getByRole('button', { name: 'Mute cue 1' });
     await userEvent.setup().click(mark);
@@ -298,7 +283,7 @@ describe('cues map frame', () => {
   it('cues_map_stands_above_the_cue_list_on_a_phone', async () => {
     setViewportWidth(390);
     exerciseApi().install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const panel = await screen.findByRole('region', { name: 'Reference line, 20 m' });
     const firstRow = screen.getAllByRole('listitem', { name: /^Cue \d/ })[0]!;
     expect(panel.compareDocumentPosition(firstRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -306,11 +291,10 @@ describe('cues map frame', () => {
 });
 
 describe('cues not spoken', () => {
-  const CUES_PATH = '/exercises/e0000000-0000-4000-8000-000000000001/cues';
+  const CUES_PATH = `/exercises/${EXERCISE_ID}/cues`;
   const PREVIEW = `GET /api/references/${REFERENCE_ID}/preview`;
 
   it('not_spoken_row_shows_the_tag_and_the_reason', async () => {
-    setViewportWidth(1280);
     exerciseApi()
       .on(PREVIEW, { ...NO_DROP_PREVIEW, dropped: [{ rowKey: 'throttle@491', reason: 'voice-busy', afterRowKey: 'brake@332' }] })
       .install();
@@ -323,7 +307,6 @@ describe('cues not spoken', () => {
   });
 
   it('no_drop_no_tag', async () => {
-    setViewportWidth(1280);
     exerciseApi().install();
     renderApp({ path: CUES_PATH });
     await screen.findByRole('listitem', { name: 'Cue 2' });
@@ -332,7 +315,6 @@ describe('cues not spoken', () => {
   });
 
   it('a_muted_row_never_shows_not_spoken', async () => {
-    setViewportWidth(1280);
     exerciseApi(exercise({ mutedCues: ['throttle@491'] }))
       .on(PREVIEW, { ...NO_DROP_PREVIEW, dropped: [{ rowKey: 'throttle@491', reason: 'voice-busy', afterRowKey: 'brake@332' }] })
       .install();
@@ -343,7 +325,6 @@ describe('cues not spoken', () => {
   });
 
   it('not_spoken_mark_on_the_map_has_a_badge', async () => {
-    setViewportWidth(1440);
     exerciseApi()
       .on(PREVIEW, { ...NO_DROP_PREVIEW, dropped: [{ rowKey: 'throttle@491', reason: 'too-late', afterRowKey: null }] })
       .install();
@@ -353,9 +334,8 @@ describe('cues not spoken', () => {
   });
 
   it('preview_reloads_after_a_mute', async () => {
-    setViewportWidth(1280);
     const api = exerciseApi()
-      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', exercise({ mutedCues: ['throttle@491'] }))
+      .on(`PATCH /api/exercises/${EXERCISE_ID}`, exercise({ mutedCues: ['throttle@491'] }))
       .install();
     renderApp({ path: CUES_PATH });
     const row = await screen.findByRole('listitem', { name: 'Cue 2' });
@@ -365,7 +345,6 @@ describe('cues not spoken', () => {
   });
 
   it('a_failed_preview_shows_no_tag_and_no_error', async () => {
-    setViewportWidth(1280);
     exerciseApi()
       .on(PREVIEW, { status: 500, body: { code: 'internal', reason: 'down' } })
       .install();
@@ -377,7 +356,7 @@ describe('cues not spoken', () => {
 });
 
 describe('cue preview', () => {
-  const CUES_PATH = '/exercises/e0000000-0000-4000-8000-000000000001/cues';
+  const CUES_PATH = `/exercises/${EXERCISE_ID}/cues`;
   const PREVIEW_ROUTE = `GET /api/references/${REFERENCE_ID}/preview`;
   const PLAYING: CuePreview = {
     ...NO_DROP_PREVIEW,
@@ -389,12 +368,8 @@ describe('cue preview', () => {
     ]
   };
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   async function openPreview(options: { width?: number; api?: ReturnType<typeof exerciseApi> } = {}) {
-    setViewportWidth(options.width ?? 1440);
+    if (options.width) setViewportWidth(options.width);
     const api = (options.api ?? exerciseApi().on(PREVIEW_ROUTE, PLAYING)).install();
     const rig = playerRig();
     const played: string[][] = [];
@@ -473,7 +448,7 @@ describe('cue preview', () => {
     const { button } = await openPreview({
       api: exerciseApi()
         .on(PREVIEW_ROUTE, PLAYING)
-        .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', exercise({ mutedCues: ['throttle@491'] }))
+        .on(`PATCH /api/exercises/${EXERCISE_ID}`, exercise({ mutedCues: ['throttle@491'] }))
     });
     fireEvent.click(button);
     await screen.findByRole('button', { name: 'Stop the preview' });
@@ -485,8 +460,8 @@ describe('cue preview', () => {
     let current = exercise();
     const api = exerciseApi()
       .on(PREVIEW_ROUTE, PLAYING)
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001', () => current)
-      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', (body: unknown) => {
+      .on(`GET /api/exercises/${EXERCISE_ID}`, () => current)
+      .on(`PATCH /api/exercises/${EXERCISE_ID}`, (body: unknown) => {
         current = { ...current, ...(body as Partial<Exercise>) };
         return current;
       });
@@ -496,7 +471,7 @@ describe('cue preview', () => {
     fireEvent.click(button);
     await screen.findByRole('button', { name: 'Stop the preview' });
     const routes = api.calls.map(call => `${call.method} ${call.path}`);
-    const patch = routes.indexOf('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001');
+    const patch = routes.indexOf(`PATCH /api/exercises/${EXERCISE_ID}`);
     expect(patch).toBeGreaterThan(-1);
     expect(routes.slice(patch).filter(route => route === PREVIEW_ROUTE)).toHaveLength(1);
     expect(api.calls[patch]!.body).toEqual({ cueOffsetsMs: { 'brake@332': 300 } });
@@ -526,8 +501,8 @@ describe('cue preview', () => {
     let current = exercise();
     const api = exerciseApi()
       .on(PREVIEW_ROUTE, PLAYING)
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001', () => current)
-      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', (body: unknown) => {
+      .on(`GET /api/exercises/${EXERCISE_ID}`, () => current)
+      .on(`PATCH /api/exercises/${EXERCISE_ID}`, (body: unknown) => {
         current = { ...current, ...(body as Partial<Exercise>) };
         return current;
       });

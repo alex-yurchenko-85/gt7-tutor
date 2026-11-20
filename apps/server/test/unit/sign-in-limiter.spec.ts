@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SIGN_IN_FAILURE_LIMIT, SignInLimiter } from '../src/auth/sign-in-limiter.js';
+import { SIGN_IN_FAILURE_LIMIT, SignInLimiter } from '../../src/auth/sign-in-limiter.js';
 
 describe('SignInLimiter', () => {
   it('names_that_differ_in_case_have_separate_limits', () => {

@@ -1,6 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ApiStub, USER, renderApp, setViewportWidth } from './support.tsx';
 
 function signInApi(names: string[]): ApiStub {
@@ -12,7 +12,6 @@ function signInApi(names: string[]): ApiStub {
 
 describe('access', () => {
   it('live_close_4401_shows_the_sign_in_screen', async () => {
-    setViewportWidth(1280);
     let user: typeof USER | null = USER;
     new ApiStub()
       .on('GET /api/auth/state', () => ({ hasUsers: true, user }))
@@ -28,7 +27,6 @@ describe('access', () => {
   });
 
   it('close_4401_ends_the_session_and_does_not_reconnect', async () => {
-    setViewportWidth(1280);
     let reloads = 0;
     const api = new ApiStub()
       .on('GET /api/auth/state', () => (++reloads === 1 ? { hasUsers: true, user: USER } : new Promise(() => undefined)))
@@ -36,14 +34,16 @@ describe('access', () => {
       .install();
     const { sockets } = renderApp();
     await waitFor(() => expect(sockets.sockets).toHaveLength(1));
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     act(() => sockets.latest.close(4401));
     expect(api.calls.filter(call => call.path === '/api/auth/state')).toHaveLength(2);
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
     expect(sockets.sockets).toHaveLength(1);
   });
 
   it('new_sign_in_of_the_same_user_opens_a_new_socket', async () => {
-    setViewportWidth(1280);
     new ApiStub().on('GET /api/auth/state', { hasUsers: true, user: USER }).on('GET /api/exercises', []).install();
     const { sockets } = renderApp();
     await waitFor(() => expect(sockets.sockets).toHaveLength(1));
@@ -52,7 +52,6 @@ describe('access', () => {
   });
 
   it('first_visit_shows_create_profile', async () => {
-    setViewportWidth(1280);
     new ApiStub().on('GET /api/auth/state', { hasUsers: false, user: null }).install();
     renderApp();
     expect(await screen.findByRole('heading', { name: 'Create the first profile' })).toBeInTheDocument();
@@ -61,7 +60,6 @@ describe('access', () => {
   });
 
   it('sign_in_shows_logo', async () => {
-    setViewportWidth(1280);
     signInApi(['alex']).install();
     renderApp();
     const brand = await screen.findByRole('region', { name: 'GT7 Tutor' });
@@ -70,7 +68,6 @@ describe('access', () => {
   });
 
   it('sign_in_lists_profiles_and_signs_in_the_selected_one', async () => {
-    setViewportWidth(1280);
     const api = signInApi(['alex', 'maria']).on('POST /api/auth/sign-in', { status: 200, body: { user: { id: 'u2', name: 'maria' } } }).install();
     renderApp();
     const strip = await screen.findByRole('radiogroup', { name: 'Profiles' });
@@ -85,7 +82,6 @@ describe('access', () => {
   });
 
   it('password_form_names_the_profile_for_password_managers', async () => {
-    setViewportWidth(1280);
     signInApi(['alex', 'maria']).install();
     renderApp();
     await userEvent.setup().click(await screen.findByRole('radio', { name: 'maria' }));
@@ -107,7 +103,6 @@ describe('access', () => {
   });
 
   it('password_field_waits_for_a_selection', async () => {
-    setViewportWidth(1280);
     signInApi(['alex', 'maria']).install();
     renderApp();
     expect(await screen.findByRole('heading', { level: 1, name: 'Who is driving?' })).toBeInTheDocument();
@@ -120,7 +115,6 @@ describe('access', () => {
   });
 
   it('arrow_keys_move_the_selection', async () => {
-    setViewportWidth(1280);
     signInApi(['alex', 'kid', 'maria']).install();
     renderApp();
     const user = userEvent.setup();
@@ -137,7 +131,6 @@ describe('access', () => {
   });
 
   it('strip_buttons_only_on_a_desktop', async () => {
-    setViewportWidth(1280);
     signInApi(['alex', 'maria']).install();
     const view = renderApp();
     expect(await screen.findByRole('button', { name: 'Previous profiles' })).toBeInTheDocument();
@@ -151,7 +144,6 @@ describe('access', () => {
   });
 
   it('sign_in_error_is_specific', async () => {
-    setViewportWidth(1280);
     const api = signInApi(['Driver'])
       .on('POST /api/auth/sign-in', (body: unknown) =>
         (body as { password: string }).password === 'locked out'

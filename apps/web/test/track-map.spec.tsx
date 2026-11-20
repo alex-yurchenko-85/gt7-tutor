@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { TrackMap, type TrackLine } from '../src/charts/TrackMap.tsx';
 import * as geometry from '../src/charts/geometry.ts';
 import { coveredPoints } from '../src/charts/callout-place.ts';
@@ -28,10 +28,6 @@ describe('track map', () => {
     expect(document.querySelector('.track-reference')).toBe(polyline);
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it('callout_keeps_its_screen_size_when_the_map_is_drawn_smaller', () => {
     const observed: Element[] = [];
     const disconnect = vi.fn();
@@ -44,7 +40,7 @@ describe('track map', () => {
         disconnect = disconnect;
       }
     );
-    const rect = vi.spyOn(SVGElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: 400, height: 1000, left: 0, top: 0, right: 400, bottom: 1000, x: 0, y: 0, toJSON: () => ({}) });
+    vi.spyOn(SVGElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: 400, height: 1000, left: 0, top: 0, right: 400, bottom: 1000, x: 0, y: 0, toJSON: () => ({}) });
     const callouts = [{ turn: 1, sM: 4, side: 1 as const, title: 'T1 · 1.0 m right', detail: 'at 4 m' }];
     const view = render(<TrackMap label="Map" reference={LINE} attempt={LINE} callouts={callouts} />);
     const box = document.querySelector('.track-callout rect')!;
@@ -54,7 +50,6 @@ describe('track map', () => {
     expect(observed).toHaveLength(1);
     view.unmount();
     expect(disconnect).toHaveBeenCalled();
-    rect.mockRestore();
   });
 
   it('callout_box_stays_inside_the_map_and_apart_from_the_others', () => {
@@ -260,7 +255,7 @@ describe('track map', () => {
   });
 
   it('callouts_keep_clear_of_the_start_arrow', () => {
-    const rect = vi.spyOn(SVGElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: 800, height: 400, left: 0, top: 0, right: 800, bottom: 400, x: 0, y: 0, toJSON: () => ({}) });
+    vi.spyOn(SVGElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: 800, height: 400, left: 0, top: 0, right: 800, bottom: 400, x: 0, y: 0, toJSON: () => ({}) });
     render(<TrackMap label="Map" reference={STRAIGHT} attempt={STRAIGHT} callouts={[{ turn: 1, sM: 2, side: -1, title: 'T1', detail: 'at 2 m' }]} />);
     const tip = document.querySelector('.track-direction line')!;
     const tx = Number(tip.getAttribute('x2'));
@@ -270,7 +265,6 @@ describe('track map', () => {
     const by = Number(box.getAttribute('y'));
     const inside = tx >= bx && tx <= bx + Number(box.getAttribute('width')) && ty >= by && ty <= by + Number(box.getAttribute('height'));
     expect(inside).toBe(false);
-    rect.mockRestore();
   });
 
   it('callouts_at_the_same_distance_keep_their_own_turn', () => {

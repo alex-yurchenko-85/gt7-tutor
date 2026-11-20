@@ -22,7 +22,6 @@ async function typeName(name: string) {
 
 describe('delete history', () => {
   it('delete_history_needs_profile_name', async () => {
-    setViewportWidth(1280);
     historyApi();
     renderApp({ path: '/setup/delete-history' });
     const section = await screen.findByRole('region', { name: 'Delete history' });
@@ -40,7 +39,6 @@ describe('delete history', () => {
   });
 
   it('delete_history_sends_scope_and_cleanup', async () => {
-    setViewportWidth(1280);
     const api = historyApi();
     renderApp({ path: '/setup/delete-history' });
     const section = await screen.findByRole('region', { name: 'Delete history' });
@@ -66,7 +64,6 @@ describe('delete history', () => {
   });
 
   it('delete_history_busy_shows_message', async () => {
-    setViewportWidth(1280);
     historyApi().on('POST /api/history/delete', { status: 409, body: { code: 'busy', reason: 'Stop the training or the recording first.' } });
     renderApp({ path: '/setup/delete-history' });
     const section = await screen.findByRole('region', { name: 'Delete history' });
@@ -86,7 +83,6 @@ describe('delete history', () => {
   });
 
   it('delete_history_names_one_attempt', async () => {
-    setViewportWidth(1280);
     historyApi().on('GET /api/exercises', [exercise({ attemptCount: 1, referenceCount: 1, name: 'Racing Line: Intermediate' })]);
     renderApp({ path: '/setup/delete-history' });
     const section = await screen.findByRole('region', { name: 'Delete history' });
@@ -97,7 +93,6 @@ describe('delete history', () => {
   });
 
   it('delete_history_stops_the_training_first', async () => {
-    setViewportWidth(1280);
     const api = historyApi().on('POST /api/training/disarm', { status: 201, body: { ok: true } });
     const view = renderApp({ path: '/setup/delete-history' });
     await sendLiveState(view, { mode: 'armed', exerciseId: RACING.id });

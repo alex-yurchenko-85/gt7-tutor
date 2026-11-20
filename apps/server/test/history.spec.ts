@@ -1,4 +1,3 @@
-import { join } from 'node:path';
 import { existsSync, statSync } from 'node:fs';
 import type { INestApplication } from '@nestjs/common';
 import knex, { type Knex } from 'knex';
@@ -7,14 +6,12 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { hashToken } from '../src/auth/auth.service.js';
 import { SESSION_COOKIE, readCookie } from '../src/auth/session-cookie.js';
 import { SampleCache } from '../src/captures/sample-cache.js';
-import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.factory.js';
 import { LiveHub, type LiveClient } from '../src/live/live-hub.service.js';
-import { createTestApp } from './support/app.js';
+import { DEMONSTRATION, TestApi, createReplayApp, insertAttempt, rawPathOf as rawPathIn } from './support/api.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
 import { ManualSource } from './support/live.js';
 import { eventually } from '../../../tools/testing/eventually.js';
-import { testTempDir } from '../../../tools/testing/temp-root.js';
-import { FixtureReplays } from './support/replay-sources.js';
+import type { FixtureReplays } from './support/replay-sources.js';
 import { anotherProfile, firstProfile, PASSWORD } from './support/session.js';
 
 describe('deleting attempts and history', () => {
@@ -24,39 +21,23 @@ describe('deleting attempts and history', () => {
   let dataDir: string;
   let replays: FixtureReplays;
   let cookie: string;
-  const http = () => request(app!.getHttpServer());
+  const api = new TestApi(() => app!, () => replays, () => cookie);
+  const http = () => api.http();
 
-  async function exercise(session = cookie): Promise<string> {
-    return (await http().post('/api/exercises').set('Cookie', session).send({ catalogueId: 'ce-autodromo-de-interlagos' }).expect(201)).body.id as string;
+  function exercise(session = cookie): Promise<string> {
+    return api.exercise(undefined, session);
   }
 
-  async function capture(exerciseId: string, fixture: string, session = cookie): Promise<string> {
-    replays.queue.push(fixture);
-    const started = await http().post('/api/captures').set('Cookie', session).send({ exerciseId, purpose: 'demo' }).expect(201);
-    await replays.finished();
-    return (await http().post(`/api/captures/${started.body.id}/stop`).set('Cookie', session).expect(201)).body.id as string;
+  function capture(exerciseId: string, fixture: string, session = cookie): Promise<string> {
+    return api.capture(exerciseId, fixture, 'demo', session);
   }
 
-  async function reference(exerciseId: string, captureId: string, session = cookie): Promise<string> {
-    return (
-      await http().post('/api/references').set('Cookie', session).send({ exerciseId, captureId, first: 457, last: 1422 }).expect(201)
-    ).body.id as string;
+  function reference(exerciseId: string, captureId: string, session = cookie): Promise<string> {
+    return api.reference(exerciseId, captureId, DEMONSTRATION, session);
   }
 
   async function storedAttempt(exerciseId: string, captureId: string, referenceId: string): Promise<string> {
-    const [row] = await db('attempts')
-      .insert({
-        exercise_id: exerciseId,
-        capture_id: captureId,
-        reference_id: referenceId,
-        first_raw_index: 457,
-        last_raw_index: 1422,
-        completion: 'complete',
-        game_ms: 17071,
-        started_at: new Date()
-      })
-      .returning('id');
-    const attemptId = row.id as string;
+    const attemptId = await insertAttempt(db, { exerciseId, captureId, referenceId, range: DEMONSTRATION });
     await db('cue_events').insert({ attempt_id: attemptId, event_key: 'brake@291', kind: 'brake', event_kind: 'brake', s_m: 291, decided_mono_ms: 1000, outcome: 'played' });
     await db('attempt_findings').insert({ attempt_id: attemptId, reference_id: referenceId, kind: 'brake-late', event_key: 'brake@291', s_m: 290, size: 4, unit: 'm' });
     return attemptId;
@@ -73,8 +54,8 @@ describe('deleting attempts and history', () => {
     return { exerciseId, captureId, referenceId, attempts };
   }
 
-  async function rawPathOf(captureId: string): Promise<string> {
-    return join(dataDir, (await db('captures').where({ id: captureId }).first()).raw_path as string);
+  function rawPathOf(captureId: string): Promise<string> {
+    return rawPathIn(db, dataDir, captureId);
   }
 
   beforeAll(async () => {
@@ -89,12 +70,7 @@ describe('deleting attempts and history', () => {
 
   beforeEach(async () => {
     await db.raw('truncate table users, sessions, settings cascade');
-    dataDir = testTempDir('gt7-server-');
-    replays = new FixtureReplays();
-    app = await createTestApp(database.url, {
-      env: { DATA_DIR: dataDir, TELEMETRY_SOURCE: 'replay' },
-      override: builder => builder.overrideProvider(TELEMETRY_SOURCE_FACTORY).useValue(replays.factory)
-    });
+    ({ app, replays, dataDir } = await createReplayApp(database.url));
     cookie = await firstProfile(app);
   });
 

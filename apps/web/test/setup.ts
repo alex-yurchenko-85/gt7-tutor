@@ -17,6 +17,7 @@ if (typeof HTMLDialogElement.prototype.showModal !== 'function') {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   forgetSharedRequests();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();

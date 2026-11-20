@@ -1,11 +1,15 @@
 import type { AttemptList, AttemptReview, AttemptSummary } from '@gt7/contracts';
+import { EXERCISE_ID } from './fixtures.ts';
+
+export const ATTEMPT_ID = 'a0000000-0000-4000-8000-000000000001';
+export const REVIEW_PATH = `/attempts/${ATTEMPT_ID}/review`;
 
 type AttemptOverrides = Partial<Omit<AttemptSummary, 'completion' | 'timeMs'>> & { completion?: AttemptSummary['completion']; timeMs?: number | null };
 
 export function attemptSummary(overrides: AttemptOverrides = {}): AttemptSummary {
   return {
-    id: 'a0000000-0000-4000-8000-000000000001',
-    exerciseId: 'e0000000-0000-4000-8000-000000000001',
+    id: ATTEMPT_ID,
+    exerciseId: EXERCISE_ID,
     number: 1,
     referenceId: 'ref-demo',
     captureId: 'cap-9',
@@ -38,7 +42,7 @@ export const ATTEMPT_LIST: AttemptList = {
       bestMs: 27100,
       attempts: [
         attemptSummary({
-          id: 'a0000000-0000-4000-8000-000000000001',
+          id: ATTEMPT_ID,
           number: 1,
           gapToBestMs: 300,
           largestDifference: { kind: 'brake-early', eventKey: 'brake@332', sM: 332, size: 14, unit: 'm', turn: 1 }

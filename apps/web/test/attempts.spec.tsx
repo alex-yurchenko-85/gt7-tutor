@@ -2,17 +2,16 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { EXERCISE_ID, exercise, exerciseApi } from './fixtures.ts';
-import { ATTEMPT_LIST, attemptSummary } from './review-fixtures.ts';
+import { ATTEMPT_LIST, attemptSummary, ATTEMPT_ID } from './review-fixtures.ts';
 import { renderApp, sendLiveState, setViewportWidth } from './support.tsx';
 
 describe('attempts', () => {
-  const ATTEMPTS_PATH = '/exercises/e0000000-0000-4000-8000-000000000001/attempts';
-  const LIST_ROUTE = 'GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts';
+  const ATTEMPTS_PATH = `/exercises/${EXERCISE_ID}/attempts`;
+  const LIST_ROUTE = `GET /api/exercises/${EXERCISE_ID}/attempts`;
 
   it('attempts_group_by_day_and_mark_best', async () => {
-    setViewportWidth(1280);
-    exerciseApi(exercise({ completeAttempts: 2, bestMs: 26800 })).on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    exerciseApi(exercise({ completeAttempts: 2, bestMs: 26800 })).on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const days = await screen.findAllByRole('table', { name: /^Attempts on/ });
     expect(days.map(day => day.getAttribute('aria-label'))).toEqual(['Attempts on 17 November', 'Attempts on 16 November']);
     const best = within(days[0]!).getByRole('row', { name: /Attempt 2/ });
@@ -22,15 +21,14 @@ describe('attempts', () => {
     expect(first).toHaveTextContent('+0.30 s');
     expect(first).toHaveTextContent('332 m. Braked 14 m earlier');
     expect(within(first).queryByText('best')).not.toBeInTheDocument();
-    expect(within(first).getByRole('link', { name: 'Review attempt 1' })).toHaveAttribute('href', '/attempts/a0000000-0000-4000-8000-000000000001/review');
+    expect(within(first).getByRole('link', { name: 'Review attempt 1' })).toHaveAttribute('href', `/attempts/${ATTEMPT_ID}/review`);
   });
 
   it('game_time_shows_thousandths_without_a_label', async () => {
-    setViewportWidth(1280);
     const timed = { ...ATTEMPT_LIST.days[0]!.attempts[1]!, timeMs: 23429 };
     const list = { ...ATTEMPT_LIST, days: [{ ...ATTEMPT_LIST.days[0]!, attempts: [timed] }] };
-    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', list).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, list).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const row = await screen.findByRole('row', { name: new RegExp(`Attempt ${timed.number}`) });
     expect(row).toHaveTextContent('0:23.429');
     expect(row).not.toHaveTextContent('official');
@@ -39,8 +37,8 @@ describe('attempts', () => {
 
   it('aborted_attempt_has_no_time', async () => {
     setViewportWidth(390);
-    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const row = await screen.findByRole('row', { name: /Attempt 3/ });
     expect(row).toHaveTextContent('No time');
     expect(row).toHaveTextContent('aborted, training stopped');
@@ -48,12 +46,11 @@ describe('attempts', () => {
   });
 
   it('recurring_shows_count_of_attempts', async () => {
-    setViewportWidth(1280);
     exerciseApi(exercise({ completeAttempts: 8 }))
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST)
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/recurring', [{ kind: 'brake-early', eventKey: 'brake@412', sM: 412, size: 15, unit: 'm', count: 6, of: 8, medianSize: 14 }])
+      .on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST)
+      .on(`GET /api/exercises/${EXERCISE_ID}/recurring`, [{ kind: 'brake-early', eventKey: 'brake@412', sM: 412, size: 15, unit: 'm', count: 6, of: 8, medianSize: 14 }])
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const section = await screen.findByRole('region', { name: 'Recurring differences' });
     const item = await within(section).findByRole('listitem');
     expect(item).toHaveTextContent('Braked early at 412 m, median 14 m');
@@ -62,23 +59,21 @@ describe('attempts', () => {
   });
 
   it('fewer_than_three_attempts_says_so', async () => {
-    setViewportWidth(1280);
-    exerciseApi(exercise({ completeAttempts: 2 })).on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    exerciseApi(exercise({ completeAttempts: 2 })).on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const section = await screen.findByRole('region', { name: 'Recurring differences' });
     expect(within(section).getByText(/at least three complete attempts\. You have 2\./)).toBeInTheDocument();
   });
 
   it('aborted_reasons_are_plain_words', async () => {
-    setViewportWidth(1280);
     const reasons = ['left-track', 'restart', 'manual', 'silence', 'player-session-ended', 'loading', 'car-changed', 'discontinuity'];
     const attempts = reasons.map((reason, index) =>
       attemptSummary({ id: `a0000000-0000-4000-8000-00000000001${index}`, number: index + 1, completion: 'aborted', reason, timeMs: null, gapToBestMs: null })
     );
     exerciseApi()
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', { bestMs: null, days: [{ date: '2026-11-17', bestMs: null, attempts }] })
+      .on(`GET /api/exercises/${EXERCISE_ID}/attempts`, { bestMs: null, days: [{ date: '2026-11-17', bestMs: null, attempts }] })
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const table = await screen.findByRole('table', { name: /Attempts on/ });
     expect(within(table).getByRole('columnheader', { name: 'Time from the game' })).toBeInTheDocument();
     const shown = reasons.map((_, index) => within(table).getByRole('row', { name: `Attempt ${index + 1}` }).querySelector('.sub')?.textContent);
@@ -95,9 +90,8 @@ describe('attempts', () => {
   });
 
   it('attempts_have_no_voice_comparison_and_no_voice_column', async () => {
-    setViewportWidth(1280);
-    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     await screen.findByRole('row', { name: /Attempt 2/ });
     expect(screen.queryByRole('region', { name: 'Does the voice help?' })).toBeNull();
     expect(screen.queryByRole('columnheader', { name: 'Voice' })).toBeNull();
@@ -105,13 +99,12 @@ describe('attempts', () => {
   });
 
   it('recurring_shows_three_then_more', async () => {
-    setViewportWidth(1280);
     const recurring = [412, 500, 600, 700, 800].map((sM, index) => ({ kind: 'brake-early', eventKey: `brake@${sM}`, sM, size: 15, unit: 'm', turn: index + 1, count: 6, of: 8, medianSize: 14 }));
     exerciseApi(exercise({ completeAttempts: 8 }))
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST)
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/recurring', recurring)
+      .on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST)
+      .on(`GET /api/exercises/${EXERCISE_ID}/recurring`, recurring)
       .install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const section = await screen.findByRole('region', { name: 'Recurring differences' });
     await within(section).findByText('Braked early at 412 m, median 14 m');
     expect(within(section).getAllByRole('listitem')).toHaveLength(3);
@@ -124,17 +117,15 @@ describe('attempts', () => {
   });
 
   it('largest_difference_shows_its_turn', async () => {
-    setViewportWidth(1280);
-    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const row = await screen.findByRole('row', { name: /Attempt 1/ });
     expect(within(row).getByText('T1')).toHaveClass('tag');
   });
 
   it('aborted_attempts_can_be_hidden_and_shown_again', async () => {
-    setViewportWidth(1280);
-    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Hide aborted' }));
     expect(screen.queryByRole('row', { name: /Attempt 3/ })).toBeNull();
@@ -146,9 +137,8 @@ describe('attempts', () => {
   });
 
   it('row_opens_the_review_without_a_button', async () => {
-    setViewportWidth(1280);
-    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const row = await screen.findByRole('row', { name: /Attempt 1/ });
     expect(within(row).getAllByRole('link')).toHaveLength(1);
     expect(within(row).getByRole('link', { name: 'Review attempt 1' })).toHaveClass('row-link');
@@ -158,8 +148,8 @@ describe('attempts', () => {
 
   it('phone_row_shows_the_largest_difference', async () => {
     setViewportWidth(390);
-    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const row = await screen.findByRole('row', { name: /Attempt 1/ });
     expect(row).toHaveTextContent('332 m. Braked 14 m earlier');
     expect(within(row).getByText('T1')).toHaveClass('tag');
@@ -167,9 +157,8 @@ describe('attempts', () => {
   });
 
   it('selecting_row_click_selects_and_does_not_navigate', async () => {
-    setViewportWidth(1280);
-    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Select' }));
     const row = screen.getByRole('row', { name: /Attempt 1/ });
@@ -185,15 +174,13 @@ describe('attempts', () => {
   });
 
   it('selecting_has_no_review_page_hint', async () => {
-    setViewportWidth(1280);
-    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
     expect(screen.queryByText(/can also be deleted from its Review page/)).toBeNull();
   });
 
   it('dialog_says_the_best_stays_when_it_is_unchanged', async () => {
-    setViewportWidth(1280);
     exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
     renderApp({ path: ATTEMPTS_PATH });
     await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
@@ -205,7 +192,6 @@ describe('attempts', () => {
   });
 
   it('dialog_has_no_best_line_without_a_complete_attempt', async () => {
-    setViewportWidth(1280);
     const aborted = attemptSummary({ completion: 'aborted', reason: 'manual', timeMs: null, gapToBestMs: null });
     exerciseApi()
       .on(LIST_ROUTE, { bestMs: null, days: [{ date: '2026-11-17', bestMs: null, attempts: [aborted] }] })
@@ -218,7 +204,6 @@ describe('attempts', () => {
   });
 
   it('selection_marks_only_the_selected_rows', async () => {
-    setViewportWidth(1280);
     exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
     renderApp({ path: ATTEMPTS_PATH });
     const user = userEvent.setup();
@@ -235,7 +220,6 @@ describe('attempts', () => {
   });
 
   it('no_delete_button_ends_with_an_ellipsis', async () => {
-    setViewportWidth(1280);
     exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
     renderApp({ path: ATTEMPTS_PATH });
     await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
@@ -243,7 +227,6 @@ describe('attempts', () => {
   });
 
   it('attempts_select_and_delete', async () => {
-    setViewportWidth(1280);
     const api = exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).on('POST /api/attempts/delete', { deleted: 2 }).install();
     renderApp({ path: ATTEMPTS_PATH });
     await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
@@ -258,14 +241,13 @@ describe('attempts', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete 2 attempts' }));
     await waitFor(() => expect(api.called('POST /api/attempts/delete')).toBe(true));
     const sent = api.calls.find(call => call.path === '/api/attempts/delete')!.body as { ids: string[] };
-    expect([...sent.ids].sort()).toEqual(['a0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000003']);
+    expect([...sent.ids].sort()).toEqual([ATTEMPT_ID, 'a0000000-0000-4000-8000-000000000003']);
     await waitFor(() => expect(api.calls.filter(call => `${call.method} ${call.path}` === LIST_ROUTE)).toHaveLength(2));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Selection' })).not.toBeInTheDocument();
   });
 
   it('delete_dialog_shows_new_best', async () => {
-    setViewportWidth(1280);
     exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
     renderApp({ path: ATTEMPTS_PATH });
     await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
@@ -281,7 +263,6 @@ describe('attempts', () => {
   });
 
   it('quick_select_aborted', async () => {
-    setViewportWidth(1280);
     exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
     renderApp({ path: ATTEMPTS_PATH });
     await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
@@ -299,7 +280,6 @@ describe('attempts', () => {
   });
 
   it('quick_select_has_no_without_voice_choice', async () => {
-    setViewportWidth(1280);
     exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
     renderApp({ path: ATTEMPTS_PATH });
     await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
@@ -308,7 +288,6 @@ describe('attempts', () => {
   });
 
   it('busy_conflict_shows_message', async () => {
-    setViewportWidth(1280);
     exerciseApi()
       .on(LIST_ROUTE, ATTEMPT_LIST)
       .on('POST /api/attempts/delete', { status: 409, body: { code: 'busy', reason: 'Stop the training or the recording first.' } })
@@ -323,7 +302,6 @@ describe('attempts', () => {
   });
 
   it('delete_stops_the_training_first', async () => {
-    setViewportWidth(1280);
     const api = exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).on('POST /api/training/disarm', { status: 201, body: { ok: true } }).on('POST /api/attempts/delete', { deleted: 1 }).install();
     const view = renderApp({ path: ATTEMPTS_PATH });
     await sendLiveState(view, { mode: 'finished', exerciseId: EXERCISE_ID });
@@ -339,7 +317,6 @@ describe('attempts', () => {
   });
 
   it('delete_waits_while_an_attempt_runs', async () => {
-    setViewportWidth(1280);
     exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
     const view = renderApp({ path: ATTEMPTS_PATH });
     await sendLiveState(view, { mode: 'paused', exerciseId: EXERCISE_ID, attemptNumber: 10 });
@@ -353,7 +330,6 @@ describe('attempts', () => {
   });
 
   it('delete_does_not_happen_when_the_stop_fails', async () => {
-    setViewportWidth(1280);
     const api = exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).on('POST /api/training/disarm', { status: 500, body: { message: 'Server problem' } }).install();
     const view = renderApp({ path: ATTEMPTS_PATH });
     await sendLiveState(view, { mode: 'armed', exerciseId: EXERCISE_ID });

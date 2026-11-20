@@ -1,9 +1,8 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CaptureInfo, ReferenceProposal } from '@gt7/contracts';
 import { EXERCISE_ID, exercise, exerciseApi, reference, REFERENCE_ID } from './fixtures.ts';
-import { renderApp, sendLiveState, setViewportWidth, type ApiStub } from './support.tsx';
+import { renderApp, sendLiveState, setViewportWidth, timedUser, type ApiStub } from './support.tsx';
 
 function captureInfo(id: string, overrides: Partial<CaptureInfo> = {}): CaptureInfo {
   return {
@@ -20,7 +19,7 @@ function captureInfo(id: string, overrides: Partial<CaptureInfo> = {}): CaptureI
   };
 }
 
-const PROPOSALS_PATH = 'POST /api/exercises/e0000000-0000-4000-8000-000000000001/reference-proposals';
+const PROPOSALS_PATH = `POST /api/exercises/${EXERCISE_ID}/reference-proposals`;
 
 const FOUND: ReferenceProposal[] = [
   {
@@ -79,7 +78,7 @@ function recordingApi(options: { ps5Ip?: string | null; consoleRequired?: boolea
   return api.install();
 }
 
-async function recordOnce(user: ReturnType<typeof userEvent.setup>, number: number) {
+async function recordOnce(user: ReturnType<typeof timedUser>, number: number) {
   await user.click(await screen.findByRole('button', { name: 'Start recording' }));
   expect(await screen.findByRole('timer')).toHaveTextContent('0');
   await user.click(screen.getByRole('button', { name: `Stop recording ${number}` }));
@@ -100,15 +99,10 @@ describe('reference recording', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('one_recording_finds_the_demonstration_and_creates_the_reference', async () => {
-    setViewportWidth(1280);
     const api = recordingApi();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await recordOnce(user, 1);
     expect(await screen.findByRole('heading', { name: 'The demonstration is found' })).toBeInTheDocument();
     expect(api.calls.find(call => call.path.endsWith('reference-proposals'))?.body).toEqual({ captureIds: ['cap-1'] });
@@ -128,10 +122,9 @@ describe('reference recording', () => {
   });
 
   it('two_timer_runs_need_a_selection', async () => {
-    setViewportWidth(1280);
     const api = recordingApi({ runs: TWO_RUNS });
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await recordOnce(user, 1);
     expect(await screen.findByRole('heading', { name: 'Select the demonstration' })).toBeInTheDocument();
     const runs = screen.getByRole('radiogroup', { name: 'Demonstrations' });
@@ -153,10 +146,9 @@ describe('reference recording', () => {
   });
 
   it('recording_two_says_that_the_same_part_repeats', async () => {
-    setViewportWidth(1280);
     const api = recordingApi();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await recordOnce(user, 1);
     await user.click(await screen.findByRole('button', { name: 'Record again to check' }));
     await recordOnce(user, 2);
@@ -173,10 +165,9 @@ describe('reference recording', () => {
   });
 
   it('recording_two_that_does_not_repeat_offers_recording_one', async () => {
-    setViewportWidth(1280);
     const api = recordingApi({ repeats: [{ ...REPEATS[0]!, ranges: [{ captureId: 'cap-1', first: 100, last: 300 }, { captureId: 'cap-2', first: 400, last: 600 }] }] });
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await recordOnce(user, 1);
     await user.click(await screen.findByRole('button', { name: 'Record again to check' }));
     await recordOnce(user, 2);
@@ -189,9 +180,8 @@ describe('reference recording', () => {
   });
 
   it('record_page_shows_one_needed_and_one_optional_recording', async () => {
-    setViewportWidth(1280);
     recordingApi();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     expect(await screen.findByRole('button', { name: 'Start recording' })).toBeEnabled();
     expect(
       screen.getByText('The game shows a demonstration before every run. GT7 Tutor records it once and finds the demonstration by itself.')
@@ -211,13 +201,12 @@ describe('reference recording', () => {
   });
 
   it('manual_range_is_available', async () => {
-    setViewportWidth(1280);
     const api = recordingApi().on('GET /api/captures', [
       captureInfo('cap-old', { active: false, packets: 2571, endedAt: '2026-11-16T10:01:00.000Z' }),
       captureInfo('cap-other', { active: false, exerciseId: 'e0000000-0000-4000-8000-000000000002' })
     ]);
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Set the range by hand' }));
     const form = screen.getByRole('form', { name: 'Manual range' });
     expect(within(form).getAllByRole('option').map(option => option.getAttribute('value'))).toEqual(['cap-old']);
@@ -235,17 +224,16 @@ describe('reference recording', () => {
   });
 
   it('failed_check_can_be_retried', async () => {
-    setViewportWidth(1280);
     let calls = 0;
     recordingApi()
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/references', [reference({ needsCheck: true })])
+      .on(`GET /api/exercises/${EXERCISE_ID}/references`, [reference({ needsCheck: true })])
       .on(`POST /api/references/${REFERENCE_ID}/check`, () =>
         ++calls === 1
           ? { status: 500, body: { statusCode: 500, message: 'Internal server error' } }
           : { status: 201, body: { matched: true, range: { first: 10, last: 1555 }, reference: reference() } }
       );
-    renderApp({ path: `/exercises/e0000000-0000-4000-8000-000000000001/record?check=${REFERENCE_ID}` });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record?check=${REFERENCE_ID}` });
+    const user = timedUser();
     await recordOnce(user, 1);
     await user.click(await screen.findByRole('button', { name: 'Try again' }));
     expect(await screen.findByText(/The new recording matches the reference/)).toBeInTheDocument();
@@ -253,23 +241,21 @@ describe('reference recording', () => {
   });
 
   it('record_view_resumes_a_running_recording', async () => {
-    setViewportWidth(1280);
     const api = recordingApi().on('GET /api/captures', [
       captureInfo('cap-running', { startedAt: new Date(Date.now() - 8000).toISOString() })
     ]);
     api.on('POST /api/captures/cap-running/stop', { status: 201, body: captureInfo('cap-running', { active: false, packets: 2400 }) });
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     expect(await screen.findByRole('timer')).toHaveTextContent(/^(8|9)$/);
     await user.click(screen.getByRole('button', { name: 'Stop recording 1' }));
     await waitFor(() => expect(api.called('POST /api/captures/cap-running/stop')).toBe(true));
   });
 
   it('needs_check_badge_starts_one_recording_check', async () => {
-    setViewportWidth(1280);
-    const api = recordingApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/references', [reference({ needsCheck: true, gameVersion: '1.60' })]);
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/references' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const api = recordingApi().on(`GET /api/exercises/${EXERCISE_ID}/references`, [reference({ needsCheck: true, gameVersion: '1.60' })]);
+    renderApp({ path: `/exercises/${EXERCISE_ID}/references` });
+    const user = timedUser();
     expect(await screen.findByText('Needs a check')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Check with one recording' }));
     expect(await screen.findByRole('heading', { name: 'Check the reference' })).toBeInTheDocument();
@@ -279,9 +265,8 @@ describe('reference recording', () => {
   });
 
   it('start_disabled_without_console_address', async () => {
-    setViewportWidth(1280);
     recordingApi({ ps5Ip: null, consoleRequired: true });
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     expect(await screen.findByText('Enter the PS5 address in Setup first.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start recording' })).toBeDisabled();
     expect(screen.getByRole('link', { name: 'Open Setup' })).toHaveAttribute('href', '/setup#console');
@@ -289,9 +274,8 @@ describe('reference recording', () => {
   });
 
   it('start_allowed_with_replay_without_address', async () => {
-    setViewportWidth(1280);
     recordingApi({ ps5Ip: null, consoleRequired: false });
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     await screen.findByRole('button', { name: 'Start recording' });
     expect(screen.queryByRole('list', { name: 'Readiness' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Start recording' })).toBeEnabled();
@@ -299,23 +283,21 @@ describe('reference recording', () => {
   });
 
   it('server_refusal_without_address_shows_the_setup_link', async () => {
-    setViewportWidth(1280);
     recordingApi({ ps5Ip: null, consoleRequired: false }).on('POST /api/captures', {
       status: 409,
       body: { code: 'console-address-missing', reason: 'Enter the PS5 address in Setup before a capture.' }
     });
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Start recording' }));
     expect(await screen.findByText('Enter the PS5 address in Setup first.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open Setup' })).toHaveAttribute('href', '/setup#console');
   });
 
   it('recording_starts_at_once_and_counts_the_seconds', async () => {
-    setViewportWidth(1280);
     const api = recordingApi();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Start recording' }));
     const timer = await screen.findByRole('timer');
     expect(timer).toHaveTextContent('0');
@@ -326,18 +308,16 @@ describe('reference recording', () => {
   });
 
   it('record_page_names_no_wait_and_no_voice_chip', async () => {
-    setViewportWidth(1280);
     recordingApi();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     await screen.findByRole('button', { name: 'Start recording' });
     expect(screen.queryByText(/wait|Voice:/i)).toBeNull();
   });
 
   it('cancel_stops_the_capture_and_keeps_the_count', async () => {
-    setViewportWidth(1280);
     const api = recordingApi();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Start recording' }));
     await user.click(await screen.findByRole('button', { name: 'Cancel this recording' }));
     await waitFor(() => expect(api.called('POST /api/captures/cap-1/stop')).toBe(true));
@@ -345,10 +325,9 @@ describe('reference recording', () => {
   });
 
   it('no_proposal_offers_to_record_again', async () => {
-    setViewportWidth(1280);
     const api = recordingApi({ runs: [] });
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await recordOnce(user, 1);
     expect(await screen.findByRole('heading', { name: 'No complete demonstration found' })).toBeInTheDocument();
     expect(
@@ -371,12 +350,11 @@ describe('reference recording', () => {
   });
 
   it('manual_range_explains_the_cut_and_the_refusal', async () => {
-    setViewportWidth(1280);
     recordingApi()
       .on('GET /api/captures', [captureInfo('cap-old', { active: false, packets: 2571, endedAt: '2026-11-16T10:01:00.000Z' })])
       .on('POST /api/references', { status: 400, body: { code: 'no-timer-run', reason: 'The range does not hold the whole demonstration.' } });
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Set the range by hand' }));
     const form = screen.getByRole('form', { name: 'Manual range' });
     expect(within(form).getByText('GT7 Tutor keeps only the part of the range that holds the demonstration.')).toBeInTheDocument();
@@ -389,12 +367,11 @@ describe('reference recording', () => {
   });
 
   it('manual_range_labels_the_recording_and_names_the_busy_refusal', async () => {
-    setViewportWidth(1280);
     recordingApi()
       .on('GET /api/captures', [captureInfo('cap-old', { active: false, packets: 2571, endedAt: '2026-11-16T10:01:00.000Z' })])
       .on('POST /api/references', { status: 409, body: { code: 'busy', reason: 'Busy.' } });
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Set the range by hand' }));
     const form = screen.getByRole('form', { name: 'Manual range' });
     expect(within(form).getByLabelText('Recording')).toBeInTheDocument();
@@ -405,10 +382,9 @@ describe('reference recording', () => {
   });
 
   it('manual_range_without_a_finished_recording_says_so', async () => {
-    setViewportWidth(1280);
     recordingApi().on('GET /api/captures', []);
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Set the range by hand' }));
     const form = screen.getByRole('form', { name: 'Manual range' });
     await user.type(within(form).getByLabelText('First frame'), '420');
@@ -418,19 +394,17 @@ describe('reference recording', () => {
   });
 
   it('manual_range_is_a_text_link', async () => {
-    setViewportWidth(1280);
     recordingApi();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const hint = await screen.findByText('Experienced user?');
     const open = within(hint.closest('p')!).getByRole('button', { name: 'Set the range by hand' });
     expect(open).toHaveClass('text-link');
   });
 
   it('created_links_back_to_the_exercise_page', async () => {
-    setViewportWidth(1280);
     recordingApi();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await recordOnce(user, 1);
     await user.click(await screen.findByRole('button', { name: 'Use this as the reference' }));
     expect(await screen.findByRole('heading', { name: 'The reference is active' })).toBeInTheDocument();
@@ -439,10 +413,9 @@ describe('reference recording', () => {
   });
 
   it('check_that_does_not_match_asks_for_a_new_reference', async () => {
-    setViewportWidth(1280);
     recordingApi().on(`POST /api/references/${REFERENCE_ID}/check`, { matched: false, range: null, reference: reference() });
-    renderApp({ path: `/exercises/e0000000-0000-4000-8000-000000000001/record?check=${REFERENCE_ID}` });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record?check=${REFERENCE_ID}` });
+    const user = timedUser();
     await recordOnce(user, 1);
     expect(await screen.findByText('The new recording does not match the reference. Record a new reference.')).toBeInTheDocument();
     expect(slotTexts()).toEqual(['Recording 1done, 38 s']);
@@ -451,12 +424,12 @@ describe('reference recording', () => {
   it('phone_recording_hides_navigation', async () => {
     setViewportWidth(390);
     recordingApi();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const start = await screen.findByRole('button', { name: 'Start recording' });
     expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull();
     expect(screen.queryByRole('banner')).toBeNull();
     expect(screen.getByRole('link', { name: 'Close' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}`);
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const user = timedUser();
     await user.click(start);
     expect(await screen.findByRole('button', { name: 'Stop recording 1' })).toBeInTheDocument();
   });
@@ -464,8 +437,8 @@ describe('reference recording', () => {
   it('phone_shows_the_found_demonstration_and_records_the_check', async () => {
     setViewportWidth(390);
     recordingApi();
-    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
     await recordOnce(user, 1);
     expect(await screen.findByRole('heading', { name: 'The demonstration is found' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Start recording' })).toBeNull();
@@ -476,11 +449,10 @@ describe('reference recording', () => {
   });
 
   it('record_stops_the_training_then_records', async () => {
-    setViewportWidth(1280);
     const api = recordingApi().on('POST /api/training/disarm', { status: 201, body: { ok: true } });
-    const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    const view = renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     await sendLiveState(view, { mode: 'armed', exerciseId: EXERCISE_ID });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const user = timedUser();
     expect(await screen.findByText(`The training of ${exercise().name} is on. A recording needs it off.`)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Start recording' })).toBeNull();
     await user.click(await screen.findByRole('button', { name: 'Stop the training and record' }));
@@ -489,20 +461,18 @@ describe('reference recording', () => {
   });
 
   it('record_does_not_start_when_the_stop_fails', async () => {
-    setViewportWidth(1280);
     const api = recordingApi().on('POST /api/training/disarm', { status: 500, body: { message: 'Server problem' } });
-    const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    const view = renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     await sendLiveState(view, { mode: 'finished', exerciseId: EXERCISE_ID });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Stop the training and record' }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(api.called('POST /api/captures')).toBe(false);
   });
 
   it('record_waits_while_an_attempt_runs', async () => {
-    setViewportWidth(1280);
     recordingApi();
-    const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    const view = renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     await sendLiveState(view, { mode: 'driving', exerciseId: EXERCISE_ID, attemptNumber: 10 });
     expect(await screen.findByText('Attempt 10 runs. Finish it or stop the training first.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start recording' })).toBeDisabled();

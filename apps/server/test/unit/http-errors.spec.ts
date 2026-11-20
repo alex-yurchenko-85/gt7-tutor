@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { badRequest, conflict } from '../src/http-errors.js';
+import { badRequest, conflict } from '../../src/http-errors.js';
 
 describe('http errors', () => {
   it('conflict_carries_a_code_and_a_reason_with_status_409', () => {

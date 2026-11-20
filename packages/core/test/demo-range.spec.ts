@@ -23,9 +23,12 @@ function timerAt(capture: Sample[], rawIndex: number): number {
 
 describe('findDemoRangeCandidates', () => {
   const captures = demos.map(name => samplesOf(name));
+  const found = findDemoRangeCandidates(captures);
 
-  it('three_captures_give_the_demonstration', () => {
-    const [best] = findDemoRangeCandidates(captures);
+  it('three_captures_give_the_demonstration_and_skip_a_background_timer', () => {
+    const backgroundStart = captures[2]!.find(sample => sample.rawIndex === 759)!;
+    expect(backgroundStart.gameTimerMs).toBeGreaterThan(0);
+    const [best] = found;
     expect(rangesOf(best)).toEqual(demonstration);
     expect(best!.sampleCount).toBe(966);
     expect(best!.ambiguous).toBe(false);
@@ -33,8 +36,7 @@ describe('findDemoRangeCandidates', () => {
   });
 
   it('cut_the_reference_to_the_demonstration_timer', () => {
-    const candidates = findDemoRangeCandidates(captures);
-    const eligible = candidates.filter(candidate => !candidate.ambiguous);
+    const eligible = found.filter(candidate => !candidate.ambiguous);
     expect(eligible).toHaveLength(1);
     expect(eligible[0]!.timed).toBe(true);
     eligible[0]!.ranges.forEach((range, index) => {
@@ -44,13 +46,6 @@ describe('findDemoRangeCandidates', () => {
       expect(timerAt(captures[index]!, range.last - 1)).toBeLessThan(16082);
     });
     expect(eligible[0]!.evidence.filter(line => line.includes('timer runs 16.082 s'))).toHaveLength(3);
-  });
-
-  it('cut_ignores_a_background_timer_outside_the_candidate', () => {
-    const backgroundStart = captures[2]!.find(sample => sample.rawIndex === 759)!;
-    expect(backgroundStart.gameTimerMs).toBeGreaterThan(0);
-    const [best] = findDemoRangeCandidates(captures);
-    expect(best!.ranges[2]).toEqual({ first: 1054, last: 2019 });
   });
 
   it('candidate_without_a_timer_run_is_not_eligible', () => {
@@ -91,7 +86,7 @@ describe('findDemoRangeCandidates', () => {
   });
 
   it('background_candidate_ranks_lower', () => {
-    const candidates = findDemoRangeCandidates(captures);
+    const candidates = found;
     const background = candidates.findIndex(candidate => {
       const range = candidate.ranges[0]!;
       return range.first === 1606 && range.last === 1727;

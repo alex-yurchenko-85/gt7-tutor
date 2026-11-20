@@ -6,11 +6,9 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { readSamples } from '@gt7/capture';
 import { cutToTimerRun, replayCoach } from '@gt7/core';
 import type { CuePreview, PreviewCue } from '@gt7/contracts';
-import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.factory.js';
-import { createTestApp } from './support/app.js';
+import { TestApi, createReplayApp, insertAttempt } from './support/api.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
-import { testTempDir } from '../../../tools/testing/temp-root.js';
-import { FixtureReplays } from './support/replay-sources.js';
+import type { FixtureReplays } from './support/replay-sources.js';
 import { anotherProfile, firstProfile } from './support/session.js';
 
 vi.mock('@gt7/core', async importOriginal => {
@@ -26,19 +24,15 @@ describe('cue preview', () => {
   let cookie: string;
   let exerciseId: string;
   let dataDir: string;
-  const http = () => request(app.getHttpServer());
+  const api = new TestApi(() => app, () => replays, () => cookie);
+  const http = () => api.http();
 
-  async function capture(fixture: string, purpose = 'demo'): Promise<string> {
-    replays.queue.push(fixture);
-    const started = await http().post('/api/captures').set('Cookie', cookie).send({ exerciseId, purpose }).expect(201);
-    await replays.finished();
-    return (await http().post(`/api/captures/${started.body.id}/stop`).set('Cookie', cookie).expect(201)).body.id as string;
+  function capture(fixture: string, purpose = 'demo'): Promise<string> {
+    return api.capture(exerciseId, fixture, purpose);
   }
 
   async function reference(): Promise<string> {
-    const captureId = await capture('demo-a');
-    const response = await http().post('/api/references').set('Cookie', cookie).send({ exerciseId, captureId, first: 457, last: 1422 }).expect(201);
-    return response.body.id as string;
+    return api.reference(exerciseId, await capture('demo-a'));
   }
 
   async function preview(id: string, session = cookie): Promise<CuePreview> {
@@ -57,13 +51,9 @@ describe('cue preview', () => {
 
   beforeEach(async () => {
     await db.raw('truncate table users, sessions, settings cascade');
-    replays = new FixtureReplays();
-    app = await createTestApp(database.url, {
-      env: { DATA_DIR: (dataDir = testTempDir('gt7-server-')), TELEMETRY_SOURCE: 'replay' },
-      override: builder => builder.overrideProvider(TELEMETRY_SOURCE_FACTORY).useValue(replays.factory)
-    });
+    ({ app, replays, dataDir } = await createReplayApp(database.url));
     cookie = await firstProfile(app);
-    exerciseId = (await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'ce-autodromo-de-interlagos' }).expect(201)).body.id;
+    exerciseId = await api.exercise();
   });
 
   afterEach(async () => {
@@ -130,19 +120,8 @@ describe('cue preview', () => {
     const stored = await db('captures').where({ id: playerCapture }).first();
     const samples = await readSamples(join(dataDir, stored.raw_path));
     const range = cutToTimerRun(samples, { first: samples[0]!.rawIndex, last: samples.at(-1)!.rawIndex }, 'player')!;
-    const [row] = await db('attempts')
-      .insert({
-        exercise_id: exerciseId,
-        capture_id: playerCapture,
-        reference_id: demo,
-        first_raw_index: range.first,
-        last_raw_index: range.last,
-        completion: 'complete',
-        game_ms: range.gameTimeMs,
-        started_at: new Date()
-      })
-      .returning('id');
-    return (await http().post(`/api/attempts/${row.id}/promote`).set('Cookie', cookie).expect(201)).body.id as string;
+    const attemptId = await insertAttempt(db, { exerciseId, captureId: playerCapture, referenceId: demo, range, gameMs: range.gameTimeMs });
+    return (await http().post(`/api/attempts/${attemptId}/promote`).set('Cookie', cookie).expect(201)).body.id as string;
   }
 
   it('preview_leaves_out_a_pause_of_the_reference', async () => {
@@ -156,22 +135,7 @@ describe('cue preview', () => {
   });
 
   it('preview_works_for_a_reference_from_an_attempt', async () => {
-    const demo = await reference();
-    const playerCapture = await capture('ce-clean', 'player');
-    const [row] = await db('attempts')
-      .insert({
-        exercise_id: exerciseId,
-        capture_id: playerCapture,
-        reference_id: demo,
-        first_raw_index: 381,
-        last_raw_index: 1409,
-        completion: 'complete',
-        game_ms: 17071,
-        started_at: new Date()
-      })
-      .returning('id');
-    const promoted = await http().post(`/api/attempts/${row.id}/promote`).set('Cookie', cookie).expect(201);
-    const body = await preview(promoted.body.id as string);
+    const body = await preview(await promotedReference('ce-clean'));
     expect(body.cues.length).toBeGreaterThan(0);
   });
 });
