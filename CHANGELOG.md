@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.7.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.6.0...v1.7.0) (2026-11-20)
+
+### Features
+
+* unify navigation, maps, attempt rows and delete actions, and add a training bar ([f7876cb](https://github.com/alex-yurchenko-85/gt7-tutor/commit/f7876cbca352cfc10471bae6efe2933154aa79f6))
+
 # [1.6.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.5.0...v1.6.0) (2026-11-20)
 
 ### Features
