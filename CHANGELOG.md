@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.8.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.7.0...v1.8.0) (2026-11-20)
+
+### Features
+
+* put Drive into the menu and show the console and voice state only in the header ([f219c7c](https://github.com/alex-yurchenko-85/gt7-tutor/commit/f219c7c918b3d01e5fbe5c1a6ebd6de33b7a126a))
+
 # [1.7.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.6.0...v1.7.0) (2026-11-20)
 
 ### Features
