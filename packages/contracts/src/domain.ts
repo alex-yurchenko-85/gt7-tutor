@@ -323,3 +323,11 @@ export type Progress = { collections: ProgressCollection[]; exercises: ProgressE
 export type ReceptionCheck = { packets: number; decoded: number; durationMs: number; carId: number | null };
 
 export type ReferenceTrace = { gridM: number; lengthM: number; timeMs: number; x: number[]; z: number[]; speedMps: number[] };
+
+export type PreviewDropReason = 'voice-busy' | 'too-late' | 'already-done' | 'other';
+
+export type PreviewCue = { key: string; rowKey: string | null; clip: string; followClip: string | null; atMs: number };
+
+export type PreviewDrop = { rowKey: string; reason: PreviewDropReason; afterRowKey: string | null };
+
+export type CuePreview = { timeMs: number; gridM: number; gridTimeMs: number[]; cues: PreviewCue[]; dropped: PreviewDrop[] };

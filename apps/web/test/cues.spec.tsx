@@ -1,9 +1,9 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
-import type { Exercise } from '@gt7/contracts';
-import { CORNERS, CUES, REFERENCE_ID, exercise, exerciseApi } from './fixtures.ts';
-import { renderApp, setViewportWidth } from './support.tsx';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { CuePreview, Exercise } from '@gt7/contracts';
+import { CORNERS, CUES, NO_DROP_PREVIEW, REFERENCE_ID, exercise, exerciseApi } from './fixtures.ts';
+import { playerRig, renderApp, setViewportWidth } from './support.tsx';
 
 describe('cue list', () => {
   it('cue_list_rows_show_distance_phrase_and_recurring_difference', async () => {
@@ -276,7 +276,7 @@ describe('cues map frame', () => {
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const user = userEvent.setup();
     const panel = await screen.findByRole('region', { name: 'Reference line, 20 m' });
-    expect([...panel.querySelectorAll('.legend span')].map(span => span.textContent)).toEqual(['reference line', 'turn', 'voice cue', 'muted cue', 'Select a number to mute that cue']);
+    expect([...panel.querySelectorAll('.legend span')].map(span => span.textContent)).toEqual(['reference line', 'turn', 'voice cue', 'muted cue', 'cue not spoken', 'Select a number to mute that cue']);
     await user.click(await screen.findByRole('button', { name: 'View the map in full screen' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('checkbox', { name: 'Voice cues' })).toBeChecked();
@@ -302,5 +302,263 @@ describe('cues map frame', () => {
     const panel = await screen.findByRole('region', { name: 'Reference line, 20 m' });
     const firstRow = screen.getAllByRole('listitem', { name: /^Cue \d/ })[0]!;
     expect(panel.compareDocumentPosition(firstRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe('cues not spoken', () => {
+  const CUES_PATH = '/exercises/e0000000-0000-4000-8000-000000000001/cues';
+  const PREVIEW = `GET /api/references/${REFERENCE_ID}/preview`;
+
+  it('not_spoken_row_shows_the_tag_and_the_reason', async () => {
+    setViewportWidth(1280);
+    exerciseApi()
+      .on(PREVIEW, { ...NO_DROP_PREVIEW, dropped: [{ rowKey: 'throttle@491', reason: 'voice-busy', afterRowKey: 'brake@332' }] })
+      .install();
+    renderApp({ path: CUES_PATH });
+    const row = await screen.findByRole('listitem', { name: 'Cue 2' });
+    expect(await within(row).findByText('Not spoken')).toBeInTheDocument();
+    expect(row).toHaveTextContent('The voice still says cue 1 here. Mute cue 1 or this cue, or move cue 1 earlier.');
+    expect(screen.getByText(/1 cue is not spoken on the reference line\./)).toBeInTheDocument();
+    expect(within(screen.getByRole('listitem', { name: 'Cue 1' })).queryByText('Not spoken')).toBeNull();
+  });
+
+  it('no_drop_no_tag', async () => {
+    setViewportWidth(1280);
+    exerciseApi().install();
+    renderApp({ path: CUES_PATH });
+    await screen.findByRole('listitem', { name: 'Cue 2' });
+    expect(screen.queryByText('Not spoken')).toBeNull();
+    expect(screen.queryByText(/not spoken on the reference line/)).toBeNull();
+  });
+
+  it('a_muted_row_never_shows_not_spoken', async () => {
+    setViewportWidth(1280);
+    exerciseApi(exercise({ mutedCues: ['throttle@491'] }))
+      .on(PREVIEW, { ...NO_DROP_PREVIEW, dropped: [{ rowKey: 'throttle@491', reason: 'voice-busy', afterRowKey: 'brake@332' }] })
+      .install();
+    renderApp({ path: CUES_PATH });
+    const row = await screen.findByRole('listitem', { name: 'Cue 2' });
+    await within(row).findByText('Muted');
+    expect(within(row).queryByText('Not spoken')).toBeNull();
+  });
+
+  it('not_spoken_mark_on_the_map_has_a_badge', async () => {
+    setViewportWidth(1440);
+    exerciseApi()
+      .on(PREVIEW, { ...NO_DROP_PREVIEW, dropped: [{ rowKey: 'throttle@491', reason: 'too-late', afterRowKey: null }] })
+      .install();
+    renderApp({ path: CUES_PATH });
+    const panel = await screen.findByRole('region', { name: 'Reference line, 20 m' });
+    await waitFor(() => expect(panel.querySelectorAll('.not-spoken-badge')).toHaveLength(1));
+  });
+
+  it('preview_reloads_after_a_mute', async () => {
+    setViewportWidth(1280);
+    const api = exerciseApi()
+      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', exercise({ mutedCues: ['throttle@491'] }))
+      .install();
+    renderApp({ path: CUES_PATH });
+    const row = await screen.findByRole('listitem', { name: 'Cue 2' });
+    await waitFor(() => expect(api.calls.filter(call => `${call.method} ${call.path}` === PREVIEW)).toHaveLength(1));
+    await userEvent.setup().click(within(row).getByRole('button', { name: 'Mute cue 2' }));
+    await waitFor(() => expect(api.calls.filter(call => `${call.method} ${call.path}` === PREVIEW)).toHaveLength(2));
+  });
+
+  it('a_failed_preview_shows_no_tag_and_no_error', async () => {
+    setViewportWidth(1280);
+    exerciseApi()
+      .on(PREVIEW, { status: 500, body: { code: 'internal', reason: 'down' } })
+      .install();
+    renderApp({ path: CUES_PATH });
+    await screen.findByRole('listitem', { name: 'Cue 2' });
+    expect(screen.queryByText('Not spoken')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('cue preview', () => {
+  const CUES_PATH = '/exercises/e0000000-0000-4000-8000-000000000001/cues';
+  const PREVIEW_ROUTE = `GET /api/references/${REFERENCE_ID}/preview`;
+  const PLAYING: CuePreview = {
+    ...NO_DROP_PREVIEW,
+    timeMs: 4000,
+    gridTimeMs: [0, 2000, 4000],
+    cues: [
+      { key: 'brake@332', rowKey: 'brake@332', clip: 'hard-brake', followClip: 'speed-85', atMs: 1000 },
+      { key: 'throttle@491', rowKey: 'throttle@491', clip: 'full-throttle', followClip: null, atMs: 3000 }
+    ]
+  };
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function openPreview(options: { width?: number; api?: ReturnType<typeof exerciseApi> } = {}) {
+    setViewportWidth(options.width ?? 1440);
+    const api = (options.api ?? exerciseApi().on(PREVIEW_ROUTE, PLAYING)).install();
+    const rig = playerRig();
+    const played: string[][] = [];
+    vi.spyOn(rig.player, 'playLoaded').mockImplementation((...clips: string[]) => {
+      played.push(clips);
+      return true;
+    });
+    const preload = vi.spyOn(rig.player, 'preload').mockResolvedValue();
+    const unlock = vi.spyOn(rig.player, 'unlock').mockResolvedValue();
+    const stop = vi.spyOn(rig.player, 'stop');
+    const view = renderApp({ path: CUES_PATH, player: rig.player });
+    const button = await screen.findByRole('button', { name: 'Preview the cues' });
+    await waitFor(() => expect(button).toBeEnabled());
+    return { api, played, stop, preload, unlock, view, button };
+  }
+
+  async function advance(ms: number) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ms);
+    });
+  }
+
+  function fake() {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'performance'] });
+  }
+
+  it('preview_plays_each_cue_at_its_time', async () => {
+    const { played, button } = await openPreview();
+    fake();
+    await act(async () => {
+      fireEvent.click(button);
+    });
+    await advance(950);
+    expect(played).toEqual([]);
+    await advance(100);
+    expect(played).toEqual([['hard-brake', 'speed-85']]);
+    expect(screen.getByRole('button', { name: 'Stop the preview' })).toBeInTheDocument();
+    await advance(2000);
+    expect(played).toEqual([['hard-brake', 'speed-85'], ['full-throttle']]);
+    await advance(1100);
+    expect(screen.getByRole('button', { name: 'Preview the cues' })).toBeInTheDocument();
+  });
+
+  it('preview_shows_the_speaking_row_and_the_time', async () => {
+    const { button } = await openPreview();
+    fake();
+    await act(async () => {
+      fireEvent.click(button);
+    });
+    await advance(1100);
+    expect(within(screen.getByRole('listitem', { name: 'Cue 1' })).getByText('Speaking')).toBeInTheDocument();
+    expect(screen.getByText('The voice says:').closest('p')).toHaveTextContent('The voice says: Hard brake. Eighty five (cue 1)');
+    expect(screen.getByText('0:01.1 of 0:04.0, measured')).toBeInTheDocument();
+    expect(document.querySelector('.track-cursor')).not.toBeNull();
+    expect(document.querySelectorAll('.track-mark.speaking')).toHaveLength(1);
+  });
+
+  it('stop_ends_the_preview_and_the_sound', async () => {
+    const { played, stop, button } = await openPreview();
+    fake();
+    await act(async () => {
+      fireEvent.click(button);
+    });
+    await advance(500);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Stop the preview' }));
+    });
+    expect(stop).toHaveBeenCalled();
+    await advance(5000);
+    expect(played).toEqual([]);
+    expect(document.querySelector('.track-cursor')).toBeNull();
+    expect(screen.getByText('Preview plays the cues on this device in the time of the reference.')).toBeInTheDocument();
+  });
+
+  it('a_settings_change_stops_the_preview', async () => {
+    const { button } = await openPreview({
+      api: exerciseApi()
+        .on(PREVIEW_ROUTE, PLAYING)
+        .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', exercise({ mutedCues: ['throttle@491'] }))
+    });
+    fireEvent.click(button);
+    await screen.findByRole('button', { name: 'Stop the preview' });
+    fireEvent.click(within(screen.getByRole('listitem', { name: 'Cue 2' })).getByRole('button', { name: 'Mute cue 2' }));
+    expect(await screen.findByRole('button', { name: 'Preview the cues' })).toBeInTheDocument();
+  });
+
+  it('preview_sends_a_pending_timing_first', async () => {
+    let current = exercise();
+    const api = exerciseApi()
+      .on(PREVIEW_ROUTE, PLAYING)
+      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001', () => current)
+      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', (body: unknown) => {
+        current = { ...current, ...(body as Partial<Exercise>) };
+        return current;
+      });
+    const { button } = await openPreview({ api });
+    const slider = within(screen.getByRole('listitem', { name: 'Cue 1' })).getByRole('slider', { name: 'Move cue 1 earlier or later' });
+    fireEvent.change(slider, { target: { value: '-300' } });
+    fireEvent.click(button);
+    await screen.findByRole('button', { name: 'Stop the preview' });
+    const routes = api.calls.map(call => `${call.method} ${call.path}`);
+    const patch = routes.indexOf('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001');
+    expect(patch).toBeGreaterThan(-1);
+    expect(routes.slice(patch).filter(route => route === PREVIEW_ROUTE).length).toBeGreaterThan(0);
+    expect(api.calls[patch]!.body).toEqual({ cueOffsetsMs: { 'brake@332': 300 } });
+  });
+
+  it('leaving_the_tab_stops_the_preview', async () => {
+    const { stop, view, button } = await openPreview();
+    fake();
+    await act(async () => {
+      fireEvent.click(button);
+    });
+    await advance(200);
+    view.unmount();
+    expect(stop).toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('preview_unlocks_the_sound_inside_the_click_and_loads_every_clip_first', async () => {
+    const { preload, unlock, button } = await openPreview();
+    fireEvent.click(button);
+    expect(unlock).toHaveBeenCalledTimes(1);
+    await screen.findByRole('button', { name: 'Stop the preview' });
+    expect(preload).toHaveBeenCalledWith(['hard-brake', 'speed-85', 'full-throttle']);
+  });
+
+  it('a_preview_that_resolves_after_leaving_the_tab_does_not_start', async () => {
+    let current = exercise();
+    const api = exerciseApi()
+      .on(PREVIEW_ROUTE, PLAYING)
+      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000001', () => current)
+      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', (body: unknown) => {
+        current = { ...current, ...(body as Partial<Exercise>) };
+        return current;
+      });
+    const { played, view, button } = await openPreview({ api });
+    fireEvent.change(within(screen.getByRole('listitem', { name: 'Cue 1' })).getByRole('slider', { name: 'Move cue 1 earlier or later' }), { target: { value: '-300' } });
+    fake();
+    fireEvent.click(button);
+    view.unmount();
+    await advance(5000);
+    expect(played).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('a_muted_cue_in_old_preview_data_is_not_played', async () => {
+    const { played, button } = await openPreview({ api: exerciseApi(exercise({ mutedCues: ['brake@332'] })).on(PREVIEW_ROUTE, PLAYING) });
+    fake();
+    await act(async () => {
+      fireEvent.click(button);
+    });
+    await advance(3500);
+    expect(played).toEqual([['full-throttle']]);
+  });
+
+  it('phone_view_button_has_no_text', async () => {
+    await openPreview({ width: 390 });
+    const view = screen.getByRole('button', { name: 'View the map in full screen' });
+    expect(view).not.toHaveTextContent('View');
+  });
+
+  it('desktop_view_button_keeps_its_text', async () => {
+    await openPreview();
+    expect(screen.getByRole('button', { name: 'View the map in full screen' })).toHaveTextContent('View');
   });
 });

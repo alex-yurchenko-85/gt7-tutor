@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Icon } from '../app/icons.tsx';
 import './charts.css';
 
-export type LegendKey = 'reference' | 'you' | 'turn' | 'cue' | 'muted';
+export type LegendKey = 'reference' | 'you' | 'turn' | 'cue' | 'muted' | 'not-spoken';
 
 export type MapPanelProps = {
   title: string;
@@ -13,6 +13,7 @@ export type MapPanelProps = {
   onView(): void;
   children: ReactNode;
   below?: ReactNode;
+  viewIcon?: boolean;
 };
 
 const LEGEND: { key: LegendKey; mark: string; text: string }[] = [
@@ -20,18 +21,19 @@ const LEGEND: { key: LegendKey; mark: string; text: string }[] = [
   { key: 'you', mark: 'you', text: 'you' },
   { key: 'turn', mark: 'turn', text: 'turn' },
   { key: 'cue', mark: 'cue', text: 'voice cue' },
-  { key: 'muted', mark: 'cue muted', text: 'muted cue' }
+  { key: 'muted', mark: 'cue muted', text: 'muted cue' },
+  { key: 'not-spoken', mark: 'cue not-spoken', text: 'cue not spoken' }
 ];
 
-export function MapPanel({ title, legend, far = null, notes = [], actions, onView, children, below }: MapPanelProps) {
+export function MapPanel({ title, legend, far = null, notes = [], actions, onView, children, below, viewIcon = false }: MapPanelProps) {
   return (
     <section className="panel map-panel" aria-label={title}>
       <div className="map-panel-head">
         <h2>{title}</h2>
         {actions ? <div className="map-panel-actions">{actions}</div> : null}
-        <button type="button" className="icon-button" aria-label="View the map in full screen" onClick={onView}>
+        <button type="button" className={`icon-button${viewIcon ? ' icon-only' : ''}`} aria-label="View the map in full screen" onClick={onView}>
           <Icon name="expand" size={16} />
-          View
+          {viewIcon ? null : 'View'}
         </button>
       </div>
       {children}

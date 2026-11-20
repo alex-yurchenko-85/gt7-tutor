@@ -14,6 +14,7 @@ import type {
   CreateCaptureRequest,
   CreateExerciseRequest,
   CreateReferenceRequest,
+  CuePreview,
   DeleteAttemptsResult,
   DeleteHistoryRequest,
   DeleteHistoryResult,
@@ -151,6 +152,7 @@ export const api = {
   referenceCues: (id: string) => sharedRequest<ReferenceCue[]>(`/references/${id}/cues`, false),
   referenceCorners: (id: string) => sharedRequest<CornerInfo[]>(`/references/${id}/corners`, true),
   referenceClips: (id: string) => sharedRequest<string[]>(`/references/${id}/clips`, true),
+  cuePreview: (id: string) => request<CuePreview>('GET', `/references/${id}/preview`),
   reactions: (exerciseId: string) => request<BrakeReactionSummary[]>('GET', `/exercises/${exerciseId}/reactions`),
   promoteAttempt: (id: string) => request<ReferenceInfo>('POST', `/attempts/${id}/promote`),
 

@@ -173,6 +173,18 @@ describe('track map', () => {
     expect(centreOf('2').group.querySelector('.mute-badge')).toBeNull();
   });
 
+  it('speaking_mark_has_its_own_class', () => {
+    render(<TrackMap label="Map" reference={STRAIGHT} marks={[{ sM: 40, label: '1', title: 'Mute cue 1', speaking: true }, { sM: 300, label: '2', title: 'Mute cue 2' }]} />);
+    expect(centreOf('1').group).toHaveClass('speaking');
+    expect(centreOf('2').group).not.toHaveClass('speaking');
+  });
+
+  it('not_spoken_mark_has_a_badge', () => {
+    render(<TrackMap label="Map" reference={STRAIGHT} marks={[{ sM: 40, label: '1', title: 'Mute cue 1', notSpoken: true }, { sM: 300, label: '2', title: 'Mute cue 2' }]} />);
+    expect(centreOf('1').group.querySelector('.not-spoken-badge')).not.toBeNull();
+    expect(centreOf('2').group.querySelector('.not-spoken-badge')).toBeNull();
+  });
+
   it('start_and_finish_are_marked_across_the_line_with_labels_beyond_the_ends', () => {
     render(<TrackMap label="Map" reference={STRAIGHT} />);
     const points = document.querySelector('.track-reference')!.getAttribute('points')!.split(' ').map(point => point.split(',').map(Number) as [number, number]);

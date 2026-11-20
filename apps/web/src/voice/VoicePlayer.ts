@@ -112,6 +112,13 @@ export class VoicePlayer {
     this.start(clips.map(clip => this.buffers.get(clip)), null, this.newestGeneration);
   }
 
+  playLoaded(...clips: string[]): boolean {
+    const buffers = clips.map(clip => this.buffers.get(clip));
+    if (buffers.some(buffer => buffer === undefined)) return false;
+    this.start(buffers, null, this.newestGeneration);
+    return true;
+  }
+
   stop(): void {
     for (const source of this.playing?.sources ?? []) source.stop();
     this.playing = null;

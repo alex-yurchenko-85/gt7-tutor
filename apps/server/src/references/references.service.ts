@@ -31,6 +31,8 @@ import {
   type Corner,
   type GameTimerSession,
   type ReferenceAnalysis,
+  type ReferencePath,
+  type ReferencePoint,
   type TimerRunRange
 } from '@gt7/core';
 import type { Knex } from 'knex';
@@ -99,6 +101,12 @@ export function cornerInfos(corners: Corner[], lengthM: number): CornerInfo[] {
   }));
 }
 
+export function referenceGrid(path: ReferencePath): ReferencePoint[] {
+  const gridM = DEFAULT_CONFIG.reviewGridM;
+  const count = Math.floor(path.lengthM / gridM + 1e-9) + 1;
+  return Array.from({ length: count }, (_, index) => pointAt(path, index * gridM));
+}
+
 function carOf(samples: Sample[]): number | null {
   return samples.find(sample => sample.playerSession)?.carId ?? samples[0]?.carId ?? null;
 }
@@ -139,9 +147,13 @@ export class ReferencesService {
     return analysis;
   }
 
-  private async analyse(reference: ReferenceRow): Promise<ReferenceAnalysis> {
+  async referenceSamples(reference: ReferenceRow): Promise<Sample[]> {
     const capture = await this.db<CaptureRow>('captures').where({ id: reference.capture_id }).first();
-    const samples = await this.samplesOf(capture!, { first: reference.first_raw_index, last: reference.last_raw_index });
+    return this.samplesOf(capture!, { first: reference.first_raw_index, last: reference.last_raw_index });
+  }
+
+  private async analyse(reference: ReferenceRow): Promise<ReferenceAnalysis> {
+    const samples = await this.referenceSamples(reference);
     const analysis = analyseReference(samples, DEFAULT_CONFIG);
     if (reference.timer_ms !== null) return { ...analysis, timeMs: reference.timer_ms };
     await this.db('references').where({ id: reference.id }).whereNull('timer_ms').update({ timer_ms: analysis.timeMs });
@@ -267,8 +279,7 @@ export class ReferencesService {
   async trace(userId: string, id: string): Promise<ReferenceTrace> {
     const { path, timeMs } = await this.analysisOf(await ownedReference(this.db, userId, id));
     const gridM = DEFAULT_CONFIG.reviewGridM;
-    const count = Math.floor(path.lengthM / gridM + 1e-9) + 1;
-    const points = Array.from({ length: count }, (_, index) => pointAt(path, index * gridM));
+    const points = referenceGrid(path);
     const round = (value: number, digits: number) => Number(value.toFixed(digits));
     return {
       gridM,

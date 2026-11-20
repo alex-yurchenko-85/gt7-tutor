@@ -246,7 +246,7 @@ While an attempt runs, the screen says `Attempt <n> runs. Finish it or stop the 
 **Goal:** choose what the voice says, and when.
 **Where:** the **Cues** tab of the exercise, or **Hear the cues first** on **Overview**.
 
-![The Cues tab: the switch Speak target speeds, the list Side cue distance, the list of cues with distance, phrase and target speed, and the map Reference line with numbered cues, its legend and the View button.](images/cues.webp)
+![The Cues tab: the switch Speak target speeds, the list Side cue distance, the list of cues with distance, phrase and target speed, and the map Reference line with numbered cues, the Preview and View buttons and the legend. The line above the list says that 2 cues are not spoken on the reference line.](images/cues.webp)
 
 The list shows each cue and each turn in the order of the section. Each cue row has:
 
@@ -256,6 +256,7 @@ The list shows each cue and each turn in the order of the section. Each cue row 
 - **Mute** (speaker icon) / **Unmute** (crossed-out speaker on a black fill): a muted cue is not spoken. The Drive screen does not show it either. A muted row has a striped grey background, the phrase struck through and the tag `MUTED`. Its timing stays and applies again after **Unmute**.
 - **Timing**: moves this cue up to 1 s earlier or 0.5 s later, in steps of 0.1 s.
 - Notes from your attempts, for example `Braked early in 2 of 3 attempts, median 26 m`. A yellow row marks a place where a difference repeats.
+- The tag `NOT SPOKEN`: on the reference line, the voice does not say this cue. The line under the phrase tells why. An example is `The voice still says cue 3 here. Mute cue 3 or this cue, or move cue 3 earlier.` The voice says one cue at a time, so a cue that comes too soon after another cue stays silent. The line above the list gives the number of these cues. A muted cue does not get this tag.
 
 The turn rows (`T1`) show the turn-in, the apex, the radius and the speed of the reference at the apex. The voice does not say them.
 
@@ -264,9 +265,22 @@ Settings above the list:
 - **Speak target speeds**: on, the voice says the lowest speed of the reference after a brake phrase. Off, it says the action only.
 - **Side cue distance**: `Off`, or 0.5 m to 3 m. The voice says `More left` or `More right` when the car stays farther than this distance from the reference line.
 
-The map is on the right, in a frame with the title `Reference line, <length> m`. The legend under the map has the words `reference line`, `turn`, `voice cue`, `muted cue` and `Select a number to mute that cue`. **View** opens the map in full screen, with the list of the voice cues. Select a cue in the list to find it on the line. Press Esc or select **Back** to close the full-screen map. On a phone, the map is above the list of cues.
+The map is on the right, in a frame with the title `Reference line, <length> m`. The legend under the map has the words `reference line`, `turn`, `voice cue`, `muted cue`, `cue not spoken` and `Select a number to mute that cue`. **View** opens the map in full screen, with the list of the voice cues. Select a cue in the list to find it on the line. Press Esc or select **Back** to close the full-screen map. On a phone, the map is above the list of cues.
 
-On the map, a yellow band marks each turn, from the turn-in to the end of the turn, with its label `T1`. A short bar and an arrow mark the start and the direction of travel, and a chequered bar marks the finish. Select a cue number to mute or unmute that cue. A muted cue has a dashed grey circle with a small crossed-out speaker. When two cues are so close that their numbers would cover each other, the numbers move to the two sides of the line, with a short line to their places.
+On the map, a yellow band marks each turn, from the turn-in to the end of the turn, with its label `T1`. A short bar and an arrow mark the start and the direction of travel, and a chequered bar marks the finish. Select a cue number to mute or unmute that cue. A muted cue has a dashed grey circle with a small crossed-out speaker. A cue with the tag `NOT SPOKEN` has a small black circle with three dots. When two cues are so close that their numbers would cover each other, the numbers move to the two sides of the line, with a short line to their places.
+
+### Preview the cues
+
+**Preview** (play icon, next to **View**) plays the cues on this device in the time of the reference. It uses the settings of this tab. Each cue plays at the time that a drive on the reference line gives it.
+
+1. Select **Preview**. A yellow dot moves along the reference line.
+2. Listen to the cues. The number of the cue that the voice says turns black on the map, and its row shows the tag `SPEAKING`. Under the map, a bar and the time show the progress, for example `0:11.3 of 0:16.1, measured`. The line `The voice says:` gives the phrase and the cue number.
+3. To stop before the end, select **Stop** (square icon).
+
+![The Cues tab while the preview plays: the yellow dot on the reference line, cue 3 Lift off with the tag SPEAKING, cue 4 with the tag NOT SPOKEN, and the time 0:11.3 of 0:16.1, measured.](images/cues-preview.webp)
+
+The preview stops by itself at the end of the reference. It also stops when you change a setting of this tab, and when you leave the tab. The preview does not start a training, and it does not record an attempt. **Preview** is only on the **Cues** tab. On a phone, **Preview**, **Stop** and **View** are icon buttons.
+
 Changes apply from the next **Start an attempt**. A training that already runs keeps the old settings.
 
 ## Drive an attempt

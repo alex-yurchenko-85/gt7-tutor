@@ -1,4 +1,4 @@
-import { KPH_PER_MPS, type CatalogueListEntry, type CornerInfo, type Exercise, type ExerciseStep, type ReferenceCue, type ReferenceInfo, type ReferenceTrace } from '@gt7/contracts';
+import { KPH_PER_MPS, type CatalogueListEntry, type CornerInfo, type CuePreview, type Exercise, type ExerciseStep, type ReferenceCue, type ReferenceInfo, type ReferenceTrace } from '@gt7/contracts';
 import { ApiStub, signedIn, USER } from './support.tsx';
 
 export const EXERCISE_ID = 'e0000000-0000-4000-8000-000000000001';
@@ -98,6 +98,8 @@ export function rememberExercise(id = EXERCISE_ID): void {
   window.localStorage.setItem(`gt7.currentExercise.${USER.id}`, id);
 }
 
+export const NO_DROP_PREVIEW: CuePreview = { timeMs: 4000, gridM: 10, gridTimeMs: [0, 2000, 4000], cues: [], dropped: [] };
+
 export function exerciseApi(current: Exercise = exercise()): ApiStub {
   return signedIn(new ApiStub())
     .on('GET /api/exercises', [current])
@@ -106,6 +108,7 @@ export function exerciseApi(current: Exercise = exercise()): ApiStub {
     .on(`GET /api/references/${REFERENCE_ID}/cues`, CUES)
     .on(`GET /api/references/${REFERENCE_ID}/corners`, CORNERS)
     .on(`GET /api/references/${REFERENCE_ID}/clips`, REFERENCE_CLIPS)
+    .on(`GET /api/references/${REFERENCE_ID}/preview`, NO_DROP_PREVIEW)
     .on(`GET /api/exercises/${current.id}/reactions`, [])
     .on(`GET /api/exercises/${current.id}/recurring`, [])
     .on(`GET /api/exercises/${current.id}/references`, [reference()])

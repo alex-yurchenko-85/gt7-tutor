@@ -82,9 +82,31 @@
   background: repeating-linear-gradient(135deg, var(--bg) 0 10px, var(--paper) 10px 20px);
 }
 
-.note .tag.ink {
+.note .tag.ink,
+.note .tag.outline {
   margin-left: 10px;
   vertical-align: 3px;
+}
+
+.note .tag.outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-width: 2px;
+  background: var(--paper);
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.note .tag.outline .dots {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.note .phrase small.not-spoken {
+  color: var(--ink);
 }
 
 .note.off .glyph {
@@ -374,4 +396,55 @@
 
 .note.turn .target {
   white-space: normal;
+}
+
+.preview-run {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 16px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.preview-bar {
+  position: relative;
+  height: 6px;
+  background: var(--line);
+}
+
+.preview-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ink);
+}
+
+.preview-time {
+  font: 700 16px var(--font-display);
+  white-space: nowrap;
+}
+
+.preview-now {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.preview-now b {
+  font: 700 17px var(--font-display);
+}
+
+.preview-note {
+  margin: 8px 0 0;
+}
+
+@media (max-width: 899px) {
+  .cues-layout .map-panel-actions {
+    order: 0;
+    flex: none;
+  }
+}
+
+.cues-layout .map-panel .track-cursor {
+  fill: var(--yellow);
+  stroke: #14181f;
+  stroke-width: 3;
 }

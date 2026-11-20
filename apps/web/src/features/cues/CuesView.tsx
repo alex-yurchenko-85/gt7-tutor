@@ -8,6 +8,7 @@ import {
   type BrakeReactionSummary,
   type CornerInfo,
   type Exercise,
+  type PreviewDrop,
   type RecurringDifference,
   type ReferenceCue,
   type ReferenceTrace
@@ -22,6 +23,7 @@ import { IconButton } from '../../app/IconButton.tsx';
 import { Icon } from '../../app/icons.tsx';
 import { useWideLayout } from '../../app/layout.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
+import { formatTime } from '../../app/format.ts';
 import { counted } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths } from '../../app/router.tsx';
@@ -33,6 +35,8 @@ import {
   reactionText,
   recurringText
 } from './cue-format.ts';
+import { notSpokenSummary, notSpokenText, previewClips, previewPositionM, withoutMuted } from './preview-timeline.ts';
+import { useCuePreviewRun, type CuePreviewRun } from './use-cue-preview-run.ts';
 import './cues.css';
 
 const OFFSET_SAVE_DELAY_MS = 500;
@@ -106,12 +110,14 @@ type CueRowProps = {
   offsetMs: number;
   recurring: RecurringDifference[];
   reaction: BrakeReactionSummary | null;
+  notSpoken: string | null;
+  speaking: boolean;
   onToggle(): void;
   onOffset(next: number): void;
   onHear(): void;
 };
 
-function CueRow({ cue, number, muted, offsetMs, recurring, reaction, onToggle, onOffset, onHear }: CueRowProps) {
+function CueRow({ cue, number, muted, offsetMs, recurring, reaction, notSpoken, speaking, onToggle, onOffset, onHear }: CueRowProps) {
   const flagged = recurring.length > 0 && !muted;
   return (
     <li className={`note${flagged ? ' warn' : ''}${muted ? ' off' : ''}`} aria-label={`Cue ${number}`}>
@@ -130,8 +136,20 @@ function CueRow({ cue, number, muted, offsetMs, recurring, reaction, onToggle, o
             Muted
           </span>
         ) : null}
+        {speaking ? <span className="tag ink">Speaking</span> : null}
+        {notSpoken !== null && !muted ? (
+          <span className="tag outline">
+            <svg className="dots" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="5" cy="12" r="2.2" />
+              <circle cx="12" cy="12" r="2.2" />
+              <circle cx="19" cy="12" r="2.2" />
+            </svg>
+            Not spoken
+          </span>
+        ) : null}
         {cue.bigStop ? <small>Big brake ahead first, about 2 s before this point</small> : null}
         {muted ? <small>The voice does not say this cue, and Drive does not show it.</small> : null}
+        {notSpoken !== null && !muted ? <small className="not-spoken">{notSpoken}</small> : null}
         {reaction ? (
           <small className="reaction">
             You start to brake {reactionText(reaction.medianMs)} here ({attemptsText(reaction.count)})
@@ -251,6 +269,29 @@ function SideCueDistance({ distanceM, onChange }: SideDistanceProps) {
   );
 }
 
+type PreviewStatusProps = { run: CuePreviewRun; phraseOf(key: string): string | null; numberOf(key: string): number | null };
+
+function PreviewStatus({ run, phraseOf, numberOf }: PreviewStatusProps) {
+  if (!run.preview) return <p className="sub preview-note">Preview plays the cues on this device in the time of the reference.</p>;
+  const { timeMs } = run.preview;
+  const share = timeMs > 0 ? Math.min(1, run.elapsedMs / timeMs) : 0;
+  const key = run.speaking?.rowKey ?? null;
+  const phrase = key === null ? null : phraseOf(key);
+  return (
+    <div className="preview-run">
+      <span className="preview-bar" aria-hidden="true">
+        <i style={{ width: `${share * 100}%` }} />
+      </span>
+      <span className="preview-time">{`${formatTime(run.elapsedMs, 1)} of ${formatTime(timeMs, 1)}, measured`}</span>
+      {key !== null && phrase !== null ? (
+        <p className="preview-now">
+          <span>The voice says:</span> <b>{phrase}</b> (cue {numberOf(key)})
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 type CueData = [ReferenceCue[], ReferenceTrace, RecurringDifference[], CornerInfo[], BrakeReactionSummary[]];
 
 function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: string }) {
@@ -268,10 +309,13 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
       ]),
     [referenceId, exercise.id]
   );
+  const preview = useResource(() => api.cuePreview(referenceId), [referenceId]);
+  const run = useCuePreviewRun(player);
   const [settings, setSettings] = useState(exercise);
   const { mutedCues: muted, speakTargets, sideCueDistanceM: sideDistanceM, cueOffsetsMs: offsets } = settings;
   const change = (changes: Partial<Exercise>) => setSettings(current => ({ ...current, ...changes }));
   const [problem, setProblem] = useState<string | null>(null);
+  const [saving, setSaving] = useState(0);
   const pendingOffsets = useRef<PendingOffsets | null>(null);
   useEffect(
     () => () => {
@@ -289,6 +333,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
 
   const save = async (body: Parameters<typeof api.updateExercise>[1]) => {
     setProblem(null);
+    setSaving(count => count + 1);
     try {
       const updated = await api.updateExercise(exercise.id, body);
       change({
@@ -297,15 +342,40 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
         ...(body.sideCueDistanceM !== undefined ? { sideCueDistanceM: updated.sideCueDistanceM } : {}),
         ...(body.cueOffsetsMs !== undefined && pendingOffsets.current === null ? { cueOffsetsMs: updated.cueOffsetsMs } : {})
       });
+      preview.reload();
     } catch (error) {
       setProblem(errorText(error));
+    } finally {
+      setSaving(count => count - 1);
     }
   };
+  const stopRun = () => {
+    if (run.running) run.stop();
+  };
+  const flushOffsets = async (): Promise<boolean> => {
+    const pending = pendingOffsets.current;
+    if (!pending) return false;
+    clearTimeout(pending.timer);
+    pendingOffsets.current = null;
+    await save({ cueOffsetsMs: pending.offsets });
+    return true;
+  };
+  const startPreview = async () => {
+    void player.unlock().catch(() => undefined);
+    const flushed = await flushOffsets();
+    const fresh = flushed ? await api.cuePreview(referenceId).catch(() => null) : preview.data;
+    if (!fresh) return;
+    const playable = withoutMuted(fresh, muted);
+    await player.preload(previewClips(playable)).catch(() => undefined);
+    run.start(playable);
+  };
   const toggle = (key: string) => {
+    stopRun();
     const next = muted.includes(key) ? muted.filter(item => item !== key) : [...muted, key];
     void save({ mutedCues: next });
   };
   const changeOffset = (key: string, value: number) => {
+    stopRun();
     const next = withoutZeros({ ...offsets, [key]: value });
     change({ cueOffsetsMs: next });
     clearTimeout(pendingOffsets.current?.timer);
@@ -316,12 +386,20 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
     pendingOffsets.current = { timer, offsets: next };
   };
   const changeSpeak = (next: boolean) => {
+    stopRun();
     change({ speakTargets: next });
     void save({ speakTargets: next });
   };
   const changeSideDistance = (next: number | null) => {
+    stopRun();
     change({ sideCueDistanceM: next });
     void save({ sideCueDistanceM: next });
+  };
+  const dropped = (preview.data?.dropped ?? []).filter(drop => !muted.includes(drop.rowKey));
+  const dropOf = (key: string): PreviewDrop | null => dropped.find(drop => drop.rowKey === key) ?? null;
+  const numberOf = (key: string): number | null => {
+    const index = cues.findIndex(cue => cue.key === key);
+    return index < 0 ? null : index + 1;
   };
   const hear = (cue: ReferenceCue) => {
     const clips = speakTargets && cue.followClip ? [cue.clip, cue.followClip] : [cue.clip];
@@ -329,16 +407,28 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
   };
 
   const map = (
-    <MapPanel title={`Reference line, ${Math.round(trace.lengthM)} m`} legend={['reference', 'turn', 'cue', 'muted']} notes={['Select a number to mute that cue']} onView={() => setViewing(true)}>
+    <MapPanel title={`Reference line, ${Math.round(trace.lengthM)} m`} legend={['reference', 'turn', 'cue', 'muted', 'not-spoken']}
+      viewIcon={!wide}
+      actions={
+        run.running ? (
+          <IconButton icon="stop" label="Stop the preview" primary onClick={run.stop} />
+        ) : (
+          <IconButton icon="play" label="Preview the cues" onClick={() => void startPreview()} disabled={!preview.data || preview.loading || saving > 0} />
+        )
+      }
+      below={<PreviewStatus run={run} phraseOf={key => cues.find(cue => cue.key === key)?.phrase ?? null} numberOf={numberOf} />} notes={['Select a number to mute that cue']} onView={() => setViewing(true)}>
       <TrackMap
         label="Reference line with the voice cues and the turns. Select a number to mute or unmute that cue"
         reference={trace}
+        cursorSM={run.preview ? previewPositionM(run.preview, run.elapsedMs) : null}
         marks={[
           ...cornerMarks(corners),
           ...cues.map((cue, index) => ({
             sM: cue.sM,
             label: String(index + 1),
             muted: muted.includes(cue.key),
+            notSpoken: dropOf(cue.key) !== null,
+            speaking: run.speaking?.rowKey === cue.key,
             title: `${muted.includes(cue.key) ? 'Unmute' : 'Mute'} cue ${index + 1}`,
             onSelect: () => toggle(cue.key)
           }))
@@ -369,6 +459,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
         <p className="sub cues-intro">
           {counted(cues.length, 'cue')} and {counted(corners.length, 'turn')} found in the reference. Distance is from the section start. A muted cue is not spoken, and its
           decision is still recorded. Timing moves one cue earlier or later in steps of 0.1 s.
+          {dropped.length > 0 ? ` ${notSpokenSummary(dropped.length)}` : null}
         </p>
         {problem ? (
           <p className="error" role="alert">
@@ -386,6 +477,11 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
                 offsetMs={offsets[row.cue.key] ?? 0}
                 recurring={recurring.filter(item => item.eventKey === row.cue.key)}
                 reaction={reactions.find(item => item.eventKey === row.cue.key) ?? null}
+                speaking={run.speaking?.rowKey === row.cue.key}
+                notSpoken={(() => {
+                  const drop = dropOf(row.cue.key);
+                  return drop ? notSpokenText(drop, numberOf) : null;
+                })()}
                 onToggle={() => toggle(row.cue.key)}
                 onOffset={value => changeOffset(row.cue.key, value)}
                 onHear={() => hear(row.cue)}

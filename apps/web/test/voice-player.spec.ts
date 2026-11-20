@@ -30,6 +30,15 @@ function syncClocks(rig: PlayerRig, serverMs: number) {
 }
 
 describe('voice player', () => {
+  it('play_loaded_plays_only_clips_that_are_loaded_and_at_once', async () => {
+    const { player, audio } = playerRig();
+    expect(player.playLoaded('hard-brake', 'speed-85')).toBe(false);
+    expect(audio.played()).toHaveLength(0);
+    await player.preload(['hard-brake', 'speed-85']);
+    expect(player.playLoaded('hard-brake', 'speed-85')).toBe(true);
+    expect(audio.played()).toHaveLength(2);
+  });
+
   it('voice_player_drops_expired_cue', async () => {
     const rig = await readyRig();
     rig.player.handle(cueMessage({ ttlMs: 150 }), rig.clock.now - 151);

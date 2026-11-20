@@ -71,6 +71,24 @@
   stroke: none;
 }
 
+.track-mark.speaking .marker {
+  fill: var(--ink);
+  stroke: var(--ink);
+}
+
+.track-mark.speaking text {
+  fill: var(--paper);
+}
+
+.track-mark .not-spoken-badge circle {
+  fill: var(--ink);
+  stroke: none;
+}
+
+.track-mark .not-spoken-badge circle.pip {
+  fill: var(--paper);
+}
+
 .track-mark.muted text {
   fill: var(--mute);
 }
@@ -174,6 +192,14 @@
   stroke: none;
 }
 
+.track-map.dark .track-mark .not-spoken-badge circle {
+  fill: #ffffff;
+}
+
+.track-map.dark .track-mark .not-spoken-badge circle.pip {
+  fill: #14181f;
+}
+
 .track-map.dark .track-cursor {
   fill: #ffd60a;
   stroke: #14181f;
@@ -233,6 +259,12 @@
   display: flex;
 }
 
+.map-panel-head .icon-button.icon-only {
+  width: 44px;
+  padding: 0;
+  justify-content: center;
+}
+
 .map-legend {
   align-items: center;
   gap: 8px 18px;
@@ -272,6 +304,13 @@
   border-style: dashed;
   border-color: var(--mute);
   background: var(--bg);
+}
+
+.map-legend .cue.not-spoken {
+  border: 0;
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(circle at 25% 50%, var(--paper) 1.6px, transparent 2px), radial-gradient(circle at 50% 50%, var(--paper) 1.6px, transparent 2px), radial-gradient(circle at 75% 50%, var(--paper) 1.6px, transparent 2px), var(--ink);
 }
 
 @media (max-width: 899px) {

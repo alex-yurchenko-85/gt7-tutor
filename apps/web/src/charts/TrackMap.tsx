@@ -14,6 +14,8 @@ export type TrackMark = {
   label?: string;
   selected?: boolean;
   muted?: boolean;
+  notSpoken?: boolean;
+  speaking?: boolean;
   onAttempt?: boolean;
   onSelect?: () => void;
 };
@@ -324,6 +326,18 @@ const LinesLayer = memo(function LinesLayer({ geometry }: { geometry: Geometry }
   );
 });
 
+function NotSpokenBadge({ x, y }: { x: number; y: number }) {
+  const dot = BADGE_RADIUS_PX / 4;
+  return (
+    <g className="not-spoken-badge" transform={`translate(${x} ${y})`} aria-hidden="true">
+      <circle r={BADGE_RADIUS_PX} />
+      {[-2.4, 0, 2.4].map(step => (
+        <circle key={step} className="pip" cx={step * dot} cy={0} r={dot * 0.8} />
+      ))}
+    </g>
+  );
+}
+
 function MuteBadge({ x, y }: { x: number; y: number }) {
   return (
     <g className="mute-badge" transform={`translate(${x} ${y})`} aria-hidden="true">
@@ -343,7 +357,7 @@ const MarksLayer = memo(function MarksLayer({ marks, placed }: { marks: TrackMar
         if (!place) return null;
         const [cx, cy] = place.centre;
         const radius = markRadius(mark);
-        const className = `track-mark${mark.selected ? ' selected' : ''}${mark.muted ? ' muted' : ''}${mark.onAttempt ? ' on-attempt' : ''}`;
+        const className = `track-mark${mark.selected ? ' selected' : ''}${mark.muted ? ' muted' : ''}${mark.speaking ? ' speaking' : ''}${mark.onAttempt ? ' on-attempt' : ''}`;
         const content = (
           <>
             <title>{mark.title}</title>
@@ -360,6 +374,7 @@ const MarksLayer = memo(function MarksLayer({ marks, placed }: { marks: TrackMar
               </text>
             ) : null}
             {mark.muted && mark.label ? <MuteBadge x={rounded(cx + radius * 0.75)} y={rounded(cy - radius * 0.75)} /> : null}
+            {mark.notSpoken && !mark.muted && mark.label ? <NotSpokenBadge x={rounded(cx + radius * 0.75)} y={rounded(cy - radius * 0.75)} /> : null}
           </>
         );
         return mark.onSelect ? (
