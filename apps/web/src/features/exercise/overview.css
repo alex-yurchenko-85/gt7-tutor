@@ -13,73 +13,13 @@
 
 .overview-next,
 .overview-times,
-.overview-work,
-.overview-map {
+.overview-stack .recurring-differences {
   padding: 22px;
-}
-
-.compact-rail {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  font-size: 13px;
-}
-
-.compact-rail li {
-  position: relative;
-  overflow: hidden;
-  padding: 8px 10px 10px;
-  border-top: 4px solid var(--line);
-  overflow-wrap: anywhere;
-}
-
-.compact-rail li b {
-  position: relative;
-  z-index: 1;
-  display: block;
-  font-weight: 600;
-}
-
-.compact-rail .step-note {
-  position: relative;
-  z-index: 1;
-}
-
-.compact-rail .step-number {
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  font: 700 46px/1 var(--font-display);
-  color: var(--step-number);
-}
-
-.compact-rail li.now .step-number {
-  color: var(--step-number-now);
-}
-
-.compact-rail li.done {
-  border-top-color: var(--ink);
-}
-
-.compact-rail li.done .step-note {
-  color: var(--ok);
-}
-
-.compact-rail li.now {
-  border-top-color: var(--yellow);
-  background: var(--soft);
-}
-
-.compact-rail li.next .step-note,
-.compact-rail li.later .step-note {
-  color: var(--mute);
 }
 
 .overview-next h2 {
   font-size: 26px;
-  margin: 22px 0 8px;
+  margin: 0 0 8px;
 }
 
 .overview-next .lede {
@@ -91,9 +31,7 @@
   font-size: 20px;
 }
 
-.overview-times h2,
-.overview-work h2,
-.overview-map h2 {
+.overview-times h2 {
   margin: 0;
   font-size: 22px;
 }
@@ -130,26 +68,6 @@
   color: var(--ok);
 }
 
-.work-list {
-  list-style: none;
-  padding: 0;
-  margin-top: 12px;
-}
-
-.work-list li {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 14px;
-  align-items: center;
-  min-height: 52px;
-  border-top: 1px solid var(--line);
-  font-size: 16px;
-}
-
-.overview-map .track-map {
-  margin-top: 12px;
-}
-
 @media (max-width: 899px) {
   .overview-columns {
     grid-template-columns: minmax(0, 1fr);
@@ -157,23 +75,11 @@
 
   .overview-next,
   .overview-times,
-  .overview-work,
-  .overview-map {
+  .overview-stack .recurring-differences {
     padding: 16px;
   }
 
   .times-row b {
     font-size: 24px;
-  }
-}
-
-@media (max-width: 899px) {
-  .compact-rail li {
-    padding: 8px 6px 8px;
-  }
-
-  .compact-rail .step-number {
-    right: 4px;
-    font-size: 42px;
   }
 }

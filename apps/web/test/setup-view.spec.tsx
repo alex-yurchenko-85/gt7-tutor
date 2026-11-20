@@ -447,8 +447,24 @@ describe('setup sections', () => {
     setViewportWidth(1280);
     setupApi();
     renderApp({ path: '/setup#data' });
-    expect(await screen.findByRole('link', { name: 'Delete history…' })).toHaveAttribute('href', '/setup/delete-history');
-    expect(screen.getByRole('button', { name: 'Clean up captures…' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Delete history' })).toHaveAttribute('href', '/setup/delete-history');
+    expect(screen.getByRole('button', { name: 'Clean up captures' })).toBeInTheDocument();
+  });
+
+  it('no_delete_button_ends_with_an_ellipsis', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    renderApp({ path: '/setup#data' });
+    await screen.findByRole('link', { name: 'Delete history' });
+    for (const control of [...screen.getAllByRole('button'), ...screen.getAllByRole('link')]) expect(control.textContent).not.toMatch(/…$/);
+  });
+
+  it('profile_delete_button_has_no_ellipsis', async () => {
+    setViewportWidth(1280);
+    setupApi();
+    renderApp({ path: '/setup#profiles' });
+    await screen.findByRole('button', { name: 'Delete profile' });
+    for (const button of screen.getAllByRole('button')) expect(button.textContent).not.toMatch(/…$/);
   });
 
   it('cleanup_confirm_button_says_clean_up_captures', async () => {
@@ -456,7 +472,7 @@ describe('setup sections', () => {
     setupApi();
     renderApp({ path: '/setup#data' });
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Clean up captures…' }));
+    await user.click(await screen.findByRole('button', { name: 'Clean up captures' }));
     expect(screen.getByRole('button', { name: 'Clean up captures' })).toBeInTheDocument();
     expect(screen.queryByText('Remove unused capture data')).not.toBeInTheDocument();
   });
@@ -521,7 +537,7 @@ describe('screen updates', () => {
     const api = deleteProfileApi({ status: 200, body: { exercises: 2, attempts: 6, references: 2, cleanup: null } });
     renderApp({ path: '/setup#profiles' });
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Delete profile…' }));
+    await user.click(await screen.findByRole('button', { name: 'Delete profile' }));
     const dialog = screen.getByRole('alertdialog', { name: `Delete the profile ${USER.name}?` });
     expect(dialog).toHaveTextContent('Everything of this profile goes:');
     expect(await within(dialog).findByText(/2 exercises/)).toBeInTheDocument();
@@ -545,7 +561,7 @@ describe('screen updates', () => {
     deleteProfileApi({ status: 403, body: { code: 'wrong-password', reason: 'The password is not correct.' } });
     renderApp({ path: '/setup#profiles' });
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Delete profile…' }));
+    await user.click(await screen.findByRole('button', { name: 'Delete profile' }));
     const dialog = screen.getByRole('alertdialog');
     await user.type(within(dialog).getByLabelText(`Enter the password of ${USER.name} to confirm`), 'wrong one');
     await user.click(within(dialog).getByRole('button', { name: 'Delete profile' }));
@@ -558,7 +574,7 @@ describe('screen updates', () => {
     deleteProfileApi({ status: 409, body: { code: 'busy', reason: 'Busy.' } });
     renderApp({ path: '/setup#profiles' });
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Delete profile…' }));
+    await user.click(await screen.findByRole('button', { name: 'Delete profile' }));
     const dialog = screen.getByRole('alertdialog');
     await user.type(within(dialog).getByLabelText(`Enter the password of ${USER.name} to confirm`), 'correct horse');
     await user.click(within(dialog).getByRole('button', { name: 'Delete profile' }));
@@ -569,7 +585,7 @@ describe('screen updates', () => {
     setViewportWidth(1280);
     setupApi().on('GET /api/exercises', [exercise({ attemptCount: 1, referenceCount: 1 })]);
     renderApp({ path: '/setup#profiles' });
-    await userEvent.click(await screen.findByRole('button', { name: 'Delete profile…' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete profile' }));
     const dialog = screen.getByRole('alertdialog');
     expect(await within(dialog).findByText('1 exercise')).toBeInTheDocument();
     expect(dialog).toHaveTextContent('1 exercise with its references');

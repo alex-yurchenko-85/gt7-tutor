@@ -269,3 +269,38 @@ describe('cue list', () => {
   });
 });
 
+describe('cues map frame', () => {
+  it('cues_map_panel_has_the_view_and_the_mute_note', async () => {
+    setViewportWidth(1440);
+    exerciseApi().install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    const user = userEvent.setup();
+    const panel = await screen.findByRole('region', { name: 'Reference line, 20 m' });
+    expect([...panel.querySelectorAll('.legend span')].map(span => span.textContent)).toEqual(['reference line', 'turn', 'voice cue', 'muted cue', 'Select a number to mute that cue']);
+    await user.click(await screen.findByRole('button', { name: 'View the map in full screen' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('checkbox', { name: 'Voice cues' })).toBeChecked();
+    expect(screen.queryByText('Map orientation is not confirmed')).toBeNull();
+  });
+
+  it('cues_map_number_still_mutes', async () => {
+    setViewportWidth(1440);
+    const api = exerciseApi()
+      .on('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001', exercise({ mutedCues: [CUES[0]!.key] }))
+      .install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    const panel = await screen.findByRole('region', { name: 'Reference line, 20 m' });
+    const mark = within(panel).getByRole('button', { name: 'Mute cue 1' });
+    await userEvent.setup().click(mark);
+    await waitFor(() => expect(api.calls.find(call => call.method === 'PATCH')?.body).toEqual({ mutedCues: [CUES[0]!.key] }));
+  });
+
+  it('cues_map_stands_above_the_cue_list_on_a_phone', async () => {
+    setViewportWidth(390);
+    exerciseApi().install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
+    const panel = await screen.findByRole('region', { name: 'Reference line, 20 m' });
+    const firstRow = screen.getAllByRole('listitem', { name: /^Cue \d/ })[0]!;
+    expect(panel.compareDocumentPosition(firstRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

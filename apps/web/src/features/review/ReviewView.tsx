@@ -1,10 +1,13 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { KPH_PER_MPS, WIDE_APEX_M, eventKeyPlace, type AttemptReaction, type AttemptReview, type AttemptSummary, type CornerReview, type Difference, type Exercise, type ReferenceInfo, type ReviewSeries, type TurnLossInfo } from '@gt7/contracts';
+import { KPH_PER_MPS, WIDE_APEX_M, eventKeyPlace, type AttemptReaction, type AttemptReview, type AttemptSummary, type CornerReview, type Difference, type ReferenceInfo, type ReviewSeries, type TurnLossInfo } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
 import { ChannelChart, type ChartBand, type ChartSeries, type ChartTick } from '../../charts/ChannelChart.tsx';
 import { signedTickLabel, tickLabel, tickStep, valueTicks } from '../../charts/ticks.ts';
+import { MapDialog, type MapDialogItem } from '../../charts/MapDialog.tsx';
+import { MapPanel } from '../../charts/MapPanel.tsx';
 import { TrackMap, type TrackCallout, type TrackLine } from '../../charts/TrackMap.tsx';
 import { SIDE_FACTOR, beyondSide, largestSideInZones, sideScaledLine } from '../../charts/geometry.ts';
+import { Icon } from '../../app/icons.tsx';
 import { useWideLayout } from '../../app/layout.ts';
 import { abortReasonText, formatDateTime, formatDay, formatTime, metres, signedSeconds } from '../../app/format.ts';
 import { rememberedExerciseId, rememberExercise } from '../../app/current-exercise.ts';
@@ -15,6 +18,7 @@ import { Link, paths, useRouter } from '../../app/router.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { ON_THE_LINE_M, apexPlaceText, apexSpeedText, differenceText, reactionText } from '../cues/cue-format.ts';
 import { DeleteAttemptsDialog } from '../attempts/DeleteAttemptsDialog.tsx';
+import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
 import { groupByTurn, type TurnGroup, type TurnOrder } from './turn-groups.ts';
 import './review.css';
 
@@ -339,10 +343,22 @@ function MapSwitch({ scale, onScale }: { scale: MapScale; onScale(scale: MapScal
   );
 }
 
-type ReviewMapProps = { review: AttemptReview; sideCueDistanceM: number | null; cursorSM: number; selected: number | null; onSelect(index: number): void };
+type ReviewMapProps = { title: string; review: AttemptReview; sideCueDistanceM: number | null; cursorSM: number; selected: number | null; onSelect(index: number): void };
 
-function ReviewMap({ review, sideCueDistanceM, cursorSM, selected, onSelect }: ReviewMapProps) {
+function differenceItems(findings: Difference[]): MapDialogItem[] {
+  return findings.map(finding => ({
+    key: `${finding.kind}-${finding.sM}`,
+    number: finding.turn === null ? '' : `T${finding.turn}`,
+    label: differenceText(finding),
+    detail: metres(finding.sM),
+    sM: finding.sM,
+    onAttempt: true
+  }));
+}
+
+function ReviewMap({ title, review, sideCueDistanceM, cursorSM, selected, onSelect }: ReviewMapProps) {
   const [scale, setScale] = useState<MapScale>('true');
+  const [viewing, setViewing] = useState(false);
   const side = scale === 'side';
   const reference = useMemo(() => line(review, review.reference), [review]);
   const trueAttempt = useMemo(() => line(review, review.attempt), [review]);
@@ -367,47 +383,37 @@ function ReviewMap({ review, sideCueDistanceM, cursorSM, selected, onSelect }: R
     ? `${MAP_LABEL}. The side distance of your line is drawn ${SIDE_FACTOR} times larger.${callouts.length > 0 ? ` ${callouts.map(callout => callout.title.replace(' · ', ' ')).join(', ')}.` : ''}`
     : MAP_LABEL;
   return (
-    <div className="review-map">
-      <div className="map-head">
-        <div className="legend map-legend">
-          <span>
-            <i className="ref" />
-            reference line
-          </span>
-          <span>
-            <i className="you" />
-            you
-          </span>
-          {side && sideCueDistanceM !== null ? (
-            <span>
-              <i className="far" />
-              more than {sideCueDistanceM} m from the line
-            </span>
-          ) : null}
-        </div>
-        <MapSwitch scale={scale} onScale={setScale} />
+    <MapPanel
+      title="Your line"
+      legend={['reference', 'you', 'turn']}
+      far={side && sideCueDistanceM !== null ? `more than ${sideCueDistanceM} m from the line` : null}
+      notes={['A gap in your line is a place without a match']}
+      actions={<MapSwitch scale={scale} onScale={setScale} />}
+      onView={() => setViewing(true)}
+      below={
+        side ? (
+          <p className="map-note">
+            Your line is drawn {SIDE_FACTOR} times farther from the reference line than it was, so that a difference of 1 m shows. The labels give the true distance at the largest point of each turn.
+          </p>
+        ) : null
+      }
+    >
+      <div className="review-map">
+        <TrackMap label={label} reference={reference} attempt={sideAttempt ?? trueAttempt} far={far} callouts={callouts} cursorSM={cursorSM} marks={marks} />
       </div>
-      <div className="plot">
-        <TrackMap
-          label={label}
-          reference={reference}
-          attempt={sideAttempt ?? trueAttempt}
-          far={far}
-          callouts={callouts}
-          cursorSM={cursorSM}
-          marks={marks}
-        />
-      </div>
-      {side ? (
-        <p className="map-note">
-          Your line is drawn {SIDE_FACTOR} times farther from the reference line than it was, so that a difference of 1 m shows. The labels give the true distance at the largest point of each turn.
-        </p>
-      ) : null}
-      <div className="legend">
-        <span>A gap in your line is a place without a match</span>
-        <span>Map orientation is not confirmed</span>
-      </div>
-    </div>
+      <MapDialog
+        open={viewing}
+        onClose={() => setViewing(false)}
+        title={title}
+        lengthM={review.lengthM}
+        reference={reference}
+        attempt={trueAttempt}
+        corners={review.corners}
+        items={differenceItems(review.findings)}
+        listTitle="Differences"
+        listHint="Select a difference to find it on your line."
+      />
+    </MapPanel>
   );
 }
 
@@ -481,7 +487,7 @@ function useFrameCursor(): [number, (sM: number) => void, (sM: number) => void] 
   return [cursorSM, setNow, scrub];
 }
 
-function ReviewBody({ attempt, review, references, sideCueDistanceM }: { attempt: AttemptSummary; review: AttemptReview; references: ReferenceInfo[]; sideCueDistanceM: number | null }) {
+function ReviewBody({ title, attempt, review, references, sideCueDistanceM }: { title: string; attempt: AttemptSummary; review: AttemptReview; references: ReferenceInfo[]; sideCueDistanceM: number | null }) {
   const wide = useWideLayout();
   const { navigate } = useRouter();
   const [cursorSM, setCursorNow, scrub] = useFrameCursor();
@@ -494,7 +500,7 @@ function ReviewBody({ attempt, review, references, sideCueDistanceM }: { attempt
     [review.findings, setCursorNow]
   );
   const switchReference = (referenceId: string) => navigate(paths.review(attempt.id, referenceId === attempt.referenceId ? undefined : referenceId));
-  const map = <ReviewMap review={review} sideCueDistanceM={sideCueDistanceM} cursorSM={cursorSM} selected={selected} onSelect={select} />;
+  const map = <ReviewMap title={title} review={review} sideCueDistanceM={sideCueDistanceM} cursorSM={cursorSM} selected={selected} onSelect={select} />;
   const charts = <Charts review={review} sideCueDistanceM={sideCueDistanceM} cursorSM={cursorSM} onCursor={setCursorNow} onScrub={scrub} />;
   const differences = (
     <>
@@ -520,6 +526,7 @@ function ReviewBody({ attempt, review, references, sideCueDistanceM }: { attempt
   if (!wide) {
     return (
       <div className="review-phone">
+        <DriveAgain attempt={attempt} />
         {map}
         {differences}
         {chooser}
@@ -535,6 +542,7 @@ function ReviewBody({ attempt, review, references, sideCueDistanceM }: { attempt
         {charts}
       </div>
       <div>
+        <DriveAgain attempt={attempt} />
         {differences}
         {chooser}
         {facts}
@@ -543,44 +551,42 @@ function ReviewBody({ attempt, review, references, sideCueDistanceM }: { attempt
   );
 }
 
-function ReviewHeader({ attempt, exercise, review }: { attempt: AttemptSummary; exercise: Exercise | null; review: AttemptReview | null }) {
-  const { user } = useSession();
+function AttemptHeading({ attempt, review }: { attempt: AttemptSummary; review: AttemptReview | null }) {
   const complete = attempt.completion === 'complete';
   const gapMs = complete && review ? attempt.timeMs - review.referenceTimeMs : null;
-  const time = complete ? formatTime(attempt.timeMs) : 'no time';
+  const time = complete ? formatTime(attempt.timeMs) : 'No time';
   return (
-    <header className="review-header">
-      <nav className="breadcrumb" aria-label="Breadcrumb">
-        <Link to={paths.exercises()}>Exercises</Link> /{' '}
-        {exercise ? (
-          <>
-            <Link to={paths.exercise(exercise.id)}>{exercise.name}</Link> /{' '}
-          </>
-        ) : null}
-        <Link to={paths.attempts(attempt.exerciseId)}>Attempts</Link> / Attempt {attempt.number}
-      </nav>
-      <div className="review-title">
-        <div>
-          <h1>
-            Attempt {attempt.number} · {time}
-            {gapMs === null ? null : (
-              <>
-                {' '}
-                <span className={gapMs > 0 ? 'review-gap slower' : 'review-gap'}>{signedSeconds(gapMs)} s</span>
-              </>
-            )}
-          </h1>
-          <p className="lede">
-            {formatDateTime(attempt.startedAt)}.{' '}
-            {complete ? 'Times from the game.' : `The attempt did not finish${attempt.reason ? ` (${abortReasonText(attempt.reason)})` : ''}.`}
-            {gapMs === null ? '' : ' Gap to the compared reference.'}
-          </p>
-        </div>
-        <Link to={paths.drive()} className="btn inline" onNavigate={() => rememberExercise(user.id, attempt.exerciseId)}>
-          Drive again
-        </Link>
+    <div className="review-title">
+      <Link to={paths.attempts(attempt.exerciseId)} className="icon-button">
+        <Icon name="chevron-left" size={16} />
+        All attempts
+      </Link>
+      <div className="review-title-text">
+        <h2>
+          Attempt {attempt.number} · {time}
+          {gapMs === null ? null : (
+            <>
+              {' '}
+              <span className={gapMs > 0 ? 'review-gap slower' : 'review-gap'}>{signedSeconds(gapMs)} s</span>
+            </>
+          )}
+        </h2>
+        <p className="lede">
+          {formatDateTime(attempt.startedAt)}.{' '}
+          {complete ? 'Times from the game.' : `The attempt did not finish${attempt.reason ? ` (${abortReasonText(attempt.reason)})` : ''}.`}
+          {gapMs === null ? '' : ' Gap to the compared reference.'}
+        </p>
       </div>
-    </header>
+    </div>
+  );
+}
+
+function DriveAgain({ attempt }: { attempt: AttemptSummary }) {
+  const { user } = useSession();
+  return (
+    <Link to={paths.drive()} className="btn review-drive" onNavigate={() => rememberExercise(user.id, attempt.exerciseId)}>
+      Drive again
+    </Link>
   );
 }
 
@@ -591,7 +597,7 @@ function DeleteThisAttempt({ attempt }: { attempt: AttemptSummary }) {
   return (
     <>
       <button className="btn danger" type="button" onClick={() => setConfirming(true)}>
-        Delete this attempt…
+        Delete attempt
       </button>
       {confirming ? (
         <DeleteAttemptsDialog
@@ -621,8 +627,9 @@ export function ReviewView({ attemptId }: { attemptId: string }) {
   const data = attempt.data;
   return (
     <section>
-      <ReviewHeader attempt={data} exercise={exercise.data ?? null} review={review.data ?? null} />
-      {review.data && !exercise.loading ? <ReviewBody key={review.data.referenceId} attempt={data} review={review.data} references={references.data ?? []} sideCueDistanceM={exercise.data?.sideCueDistanceM ?? null} /> : <p className="sub">Comparing with the reference…</p>}
+      {exercise.data ? <ExerciseHeader exercise={exercise.data} current="attempts" /> : null}
+      <AttemptHeading attempt={data} review={review.data ?? null} />
+      {review.data && !exercise.loading ? <ReviewBody key={review.data.referenceId} title={exercise.data?.name ?? `Attempt ${data.number}`} attempt={data} review={review.data} references={references.data ?? []} sideCueDistanceM={exercise.data?.sideCueDistanceM ?? null} /> : <p className="sub">Comparing with the reference…</p>}
     </section>
   );
 }

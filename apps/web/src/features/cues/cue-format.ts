@@ -70,6 +70,6 @@ export function recurringText(recurring: RecurringDifference): string {
   return `${differenceName(recurring.kind)} in ${recurring.count} of ${recurring.of} attempts, median ${sizeText(recurring.medianSize, recurring.unit)}`;
 }
 
-export function recurringAtText(recurring: RecurringDifference): string {
-  return `${differenceName(recurring.kind)} at ${Math.round(recurring.sM)} m in ${recurring.count} of ${recurring.of} attempts, median ${sizeText(recurring.medianSize, recurring.unit)}`;
+export function recurringPlaceText(recurring: RecurringDifference): string {
+  return `${differenceName(recurring.kind)} at ${Math.round(recurring.sM)} m, median ${sizeText(recurring.medianSize, recurring.unit)}`;
 }

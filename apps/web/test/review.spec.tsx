@@ -547,7 +547,7 @@ describe('attempt review', () => {
     const group = await screen.findByRole('group', { name: 'Side distance on the map' });
     const map = document.querySelector('.track-map')!;
     expect(group.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(group.closest('.map-head')).not.toBeNull();
+    expect(group.closest('.map-panel-actions')).not.toBeNull();
   });
 
   it('time_lost_readout_has_no_distance', async () => {
@@ -588,17 +588,18 @@ describe('attempt review', () => {
     setViewportWidth(1280);
     reviewApi(review({ referenceTimeMs: 25470 }));
     renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
-    expect(await screen.findByRole('heading', { level: 1, name: 'Attempt 1 · 0:27.100 +1.63 s' })).toBeInTheDocument();
-    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
-    expect(within(crumbs).getByRole('link', { name: 'Attempts' })).toHaveAttribute('href', '/exercises/e0000000-0000-4000-8000-000000000001/attempts');
-    expect(await within(crumbs).findByRole('link', { name: 'Yangwang Experience / Racing Lines' })).toHaveAttribute('href', '/exercises/e0000000-0000-4000-8000-000000000001');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Attempt 1 · 0:27.100 +1.63 s' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'All attempts' })).toHaveAttribute('href', '/exercises/e0000000-0000-4000-8000-000000000001/attempts');
+    const crumbs = await screen.findByRole('navigation', { name: 'Breadcrumb' });
+    expect(crumbs).toHaveTextContent('Exercises / Yangwang Experience / Racing Lines');
+    expect(within(crumbs).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
   });
 
   it('review_gap_compares_game_times', async () => {
     setViewportWidth(1280);
     reviewApi(review({ referenceTimeMs: 25470 }), attemptSummary({ timeMs: 27100 }));
     renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
-    const heading = await screen.findByRole('heading', { level: 1, name: /^Attempt 1 · / });
+    const heading = await screen.findByRole('heading', { level: 2, name: /^Attempt 1 · / });
     await waitFor(() => expect(heading).toHaveTextContent('+1.63 s'));
   });
 
@@ -631,10 +632,10 @@ describe('attempt review', () => {
     setViewportWidth(1280);
     reviewApi(review(), attemptSummary({ completion: 'aborted', reason: 'left-track', timeMs: null, gapToBestMs: null }));
     renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
-    expect(await screen.findByRole('heading', { level: 1, name: 'Attempt 1 · no time' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Attempt 1 · No time' })).toBeInTheDocument();
     expect(await screen.findByText('Only a complete attempt can become a reference.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Use this attempt as a reference' })).not.toBeInTheDocument();
-    expect(screen.getByText('Only a complete attempt can become a reference.').nextElementSibling).toBe(screen.getByRole('button', { name: 'Delete this attempt…' }));
+    expect(screen.getByText('Only a complete attempt can become a reference.').nextElementSibling).toBe(screen.getByRole('button', { name: 'Delete attempt' }));
   });
 
   it('promote_refused_as_not_complete_shows_the_error', async () => {
@@ -662,7 +663,7 @@ describe('attempt review', () => {
     setViewportWidth(1280);
     reviewApi();
     renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
-    await screen.findByRole('heading', { level: 1, name: /^Attempt 1 · / });
+    await screen.findByRole('heading', { level: 2, name: /^Attempt 1 · / });
     expect(screen.queryByText('Voice', { selector: 'span' })).toBeNull();
     expect(await screen.findByText('Source', { selector: 'span' })).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/with voice|without voice/i);
@@ -692,7 +693,7 @@ describe('attempt review', () => {
       })
       .on('POST /api/attempts/delete', { deleted: 1 });
     renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
-    const remove = await screen.findByRole('button', { name: 'Delete this attempt…' });
+    const remove = await screen.findByRole('button', { name: 'Delete attempt' });
     const promote = screen.getByRole('button', { name: 'Use this attempt as a reference' });
     expect(remove).toHaveClass('btn', 'danger');
     expect(promote.nextElementSibling).toBe(remove);
@@ -703,5 +704,78 @@ describe('attempt review', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete attempt' }));
     await waitFor(() => expect(window.location.pathname).toBe('/exercises/e0000000-0000-4000-8000-000000000001/attempts'));
     expect(api.calls.find(call => call.path === '/api/attempts/delete')!.body).toEqual({ ids: ['a0000000-0000-4000-8000-000000000001'] });
+  });
+
+  it('no_delete_button_ends_with_an_ellipsis', async () => {
+    setViewportWidth(1280);
+    reviewApi();
+    renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
+    await screen.findByRole('button', { name: 'Delete attempt' });
+    for (const button of screen.getAllByRole('button')) expect(button.textContent).not.toMatch(/…$/);
+  });
+
+  it('review_keeps_the_exercise_tabs', async () => {
+    setViewportWidth(1440);
+    reviewApi();
+    renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
+    const tabs = await screen.findByRole('navigation', { name: 'Exercise' });
+    expect(within(tabs).getByRole('link', { name: /^Attempts/ })).toHaveAttribute('aria-current', 'page');
+    expect(within(tabs).getByRole('link', { name: 'Cues' })).toHaveAttribute('href', expect.stringMatching(/\/cues$/));
+    expect(screen.getByRole('link', { name: 'All attempts' })).toHaveAttribute('href', expect.stringMatching(/\/attempts$/));
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(exercise().name);
+    expect(screen.getByRole('heading', { level: 2, name: /^Attempt \d+ · / })).toBeInTheDocument();
+    const crumb = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(crumb).toHaveTextContent(`Exercises / ${exercise().name}`);
+  });
+
+  it('review_shows_without_the_exercise', async () => {
+    setViewportWidth(1440);
+    reviewApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001', { status: 500, body: { message: 'Server problem' } });
+    renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
+    expect(await screen.findByRole('heading', { name: /^Attempt \d+ · / })).toBeInTheDocument();
+    expect(await screen.findByRole('slider', { name: 'Speed, km/h' })).toBeInTheDocument();
+    expect(document.querySelector('.track-map')).not.toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Exercise' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'All attempts' })).toBeInTheDocument();
+  });
+
+  it('review_drive_again_opens_the_right_column', async () => {
+    setViewportWidth(1440);
+    reviewApi();
+    renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
+    const differences = await screen.findByRole('heading', { name: 'Differences by turn' });
+    const drive = screen.getByRole('link', { name: 'Drive again' });
+    expect(drive.compareDocumentPosition(differences) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(document.querySelector('.track-map')!.compareDocumentPosition(drive) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('review_drive_again_follows_the_lede_on_a_phone', async () => {
+    setViewportWidth(390);
+    reviewApi();
+    renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
+    await screen.findByRole('heading', { name: 'Differences by turn' });
+    const lede = screen.getByText(/Times from the game\./);
+    const drive = screen.getByRole('link', { name: 'Drive again' });
+    expect(lede.compareDocumentPosition(drive) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(drive.compareDocumentPosition(document.querySelector('.track-map')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('review_map_panel_opens_the_view_with_the_differences', async () => {
+    setViewportWidth(1440);
+    reviewApi();
+    renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
+    const user = userEvent.setup();
+    const panel = await screen.findByRole('region', { name: 'Your line' });
+    const buttons = within(panel).getAllByRole('button').filter(button => !button.closest('svg'));
+    expect(buttons.map(button => button.textContent)).toEqual(['True scale', `Side distance × 6`, 'View']);
+    expect([...panel.querySelectorAll('.legend span')].map(span => span.textContent)).toEqual(['reference line', 'you', 'turn', 'A gap in your line is a place without a match']);
+    await user.click(within(panel).getByRole('button', { name: 'View the map in full screen' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('checkbox', { name: 'Differences' })).toBeChecked();
+    const list = within(dialog).getByRole('complementary', { name: 'Differences' });
+    expect(within(list).getAllByRole('button')).toHaveLength(2);
+    expect(list).toHaveTextContent('Select a difference to find it on your line.');
+    expect(dialog.querySelector('.track-attempt, [data-segment="attempt"]')).not.toBeNull();
+    expect(screen.queryByText('Map orientation is not confirmed')).toBeNull();
   });
 });

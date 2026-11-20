@@ -17,7 +17,7 @@ export function StorageSection() {
     setConfirming(false);
     try {
       const done = await api.cleanup();
-      setResult(`Cleaned ${done.captures} captures: ${megabytes(done.bytesBefore)} before, ${megabytes(done.bytesAfter)} after.`);
+      setResult(`Cleaned ${counted(done.captures, 'capture')}: ${megabytes(done.bytesBefore)} before, ${megabytes(done.bytesAfter)} after.`);
       storage.reload();
     } catch (error) {
       setResult(errorText(error));
@@ -62,7 +62,7 @@ export function StorageSection() {
             </>
           ) : (
             <button className="btn danger" type="button" onClick={() => setConfirming(true)}>
-              Clean up captures…
+              Clean up captures
             </button>
           )}
           {result ? (
@@ -79,7 +79,7 @@ export function StorageSection() {
         </span>
         <div className="pref-control">
           <Link to={paths.deleteHistory()} className="btn danger">
-            Delete history…
+            Delete history
           </Link>
         </div>
       </div>

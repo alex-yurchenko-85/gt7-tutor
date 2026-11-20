@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CatalogueListEntry, Exercise, Progress, ProgressCollection, Settings } from '@gt7/contracts';
+import type { CatalogueListEntry, Exercise, Progress, Settings } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { useLiveState } from '../../api/live.tsx';
 import { currentExercise } from '../../app/current-exercise.ts';
@@ -13,9 +13,10 @@ import { counted } from '../../app/plural.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { SelectionBar } from '../../app/SelectionBar.tsx';
 import { useSession } from '../../app/session.tsx';
+import { whereText } from '../exercise/use-exercise-where.ts';
 import { GetReady } from '../get-ready/GetReady.tsx';
-import { historyText, RemoveExercisesDialog } from './RemoveExercisesDialog.tsx';
-import { nextStepText, orderedFamilies, primaryAction, STATUS_LABEL, STEP_LABELS } from './next-step.ts';
+import { DeleteExercisesDialog, historyText } from './DeleteExercisesDialog.tsx';
+import { nextTitle, orderedFamilies, primaryAction, STATUS_LABEL } from './next-step.ts';
 import './exercises.css';
 
 const ALL = 'All';
@@ -28,29 +29,8 @@ function seconds(ms: number): string {
   return `${(ms / 1000).toFixed(2)} s`;
 }
 
-function capitalised(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-function whereText(details: Details): string {
-  const entry = details.entry;
-  const collection = [details.collection, entry?.code].filter(Boolean).join(', ');
-  return [collection, entry?.track, entry?.car].filter(Boolean).join(' · ');
-}
-
-function StepRail({ exercise }: { exercise: Exercise }) {
-  return (
-    <ol className="step-rail" aria-label="Three steps">
-      {STEP_LABELS.map(({ step, label }) => {
-        const state = step < exercise.step ? 'done' : step === exercise.step ? 'now' : 'later';
-        return (
-          <li key={step} className={state} aria-current={state === 'now' ? 'step' : undefined}>
-            {label}
-          </li>
-        );
-      })}
-    </ol>
-  );
+function homeWhere(details: Details): string {
+  return whereText({ collection: details.collection, code: details.entry?.code, track: details.entry?.track, car: details.entry?.car });
 }
 
 function ContinueCard({ exercise, details, wide }: { exercise: Exercise; details: Details; wide: boolean }) {
@@ -65,10 +45,10 @@ function ContinueCard({ exercise, details, wide }: { exercise: Exercise; details
         <p className="continue-kicker">{kicker}</p>
         <h2 id="continue-title">{exercise.name}</h2>
         {wide ? (
-          <StepRail exercise={exercise} />
+          <p className="continue-next">{nextTitle(exercise.step)}</p>
         ) : (
           <p className="continue-line">
-            {capitalised(nextStepText(exercise))}
+            {nextTitle(exercise.step)}
             {exercise.bestMs !== null ? (
               <>
                 {' '}
@@ -117,7 +97,7 @@ function ExerciseRow({ exercise, details, wide }: { exercise: Exercise; details:
     <Link to={paths.exercise(exercise.id)} className="exercise-row">
       <span className="exercise-row-name">
         <b>{exercise.name}</b>
-        <span>{wide ? whereText(details) : [exercise.family, details.collection].filter(Boolean).join(' · ')}</span>
+        <span>{wide ? homeWhere(details) : [exercise.family, details.collection].filter(Boolean).join(' · ')}</span>
       </span>
       <span>
         <span className={`tag status-${exercise.status}`}>{STATUS_LABEL[exercise.status]}</span>
@@ -125,7 +105,6 @@ function ExerciseRow({ exercise, details, wide }: { exercise: Exercise; details:
       {wide ? (
         <>
           <span className="exercise-row-best">{exercise.bestMs === null ? '—' : formatTime(exercise.bestMs)}</span>
-          <span className="exercise-row-next">Next: {nextStepText(exercise)}</span>
           <Icon name="chevron-right" size={18} />
         </>
       ) : null}
@@ -139,7 +118,7 @@ function SelectRow({ exercise, details, wide, picked, onToggle }: { exercise: Ex
       <input type="checkbox" className="pick-box" aria-label={`Select ${exercise.name}`} checked={picked} onChange={onToggle} />
       <span className="exercise-row-name">
         <b>{exercise.name}</b>
-        <span>{wide ? whereText(details) : historyText(exercise)}</span>
+        <span>{wide ? homeWhere(details) : historyText(exercise)}</span>
       </span>
       <span>
         <span className={`tag status-${exercise.status}`}>{STATUS_LABEL[exercise.status]}</span>
@@ -154,9 +133,9 @@ function SelectRow({ exercise, details, wide, picked, onToggle }: { exercise: Ex
   );
 }
 
-type MyExercisesProps = { exercises: Exercise[]; detailsOf(exercise: Exercise): Details; wide: boolean; currentId: string | null; onRemoved(): void };
+type MyExercisesProps = { exercises: Exercise[]; detailsOf(exercise: Exercise): Details; wide: boolean; currentId: string | null; onDeleted(): void };
 
-function MyExercises({ exercises, detailsOf, wide, currentId, onRemoved }: MyExercisesProps) {
+function MyExercises({ exercises, detailsOf, wide, currentId, onDeleted }: MyExercisesProps) {
   const [family, setFamily] = useState(ALL);
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
@@ -174,10 +153,10 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onRemoved }: MyExe
     setSelecting(false);
     setPicked(new Set());
   };
-  const removed = () => {
+  const deleted = () => {
     setConfirming(false);
     stopSelecting();
-    onRemoved();
+    onDeleted();
   };
   const quickSelect = selecting ? (
     <div className="quick-select" role="group" aria-label="Quick select">
@@ -214,11 +193,11 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onRemoved }: MyExe
         <h2 id="mine-title">
           My exercises <span className="count">{exercises.length}</span>
         </h2>
-        {wide ? null : actions}
+        {actions}
       </div>
-      {wide ? (
-        <>
-          <div className="my-exercises-tools">
+      {wide && (families.length > 1 || quickSelect) ? (
+        <div className="my-exercises-tools">
+          {families.length > 1 ? (
             <div className="family-filter" role="group" aria-label="Filter">
               {[ALL, ...families].map(name => (
                 <button key={name} type="button" aria-pressed={family === name} onClick={() => setFamily(name)}>
@@ -226,10 +205,9 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onRemoved }: MyExe
                 </button>
               ))}
             </div>
-            {quickSelect}
-          </div>
-          {actions}
-        </>
+          ) : null}
+          {quickSelect}
+        </div>
       ) : null}
       <div className="my-exercises-list">
         {wide ? null : quickSelect}
@@ -261,57 +239,18 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onRemoved }: MyExe
         })}
         {exercises.length === 0 ? <p className="sub">No exercise yet. Add one from the catalogue.</p> : null}
         {selecting ? (
-          <SelectionBar count={picked.size} action={`Remove ${counted(picked.size, 'exercise')}…`} onCancel={stopSelecting} onAction={() => setConfirming(true)} />
+          <SelectionBar count={picked.size} action={`Delete ${counted(picked.size, 'exercise')}`} onCancel={stopSelecting} onAction={() => setConfirming(true)} />
         ) : null}
         {confirming ? (
-          <RemoveExercisesDialog
+          <DeleteExercisesDialog
             exercises={exercises.filter(exercise => picked.has(exercise.id))}
             currentId={currentId}
             onKeep={() => setConfirming(false)}
-            onRemoved={removed}
+            onDeleted={deleted}
           />
         ) : null}
       </div>
     </section>
-  );
-}
-
-function work(group: ProgressCollection): number {
-  return group.counts.ready + group.counts.practising;
-}
-
-function medals(group: ProgressCollection): number {
-  return group.counts.bronze + group.counts.silver + group.counts.gold;
-}
-
-function Collections({ collections }: { collections: ProgressCollection[] }) {
-  return (
-    <aside className="collections panel" aria-labelledby="collections-title">
-      <h2 id="collections-title">Collections</h2>
-      <p className="sub">Your exercises by status. Medals use the time from the game.</p>
-      <table aria-labelledby="collections-title">
-        <thead>
-          <tr>
-            <th scope="col">Collection</th>
-            <th scope="col">new</th>
-            <th scope="col">work</th>
-            <th scope="col">medal</th>
-          </tr>
-        </thead>
-        <tbody>
-          {collections.map(group => (
-            <tr key={`${group.family}-${group.collection}`}>
-              <td>
-                {group.family}, {group.collection}
-              </td>
-              <td>{group.counts.new}</td>
-              <td>{work(group)}</td>
-              <td>{medals(group)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </aside>
   );
 }
 
@@ -351,16 +290,13 @@ export function ExercisesHome() {
   if (data.error) return <p className="error">{errorText(data.error)}</p>;
   if (!data.data) return <p className="sub">Reading your exercises…</p>;
   if (target === 'get-ready') return <GetReady ps5Ip={data.data.settings.ps5Ip} exerciseCount={data.data.exercises.length} />;
-  const { exercises, progress } = data.data;
+  const { exercises } = data.data;
   const current = currentExercise(exercises, user.id);
   return (
     <div className="exercises-home">
       <h1 className={wide ? undefined : 'visually-hidden'}>Exercises</h1>
       {current ? <ContinueCard exercise={current} details={detailsOf(current)} wide={wide} /> : null}
-      <div className="exercises-columns">
-        <MyExercises exercises={exercises} detailsOf={detailsOf} wide={wide} currentId={current?.id ?? null} onRemoved={data.reload} />
-        {wide && progress.collections.length > 0 ? <Collections collections={progress.collections} /> : null}
-      </div>
+      <MyExercises exercises={exercises} detailsOf={detailsOf} wide={wide} currentId={current?.id ?? null} onDeleted={data.reload} />
     </div>
   );
 }

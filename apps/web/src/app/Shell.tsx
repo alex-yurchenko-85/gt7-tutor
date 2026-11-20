@@ -12,6 +12,8 @@ import { Logo } from './Logo.tsx';
 import { ProfileMenu } from './ProfileMenu.tsx';
 import { Link, paths, useRouter, type Route } from './router.tsx';
 import { RunningCapture } from './RunningCapture.tsx';
+import { RunningTraining } from './RunningTraining.tsx';
+import { TrainingNameContext } from './use-training.ts';
 import { useSession } from './session.tsx';
 import { telemetryStatus, voiceStatus, type Status } from './status.ts';
 import { Views } from './Views.tsx';
@@ -107,12 +109,19 @@ function ImmersiveDemoLabel() {
   );
 }
 
+function useTrainingName(exercise: Exercise | null): string | null {
+  const liveId = useLiveState(({ state }) => liveExerciseId(state));
+  return exercise && liveId !== null && exercise.id === liveId ? exercise.name : null;
+}
+
 export function Shell({ children }: { children?: ReactNode }) {
   const wide = useWideLayout();
-  const exercise = useCurrentExercise(wide);
+  const training = useLiveState(({ state }) => liveExerciseId(state) !== null);
+  const exercise = useCurrentExercise(wide || training);
+  const trainingName = useTrainingName(exercise);
   const [immersive, setImmersive] = useState(false);
   return (
-    <>
+    <TrainingNameContext.Provider value={trainingName}>
       {immersive ? (
         <ImmersiveDemoLabel />
       ) : (
@@ -130,10 +139,11 @@ export function Shell({ children }: { children?: ReactNode }) {
       )}
       {immersive ? null : <DemoLabel />}
       {immersive ? null : <RunningCapture />}
+      {immersive ? null : <RunningTraining />}
       <main className={immersive ? 'view immersive' : 'view'}>
         <ImmersiveContext.Provider value={setImmersive}>{children ?? <Views />}</ImmersiveContext.Provider>
       </main>
       {wide || immersive ? null : <Navigation placement="bottom" items={[EXERCISES, DRIVE, SETUP]} />}
-    </>
+    </TrainingNameContext.Provider>
   );
 }

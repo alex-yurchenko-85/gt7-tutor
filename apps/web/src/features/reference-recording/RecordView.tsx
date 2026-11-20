@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import type { CaptureInfo, ReferenceCheckResult, ReferenceProposal } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
 import { useLiveState } from '../../api/live.tsx';
+import { useTrainingGate } from '../../app/use-training.ts';
 import { useImmersive } from '../../app/immersive.tsx';
 import { useWideLayout } from '../../app/layout.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
@@ -248,6 +249,7 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
   const [created, setCreated] = useState(false);
   const [manual, setManual] = useState(false);
   const [busy, setBusy] = useState(false);
+  const gate = useTrainingGate('record');
   const [problem, setProblem] = useState<string | null>(null);
   const [finishFailed, setFinishFailed] = useState(false);
   const now = useNow(active !== null);
@@ -268,6 +270,7 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
 
   const start = () =>
     run(async () => {
+      await gate.before();
       const capture = await api.startCapture({ exerciseId, purpose: 'demo' });
       setActive({ capture, startedAt: Date.now() });
     });
@@ -494,9 +497,10 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
         <h2>{wide ? 'In GT7, open the exercise and stay on the screen before the demonstration.' : 'Open the exercise in GT7 and stay on the screen before the demonstration.'}</h2>
         <p>{IDLE_HINT}</p>
         {errorLine}
+        {gate.notice ? <p className="notice">{gate.notice}</p> : null}
         {wide ? (
-          <button className="stage-button primary" type="button" onClick={() => void start()} disabled={busy || startBlocked}>
-            Start recording
+          <button className="stage-button primary" type="button" onClick={() => void start()} disabled={busy || startBlocked || gate.blocked}>
+            {gate.label('Start recording')}
           </button>
         ) : null}
       </div>
@@ -513,8 +517,8 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
     }
     if (!recordable) return null;
     return (
-      <button className="stage-button primary wide" type="button" onClick={() => void start()} disabled={busy || startBlocked}>
-        Start recording
+      <button className="stage-button primary wide" type="button" onClick={() => void start()} disabled={busy || startBlocked || gate.blocked}>
+        {gate.label('Start recording')}
       </button>
     );
   };

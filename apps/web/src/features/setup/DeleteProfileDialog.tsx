@@ -6,6 +6,7 @@ import { counted, theirs } from '../../app/plural.ts';
 import { megabytes } from './StorageSection.tsx';
 import { useResource } from '../../app/resource.ts';
 import { useSession } from '../../app/session.tsx';
+import { useTrainingGate } from '../../app/use-training.ts';
 
 export function DeleteProfileDialog({ onKeep }: { onKeep(): void }) {
   const { user, ended } = useSession();
@@ -13,6 +14,7 @@ export function DeleteProfileDialog({ onKeep }: { onKeep(): void }) {
   const storage = useResource(() => api.storage(), []);
   const [password, setPassword] = useState('');
   const [working, setWorking] = useState(false);
+  const gate = useTrainingGate('delete');
   const [error, setError] = useState<string | null>(null);
   const passwordId = useId();
   const list = exercises.data;
@@ -22,6 +24,7 @@ export function DeleteProfileDialog({ onKeep }: { onKeep(): void }) {
     setWorking(true);
     setError(null);
     try {
+      await gate.before();
       await api.deleteProfile({ password });
       ended();
     } catch (failure) {
@@ -34,9 +37,10 @@ export function DeleteProfileDialog({ onKeep }: { onKeep(): void }) {
     <ConfirmDialog
       title={`Delete the profile ${user.name}?`}
       keepLabel="Keep it"
-      confirmLabel="Delete profile"
+      confirmLabel={gate.label('Delete profile')}
       working={working}
-      confirmDisabled={password.length === 0}
+      confirmDisabled={password.length === 0 || gate.blocked}
+      notice={gate.notice}
       error={error}
       onKeep={onKeep}
       onConfirm={confirm}

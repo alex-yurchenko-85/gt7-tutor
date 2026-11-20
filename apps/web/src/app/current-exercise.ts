@@ -1,7 +1,7 @@
 import type { Exercise, LiveState } from '@gt7/contracts';
 import { readStored, writeStored } from './storage.ts';
 
-const TRAINING_MODES: LiveState['mode'][] = ['armed', 'driving', 'paused', 'finished'];
+export const TRAINING_MODES: LiveState['mode'][] = ['armed', 'driving', 'paused', 'finished'];
 
 function key(userId: string): string {
   return `gt7.currentExercise.${userId}`;

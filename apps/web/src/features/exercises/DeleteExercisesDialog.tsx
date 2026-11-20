@@ -7,6 +7,7 @@ import { announceExercisesChanged, forgetExercises } from '../../app/current-exe
 import { formatTime } from '../../app/format.ts';
 import { counted, theirs } from '../../app/plural.ts';
 import { useSession } from '../../app/session.tsx';
+import { useTrainingGate } from '../../app/use-training.ts';
 
 const MEDALS = new Set<string>(medalSchema.options);
 
@@ -19,10 +20,10 @@ export function historyText(exercise: Exercise): string {
 }
 
 function catalogueText(exercises: Exercise[]): string {
-  if (exercises.every(exercise => exercise.catalogueId === null)) return 'You cannot undo the removal.';
+  if (exercises.every(exercise => exercise.catalogueId === null)) return 'You cannot undo it.';
   return exercises.length === 1
-    ? 'The catalogue entry stays. You can add the exercise again from Add exercise. You cannot undo the removal.'
-    : 'The catalogue entries stay. You can add the exercises again from Add exercise. You cannot undo the removal.';
+    ? 'The catalogue entry stays. You can add the exercise again from Add exercise. You cannot undo it.'
+    : 'The catalogue entries stay. You can add the exercises again from Add exercise. You cannot undo it.';
 }
 
 function OneExercise({ exercise }: { exercise: Exercise }) {
@@ -74,17 +75,18 @@ function SeveralExercises({ exercises }: { exercises: Exercise[] }) {
   );
 }
 
-type RemoveExercisesDialogProps = {
+type DeleteExercisesDialogProps = {
   exercises: Exercise[];
   currentId: string | null;
   onKeep(): void;
-  onRemoved(): void;
+  onDeleted(): void;
 };
 
-export function RemoveExercisesDialog({ exercises, currentId, onKeep, onRemoved }: RemoveExercisesDialogProps) {
+export function DeleteExercisesDialog({ exercises, currentId, onKeep, onDeleted }: DeleteExercisesDialogProps) {
   const { user } = useSession();
   const [cleanup, setCleanup] = useState(true);
   const [working, setWorking] = useState(false);
+  const gate = useTrainingGate('delete');
   const [error, setError] = useState<string | null>(null);
   const withHistory = exercises.some(hasHistory);
   const one = exercises.length === 1;
@@ -95,10 +97,11 @@ export function RemoveExercisesDialog({ exercises, currentId, onKeep, onRemoved 
     setWorking(true);
     setError(null);
     try {
+      await gate.before();
       await api.removeExercises({ ids, cleanup: withHistory && cleanup });
       forgetExercises(user.id, ids);
       announceExercisesChanged();
-      onRemoved();
+      onDeleted();
     } catch (failure) {
       setError(deletionErrorText(failure));
       setWorking(false);
@@ -107,10 +110,12 @@ export function RemoveExercisesDialog({ exercises, currentId, onKeep, onRemoved 
 
   return (
     <ConfirmDialog
-      title={one ? `Remove ${exercises[0]!.name}?` : `Remove ${counted(exercises.length, 'exercise')}?`}
+      title={one ? `Delete ${exercises[0]!.name}?` : `Delete ${counted(exercises.length, 'exercise')}?`}
       keepLabel={one ? 'Keep it' : 'Keep them'}
-      confirmLabel={one ? 'Remove exercise' : `Remove ${counted(exercises.length, 'exercise')}`}
+      confirmLabel={gate.label(one ? 'Delete exercise' : `Delete ${counted(exercises.length, 'exercise')}`)}
       working={working}
+      confirmDisabled={gate.blocked}
+      notice={gate.notice}
       error={error}
       onKeep={onKeep}
       onConfirm={confirm}

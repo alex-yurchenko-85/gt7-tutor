@@ -15,9 +15,12 @@ import {
 import { api } from '../../api/client.ts';
 import { useLiveConnection } from '../../api/live.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
+import { MapDialog, cueItems } from '../../charts/MapDialog.tsx';
+import { MapPanel } from '../../charts/MapPanel.tsx';
 import { TrackMap } from '../../charts/TrackMap.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
 import { Icon } from '../../app/icons.tsx';
+import { useWideLayout } from '../../app/layout.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { counted } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
@@ -252,6 +255,8 @@ type CueData = [ReferenceCue[], ReferenceTrace, RecurringDifference[], CornerInf
 
 function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: string }) {
   const { player } = useLiveConnection();
+  const wide = useWideLayout();
+  const [viewing, setViewing] = useState(false);
   const data = useResource(
     (): Promise<CueData> =>
       Promise.all([
@@ -323,8 +328,39 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
     player.preview(...clips).catch((error: unknown) => setProblem(`The phrase did not play: ${errorText(error)}`));
   };
 
+  const map = (
+    <MapPanel title={`Reference line, ${Math.round(trace.lengthM)} m`} legend={['reference', 'turn', 'cue', 'muted']} notes={['Select a number to mute that cue']} onView={() => setViewing(true)}>
+      <TrackMap
+        label="Reference line with the voice cues and the turns. Select a number to mute or unmute that cue"
+        reference={trace}
+        marks={[
+          ...cornerMarks(corners),
+          ...cues.map((cue, index) => ({
+            sM: cue.sM,
+            label: String(index + 1),
+            muted: muted.includes(cue.key),
+            title: `${muted.includes(cue.key) ? 'Unmute' : 'Mute'} cue ${index + 1}`,
+            onSelect: () => toggle(cue.key)
+          }))
+        ]}
+      />
+      <MapDialog
+        open={viewing}
+        onClose={() => setViewing(false)}
+        title={exercise.name}
+        lengthM={trace.lengthM}
+        reference={trace}
+        corners={corners}
+        items={cueItems(cues, cue => muted.includes(cue.key))}
+        listTitle="Voice cues"
+        listHint="Select a cue to find it on the line."
+      />
+    </MapPanel>
+  );
+
   return (
     <div className="cols cues-layout">
+      {wide ? null : map}
       <div>
         <div className="voice-settings">
           <SpeakTargetsSwitch on={speakTargets} onChange={changeSpeak} />
@@ -365,36 +401,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
           before an apex.
         </p>
       </div>
-      <div>
-        <div className="plot">
-          <TrackMap
-            label="Reference line with the voice cues and the turns. Select a number to mute or unmute that cue"
-            reference={trace}
-            marks={[
-              ...cornerMarks(corners),
-              ...cues.map((cue, index) => ({
-                sM: cue.sM,
-                label: String(index + 1),
-                muted: muted.includes(cue.key),
-                title: `${muted.includes(cue.key) ? 'Unmute' : 'Mute'} cue ${index + 1}`,
-                onSelect: () => toggle(cue.key)
-              }))
-            ]}
-          />
-        </div>
-        <div className="legend">
-          <span>
-            <i className="ref" />
-            reference line
-          </span>
-          <span>
-            <i className="turn" />
-            turn
-          </span>
-          <span>Select a number on the map to mute that cue</span>
-          <span>Map orientation is not confirmed</span>
-        </div>
-      </div>
+      {wide ? map : null}
     </div>
   );
 }

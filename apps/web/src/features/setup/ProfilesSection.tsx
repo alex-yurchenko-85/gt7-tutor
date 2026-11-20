@@ -45,7 +45,7 @@ export function ProfilesSection() {
           </button>
           {demo ? null : (
             <button className="btn danger" type="button" onClick={() => setDeleting(true)}>
-              Delete profile…
+              Delete profile
             </button>
           )}
           {changed ? (

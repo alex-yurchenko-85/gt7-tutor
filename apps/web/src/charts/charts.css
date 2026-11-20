@@ -210,6 +210,81 @@
   background: var(--yellow);
 }
 
+.map-panel {
+  padding: 20px 20px 16px;
+}
+
+.map-panel-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.map-panel-head h2 {
+  flex: 1;
+  min-width: 160px;
+  margin: 0;
+  font-size: 22px;
+}
+
+.map-panel-actions {
+  display: flex;
+}
+
+.map-legend {
+  align-items: center;
+  gap: 8px 18px;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.map-legend span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.map-legend i {
+  width: 18px;
+  height: 4px;
+  margin-right: 6px;
+}
+
+.map-legend .turn {
+  height: 8px;
+}
+
+.map-legend .far {
+  height: 7px;
+  background: var(--red);
+}
+
+.map-legend .cue {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.map-legend .cue.muted {
+  border-style: dashed;
+  border-color: var(--mute);
+  background: var(--bg);
+}
+
+@media (max-width: 899px) {
+  .map-panel {
+    padding: 16px;
+  }
+
+  .map-panel-actions {
+    order: 3;
+    flex: 1 1 100%;
+  }
+}
+
 .channel-label {
   display: flex;
   justify-content: space-between;

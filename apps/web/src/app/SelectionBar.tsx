@@ -7,7 +7,7 @@ export function SelectionBar({ count, action, onCancel, onAction }: SelectionBar
       <button type="button" className="btn inline selection-cancel" onClick={onCancel}>
         Cancel
       </button>
-      <button type="button" className="btn inline selection-delete" onClick={onAction} disabled={count === 0}>
+      <button type="button" className="btn inline danger" onClick={onAction} disabled={count === 0}>
         {action}
       </button>
     </div>

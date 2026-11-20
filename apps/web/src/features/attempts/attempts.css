@@ -22,21 +22,70 @@ tr.best td {
   background: var(--soft);
 }
 
-@media (max-width: 899px) {
-  .hide-narrow {
-    display: none;
-  }
-}
-
-.attempts-tools .hide-failed {
+.attempts-tools .hide-aborted {
   min-width: 124px;
 }
 
-.attempts-tools .btn.ghost.hide-failed.hiding,
-.attempts-tools .btn.ghost.hide-failed.hiding:hover:not(:disabled),
-.attempts-tools .btn.ghost.hide-failed.hiding:active:not(:disabled) {
+.attempts-tools .btn.ghost.hide-aborted.hiding,
+.attempts-tools .btn.ghost.hide-aborted.hiding:hover:not(:disabled),
+.attempts-tools .btn.ghost.hide-aborted.hiding:active:not(:disabled) {
   background: var(--ink);
   color: var(--onink);
+}
+
+tr.linked,
+tr.selectable {
+  position: relative;
+  cursor: pointer;
+}
+
+@media (min-width: 900px) {
+  tr.linked td,
+  tr.selectable td {
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+}
+
+tr.linked:hover td {
+  background: var(--soft);
+}
+
+tr.selectable:not(.picked):hover td {
+  background: var(--bg);
+}
+
+.row-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.row-link:focus-visible {
+  outline: none;
+}
+
+.row-link:focus-visible::after {
+  outline: 3px solid var(--ref);
+  outline-offset: -3px;
+}
+
+.chevron-cell {
+  width: 44px;
+  color: var(--mute);
+}
+
+.phone-gap {
+  margin-left: 10px;
+  font-size: 15px;
+}
+
+.phone-difference {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 400;
 }
 
 tr.aborted td {
@@ -51,6 +100,20 @@ tr.aborted td {
   display: flex;
   align-items: baseline;
   gap: 8px;
+}
+
+.recurring-differences h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.recurring-differences > .sub {
+  margin: 4px 0 12px;
+}
+
+.recurring-place {
+  flex: 1;
+  min-width: 0;
 }
 
 .recurring-more {

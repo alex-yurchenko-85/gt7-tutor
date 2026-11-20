@@ -1,7 +1,6 @@
 # GT7 Tutor user guide
 
 This guide shows how to use GT7 Tutor, from the first start to the review of your attempts.
-It describes the interface of version 1.4.0.
 To install and start GT7 Tutor, read the [README](../../README.md#quick-setup-macos-and-linux) first.
 
 About the screenshots: they come from GT7 Tutor with recorded data from the project, not from a live PS5.
@@ -118,7 +117,7 @@ Select **Add an exercise**. The next section tells you how to find the exercise.
 
 ## Find your way in the application
 
-![The Exercises home on a computer: the Continue card, then the family filters with Select and + Add exercise in one row, My exercises with one exercise, and the Collections table.](images/exercises-home.webp)
+![The Exercises home on a computer: the Continue card, then My exercises over the full width with Select and + Add exercise, and one exercise row with its status and best time.](images/exercises-home.webp)
 
 The application has two sections and the Drive screen:
 
@@ -137,14 +136,18 @@ The top bar also has:
 
 The **current exercise** is the exercise that you opened last. The Drive button and the **Continue** card on the Exercises home use it.
 
-Each exercise has a page with four tabs:
+Each exercise has a page with a header and four tabs.
+The header has the breadcrumb `Exercises / <exercise name>`. Select **Exercises** in it to go back to the Exercises home.
+Under the exercise name, one line gives the family, the collection with the code, and the track, for example `Licence · National B, B-4 · Alsace – Village`. An exercise that you created yourself shows only its family.
 
 | Tab | Content |
 | --- | --- |
-| **Overview** | The three steps (reference, attempts, review), the next action, the times from the game, the differences to work on first and the map of the reference |
+| **Overview** | The next action, the times from the game, the recurring differences and the map of the reference |
 | **Cues** | What the voice will say, and where |
 | **References** | The history of the references of the exercise |
-| **Attempts** | All attempts, by day, and the recurring differences |
+| **Attempts** | All attempts, by day, and the recurring differences. The tab shows the number of all attempts, also the attempts that did not finish. |
+
+The review of an attempt keeps the header and the tabs of its exercise. The **Attempts** tab is marked there.
 
 ## Add an exercise
 
@@ -160,7 +163,7 @@ Each exercise has a page with four tabs:
 
 **Result:** GT7 Tutor opens the page of the new exercise. Its first step is **Record the reference**.
 
-![The page of a new exercise: the tabs Overview, Cues, References and Attempts, the step Reference marked now, the button Record the reference, and No reference yet.](images/exercise-new.webp)
+![The page of a new exercise: the breadcrumb, the tabs Overview, Cues, References and Attempts, Next: record the reference with the button Record the reference, and No reference yet.](images/exercise-new.webp)
 
 ![Add an exercise, filtered to Circuit Experience and the search Interlagos. One row shows, with the Add button. Below is the form Your own exercise.](images/add-exercise.webp)
 
@@ -183,17 +186,17 @@ Use this for an exercise that the catalogue does not list, for example a Time Tr
 **Result:** GT7 Tutor opens the page of the new exercise.
 Your own exercise has the same needs. If the game does not time a demonstration of the activity, you cannot record a reference for it.
 
-### Remove an exercise
+### Delete an exercise
 
-On the Exercises home, select **Select**, mark one or more exercises, then select **Remove N exercises…**. The quick buttons **Without history**, **All** and **None** help you mark them.
+On the Exercises home, select **Select**, mark one or more exercises, then select **Delete N exercises**. The quick buttons **Without history**, **All** and **None** help you mark them.
 
 For one exercise, the dialog lists what goes: the attempts with their cues and differences, the references, the best time and the medal. For more exercises, it lists each exercise with its attempts and references.
-**Also clean up the raw captures that nothing uses afterwards** is on by default. You cannot undo the removal. The catalogue entry stays, so you can add the exercise again.
+**Also clean up the raw captures that nothing uses afterwards** is on by default. Select **Delete exercise** (or **Delete N exercises**) to delete, or **Keep it** to close the dialog. You cannot undo it. The catalogue entry stays, so you can add the exercise again.
 
 ## Record the reference
 
 **Goal:** give GT7 Tutor the drive that it compares your attempts with.
-**Before you start:** the console address is saved, GT7 runs, and no other recording or training runs.
+**Before you start:** the console address is saved, GT7 runs, and no other recording runs.
 
 ![Record the reference: Recording 1 needed, Recording 2 optional, and the button Start recording.](images/record-start.webp)
 
@@ -221,11 +224,14 @@ Other choices on this screen:
 - **Cancel this recording** stops the recording and does not use it.
 - **Set the range by hand** is for an experienced user. Select a finished recording, then type the **First frame** and **Last frame** of the demonstration. GT7 Tutor keeps only the part of the range that holds the demonstration.
 
+A recording needs the training off. When the training is on, the screen says `The training of <exercise> is on. A recording needs it off.` The button then says **Stop the training and record**. One click stops the training, then starts the recording. If the training does not stop, the screen shows the error and does not start the recording.
+While an attempt runs, the screen says `Attempt <n> runs. Finish it or stop the training first.`, and you cannot start a recording.
+
 **Possible problems:**
 
 - `No complete demonstration found`: the recording does not hold the whole demonstration. Select **Record again** and let the demonstration play to the end.
 - `Enter the PS5 address in Setup first.`: save the console address in **Setup** → **Console**.
-- `Another recording or training runs. Stop it first.`: a yellow bar at the top shows a running recording. Select **Stop recording** there. On the Drive screen, select **Stop**.
+- `Another recording or training runs. Stop it first.`: another recording runs, or another profile trains. A yellow bar at the top shows a running recording. Select **Stop recording** there.
 - `This range does not hold the whole demonstration.`: in the range by hand, choose frames from before the start to after the end of the demonstration.
 
 ## Set up the cues
@@ -233,7 +239,7 @@ Other choices on this screen:
 **Goal:** choose what the voice says, and when.
 **Where:** the **Cues** tab of the exercise, or **Hear the cues first** on **Overview**.
 
-![The Cues tab: the switch Speak target speeds, the list Side cue distance, the list of cues with distance, phrase and target speed, and the map with numbered cues.](images/cues.webp)
+![The Cues tab: the switch Speak target speeds, the list Side cue distance, the list of cues with distance, phrase and target speed, and the map Reference line with numbered cues, its legend and the View button.](images/cues.webp)
 
 The list shows each cue and each turn in the order of the section. Each cue row has:
 
@@ -250,6 +256,8 @@ Settings above the list:
 
 - **Speak target speeds**: on, the voice says the lowest speed of the reference after a brake phrase. Off, it says the action only.
 - **Side cue distance**: `Off`, or 0.5 m to 3 m. The voice says `More left` or `More right` when the car stays farther than this distance from the reference line.
+
+The map is on the right, in a frame with the title `Reference line, <length> m`. The legend under the map has the words `reference line`, `turn`, `voice cue`, `muted cue` and `Select a number to mute that cue`. **View** opens the map in full screen, with the list of the voice cues. Select a cue in the list to find it on the line. Press Esc or select **Back** to close the full-screen map. On a phone, the map is above the list of cues.
 
 On the map, a yellow band marks each turn, from the turn-in to the end of the turn, with its label `T1`. A short bar and an arrow mark the start and the direction of travel, and a chequered bar marks the finish. Select a cue number to mute or unmute that cue. A muted cue has a dashed grey circle with a small crossed-out speaker. When two cues are so close that their numbers would cover each other, the numbers move to the two sides of the line, with a short line to their places.
 Changes apply from the next **Start an attempt**. A training that already runs keeps the old settings.
@@ -279,7 +287,7 @@ GT7 Tutor finds the start and the finish of the attempt by itself. The time of t
 
 ### During the attempt
 
-![The Drive screen during attempt 5: the cue FULL THROTTLE 140, Cue 2 of 6 before T1, the next cue Full throttle in 14 m, speed 95 km/h, 397 m of 818, +1.2 s to reference, and the map with turn 1 as a yellow band, the position inside it, the start bar with its arrow and the chequered finish.](images/drive-cue.webp)
+![The Drive screen during attempt 5: the cue FULL THROTTLE 140, Cue 2 of 6 before T1, the next cue Full throttle in 13 m, speed 95 km/h, 398 m of 818, +1.3 s to reference, and the map with turn 1 as a yellow band, the position inside it, the start bar with its arrow and the chequered finish.](images/drive-cue.webp)
 
 | Part | Meaning |
 | --- | --- |
@@ -319,8 +327,8 @@ The summary shows:
 Then:
 
 - **Review this attempt** opens the review.
-- **Drive again** closes the summary. The training stays on: restart the exercise in GT7 to drive the next attempt.
-- **Stop** ends the training.
+- **Drive again** closes the summary. The training stays on. Restart the exercise in GT7 to drive the next attempt.
+- **Stop training** at the top right ends the training.
 
 An attempt that does not finish shows `No time` and the reason, for example `left the track`, `restarted` or `training stopped`. Only a complete attempt has a time.
 
@@ -338,7 +346,21 @@ GT7 Tutor compares every attempt with the reference from the game demonstration.
 
 ### Stop
 
-Select **Stop** at the top right. If an attempt runs, GT7 Tutor stops it with the reason `training stopped`, and the attempt has no time.
+Select **Stop training** at the top right. If an attempt runs, GT7 Tutor stops it with the reason `training stopped`, and the attempt has no time.
+
+### The training bar on the other screens
+
+While the training is on, every screen except Drive shows a yellow bar under the top bar:
+
+- `The training is on: <exercise>. Restart the exercise in GT7 to drive the next attempt.`
+- While an attempt runs: `Attempt <n> runs: <exercise>. Stop training ends it without a time.`
+
+On a phone, the bar shows only the first sentence.
+
+- **Open Drive** opens the Drive screen.
+- **Stop training** ends the training. If an attempt runs, the attempt has no time.
+
+The training stays on when you open another screen. Stop it when you do not drive.
 
 ### Possible problems
 
@@ -351,16 +373,21 @@ Select **Stop** at the top right. If an attempt runs, GT7 Tutor stops it with th
 ## Review an attempt
 
 **Goal:** see where and how your attempt is different from the reference.
-**Where:** **Review this attempt** after the finish, or **Review** in the **Attempts** tab.
+**Where:** **Review this attempt** after the finish, or a row in the **Attempts** tab.
 
 ![The review of attempt 2 with Side distance × 6: the reference line in blue and your line in orange, the label T1 · 3.5 m left, the differences by turn with 0.75 s lost in T1, and the selected difference 23 km/h slower in the corner.](images/review-side.webp)
 
-The header shows the attempt number, the time from the game and the gap to the reference, for example `Attempt 1 · 0:18.824 +2.74 s`.
+The review shows the header and the tabs of the exercise. Under them:
+
+- **All attempts** goes back to the **Attempts** tab.
+- The attempt number, the time from the game and the gap to the reference, for example `Attempt 1 · 0:18.824 +2.74 s`.
+- On a computer, **Drive again** is at the top of the right column. On a phone, it is under the date of the attempt.
 
 | Part | What it shows |
 | --- | --- |
-| Map | The reference line (blue) and your line (orange). A circle marks a difference. A gap in your line is a place where GT7 Tutor could not match your position. |
-| **True scale** / **Side distance × 6** | **Side distance × 6** draws your line 6 times farther from the reference line, so that a difference of 1 m shows. The labels give the true distance. |
+| **Your line** | The map with the reference line (blue) and your line (orange). A circle marks a difference. The legend has the words `reference line`, `you`, `turn` and `A gap in your line is a place without a match`. A gap is a place where GT7 Tutor could not match your position. |
+| **True scale** / **Side distance × 6** | **Side distance × 6** draws your line 6 times farther from the reference line, so that a difference of 1 m shows. The labels give the true distance. The legend then also has `more than <n> m from the line` for the parts beyond the **Side cue distance**. On a phone, the two buttons are in a row under the title. |
+| **View** | Opens the map in full screen, with your line in true scale and the list of the differences. Select a difference in the list to find it on your line. Press Esc or select **Back** to close. |
 | **Differences by turn** | The differences, grouped by turn, with the time lost or gained in each turn. **Track** or **Time lost** sets the order. Select a difference to put the cursor there. A section without turns shows one group, **Whole section**. `No differences above the limits in this attempt.` means that GT7 Tutor found no difference. |
 | **Corners** | Your line at each apex: on the line, or the distance inside or outside, and your speed at the apex. A section without turns has no **Corners**. |
 | **Brake reaction** | The time from the start of a spoken brake cue to your brake. A value `before the cue` means that you braked before the voice. |
@@ -374,20 +401,21 @@ Read a difference with care. `Braked 37 m later` compares your brake that is nea
 Other actions under **Source**:
 
 - **Use this attempt as a reference** (complete attempts only): the attempt becomes the active reference. The demonstration stays in the reference history.
-- **Delete this attempt…**: opens a dialog that shows what goes. **Delete attempt** removes the attempt with its cues and differences. See [Delete data](#delete-data).
-- **Drive again** at the top opens Drive for this exercise.
+- **Delete attempt**: opens a dialog that shows what goes. **Delete attempt** in the dialog deletes the attempt with its cues and differences. **Keep it** closes the dialog. See [Delete data](#delete-data).
+- **Drive again** opens Drive for this exercise.
 
 ## See all attempts and recurring differences
 
 **Where:** the **Attempts** tab of the exercise.
 
-![The Attempts tab: three attempts of 19 November with time, gap to best and largest difference. The buttons Select and Hide failed are above the Recurring differences panel.](images/attempts.webp)
+![The Attempts tab: three attempts of 20 November with time, gap to best and largest difference. The buttons Select and Hide aborted are above the Recurring differences panel.](images/attempts.webp)
 
 - Attempts are grouped by day. Each day shows its best time.
 - **Time from the game**: the time of a complete attempt. `No time` and `aborted` with the reason for an attempt that did not finish.
-- **Gap to best**, **Largest difference** and **Review**.
-- **Hide failed** hides the attempts that did not finish. The button then says **Show failed** and is filled. Select **Show failed** to show the attempts again.
-- **Select** lets you mark attempts and delete them. See [Delete data](#delete-data).
+- **Gap to best** and **Largest difference**. On a phone, the row shows the largest difference under the time.
+- Select a row to open the review of the attempt.
+- **Hide aborted** hides the attempts that did not finish. The button then says **Show aborted** and is filled. Select **Show aborted** to show the attempts again.
+- **Select** lets you mark attempts and delete them. In this mode, a click on a row marks the attempt and does not open the review. See [Delete data](#delete-data).
 
 **Recurring differences** lists the differences at the same place in at least half of your last complete attempts. GT7 Tutor uses the last 8 complete attempts and compares them with the active reference. You need at least three complete attempts. `No difference repeats in your last attempts.` means that no difference reaches half of them.
 
@@ -395,9 +423,8 @@ Other actions under **Source**:
 
 The **Exercises** home shows:
 
-- **Continue**: the current exercise, its three steps, your best time and the gap to the next medal. The main button shows the next action: **Record the reference**, **Start an attempt** or **Open the attempts**.
-- **My exercises**: each exercise with its status and best time. On a computer, the buttons **All**, **Licence**, **Circuit Experience** and **Brand Central** filter the list.
-- **Collections** (computer only): your exercises per collection, counted as `new`, `work` and `medal`.
+- **Continue**: the current exercise, the next step, for example `Next: drive attempts`, your best time and the gap to the next medal. The main button shows the next action: **Record the reference**, **Start an attempt** or **Open the attempts**.
+- **My exercises**: each exercise in one row, with its status tag and, on a computer, its best time. On a computer, buttons filter the list by family, for example **All**, **Licence** and **Circuit Experience**. The filter shows only the families of your exercises, and only when you have exercises of more than one family.
 
 | Status | Meaning |
 | --- | --- |
@@ -406,24 +433,24 @@ The **Exercises** home shows:
 | Practising | Complete attempts, no medal yet, or no medal targets |
 | Bronze, Silver, Gold | The medal that your best time from the game reaches |
 
-The steps of an exercise move by themselves. **Reference** shows until an active reference exists. Then **Attempts** shows. **Review** comes after 3 complete attempts against the active reference.
+The next step of an exercise moves by itself. `Next: record the reference` shows until an active reference exists. Then `Next: drive attempts` shows. `Next: review your attempts` comes after 3 complete attempts against the active reference.
 
-![Overview of the exercise: the three steps, Next: review your attempts, the times from the game, Work on these first, and the map of the reference line with 6 cues.](images/exercise-overview.webp)
+![Overview of the exercise: Next: review your attempts, the times from the game, Recurring differences, and the map Reference line with its numbered cues and the View button.](images/exercise-overview.webp)
 
-The **Overview** tab shows **Times from the game** (your best, the reference and the gap) and **Work on these first** (up to three recurring differences). **View** opens the map in full screen.
+The **Overview** tab shows the next step, **Times from the game** (your best, the reference and the gap) and **Recurring differences**. **Recurring differences** shows the same rows as the **Attempts** tab. It shows only when a difference repeats in your last complete attempts. The map has the same frame as on the **Cues** tab. **View** opens the map in full screen.
 
 ## Manage references
 
 **Where:** the **References** tab of the exercise.
 
-![The References tab: one reference, Demonstration, active, 19 November, no game version, frames 457–1422, 4 attempts use it.](images/references.webp)
+![The References tab: one reference, Demonstration, active, 20 November, no game version, frames 457–1422, 4 attempts use it.](images/references.webp)
 
 A reference is never overwritten. Each new reference joins the history. One reference is active. Each attempt remembers the reference that it was driven against.
 
 - **Record a new reference** opens the recording screen.
 - **Make active** (an attempt) or **Return to the demonstration** makes another reference active.
 - **Needs a check**: you changed the **GT7 version** in **Setup** → **Preferences**, and this reference was recorded with another version or with no version. Select **Check with one recording** and record the demonstration once. GT7 Tutor then says if the reference still matches the game.
-- **Delete** shows only for a reference that is not active and that no attempt uses.
+- **Delete** shows only for a reference that is not active and that no attempt uses. It opens a dialog. Select **Delete reference** to delete the reference, or **Keep it** to close the dialog.
 
 ## Profiles: sign in, sign out, switch, change and delete
 
@@ -508,21 +535,24 @@ An entry that has your exercises stays. After an update, **Restore** makes the p
 
 | Action | Where | What goes | What stays |
 | --- | --- | --- | --- |
-| Delete one attempt | Review → **Delete this attempt…** | The attempt, its cues and differences | References, other attempts. The raw capture stays until a clean-up. |
-| Delete several attempts | Attempts → **Select** → **Delete N attempts…** | The selected attempts, their cues and differences. Your best time and the recurring differences are counted again. | References. The raw captures stay until a clean-up. |
-| Delete a reference | References → **Delete** | The reference | Only possible when the reference is not active and no attempt uses it |
-| Remove an exercise | Exercises → **Select** | The exercise, its attempts, references, best time and medal | The catalogue entry. You can add the exercise again. |
-| Clean up captures | Setup → Data → **Clean up captures…** | The parts of the raw captures that no reference and no attempt uses | All references and attempts |
-| Delete history: **Attempts of one exercise** | Setup → Data → **Delete history…** | The attempts of the selected exercise | Its references, the other exercises, the settings |
+| Delete one attempt | Review → **Delete attempt** | The attempt, its cues and differences | References, other attempts. The raw capture stays until a clean-up. |
+| Delete several attempts | Attempts → **Select** → **Delete N attempts** | The selected attempts, their cues and differences. Your best time and the recurring differences are counted again. | References. The raw captures stay until a clean-up. |
+| Delete a reference | References → **Delete** → **Delete reference** | The reference | Only possible when the reference is not active and no attempt uses it |
+| Delete an exercise | Exercises → **Select** → **Delete N exercises** | The exercise, its attempts, references, best time and medal | The catalogue entry. You can add the exercise again. |
+| Clean up captures | Setup → Data → **Clean up captures** | The parts of the raw captures that no reference and no attempt uses | All references and attempts |
+| Delete history: **Attempts of one exercise** | Setup → Data → **Delete history** | The attempts of the selected exercise | Its references, the other exercises, the settings |
 | Delete history: **All attempts** | Same | All attempts of your profile | Exercises, references, settings |
 | Delete history: **Start over** | Same | All attempts, references and exercise progress of your profile | The profile, the password, the voice and console settings, the catalogue |
-| Delete a profile | Setup → Profiles → **Delete profile…** | The exercises, references, attempts and captures of the profile, and its sign-in on every device | Other profiles and the settings of this computer |
+| Delete a profile | Setup → Profiles → **Delete profile** | The exercises, references, attempts and captures of the profile, and its sign-in on every device | Other profiles and the settings of this computer |
 
 ![Setup, Data: your captures, raw captures of all profiles, Clean up captures and Delete history.](images/setup-data.webp)
 
+A delete needs the training off. When the training is on, a delete dialog and the **Delete history** page say `The training of <exercise> is on. It stops when you delete.` The delete button then says **Stop the training and delete**. One click stops the training, then deletes. If the training does not stop, GT7 Tutor shows the error and does not delete.
+While an attempt runs, the dialog says `Attempt <n> runs. Finish it or stop the training first.`, and you cannot delete.
+
 **Delete history:**
 
-1. Select **Setup** → **Data** → **Delete history…**.
+1. Select **Setup** → **Data** → **Delete history**.
 2. Select what to delete. For **Attempts of one exercise**, select the **Exercise**.
 3. Leave **Also clean up the raw captures that nothing uses afterwards** on to free disk space.
 4. Read **This deletes** and **This keeps**.
@@ -533,7 +563,7 @@ An entry that has your exercises stays. After an update, **Restore** makes the p
 
 **Delete a profile:**
 
-1. Select **Setup** → **Profiles** → **Delete profile…**.
+1. Select **Setup** → **Profiles** → **Delete profile**.
 2. Read the list of what goes.
 3. Type the password of the profile.
 4. Select **Delete profile**.

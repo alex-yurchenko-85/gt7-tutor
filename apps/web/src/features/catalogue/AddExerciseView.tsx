@@ -8,6 +8,7 @@ import { Icon } from '../../app/icons.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
+import { counted } from '../../app/plural.ts';
 import { orderedFamilies } from '../exercises/next-step.ts';
 import './catalogue.css';
 
@@ -162,7 +163,7 @@ export function AddExerciseView() {
         <Link to={paths.exercises()}>Exercises</Link> / Add
       </nav>
       <h1 id="add-exercise-title">Add an exercise</h1>
-      <p className="lede">{all.length} exercises from the catalogue. Find the one that the game shows, then add it to your exercises.</p>
+      <p className="lede">{counted(all.length, 'exercise')} from the catalogue. Find the one that the game shows, then add it to your exercises.</p>
       <div className="add-filters">
         <label className="search-field">
           <Icon name="search" size={18} />

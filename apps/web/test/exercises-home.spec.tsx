@@ -68,7 +68,8 @@ describe('exercises home', () => {
     expect(card).not.toHaveTextContent('measured');
     expect(card).toHaveTextContent('0.90 s');
     expect(card).toHaveTextContent('to bronze, 0:26.000');
-    expect(within(card).getByRole('list', { name: 'Three steps' }).querySelector('[aria-current="step"]')).toHaveTextContent('Attempts');
+    expect(within(card).getByText('Next: drive attempts')).toBeInTheDocument();
+    expect(within(card).queryByRole('list', { name: 'Three steps' })).toBeNull();
     expect(within(card).getByRole('link', { name: 'Start an attempt' })).toHaveAttribute('href', '/drive');
     expect(within(card).getByRole('link', { name: 'Open the exercise' })).toHaveAttribute('href', '/exercises/e0000000-0000-4000-8000-000000000001');
   });
@@ -91,11 +92,11 @@ describe('exercises home', () => {
     expect(row).toHaveAttribute('href', '/exercises/e0000000-0000-4000-8000-000000000002');
     expect(row).toHaveTextContent('National B, B-3');
     expect(row).toHaveTextContent('New');
-    expect(row).toHaveTextContent('Next: record the reference');
+    expect(row).not.toHaveTextContent('Next:');
     const brand = within(mine).getByRole('group', { name: 'Brand Central' });
     const racing = within(brand).getByRole('link', { name: /Racing Line: Intermediate/ });
     expect(racing).toHaveTextContent('0:26.900');
-    expect(racing).toHaveTextContent('Next: attempt');
+    expect(racing).not.toHaveTextContent('Next:');
     expect(racing).toHaveTextContent('SUGO');
   });
 
@@ -149,22 +150,39 @@ describe('exercises home', () => {
     window.history.back();
   });
 
-  it('home_shows_collection_counts', async () => {
+  it('home_has_no_collections_and_no_next_column', async () => {
     setViewportWidth(1440);
     homeApi();
     renderApp();
-    const table = await screen.findByRole('table', { name: 'Collections' });
-    expect(screen.getByText('Your exercises by status. Medals use the time from the game.')).toBeInTheDocument();
-    const licence = within(table).getByRole('row', { name: /Licence, National B/ });
-    expect(within(licence).getAllByRole('cell').map(cell => cell.textContent)).toEqual(['Licence, National B', '2', '1', '2']);
+    await screen.findByRole('link', { name: /Cornering Basics 1/ });
+    expect(screen.queryByRole('table', { name: 'Collections' })).toBeNull();
+    expect(screen.queryByText('Collections')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Three steps' })).toBeNull();
+    expect(document.querySelector('.exercise-row-next')).toBeNull();
   });
 
-  it('home_hides_collections_on_phone', async () => {
+  it('continue_card_on_phone_names_the_next_step', async () => {
     setViewportWidth(390);
     homeApi();
     renderApp();
-    await screen.findByRole('region', { name: /My exercises/ });
-    expect(screen.queryByRole('table', { name: 'Collections' })).toBeNull();
+    const card = await screen.findByRole('region', { name: 'Racing Line: Intermediate' });
+    expect(card).toHaveTextContent('Next: drive attempts');
+  });
+
+  it('filter_lists_only_families_with_exercises', async () => {
+    setViewportWidth(1440);
+    homeApi();
+    renderApp();
+    const filter = await screen.findByRole('group', { name: 'Filter' });
+    expect(within(filter).getAllByRole('button').map(button => button.textContent)).toEqual(['All', 'Licence', 'Brand Central']);
+  });
+
+  it('filter_is_hidden_with_one_family', async () => {
+    setViewportWidth(1440);
+    homeApi([RACING]);
+    renderApp();
+    await screen.findByRole('link', { name: /Racing Line: Intermediate/ });
+    expect(screen.queryByRole('group', { name: 'Filter' })).toBeNull();
   });
 
   it('select_and_remove_exercises', async () => {
@@ -181,21 +199,31 @@ describe('exercises home', () => {
     await userEvent.click(within(mine).getByRole('checkbox', { name: 'Select Cornering Basics 1' }));
     const bar = screen.getByRole('region', { name: 'Selection' });
     expect(bar).toHaveTextContent('2 selected');
-    await userEvent.click(within(bar).getByRole('button', { name: 'Remove 2 exercises…' }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Remove 2 exercises?' });
+    await userEvent.click(within(bar).getByRole('button', { name: 'Delete 2 exercises' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete 2 exercises?' });
     expect(dialog).toHaveTextContent('Racing Line: Intermediate, 6 attempts, 2 references');
     expect(dialog).toHaveTextContent('Cornering Basics 1, no attempts, no reference');
     expect(dialog).toHaveTextContent('With them go 6 attempts with their cues and differences, and 2 references.');
-    expect(dialog).toHaveTextContent('The catalogue entries stay. You can add the exercises again from Add exercise. You cannot undo the removal.');
+    expect(dialog).toHaveTextContent('The catalogue entries stay. You can add the exercises again from Add exercise. You cannot undo it.');
     expect(within(dialog).getByRole('checkbox', { name: 'Also clean up the raw captures that nothing uses afterwards' })).toBeChecked();
     const before = api.calls.filter(call => `${call.method} ${call.path}` === 'GET /api/exercises').length;
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove 2 exercises' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete 2 exercises' }));
     await waitFor(() => expect(api.called('POST /api/exercises/remove')).toBe(true));
     const body = api.calls.find(call => call.path === '/api/exercises/remove')!.body as { ids: string[]; cleanup: boolean };
     expect({ ids: [...body.ids].sort(), cleanup: body.cleanup }).toEqual({ ids: [RACING.id, BASICS.id].sort(), cleanup: true });
     await waitFor(() => expect(api.calls.filter(call => `${call.method} ${call.path}` === 'GET /api/exercises').length).toBeGreaterThan(before));
     expect(screen.queryByRole('region', { name: 'Selection' })).not.toBeInTheDocument();
     expect(window.localStorage.getItem('gt7.currentExercise.user-1')).toBeNull();
+  });
+
+  it('no_delete_button_ends_with_an_ellipsis', async () => {
+    setViewportWidth(1440);
+    homeApi();
+    renderApp();
+    const mine = await screen.findByRole('region', { name: /My exercises/ });
+    await userEvent.click(within(mine).getByRole('button', { name: 'Select' }));
+    await userEvent.click(within(mine).getByRole('checkbox', { name: 'Select Cornering Basics 1' }));
+    for (const button of screen.getAllByRole('button')) expect(button.textContent).not.toMatch(/…$/);
   });
 
   it('quick_select_without_history', async () => {
@@ -210,7 +238,7 @@ describe('exercises home', () => {
     await userEvent.click(within(mine).getByRole('button', { name: 'All (2)' }));
     expect(screen.getByRole('region', { name: 'Selection' })).toHaveTextContent('2 selected');
     await userEvent.click(within(mine).getByRole('button', { name: 'None' }));
-    expect(screen.getByRole('button', { name: 'Remove 0 exercises…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Delete 0 exercises' })).toBeDisabled();
   });
 
   it('remove_one_exercise_lists_what_goes', async () => {
@@ -220,19 +248,19 @@ describe('exercises home', () => {
     const mine = await screen.findByRole('region', { name: /My exercises/ });
     await userEvent.click(within(mine).getByRole('button', { name: 'Select' }));
     await userEvent.click(within(mine).getByRole('checkbox', { name: 'Select Racing Line: Intermediate' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Remove 1 exercise…' }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Remove Racing Line: Intermediate?' });
+    await userEvent.click(screen.getByRole('button', { name: 'Delete 1 exercise' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete Racing Line: Intermediate?' });
     expect(dialog).toHaveTextContent('The exercise goes, with everything recorded for it:');
     expect(dialog).toHaveTextContent('6 attempts, with their cues and differences');
     expect(dialog).toHaveTextContent('2 references, the active one too');
     expect(dialog).toHaveTextContent('your best time 0:26.900');
     expect(dialog).toHaveTextContent('Racing Line: Intermediate is your current exercise. The Drive button and Continue move to another exercise.');
-    expect(dialog).toHaveTextContent('The catalogue entry stays. You can add the exercise again from Add exercise. You cannot undo the removal.');
+    expect(dialog).toHaveTextContent('The catalogue entry stays. You can add the exercise again from Add exercise. You cannot undo it.');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Keep it' }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Remove 1 exercise…' })).toHaveFocus();
-    await userEvent.click(screen.getByRole('button', { name: 'Remove 1 exercise…' }));
-    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove exercise' }));
+    expect(screen.getByRole('button', { name: 'Delete 1 exercise' })).toHaveFocus();
+    await userEvent.click(screen.getByRole('button', { name: 'Delete 1 exercise' }));
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete exercise' }));
     await waitFor(() => expect(api.called('POST /api/exercises/remove')).toBe(true));
     expect(api.calls.find(call => call.path === '/api/exercises/remove')!.body).toEqual({ ids: [RACING.id], cleanup: true });
   });
@@ -244,8 +272,8 @@ describe('exercises home', () => {
     const mine = await screen.findByRole('region', { name: /My exercises/ });
     await userEvent.click(within(mine).getByRole('button', { name: 'Select' }));
     await userEvent.click(within(mine).getByRole('checkbox', { name: 'Select Cornering Basics 1' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Remove 1 exercise…' }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Remove Cornering Basics 1?' });
+    await userEvent.click(screen.getByRole('button', { name: 'Delete 1 exercise' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete Cornering Basics 1?' });
     expect(dialog).toHaveTextContent('It has no attempts and no reference yet.');
     expect(dialog).not.toHaveTextContent('is your current exercise');
     expect(within(dialog).queryByRole('checkbox')).toBeNull();
@@ -258,9 +286,9 @@ describe('exercises home', () => {
     const mine = await screen.findByRole('region', { name: /My exercises/ });
     await userEvent.click(within(mine).getByRole('button', { name: 'Select' }));
     await userEvent.click(within(mine).getByRole('checkbox', { name: 'Select Cornering Basics 1' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Remove 1 exercise…' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Delete 1 exercise' }));
     const dialog = screen.getByRole('alertdialog');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove exercise' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete exercise' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Stop the training or the recording first.');
   });
 });

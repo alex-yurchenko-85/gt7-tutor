@@ -9,11 +9,12 @@ type ConfirmDialogProps = {
   working?: boolean;
   confirmDisabled?: boolean;
   error?: string | null;
+  notice?: ReactNode;
   onKeep(): void;
   onConfirm(): void;
 };
 
-export function ConfirmDialog({ title, children, keepLabel, confirmLabel, working = false, confirmDisabled = false, error = null, onKeep, onConfirm }: ConfirmDialogProps) {
+export function ConfirmDialog({ title, children, keepLabel, confirmLabel, working = false, confirmDisabled = false, error = null, notice = null, onKeep, onConfirm }: ConfirmDialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const keep = useRef<HTMLButtonElement>(null);
   const titleId = useId();
@@ -54,6 +55,7 @@ export function ConfirmDialog({ title, children, keepLabel, confirmLabel, workin
       <div id={bodyId} className="confirm-body">
         {children}
       </div>
+      {notice ? <p className="notice">{notice}</p> : null}
       {error ? (
         <p className="error" role="alert">
           {error}

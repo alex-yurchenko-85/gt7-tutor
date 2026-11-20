@@ -4,9 +4,10 @@ import { api, ApiError } from '../../api/client.ts';
 import { useLiveConnection, useLiveState } from '../../api/live.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { TrackMap } from '../../charts/TrackMap.tsx';
-import { currentExercise, liveExerciseId } from '../../app/current-exercise.ts';
+import { currentExercise, liveExerciseId, TRAINING_MODES } from '../../app/current-exercise.ts';
 import { useDemo } from '../../app/demo.tsx';
 import { signedSeconds } from '../../app/format.ts';
+import { counted } from '../../app/plural.ts';
 import { useImmersive } from '../../app/immersive.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
@@ -17,7 +18,7 @@ import { telemetryStatus, voiceState, voiceStatus, type Status } from '../../app
 import { AttemptSummary } from '../attempt-summary/AttemptSummary.tsx';
 import { CLIPS_TEXT } from '../../voice/VoicePlayer.ts';
 import { useVoiceClaim } from '../../voice/use-voice-claim.ts';
-import { ARMED_MODES, connectionProblem, cueNote, cueWords, guidanceText, nextCueProgress, shownOnDrive, spokenCues } from './cue-display.ts';
+import { connectionProblem, cueNote, cueWords, guidanceText, nextCueProgress, shownOnDrive, spokenCues } from './cue-display.ts';
 import { SeenCues } from './seen-cues.ts';
 import { useMissedStart } from './missed-start.ts';
 import './drive.css';
@@ -190,7 +191,7 @@ function Stage({ state, exercise, finishedAttempt, clipsFailed, onDriveAgain, on
           </div>
         </div>
         <button type="button" className="stage-button" onClick={onStop}>
-          Stop
+          Stop training
         </button>
       </div>
       <div className="stage-left">
@@ -293,7 +294,7 @@ function VoiceBlock({ ensureClips, clipsFailed }: { ensureClips(): Promise<numbe
         <StatusDot status={{ tone: 'on', text: '' }} />
         <div>
           <p className="voice-ready-title">This device plays the voice</p>
-          {loaded === null && clipsFailed ? null : <p className="sub">{loaded === null ? 'Loading the cues…' : `${loaded} cues loaded.`}</p>}
+          {loaded === null && clipsFailed ? null : <p className="sub">{loaded === null ? 'Loading the cues…' : `${counted(loaded, 'cue')} loaded.`}</p>}
           {clipsFailed ? (
             <p className="error" role="alert">
               {CLIPS_TEXT}
@@ -389,7 +390,7 @@ function DriveExercise({ exercise }: { exercise: Exercise }) {
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [clipsFailed, setClipsFailed] = useState(false);
-  const liveArmed = state !== null && ARMED_MODES.includes(state.mode) && state.exerciseId === exercise.id;
+  const liveArmed = state !== null && TRAINING_MODES.includes(state.mode) && state.exerciseId === exercise.id;
   const armed = liveArmed || justArmed;
   useImmersive(armed);
 

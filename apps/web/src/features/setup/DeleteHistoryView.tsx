@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import type { DeleteHistoryRequest, DeleteHistoryResult, Exercise } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { deletionErrorText } from '../../app/busy.ts';
+import { useTrainingGate } from '../../app/use-training.ts';
 import { counted, theirs } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { useSession } from '../../app/session.tsx';
@@ -76,6 +77,7 @@ export function DeleteHistoryView() {
   const [cleanup, setCleanup] = useState(true);
   const [typed, setTyped] = useState('');
   const [working, setWorking] = useState(false);
+  const gate = useTrainingGate('delete');
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const confirmId = useId();
@@ -90,6 +92,7 @@ export function DeleteHistoryView() {
     setError(null);
     setDone(null);
     try {
+      await gate.before();
       const body: DeleteHistoryRequest = scope === 'exercise' ? { scope, exerciseId: chosen!.id, cleanup } : { scope, cleanup };
       setDone(doneText(await api.deleteHistory(body)));
       setTyped('');
@@ -154,9 +157,10 @@ export function DeleteHistoryView() {
           </span>
         </label>
         <input id={confirmId} className="history-confirm" type="text" autoComplete="off" value={typed} onChange={event => setTyped(event.target.value)} />
+        {gate.notice ? <p className="notice">{gate.notice}</p> : null}
         <div className="history-actions">
-          <button type="button" className="btn destructive inline" disabled={!matches || working} onClick={submit}>
-            {current.action}
+          <button type="button" className="btn destructive inline" disabled={!matches || working || gate.blocked} onClick={submit}>
+            {gate.label(current.action)}
           </button>
         </div>
         {done ? (

@@ -170,7 +170,8 @@ describe('drive', () => {
     act(() => view.sockets.latest.receive({ type: 'state', state: liveState({ ...armed, voiceDeviceId: voiceDeviceId() }) }));
     expect(await screen.findByText('The voice clips did not load. Reload the page.')).toBeInTheDocument();
     act(() => view.sockets.latest.receive({ type: 'state', state: liveState({ ...armed, seq: 3, voiceDeviceId: 'phone' }) }));
-    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Stop training' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull();
     expect(screen.queryByText('The voice clips did not load. Reload the page.')).not.toBeInTheDocument();
   });
 
@@ -332,7 +333,7 @@ describe('attempt summary', () => {
     const summary = await screen.findByRole('region', { name: 'Attempt 2' });
     expect(within(summary).getByText('Turn one. Brake later.')).toBeInTheDocument();
     expect(summary).toHaveTextContent('Focus for the next attempt');
-    expect(within(summary).getByText('A difference from the reference.')).toBeInTheDocument();
+    expect(within(summary).queryByText('A difference from the reference.')).toBeNull();
     expect(within(summary).queryByText(/mistake/i)).toBeNull();
   });
 
@@ -469,7 +470,7 @@ describe('drive mode', () => {
     setViewportWidth(1280);
     driveApi().install();
     await openDrive('/drive', driving({ lastCue: cue({ id: 'c1', eventKey: 'brake@332', kind: 'hard-brake', targetSpeedKph: 85, clip: 'hard-brake' }) }));
-    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Stop training' })).toBeInTheDocument();
     for (const name of ['Start now', 'Finish now', 'Abort attempt']) expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
     expect(screen.getByText('Attempt 2 · Yangwang Experience / Racing Lines')).toBeInTheDocument();
     expect(await screen.findByText('Cue 1 of 3 · before T1')).toBeInTheDocument();
@@ -557,7 +558,7 @@ describe('drive mode', () => {
     const api = driveApi().install();
     const { socket } = await openDrive('/drive', armed());
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Stop' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Stop training' }));
     await waitFor(() => expect(api.called('POST /api/training/disarm')).toBe(true));
     send(socket, liveState({ seq: 2, connection: 'connected', voiceDeviceId: voiceDeviceId(), voiceReady: true }));
     expect(await screen.findByRole('navigation', { name: 'Main' })).toBeInTheDocument();

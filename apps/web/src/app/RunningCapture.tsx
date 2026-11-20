@@ -25,7 +25,7 @@ export function RunningCapture() {
   };
 
   return (
-    <div className="running-capture" role="status">
+    <div className="running-bar" role="status">
       <span>A recording is running. While it runs, you cannot record, start an attempt or check reception.</span>
       <button className="btn inline" type="button" onClick={() => void stop()} disabled={busy}>
         Stop recording

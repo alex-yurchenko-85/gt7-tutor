@@ -5,43 +5,50 @@ import { abortReasonText, formatDay, formatGap, formatTime, metres } from '../..
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Icon } from '../../app/icons.tsx';
+import { useWideLayout } from '../../app/layout.ts';
 import { counted } from '../../app/plural.ts';
 import { Link, paths } from '../../app/router.tsx';
 import { SelectionBar } from '../../app/SelectionBar.tsx';
-import { differenceText, recurringAtText } from '../cues/cue-format.ts';
+import { differenceText } from '../cues/cue-format.ts';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
 import { useExercise } from '../exercise/use-exercise.ts';
 import { DeleteAttemptsDialog } from './DeleteAttemptsDialog.tsx';
+import { RecurringDifferences } from './RecurringDifferences.tsx';
+import { TurnTag } from './TurnTag.tsx';
 import './attempts.css';
-
-const RECURRING_MINIMUM = 3;
-const RECURRING_SHOWN = 3;
-
-function TurnTag({ turn, muted = false }: { turn: number | null; muted?: boolean }) {
-  if (turn === null) return null;
-  return (
-    <>
-      <span className={muted ? 'tag n turn-tag' : 'tag y turn-tag'}>T{turn}</span>{' '}
-    </>
-  );
-}
 
 type Selection = { picked: ReadonlySet<string>; toggle(id: string): void };
 
-function rowClass(isBest: boolean, complete: boolean, picked: boolean): string | undefined {
-  const names = [isBest ? 'best' : complete ? '' : 'aborted', picked ? 'picked' : ''].filter(Boolean);
+function rowClass(isBest: boolean, complete: boolean, picked: boolean, selecting: boolean): string | undefined {
+  const names = [isBest ? (selecting ? '' : 'best') : complete ? '' : 'aborted', picked ? 'picked' : ''].filter(Boolean);
   return names.length > 0 ? names.join(' ') : undefined;
 }
 
-function AttemptRow({ attempt, bestMs, selection }: { attempt: AttemptSummary; bestMs: number | null; selection: Selection | null }) {
+function AttemptRow({ attempt, bestMs, selection, wide }: { attempt: AttemptSummary; bestMs: number | null; selection: Selection | null; wide: boolean }) {
   const complete = attempt.completion === 'complete' && attempt.timeMs !== null;
   const isBest = complete && attempt.timeMs === bestMs;
   const picked = selection?.picked.has(attempt.id) ?? false;
+  const gap = complete && !isBest ? formatGap(attempt.gapToBestMs) : '';
+  const largest = attempt.largestDifference;
+  const largestLine = largest ? (
+    <>
+      <TurnTag turn={largest.turn} muted={!complete} />
+      {`${metres(largest.sM)}. ${differenceText(largest)}`}
+    </>
+  ) : null;
+  const classes = [rowClass(isBest, complete, picked, selection !== null), selection ? 'selectable' : 'linked'].filter(Boolean).join(' ');
   return (
-    <tr aria-label={`Attempt ${attempt.number}`} className={rowClass(isBest, complete, picked)}>
+    <tr aria-label={`Attempt ${attempt.number}`} className={classes} onClick={selection ? () => selection.toggle(attempt.id) : undefined}>
       {selection ? (
         <td className="pick-cell">
-          <input type="checkbox" className="pick-box" aria-label={`Select attempt ${attempt.number}`} checked={picked} onChange={() => selection.toggle(attempt.id)} />
+          <input
+            type="checkbox"
+            className="pick-box"
+            aria-label={`Select attempt ${attempt.number}`}
+            checked={picked}
+            onClick={event => event.stopPropagation()}
+            onChange={() => selection.toggle(attempt.id)}
+          />
         </td>
       ) : null}
       <td>
@@ -60,64 +67,18 @@ function AttemptRow({ attempt, bestMs, selection }: { attempt: AttemptSummary; b
             <span className="sub">aborted{attempt.reason ? `, ${abortReasonText(attempt.reason)}` : ''}</span>
           </>
         )}
-      </td>
-      <td>{complete && !isBest ? formatGap(attempt.gapToBestMs) : ''}</td>
-      <td className="hide-narrow">
-        {attempt.largestDifference ? (
-          <>
-            <TurnTag turn={attempt.largestDifference.turn} muted={!complete} />
-            {`${metres(attempt.largestDifference.sM)}. ${differenceText(attempt.largestDifference)}`}
-          </>
-        ) : (
-          ''
+        {wide ? null : gap ? <span className="phone-gap">{gap}</span> : null}
+        {wide || !largestLine ? null : <span className="phone-difference">{largestLine}</span>}
+        {selection ? null : (
+          <Link to={paths.review(attempt.id)} className="row-link">
+            <span className="visually-hidden">Review attempt {attempt.number}</span>
+          </Link>
         )}
       </td>
-      <td>
-        <Link to={paths.review(attempt.id)} className="btn inline ghost">
-          <span aria-hidden="true">Review</span>
-          <span className="visually-hidden">Review attempt {attempt.number}</span>
-        </Link>
-      </td>
+      {wide ? <td>{gap}</td> : null}
+      {wide ? <td>{largestLine}</td> : null}
+      <td className="chevron-cell">{selection ? null : <Icon name="chevron-right" size={18} />}</td>
     </tr>
-  );
-}
-
-function Recurring({ exercise }: { exercise: Exercise }) {
-  const enough = exercise.completeAttempts >= RECURRING_MINIMUM;
-  const recurring = useResource(() => (enough ? api.recurring(exercise.id) : Promise.resolve([])), [exercise.id, enough]);
-  const [expanded, setExpanded] = useState(false);
-  const items = recurring.data ?? [];
-  const shown = expanded ? items : items.slice(0, RECURRING_SHOWN);
-  return (
-    <section className="panel attempts-recurring" aria-labelledby="recurring-title">
-      <h2 id="recurring-title">Recurring differences</h2>
-      <p className="sub">A difference repeats when it appears at the same place in at least half of your last complete attempts.</p>
-      {!enough ? (
-        <p className="notice">
-          Recurring differences need at least three complete attempts. You have {exercise.completeAttempts}.
-        </p>
-      ) : recurring.error ? (
-        <p className="error">{errorText(recurring.error)}</p>
-      ) : recurring.data && recurring.data.length === 0 ? (
-        <p className="sub">No difference repeats in your last attempts.</p>
-      ) : (
-        <>
-          <ul className="list recurring-list">
-            {shown.map(item => (
-              <li key={`${item.kind}-${item.eventKey ?? item.sM}`}>
-                <TurnTag turn={item.turn} />
-                <span>{recurringAtText(item)}</span>
-              </li>
-            ))}
-          </ul>
-          {items.length > RECURRING_SHOWN ? (
-            <button type="button" className="text-link recurring-more" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
-              {expanded ? 'Show fewer' : `Show ${items.length - RECURRING_SHOWN} more`}
-            </button>
-          ) : null}
-        </>
-      )}
-    </section>
   );
 }
 
@@ -149,6 +110,7 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
+  const wide = useWideLayout();
   if (exercise.error) return <LoadProblem error={exercise.error} kind="exercise" />;
   if (!exercise.data) return <p className="sub">Reading the exercise…</p>;
   const list = attempts.data;
@@ -193,8 +155,8 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
                 Select
               </button>
             )}
-            <button type="button" className={showAborted ? 'btn ghost inline hide-failed' : 'btn ghost inline hide-failed hiding'} onClick={() => setShowAborted(!showAborted)}>
-              {showAborted ? 'Hide failed' : 'Show failed'}
+            <button type="button" className={showAborted ? 'btn ghost inline hide-aborted' : 'btn ghost inline hide-aborted hiding'} onClick={() => setShowAborted(!showAborted)}>
+              {showAborted ? 'Hide aborted' : 'Show aborted'}
             </button>
           </div>
         ) : null}
@@ -224,28 +186,25 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
                       ) : null}
                       <th>#</th>
                       <th>Time from the game</th>
-                      <th>Gap to best</th>
-                      <th className="hide-narrow">Largest difference</th>
-                      <th>
-                        <span className="visually-hidden">Review</span>
-                      </th>
+                      {wide ? <th>Gap to best</th> : null}
+                      {wide ? <th>Largest difference</th> : null}
+                      <th aria-hidden="true" />
                     </tr>
                   </thead>
                   <tbody>
                     {day.attempts.map(attempt => (
-                      <AttemptRow key={attempt.id} attempt={attempt} bestMs={list?.bestMs ?? null} selection={selection} />
+                      <AttemptRow key={attempt.id} attempt={attempt} bestMs={list?.bestMs ?? null} selection={selection} wide={wide} />
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
           ))}
-          {selecting ? <p className="sub">One attempt can also be deleted from its Review page: Delete this attempt, at the bottom.</p> : null}
           {attempts.error ? <p className="error">{errorText(attempts.error)}</p> : null}
         </div>
-        <Recurring exercise={exercise.data} />
+        <RecurringDifferences exercise={exercise.data} />
       </div>
-      {selecting ? <SelectionBar count={picked.size} action={`Delete ${counted(picked.size, 'attempt')}…`} onCancel={stopSelecting} onAction={() => setConfirming(true)} /> : null}
+      {selecting ? <SelectionBar count={picked.size} action={`Delete ${counted(picked.size, 'attempt')}`} onCancel={stopSelecting} onAction={() => setConfirming(true)} /> : null}
       {confirming ? (
         <DeleteAttemptsDialog selected={all.filter(attempt => picked.has(attempt.id))} all={all} onKeep={() => setConfirming(false)} onDeleted={deleted} />
       ) : null}

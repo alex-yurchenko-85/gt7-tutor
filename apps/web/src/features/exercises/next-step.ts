@@ -3,10 +3,10 @@ import { paths } from '../../app/router.tsx';
 
 export type Action = { label: string; to: string };
 
-const NEXT_STEP: Record<ExerciseStep, string> = {
-  1: 'record the reference',
-  2: 'attempt',
-  3: 'review'
+const NEXT_TITLE: Record<ExerciseStep, string> = {
+  1: 'Next: record the reference',
+  2: 'Next: drive attempts',
+  3: 'Next: review your attempts'
 };
 
 export const STATUS_LABEL: Record<ExerciseStatusName, string> = {
@@ -18,21 +18,16 @@ export const STATUS_LABEL: Record<ExerciseStatusName, string> = {
   gold: 'Gold'
 };
 
-export const STEP_LABELS: { step: ExerciseStep; label: string }[] = [
-  { step: 1, label: 'Reference' },
-  { step: 2, label: 'Attempts' },
-  { step: 3, label: 'Review' }
-];
-
 const FAMILY_ORDER = ['Licence', 'Circuit Experience', 'Brand Central'];
 
 export function orderedFamilies(families: string[]): string[] {
-  const extra = [...new Set(families.filter(family => !FAMILY_ORDER.includes(family)))].sort((a, b) => a.localeCompare(b));
-  return [...FAMILY_ORDER, ...extra];
+  const present = new Set(families);
+  const extra = [...present].filter(family => !FAMILY_ORDER.includes(family)).sort((a, b) => a.localeCompare(b));
+  return [...FAMILY_ORDER.filter(family => present.has(family)), ...extra];
 }
 
-export function nextStepText(exercise: Exercise): string {
-  return exercise.status === 'gold' ? 'none, done' : NEXT_STEP[exercise.step];
+export function nextTitle(step: ExerciseStep): string {
+  return NEXT_TITLE[step];
 }
 
 export function primaryAction(exercise: Exercise): Action {

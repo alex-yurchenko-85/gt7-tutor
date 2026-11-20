@@ -90,6 +90,12 @@
   font-size: 17px;
 }
 
+.record-message p.notice {
+  max-width: 640px;
+  color: var(--stage-ink);
+  font-size: 15px;
+}
+
 .record-message .choice {
   margin: 0 0 18px;
 }

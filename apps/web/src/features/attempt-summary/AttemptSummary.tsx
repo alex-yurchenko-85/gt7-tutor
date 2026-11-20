@@ -26,7 +26,6 @@ export function AttemptSummary({ attemptId, onDriveAgain }: { attemptId: string;
         <div className="summary-focus">
           <span>Focus for the next attempt</span>
           <b>{data.focus.text}</b>
-          <small>A difference from the reference.</small>
         </div>
       ) : null}
       {complete ? (
@@ -39,7 +38,7 @@ export function AttemptSummary({ attemptId, onDriveAgain }: { attemptId: string;
         <span>Largest difference</span>
         <b>{data.largestDifference ? `${metres(data.largestDifference.sM)}. ${differenceText(data.largestDifference)}` : 'none found'}</b>
       </div>
-      <div className="btn-row summary-actions">
+      <div className="summary-actions">
         <Link to={paths.review(data.id)} className="btn inline">
           Review this attempt
         </Link>

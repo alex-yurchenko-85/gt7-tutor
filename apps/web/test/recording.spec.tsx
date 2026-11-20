@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CaptureInfo, ReferenceProposal } from '@gt7/contracts';
 import { EXERCISE_ID, exercise, exerciseApi, reference, REFERENCE_ID } from './fixtures.ts';
-import { renderApp, setViewportWidth, type ApiStub } from './support.tsx';
+import { renderApp, sendLiveState, setViewportWidth, type ApiStub } from './support.tsx';
 
 function captureInfo(id: string, overrides: Partial<CaptureInfo> = {}): CaptureInfo {
   return {
@@ -472,5 +472,38 @@ describe('reference recording', () => {
     await user.click(screen.getByRole('button', { name: 'Record again to check' }));
     await recordOnce(user, 2);
     expect(await screen.findByText('The same part repeats in both recordings.')).toBeInTheDocument();
+  });
+
+  it('record_stops_the_training_then_records', async () => {
+    setViewportWidth(1280);
+    const api = recordingApi().on('POST /api/training/disarm', { status: 201, body: { ok: true } });
+    const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    await sendLiveState(view, { mode: 'armed', exerciseId: EXERCISE_ID });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    expect(await screen.findByText(`The training of ${exercise().name} is on. A recording needs it off.`)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start recording' })).toBeNull();
+    await user.click(await screen.findByRole('button', { name: 'Stop the training and record' }));
+    await waitFor(() => expect(api.called('POST /api/captures')).toBe(true));
+    expect(api.calls.filter(call => call.method === 'POST').map(call => `${call.method} ${call.path}`).slice(0, 2)).toEqual(['POST /api/training/disarm', 'POST /api/captures']);
+  });
+
+  it('record_does_not_start_when_the_stop_fails', async () => {
+    setViewportWidth(1280);
+    const api = recordingApi().on('POST /api/training/disarm', { status: 500, body: { message: 'Server problem' } });
+    const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    await sendLiveState(view, { mode: 'finished', exerciseId: EXERCISE_ID });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.click(await screen.findByRole('button', { name: 'Stop the training and record' }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(api.called('POST /api/captures')).toBe(false);
+  });
+
+  it('record_waits_while_an_attempt_runs', async () => {
+    setViewportWidth(1280);
+    recordingApi();
+    const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/record' });
+    await sendLiveState(view, { mode: 'driving', exerciseId: EXERCISE_ID, attemptNumber: 10 });
+    expect(await screen.findByText('Attempt 10 runs. Finish it or stop the training first.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start recording' })).toBeDisabled();
   });
 });

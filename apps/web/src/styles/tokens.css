@@ -23,8 +23,6 @@
   --danger-press: #f5cfd2;
   --destructive-hover: #8f1017;
   --destructive-press: #6e0c12;
-  --step-number: #e3e6ea;
-  --step-number-now: #f3e48a;
   --font-body: 'Sofia Sans', system-ui, sans-serif;
   --font-display: 'Sofia Sans Condensed', 'Arial Narrow', sans-serif;
   --gutter: 24px;
@@ -52,9 +50,7 @@
     --danger-press: #5e2a2e;
     --destructive-hover: #ff9ba0;
     --destructive-press: #ffb9bc;
-    --step-number: #353b45;
-    --step-number-now: #645914;
-    color-scheme: dark;
+        color-scheme: dark;
   }
 }
 
@@ -77,8 +73,6 @@
   --danger-press: #5e2a2e;
   --destructive-hover: #ff9ba0;
   --destructive-press: #ffb9bc;
-  --step-number: #353b45;
-  --step-number-now: #645914;
   color-scheme: dark;
 }
 

@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import type { ClientMsg, LiveCue, LiveState, ServerMsg } from '@gt7/contracts';
 import { App } from '../src/app/App.tsx';
@@ -235,4 +235,13 @@ export function renderApp(options: { path?: string; sockets?: FakeSockets; playe
   const sockets = options.sockets ?? new FakeSockets();
   const view = render(<App socketFactory={sockets.factory} {...(options.player ? { player: options.player } : {})} />);
   return { ...view, sockets };
+}
+
+export async function sendLiveState(view: { sockets: FakeSockets }, overrides: Partial<LiveState>): Promise<void> {
+  await waitFor(() => view.sockets.latest);
+  act(() => {
+    const socket = view.sockets.latest;
+    if (socket.readyState !== 1) socket.open();
+    socket.receive({ type: 'state', state: liveState({ connection: 'connected', ...overrides }) });
+  });
 }

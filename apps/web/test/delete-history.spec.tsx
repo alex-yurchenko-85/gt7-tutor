@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { exercise } from './fixtures.ts';
-import { ApiStub, renderApp, setViewportWidth, signedIn, USER } from './support.tsx';
+import { ApiStub, renderApp, sendLiveState, setViewportWidth, signedIn, USER } from './support.tsx';
 
 const RACING = exercise({ attemptCount: 6, referenceCount: 1, completeAttempts: 4, name: 'Racing Line: Intermediate' });
 const LICENCE = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', attemptCount: 2, referenceCount: 2 });
@@ -94,5 +94,18 @@ describe('delete history', () => {
     expect(section).toHaveTextContent('This deletes: the 1 attempt of this profile, with its cues and differences.');
     await userEvent.click(within(section).getByRole('radio', { name: /Attempts of one exercise/ }));
     expect(section).toHaveTextContent('This deletes: 1 attempt of Racing Line: Intermediate, with its cues and differences.');
+  });
+
+  it('delete_history_stops_the_training_first', async () => {
+    setViewportWidth(1280);
+    const api = historyApi().on('POST /api/training/disarm', { status: 201, body: { ok: true } });
+    const view = renderApp({ path: '/setup/delete-history' });
+    await sendLiveState(view, { mode: 'armed', exerciseId: RACING.id });
+    const section = await screen.findByRole('region', { name: 'Delete history' });
+    await waitFor(() => expect(section).toHaveTextContent(`The training of ${RACING.name} is on. It stops when you delete.`));
+    await typeName(USER.name);
+    await userEvent.click(within(section).getByRole('button', { name: 'Stop the training and delete' }));
+    await waitFor(() => expect(api.called('POST /api/history/delete')).toBe(true));
+    expect(api.calls.filter(call => call.method === 'POST').map(call => call.path).slice(0, 2)).toEqual(['/api/training/disarm', '/api/history/delete']);
   });
 });

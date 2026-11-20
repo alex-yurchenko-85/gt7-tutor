@@ -1,29 +1,51 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import type { CornerInfo, ReferenceCue, ReferenceTrace } from '@gt7/contracts';
+import type { CornerInfo, ReferenceCue } from '@gt7/contracts';
 import { Icon } from '../app/icons.tsx';
+import { useWideLayout } from '../app/layout.ts';
 import { useScrollLock } from '../app/scroll-lock.ts';
 import { cornerMarks } from './corner-marks.ts';
-import { TrackMap, type TrackMark } from './TrackMap.tsx';
+import { TrackMap, type TrackLine, type TrackMark } from './TrackMap.tsx';
 import './map-dialog.css';
 
-type MapDialogProps = {
+export type MapDialogItem = { key: string; number: string; label: string; detail: string; sM: number; muted?: boolean; onAttempt?: boolean };
+
+export type MapDialogProps = {
   open: boolean;
   onClose(): void;
   title: string;
-  trace: ReferenceTrace;
-  cues: ReferenceCue[];
+  lengthM: number;
+  reference: TrackLine;
+  attempt?: TrackLine | null;
   corners: CornerInfo[];
+  items: MapDialogItem[];
+  listTitle: string;
+  listHint: string;
 };
 
-function cueName(cue: ReferenceCue): string {
-  return cue.phrase ?? cue.kind;
+export function cueItems(cues: ReferenceCue[], isMuted: (cue: ReferenceCue) => boolean = cue => cue.muted): MapDialogItem[] {
+  return cues.map((cue, index) => {
+    const muted = isMuted(cue);
+    return { key: cue.key, number: String(index + 1), label: cue.phrase ?? cue.kind, detail: `${Math.round(cue.sM)} m${muted ? ', muted' : ''}`, sM: cue.sM, muted };
+  });
 }
 
-export function MapDialog({ open, onClose, title, trace, cues, corners }: MapDialogProps) {
+function itemMark(item: MapDialogItem, selected: boolean, onSelect: () => void): TrackMark {
+  return {
+    sM: item.sM,
+    ...(item.onAttempt ? { onAttempt: true } : { label: item.number }),
+    title: `${[item.number, item.label].filter(Boolean).join(': ')}, ${item.detail}`,
+    muted: item.muted ?? false,
+    selected,
+    onSelect
+  };
+}
+
+export function MapDialog({ open, onClose, title, lengthM, reference, attempt = null, corners, items, listTitle, listHint }: MapDialogProps) {
+  const wide = useWideLayout();
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const titleId = useId();
-  const [showCues, setShowCues] = useState(true);
+  const [showItems, setShowItems] = useState(true);
   const [showTurns, setShowTurns] = useState(true);
   const [selected, setSelected] = useState<number | null>(null);
   useScrollLock(open);
@@ -43,16 +65,7 @@ export function MapDialog({ open, onClose, title, trace, cues, corners }: MapDia
 
   const marks: TrackMark[] = [
     ...(showTurns ? cornerMarks(corners) : []),
-    ...(showCues
-      ? cues.map((cue, index) => ({
-          sM: cue.sM,
-          label: String(index + 1),
-          title: `Cue ${index + 1}: ${cueName(cue)}`,
-          muted: cue.muted,
-          selected: selected === index,
-          onSelect: () => setSelected(index)
-        }))
-      : [])
+    ...(showItems ? items.map((item, index) => itemMark(item, selected === index, () => setSelected(index))) : [])
   ];
 
   return (
@@ -77,12 +90,12 @@ export function MapDialog({ open, onClose, title, trace, cues, corners }: MapDia
         </button>
         <div className="map-dialog-title">
           <h2 id={titleId}>{title}</h2>
-          <p>Reference line, {Math.round(trace.lengthM)} m. Press Esc to close.</p>
+          <p>{`Reference line, ${Math.round(lengthM)} m.${wide ? ' Press Esc to close.' : ''}`}</p>
         </div>
         <div className="map-dialog-layers">
           <label>
-            <input type="checkbox" checked={showCues} onChange={event => setShowCues(event.target.checked)} />
-            Cues
+            <input type="checkbox" checked={showItems} onChange={event => setShowItems(event.target.checked)} />
+            {listTitle}
           </label>
           <label>
             <input type="checkbox" checked={showTurns} onChange={event => setShowTurns(event.target.checked)} />
@@ -92,21 +105,19 @@ export function MapDialog({ open, onClose, title, trace, cues, corners }: MapDia
       </header>
       <div className="map-dialog-body">
         <div className="map-dialog-map">
-          <TrackMap label={`Reference line of ${title}`} reference={trace} marks={marks} dark />
+          <TrackMap label={attempt ? `Reference line and your line of ${title}` : `Reference line of ${title}`} reference={reference} attempt={attempt} marks={marks} dark />
         </div>
         <aside className="map-dialog-cues" aria-labelledby={`${titleId}-cues`}>
-          <h3 id={`${titleId}-cues`}>Voice cues</h3>
-          <p>Select a cue to find it on the line.</p>
+          <h3 id={`${titleId}-cues`}>{listTitle}</h3>
+          <p>{listHint}</p>
           <ol>
-            {cues.map((cue, index) => (
-              <li key={cue.key}>
+            {items.map((item, index) => (
+              <li key={item.key}>
                 <button type="button" aria-pressed={selected === index} onClick={() => setSelected(index)}>
-                  <span className="map-cue-number">{index + 1}</span>
+                  <span className="map-cue-number">{item.number}</span>
                   <span>
-                    <b>{cueName(cue)}</b>
-                    <small>
-                      {Math.round(cue.sM)} m{cue.muted ? ', muted' : ''}
-                    </small>
+                    <b>{item.label}</b>
+                    <small>{item.detail}</small>
                   </span>
                 </button>
               </li>

@@ -157,7 +157,7 @@ describe('demo mode', () => {
       socket.open();
       socket.receive({ type: 'state', state: liveState({ mode: 'armed', connection: 'disconnected', exerciseId: 'e0000000-0000-4000-8000-000000000001' }) });
     });
-    expect(await screen.findByText('The demo attempt has ended. Select Stop, then Play a demo attempt again.')).toBeInTheDocument();
+    expect(await screen.findByText('The demo attempt has ended. Select Stop training, then Play a demo attempt again.')).toBeInTheDocument();
     expect(screen.queryByText(/Check that GT7 is running/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Check the console address/)).not.toBeInTheDocument();
   });

@@ -1,11 +1,14 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { exercise, exerciseApi } from './fixtures.ts';
+import { EXERCISE_ID, exercise, exerciseApi } from './fixtures.ts';
 import { ATTEMPT_LIST, attemptSummary } from './review-fixtures.ts';
-import { renderApp, setViewportWidth } from './support.tsx';
+import { renderApp, sendLiveState, setViewportWidth } from './support.tsx';
 
 describe('attempts', () => {
+  const ATTEMPTS_PATH = '/exercises/e0000000-0000-4000-8000-000000000001/attempts';
+  const LIST_ROUTE = 'GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts';
+
   it('attempts_group_by_day_and_mark_best', async () => {
     setViewportWidth(1280);
     exerciseApi(exercise({ completeAttempts: 2, bestMs: 26800 })).on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
@@ -52,7 +55,10 @@ describe('attempts', () => {
       .install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
     const section = await screen.findByRole('region', { name: 'Recurring differences' });
-    expect(await within(section).findByText('Braked early at 412 m in 6 of 8 attempts, median 14 m')).toBeInTheDocument();
+    const item = await within(section).findByRole('listitem');
+    expect(item).toHaveTextContent('Braked early at 412 m, median 14 m');
+    expect(item).toHaveTextContent('6 of 8');
+    expect(section).toHaveTextContent('At the same place in at least half of your last 8 complete attempts.');
   });
 
   it('fewer_than_three_attempts_says_so', async () => {
@@ -107,7 +113,7 @@ describe('attempts', () => {
       .install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
     const section = await screen.findByRole('region', { name: 'Recurring differences' });
-    await within(section).findByText('Braked early at 412 m in 6 of 8 attempts, median 14 m');
+    await within(section).findByText('Braked early at 412 m, median 14 m');
     expect(within(section).getAllByRole('listitem')).toHaveLength(3);
     expect(within(section).getAllByRole('listitem')[0]).toHaveTextContent('T1');
     const more = within(section).getByRole('button', { name: 'Show 2 more' });
@@ -125,22 +131,116 @@ describe('attempts', () => {
     expect(within(row).getByText('T1')).toHaveClass('tag');
   });
 
-  it('failed_attempts_can_be_hidden_and_shown_again', async () => {
+  it('aborted_attempts_can_be_hidden_and_shown_again', async () => {
     setViewportWidth(1280);
     exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Hide failed' }));
+    await user.click(await screen.findByRole('button', { name: 'Hide aborted' }));
     expect(screen.queryByRole('row', { name: /Attempt 3/ })).toBeNull();
     expect(screen.getByRole('row', { name: /Attempt 2/ })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Hide failed' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Show failed' }));
+    expect(screen.queryByRole('button', { name: 'Hide aborted' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Show aborted' }));
     expect(screen.getByRole('row', { name: /Attempt 3/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Hide failed' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide aborted' })).toBeInTheDocument();
   });
 
-  const ATTEMPTS_PATH = '/exercises/e0000000-0000-4000-8000-000000000001/attempts';
-  const LIST_ROUTE = 'GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts';
+  it('row_opens_the_review_without_a_button', async () => {
+    setViewportWidth(1280);
+    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    const row = await screen.findByRole('row', { name: /Attempt 1/ });
+    expect(within(row).getAllByRole('link')).toHaveLength(1);
+    expect(within(row).getByRole('link', { name: 'Review attempt 1' })).toHaveClass('row-link');
+    expect(row).not.toHaveTextContent(/Review$/);
+    expect(row.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+  });
+
+  it('phone_row_shows_the_largest_difference', async () => {
+    setViewportWidth(390);
+    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    const row = await screen.findByRole('row', { name: /Attempt 1/ });
+    expect(row).toHaveTextContent('332 m. Braked 14 m earlier');
+    expect(within(row).getByText('T1')).toHaveClass('tag');
+    expect(screen.queryByRole('columnheader', { name: 'Largest difference' })).toBeNull();
+  });
+
+  it('selecting_row_click_selects_and_does_not_navigate', async () => {
+    setViewportWidth(1280);
+    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Select' }));
+    const row = screen.getByRole('row', { name: /Attempt 1/ });
+    expect(within(row).queryByRole('link')).toBeNull();
+    expect(row.querySelector('svg')).toBeNull();
+    await user.click(within(row).getByText(/0:\d\d\.\d{3}/));
+    expect(within(row).getByRole('checkbox')).toBeChecked();
+    await user.click(within(row).getByRole('checkbox'));
+    expect(within(row).getByRole('checkbox')).not.toBeChecked();
+    await user.click(within(row).getByRole('checkbox'));
+    expect(within(row).getByRole('checkbox')).toBeChecked();
+    expect(window.location.pathname).toMatch(/\/attempts$/);
+  });
+
+  it('selecting_has_no_review_page_hint', async () => {
+    setViewportWidth(1280);
+    exerciseApi().on('GET /api/exercises/e0000000-0000-4000-8000-000000000001/attempts', ATTEMPT_LIST).install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/attempts' });
+    await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
+    expect(screen.queryByText(/can also be deleted from its Review page/)).toBeNull();
+  });
+
+  it('dialog_says_the_best_stays_when_it_is_unchanged', async () => {
+    setViewportWidth(1280);
+    exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
+    renderApp({ path: ATTEMPTS_PATH });
+    await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select attempt 1' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Delete 1 attempt' }));
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog).toHaveTextContent('Your best stays 0:26.800.');
+    expect(dialog).not.toHaveTextContent('→');
+  });
+
+  it('dialog_has_no_best_line_without_a_complete_attempt', async () => {
+    setViewportWidth(1280);
+    const aborted = attemptSummary({ completion: 'aborted', reason: 'manual', timeMs: null, gapToBestMs: null });
+    exerciseApi()
+      .on(LIST_ROUTE, { bestMs: null, days: [{ date: '2026-11-17', bestMs: null, attempts: [aborted] }] })
+      .install();
+    renderApp({ path: ATTEMPTS_PATH });
+    await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: `Select attempt ${aborted.number}` }));
+    await userEvent.click(screen.getByRole('button', { name: 'Delete 1 attempt' }));
+    expect(within(screen.getByRole('alertdialog')).queryByText(/Your best/)).toBeNull();
+  });
+
+  it('selection_marks_only_the_selected_rows', async () => {
+    setViewportWidth(1280);
+    exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
+    renderApp({ path: ATTEMPTS_PATH });
+    const user = userEvent.setup();
+    const bestBefore = await screen.findByRole('row', { name: /Attempt 2/ });
+    expect(bestBefore).toHaveClass('best');
+    await user.click(screen.getByRole('button', { name: 'Select' }));
+    const best = screen.getByRole('row', { name: /Attempt 2/ });
+    expect(best).not.toHaveClass('best');
+    expect(within(best).getByText('best')).toBeInTheDocument();
+    await user.click(within(best).getByRole('checkbox'));
+    expect(best).toHaveClass('picked');
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('row', { name: /Attempt 2/ })).toHaveClass('best');
+  });
+
+  it('no_delete_button_ends_with_an_ellipsis', async () => {
+    setViewportWidth(1280);
+    exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
+    renderApp({ path: ATTEMPTS_PATH });
+    await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
+    for (const button of screen.getAllByRole('button')) expect(button.textContent).not.toMatch(/…$/);
+  });
 
   it('attempts_select_and_delete', async () => {
     setViewportWidth(1280);
@@ -151,7 +251,7 @@ describe('attempts', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: 'Select attempt 1' }));
     const bar = screen.getByRole('region', { name: 'Selection' });
     expect(bar).toHaveTextContent('2 selected');
-    await userEvent.click(within(bar).getByRole('button', { name: 'Delete 2 attempts…' }));
+    await userEvent.click(within(bar).getByRole('button', { name: 'Delete 2 attempts' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Delete 2 attempts?' });
     expect(dialog).toHaveTextContent('Attempts 1, 3, with their cues and differences.');
     expect(dialog).toHaveTextContent('The references stay. The raw captures stay until you clean them up in Setup.');
@@ -170,14 +270,14 @@ describe('attempts', () => {
     renderApp({ path: ATTEMPTS_PATH });
     await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
     await userEvent.click(screen.getByRole('checkbox', { name: 'Select attempt 2' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Delete 1 attempt…' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Delete 1 attempt' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Delete attempt 2?' });
     expect(dialog).toHaveTextContent('Your best: 0:26.800 → 0:27.100');
     expect(within(dialog).getByRole('button', { name: 'Delete attempt' })).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Keep it' }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Select attempt 2' })).toBeChecked();
-    expect(screen.getByRole('button', { name: 'Delete 1 attempt…' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Delete 1 attempt' })).toHaveFocus();
   });
 
   it('quick_select_aborted', async () => {
@@ -193,7 +293,7 @@ describe('attempts', () => {
     expect(screen.getByRole('region', { name: 'Selection' })).toHaveTextContent('2 selected');
     await userEvent.click(within(day).getByRole('button', { name: 'None' }));
     expect(screen.getByRole('region', { name: 'Selection' })).toHaveTextContent('0 selected');
-    expect(screen.getByRole('button', { name: 'Delete 0 attempts…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Delete 0 attempts' })).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('checkbox', { name: 'Select attempt 3' })).not.toBeInTheDocument();
   });
@@ -216,9 +316,54 @@ describe('attempts', () => {
     renderApp({ path: ATTEMPTS_PATH });
     await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
     await userEvent.click(screen.getByRole('checkbox', { name: 'Select attempt 3' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Delete 1 attempt…' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Delete 1 attempt' }));
     const dialog = screen.getByRole('alertdialog');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete attempt' }));
     expect(await within(dialog).findByText('Stop the training or the recording first.')).toBeInTheDocument();
+  });
+
+  it('delete_stops_the_training_first', async () => {
+    setViewportWidth(1280);
+    const api = exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).on('POST /api/training/disarm', { status: 201, body: { ok: true } }).on('POST /api/attempts/delete', { deleted: 1 }).install();
+    const view = renderApp({ path: ATTEMPTS_PATH });
+    await sendLiveState(view, { mode: 'finished', exerciseId: EXERCISE_ID });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Select' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Select attempt 1' }));
+    await user.click(within(screen.getByRole('region', { name: 'Selection' })).getByRole('button', { name: 'Delete 1 attempt' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await waitFor(() => expect(dialog).toHaveTextContent(`The training of ${exercise().name} is on. It stops when you delete.`));
+    await user.click(within(dialog).getByRole('button', { name: 'Stop the training and delete' }));
+    await waitFor(() => expect(api.called('POST /api/attempts/delete')).toBe(true));
+    expect(api.calls.filter(call => call.method === 'POST').map(call => `${call.method} ${call.path}`).slice(0, 2)).toEqual(['POST /api/training/disarm', 'POST /api/attempts/delete']);
+  });
+
+  it('delete_waits_while_an_attempt_runs', async () => {
+    setViewportWidth(1280);
+    exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
+    const view = renderApp({ path: ATTEMPTS_PATH });
+    await sendLiveState(view, { mode: 'paused', exerciseId: EXERCISE_ID, attemptNumber: 10 });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Select' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Select attempt 1' }));
+    await user.click(within(screen.getByRole('region', { name: 'Selection' })).getByRole('button', { name: 'Delete 1 attempt' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveTextContent('Attempt 10 runs. Finish it or stop the training first.');
+    expect(within(dialog).getByRole('button', { name: 'Delete attempt' })).toBeDisabled();
+  });
+
+  it('delete_does_not_happen_when_the_stop_fails', async () => {
+    setViewportWidth(1280);
+    const api = exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).on('POST /api/training/disarm', { status: 500, body: { message: 'Server problem' } }).install();
+    const view = renderApp({ path: ATTEMPTS_PATH });
+    await sendLiveState(view, { mode: 'armed', exerciseId: EXERCISE_ID });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Select' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Select attempt 1' }));
+    await user.click(within(screen.getByRole('region', { name: 'Selection' })).getByRole('button', { name: 'Delete 1 attempt' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Stop the training and delete' }));
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+    expect(api.called('POST /api/attempts/delete')).toBe(false);
   });
 });
