@@ -1,25 +1,20 @@
-import { useEffect, useState } from 'react';
-import { type CornerInfo, type Exercise, type ExerciseStep, type ReferenceCue, type ReferenceTrace } from '@gt7/contracts';
-import { api } from '../../api/client.ts';
-import { cornerMarks } from '../../charts/corner-marks.ts';
-import { MapDialog, cueItems } from '../../charts/MapDialog.tsx';
-import { MapPanel } from '../../charts/MapPanel.tsx';
-import { TrackMap } from '../../charts/TrackMap.tsx';
+import { useEffect } from 'react';
+import type { Exercise, ExerciseStep } from '@gt7/contracts';
 import { rememberExercise } from '../../app/current-exercise.ts';
-import { formatTime, signedSeconds } from '../../app/format.ts';
+import { signedSeconds } from '../../app/format.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
-import { errorText, useResource } from '../../app/resource.ts';
+import { errorText } from '../../app/resource.ts';
 import { counted } from '../../app/plural.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
 import { RecurringDifferences } from '../attempts/RecurringDifferences.tsx';
 import { nextTitle, primaryAction, type Action } from '../exercises/next-step.ts';
-import { spokenCues } from '../drive/cue-display.ts';
+import { type ReferenceData, useReferenceData } from '../drive/use-reference-data.ts';
 import { ExerciseHeader } from './ExerciseHeader.tsx';
+import { ReferenceMap } from './ReferenceMap.tsx';
+import { TimesPanel } from './TimesPanel.tsx';
 import { useExercise } from './use-exercise.ts';
 import './overview.css';
-
-type ReferenceData = { trace: ReferenceTrace; cues: ReferenceCue[]; corners: CornerInfo[] };
 
 type NextText = { title: string; detail(spokenCues: number | null): string };
 
@@ -56,7 +51,7 @@ function NextPanel({ exercise, reference }: { exercise: Exercise; reference: Ref
   return (
     <section className="panel overview-next" aria-labelledby="next-title">
       <h2 id="next-title">{next.title}</h2>
-      <p className="lede">{next.detail(reference ? spokenCues(reference.cues).length : null)}</p>
+      <p className="lede">{next.detail(reference ? reference.spoken.length : null)}</p>
       <Link to={primary.to} className="btn" primary>
         {primary.label}
       </Link>
@@ -71,63 +66,6 @@ function NextPanel({ exercise, reference }: { exercise: Exercise; reference: Ref
   );
 }
 
-function TimesPanel({ bestMs, referenceMs }: { bestMs: number | null; referenceMs: number | null }) {
-  if (bestMs === null && referenceMs === null) return null;
-  return (
-    <section className="panel overview-times" aria-labelledby="times-title">
-      <h2 id="times-title">Times from the game</h2>
-      <div className="times-row">
-        {bestMs !== null ? (
-          <div>
-            <b>{formatTime(bestMs)}</b>
-            <span>your best</span>
-          </div>
-        ) : null}
-        {referenceMs !== null ? (
-          <div className="reference-time">
-            <b>{formatTime(referenceMs)}</b>
-            <span>reference</span>
-          </div>
-        ) : null}
-        {bestMs !== null && referenceMs !== null ? (
-          <div className={bestMs > referenceMs ? 'gap-slower' : 'gap-faster'}>
-            <b>{signedSeconds(bestMs - referenceMs)} s</b>
-            <span>gap to the reference</span>
-          </div>
-        ) : null}
-      </div>
-    </section>
-  );
-}
-
-function ReferenceMap({ title, reference }: { title: string; reference: ReferenceData }) {
-  const [open, setOpen] = useState(false);
-  const { trace, cues, corners } = reference;
-  return (
-    <MapPanel title={`Reference line, ${Math.round(trace.lengthM)} m`} legend={['reference', 'turn', 'cue', 'muted']} onView={() => setOpen(true)}>
-      <TrackMap
-        label="Reference line with the voice cues and the turns"
-        reference={trace}
-        marks={[
-          ...cornerMarks(corners),
-          ...cues.map((cue, index) => ({ sM: cue.sM, label: String(index + 1), muted: cue.muted, title: `Cue ${index + 1}: ${cue.phrase ?? cue.kind}` }))
-        ]}
-      />
-      <MapDialog
-        open={open}
-        onClose={() => setOpen(false)}
-        title={title}
-        lengthM={trace.lengthM}
-        reference={trace}
-        corners={corners}
-        items={cueItems(cues)}
-        listTitle="Voice cues"
-        listHint="Select a cue to find it on the line."
-      />
-    </MapPanel>
-  );
-}
-
 function NoReference() {
   return (
     <section className="panel" aria-labelledby="no-reference-title">
@@ -139,30 +77,24 @@ function NoReference() {
   );
 }
 
-function useReference(referenceId: string | null) {
-  return useResource<ReferenceData | null>(
-    () =>
-      referenceId === null
-        ? Promise.resolve(null)
-        : Promise.all([api.referenceTrace(referenceId), api.referenceCues(referenceId), api.referenceCorners(referenceId)]).then(([trace, cues, corners]) => ({
-            trace,
-            cues,
-            corners
-          })),
-    [referenceId]
-  );
-}
-
 function Overview({ exercise }: { exercise: Exercise }) {
-  const reference = useReference(exercise.activeReferenceId);
+  const reference = useReferenceData(exercise.activeReferenceId);
   const data = reference.data ?? null;
+  const referenceMs = data?.trace.timeMs ?? null;
   return (
     <>
       <ExerciseHeader exercise={exercise} />
       <div className="overview-columns">
         <div className="overview-stack">
           <NextPanel exercise={exercise} reference={data} />
-          <TimesPanel bestMs={exercise.bestMs} referenceMs={data?.trace.timeMs ?? null} />
+          <TimesPanel bestMs={exercise.bestMs} referenceMs={referenceMs}>
+            {exercise.bestMs !== null && referenceMs !== null ? (
+              <div className={exercise.bestMs > referenceMs ? 'gap-slower' : 'gap-faster'}>
+                <b>{signedSeconds(exercise.bestMs - referenceMs)} s</b>
+                <span>gap to the reference</span>
+              </div>
+            ) : null}
+          </TimesPanel>
           <RecurringDifferences exercise={exercise} quiet />
         </div>
         {exercise.activeReferenceId === null ? (

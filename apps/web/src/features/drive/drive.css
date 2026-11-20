@@ -28,14 +28,8 @@
   min-width: 0;
 }
 
-.arm-panel,
-.drive-times {
+.arm-panel {
   padding: 22px;
-}
-
-.drive-times h2 {
-  margin: 0;
-  font-size: 22px;
 }
 
 .arm-panel .text-links {
@@ -355,8 +349,7 @@ main.view.immersive {
     gap: 16px;
   }
 
-  .arm-panel,
-  .drive-times {
+  .arm-panel {
     padding: 16px;
   }
 

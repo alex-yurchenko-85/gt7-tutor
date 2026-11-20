@@ -14,6 +14,7 @@ export type TraceAttempt = { generation: number; type: AttemptEvent['type']; raw
 
 export type TraceCue = {
   id: string;
+  eventKey: string;
   kind: string;
   targetSpeedKph: number | null;
   clip: string;
@@ -56,9 +57,9 @@ export function replayCoach(
     if (run.state !== 'driving' && run.state !== 'paused') continue;
     const { generation } = run;
     if (step.cue) {
-      const { id, kind, targetSpeedKph, clip, followClip, priority, decidedMonoMs, ttlMs } = step.cue;
+      const { id, eventKey, kind, targetSpeedKph, clip, followClip, priority, decidedMonoMs, ttlMs } = step.cue;
       const sM = step.match ? Math.round(step.match.sM * 100) / 100 : null;
-      trace.cues.push({ id, kind, targetSpeedKph, clip, followClip, priority, rawIndex: sample.rawIndex, sM, decidedMonoMs: Math.round(decidedMonoMs), ttlMs: Math.round(ttlMs) });
+      trace.cues.push({ id, eventKey, kind, targetSpeedKph, clip, followClip, priority, rawIndex: sample.rawIndex, sM, decidedMonoMs: Math.round(decidedMonoMs), ttlMs: Math.round(ttlMs) });
     }
     for (const { eventKey, why } of step.suppressed) trace.suppressed.push({ generation, eventKey, why, rawIndex: sample.rawIndex });
     const key = `${step.guidance.mode}:${step.guidance.reason}`;

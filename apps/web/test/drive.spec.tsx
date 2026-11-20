@@ -675,6 +675,28 @@ describe('drive start', () => {
     expect(screen.getByRole('link', { name: 'Change exercise' })).toBeInTheDocument();
   });
 
+  it('phone_start_does_not_load_the_catalogue', async () => {
+    setViewportWidth(390);
+    const api = startApi().install();
+    await openDrive();
+    await screen.findByText(/^Exercise:/);
+    await act(async () => undefined);
+    expect(api.called('GET /api/catalogue')).toBe(false);
+  });
+
+  it('arming_does_not_load_the_reference_again', async () => {
+    setViewportWidth(1280);
+    const api = startApi().install();
+    await openDrive();
+    await screen.findByRole('region', { name: /^Reference line, \d+ m$/ });
+    const cueLoads = () => api.calls.filter(call => call.method === 'GET' && call.path === '/api/references/ref-demo/cues').length;
+    const before = cueLoads();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Start an attempt' }));
+    await waitFor(() => expect(api.called('POST /api/training/arm')).toBe(true));
+    await act(async () => undefined);
+    expect(cueLoads()).toBe(before);
+  });
+
   it('start_shows_the_hint_in_the_order_of_the_steps', async () => {
     setViewportWidth(1280);
     startApi().install();

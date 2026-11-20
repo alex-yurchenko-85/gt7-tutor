@@ -37,15 +37,6 @@ export function notSpokenSummary(count: number): string {
   return `${counted(count, 'cue')} ${count === 1 ? 'is' : 'are'} not spoken on the reference line.`;
 }
 
-function muteKeyOf(cue: PreviewCue): string | null {
-  if (cue.rowKey !== null) return cue.rowKey;
-  return cue.key.startsWith('big-stop@') ? `brake@${cue.key.slice('big-stop@'.length)}` : null;
-}
-
-export function withoutMuted(preview: CuePreview, muted: string[]): CuePreview {
-  return { ...preview, cues: preview.cues.filter(cue => !muted.includes(muteKeyOf(cue) ?? '')) };
-}
-
 export function previewClips(preview: CuePreview): string[] {
   return [...new Set(preview.cues.flatMap(cue => (cue.followClip ? [cue.clip, cue.followClip] : [cue.clip])))];
 }

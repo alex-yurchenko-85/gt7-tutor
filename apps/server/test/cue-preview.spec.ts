@@ -1,8 +1,10 @@
+import { join } from 'node:path';
 import type { INestApplication } from '@nestjs/common';
 import knex, { type Knex } from 'knex';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { replayCoach } from '@gt7/core';
+import { readSamples } from '@gt7/capture';
+import { cutToTimerRun, replayCoach } from '@gt7/core';
 import type { CuePreview, PreviewCue } from '@gt7/contracts';
 import { TELEMETRY_SOURCE_FACTORY } from '../src/captures/telemetry-source.factory.js';
 import { createTestApp } from './support/app.js';
@@ -23,6 +25,7 @@ describe('cue preview', () => {
   let replays: FixtureReplays;
   let cookie: string;
   let exerciseId: string;
+  let dataDir: string;
   const http = () => request(app.getHttpServer());
 
   async function capture(fixture: string, purpose = 'demo'): Promise<string> {
@@ -56,7 +59,7 @@ describe('cue preview', () => {
     await db.raw('truncate table users, sessions, settings cascade');
     replays = new FixtureReplays();
     app = await createTestApp(database.url, {
-      env: { DATA_DIR: testTempDir('gt7-server-'), TELEMETRY_SOURCE: 'replay' },
+      env: { DATA_DIR: (dataDir = testTempDir('gt7-server-')), TELEMETRY_SOURCE: 'replay' },
       override: builder => builder.overrideProvider(TELEMETRY_SOURCE_FACTORY).useValue(replays.factory)
     });
     cookie = await firstProfile(app);
@@ -84,9 +87,10 @@ describe('cue preview', () => {
     expect(body.gridTimeMs).toHaveLength(trace.x.length);
     expect(body.gridTimeMs[0]).toBe(0);
     expect(Math.abs(body.gridTimeMs.at(-1)! - body.timeMs)).toBeLessThan(100);
-    const liftOff = body.cues.find((cue: PreviewCue) => cue.key === 'ease-off@564')!;
-    expect(liftOff.atMs).toBeGreaterThan(10_800);
-    expect(liftOff.atMs).toBeLessThan(11_000);
+    expect(body.cues.map(cue => cue.key)).toContain('ease-off@564');
+    const liftOff = body.cues.find((cue: PreviewCue) => cue.key === 'ease-off@564');
+    expect(liftOff?.atMs).toBeGreaterThan(10_800);
+    expect(liftOff?.atMs).toBeLessThan(11_000);
   });
 
   it('preview_follows_the_exercise_timing', async () => {
@@ -118,6 +122,37 @@ describe('cue preview', () => {
     expect(body.cues).toEqual([]);
     expect(body.dropped).toEqual([]);
     expect(body.gridTimeMs.length).toBeGreaterThan(100);
+  });
+
+  async function promotedReference(fixture: string): Promise<string> {
+    const demo = await reference();
+    const playerCapture = await capture(fixture, 'player');
+    const stored = await db('captures').where({ id: playerCapture }).first();
+    const samples = await readSamples(join(dataDir, stored.raw_path));
+    const range = cutToTimerRun(samples, { first: samples[0]!.rawIndex, last: samples.at(-1)!.rawIndex }, 'player')!;
+    const [row] = await db('attempts')
+      .insert({
+        exercise_id: exerciseId,
+        capture_id: playerCapture,
+        reference_id: demo,
+        first_raw_index: range.first,
+        last_raw_index: range.last,
+        completion: 'complete',
+        game_ms: range.gameTimeMs,
+        started_at: new Date()
+      })
+      .returning('id');
+    return (await http().post(`/api/attempts/${row.id}/promote`).set('Cookie', cookie).expect(201)).body.id as string;
+  }
+
+  it('preview_leaves_out_a_pause_of_the_reference', async () => {
+    const id = await promotedReference('ce-pause');
+    const body = await preview(id);
+    expect(body.dropped).toContainEqual({ rowKey: 'throttle@124', reason: 'voice-busy', afterRowKey: 'ease-off@91' });
+    expect(body.cues.map(cue => cue.key)).toContain('brake@256');
+    const brake = body.cues.find(cue => cue.key === 'brake@256');
+    expect(brake?.atMs).toBeGreaterThan(3600);
+    expect(brake?.atMs).toBeLessThan(3900);
   });
 
   it('preview_works_for_a_reference_from_an_attempt', async () => {

@@ -8,7 +8,6 @@ import {
   type BrakeReactionSummary,
   type CornerInfo,
   type Exercise,
-  type PreviewDrop,
   type RecurringDifference,
   type ReferenceCue,
   type ReferenceTrace
@@ -18,7 +17,7 @@ import { useLiveConnection } from '../../api/live.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { MapDialog, cueItems } from '../../charts/MapDialog.tsx';
 import { MapPanel } from '../../charts/MapPanel.tsx';
-import { TrackMap } from '../../charts/TrackMap.tsx';
+import { TrackMap, type TrackMark } from '../../charts/TrackMap.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
 import { Icon } from '../../app/icons.tsx';
 import { useWideLayout } from '../../app/layout.ts';
@@ -35,8 +34,8 @@ import {
   reactionText,
   recurringText
 } from './cue-format.ts';
-import { notSpokenSummary, notSpokenText, previewClips, previewPositionM, withoutMuted } from './preview-timeline.ts';
-import { useCuePreviewRun, type CuePreviewRun } from './use-cue-preview-run.ts';
+import { notSpokenSummary, notSpokenText, previewClips, previewPositionM } from './preview-timeline.ts';
+import { useCuePreviewRun, usePreviewElapsed, type CuePreviewRun } from './use-cue-preview-run.ts';
 import './cues.css';
 
 const OFFSET_SAVE_DELAY_MS = 500;
@@ -137,7 +136,7 @@ function CueRow({ cue, number, muted, offsetMs, recurring, reaction, notSpoken, 
           </span>
         ) : null}
         {speaking ? <span className="tag ink">Speaking</span> : null}
-        {notSpoken !== null && !muted ? (
+        {notSpoken !== null ? (
           <span className="tag outline">
             <svg className="dots" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="5" cy="12" r="2.2" />
@@ -149,7 +148,7 @@ function CueRow({ cue, number, muted, offsetMs, recurring, reaction, notSpoken, 
         ) : null}
         {cue.bigStop ? <small>Big brake ahead first, about 2 s before this point</small> : null}
         {muted ? <small>The voice does not say this cue, and Drive does not show it.</small> : null}
-        {notSpoken !== null && !muted ? <small className="not-spoken">{notSpoken}</small> : null}
+        {notSpoken !== null ? <small className="not-spoken">{notSpoken}</small> : null}
         {reaction ? (
           <small className="reaction">
             You start to brake {reactionText(reaction.medianMs)} here ({attemptsText(reaction.count)})
@@ -272,9 +271,10 @@ function SideCueDistance({ distanceM, onChange }: SideDistanceProps) {
 type PreviewStatusProps = { run: CuePreviewRun; phraseOf(key: string): string | null; numberOf(key: string): number | null };
 
 function PreviewStatus({ run, phraseOf, numberOf }: PreviewStatusProps) {
+  const elapsedMs = usePreviewElapsed(run);
   if (!run.preview) return <p className="sub preview-note">Preview plays the cues on this device in the time of the reference.</p>;
   const { timeMs } = run.preview;
-  const share = timeMs > 0 ? Math.min(1, run.elapsedMs / timeMs) : 0;
+  const share = timeMs > 0 ? Math.min(1, elapsedMs / timeMs) : 0;
   const key = run.speaking?.rowKey ?? null;
   const phrase = key === null ? null : phraseOf(key);
   return (
@@ -282,7 +282,7 @@ function PreviewStatus({ run, phraseOf, numberOf }: PreviewStatusProps) {
       <span className="preview-bar" aria-hidden="true">
         <i style={{ width: `${share * 100}%` }} />
       </span>
-      <span className="preview-time">{`${formatTime(run.elapsedMs, 1)} of ${formatTime(timeMs, 1)}, measured`}</span>
+      <span className="preview-time">{`${formatTime(elapsedMs, 1)} of ${formatTime(timeMs, 1)}, measured`}</span>
       {key !== null && phrase !== null ? (
         <p className="preview-now">
           <span>The voice says:</span> <b>{phrase}</b> (cue {numberOf(key)})
@@ -290,6 +290,13 @@ function PreviewStatus({ run, phraseOf, numberOf }: PreviewStatusProps) {
       ) : null}
     </div>
   );
+}
+
+type PreviewMapProps = { run: CuePreviewRun; label: string; reference: ReferenceTrace; marks: TrackMark[] };
+
+function PreviewMap({ run, label, reference, marks }: PreviewMapProps) {
+  const elapsedMs = usePreviewElapsed(run);
+  return <TrackMap label={label} reference={reference} cursorSM={run.preview ? previewPositionM(run.preview, elapsedMs) : null} marks={marks} />;
 }
 
 type CueData = [ReferenceCue[], ReferenceTrace, RecurringDifference[], CornerInfo[], BrakeReactionSummary[]];
@@ -331,7 +338,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
   if (!data.data) return <p className="sub">Reading the cues…</p>;
   const [cues, trace, recurring, corners, reactions] = data.data;
 
-  const save = async (body: Parameters<typeof api.updateExercise>[1]) => {
+  const save = async (body: Parameters<typeof api.updateExercise>[1], reloadPreview = true) => {
     setProblem(null);
     setSaving(count => count + 1);
     try {
@@ -342,7 +349,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
         ...(body.sideCueDistanceM !== undefined ? { sideCueDistanceM: updated.sideCueDistanceM } : {}),
         ...(body.cueOffsetsMs !== undefined && pendingOffsets.current === null ? { cueOffsetsMs: updated.cueOffsetsMs } : {})
       });
-      preview.reload();
+      if (reloadPreview) preview.reload();
     } catch (error) {
       setProblem(errorText(error));
     } finally {
@@ -350,24 +357,27 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
     }
   };
   const stopRun = () => {
-    if (run.running) run.stop();
+    if (run.preview) run.stop();
   };
   const flushOffsets = async (): Promise<boolean> => {
     const pending = pendingOffsets.current;
     if (!pending) return false;
     clearTimeout(pending.timer);
     pendingOffsets.current = null;
-    await save({ cueOffsetsMs: pending.offsets });
+    await save({ cueOffsetsMs: pending.offsets }, false);
     return true;
   };
   const startPreview = async () => {
     void player.unlock().catch(() => undefined);
     const flushed = await flushOffsets();
     const fresh = flushed ? await api.cuePreview(referenceId).catch(() => null) : preview.data;
+    if (flushed) {
+      if (fresh) preview.replace(fresh);
+      else preview.reload();
+    }
     if (!fresh) return;
-    const playable = withoutMuted(fresh, muted);
-    await player.preload(previewClips(playable)).catch(() => undefined);
-    run.start(playable);
+    await player.preload(previewClips(fresh)).catch(() => undefined);
+    run.start(fresh);
   };
   const toggle = (key: string) => {
     stopRun();
@@ -396,11 +406,11 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
     void save({ sideCueDistanceM: next });
   };
   const dropped = (preview.data?.dropped ?? []).filter(drop => !muted.includes(drop.rowKey));
-  const dropOf = (key: string): PreviewDrop | null => dropped.find(drop => drop.rowKey === key) ?? null;
   const numberOf = (key: string): number | null => {
     const index = cues.findIndex(cue => cue.key === key);
     return index < 0 ? null : index + 1;
   };
+  const notSpoken = new Map(dropped.map(drop => [drop.rowKey, notSpokenText(drop, numberOf)]));
   const hear = (cue: ReferenceCue) => {
     const clips = speakTargets && cue.followClip ? [cue.clip, cue.followClip] : [cue.clip];
     player.preview(...clips).catch((error: unknown) => setProblem(`The phrase did not play: ${errorText(error)}`));
@@ -410,24 +420,24 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
     <MapPanel title={`Reference line, ${Math.round(trace.lengthM)} m`} legend={['reference', 'turn', 'cue', 'muted', 'not-spoken']}
       viewIcon={!wide}
       actions={
-        run.running ? (
+        run.preview ? (
           <IconButton icon="stop" label="Stop the preview" primary onClick={run.stop} />
         ) : (
           <IconButton icon="play" label="Preview the cues" onClick={() => void startPreview()} disabled={!preview.data || preview.loading || saving > 0} />
         )
       }
       below={<PreviewStatus run={run} phraseOf={key => cues.find(cue => cue.key === key)?.phrase ?? null} numberOf={numberOf} />} notes={['Select a number to mute that cue']} onView={() => setViewing(true)}>
-      <TrackMap
+      <PreviewMap
+        run={run}
         label="Reference line with the voice cues and the turns. Select a number to mute or unmute that cue"
         reference={trace}
-        cursorSM={run.preview ? previewPositionM(run.preview, run.elapsedMs) : null}
         marks={[
           ...cornerMarks(corners),
           ...cues.map((cue, index) => ({
             sM: cue.sM,
             label: String(index + 1),
             muted: muted.includes(cue.key),
-            notSpoken: dropOf(cue.key) !== null,
+            notSpoken: notSpoken.has(cue.key),
             speaking: run.speaking?.rowKey === cue.key,
             title: `${muted.includes(cue.key) ? 'Unmute' : 'Mute'} cue ${index + 1}`,
             onSelect: () => toggle(cue.key)
@@ -478,10 +488,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
                 recurring={recurring.filter(item => item.eventKey === row.cue.key)}
                 reaction={reactions.find(item => item.eventKey === row.cue.key) ?? null}
                 speaking={run.speaking?.rowKey === row.cue.key}
-                notSpoken={(() => {
-                  const drop = dropOf(row.cue.key);
-                  return drop ? notSpokenText(drop, numberOf) : null;
-                })()}
+                notSpoken={notSpoken.get(row.cue.key) ?? null}
                 onToggle={() => toggle(row.cue.key)}
                 onOffset={value => changeOffset(row.cue.key, value)}
                 onHear={() => hear(row.cue)}

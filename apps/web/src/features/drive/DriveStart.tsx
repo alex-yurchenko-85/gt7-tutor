@@ -1,21 +1,19 @@
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { Exercise } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { useLiveConnection, useLiveState } from '../../api/live.tsx';
-import { cornerMarks } from '../../charts/corner-marks.ts';
-import { MapDialog, cueItems } from '../../charts/MapDialog.tsx';
-import { MapPanel } from '../../charts/MapPanel.tsx';
-import { TrackMap } from '../../charts/TrackMap.tsx';
 import { useDemo } from '../../app/demo.tsx';
-import { formatTime } from '../../app/format.ts';
+import { formatSeconds, formatTime } from '../../app/format.ts';
 import { useWideLayout } from '../../app/layout.ts';
-import { errorText } from '../../app/resource.ts';
+import { errorText, type Resource } from '../../app/resource.ts';
 import { Link, paths } from '../../app/router.tsx';
 import { voiceState } from '../../app/status.ts';
 import { CLIPS_TEXT } from '../../voice/VoicePlayer.ts';
 import { useVoiceClaim } from '../../voice/use-voice-claim.ts';
+import { ReferenceMap } from '../exercise/ReferenceMap.tsx';
+import { TimesPanel } from '../exercise/TimesPanel.tsx';
 import { useExerciseWhere } from '../exercise/use-exercise-where.ts';
-import { type ReferenceData, useReferenceData } from './use-reference-data.ts';
+import type { ReferenceData } from './use-reference-data.ts';
 import '../exercise/overview.css';
 import './drive.css';
 
@@ -62,9 +60,11 @@ function VoiceNotice() {
   );
 }
 
-export type DriveStartProps = { exercise: Exercise; clipsFailed: boolean; onClipsFailed(failed: boolean): void; onArmed(): void };
+type StartPanelProps = { exercise: Exercise; clipsFailed: boolean; onClipsFailed(failed: boolean): void; onArmed(): void };
 
-function StartPanel({ exercise, clipsFailed, onClipsFailed, onArmed }: DriveStartProps) {
+export type DriveStartProps = StartPanelProps & { reference: Resource<ReferenceData | null> };
+
+function StartPanel({ exercise, clipsFailed, onClipsFailed, onArmed }: StartPanelProps) {
   const { deviceId } = useLiveConnection();
   const { state } = useLiveState(snapshot => snapshot);
   const demo = useDemo() !== null;
@@ -125,15 +125,19 @@ function StartPanel({ exercise, clipsFailed, onClipsFailed, onArmed }: DriveStar
   );
 }
 
-function ExerciseLine({ exercise, wide }: { exercise: Exercise; wide: boolean }) {
+function ExerciseWhere({ exercise }: { exercise: Exercise }) {
   const where = useExerciseWhere(exercise);
+  return where ? <span>· {where}</span> : null;
+}
+
+function ExerciseLine({ exercise, wide }: { exercise: Exercise; wide: boolean }) {
   return (
     <p className="drive-exercise">
       Exercise:
       <Link to={paths.exercise(exercise.id)} className="text-link">
         {exercise.name}
       </Link>
-      {wide && where ? <span>· {where}</span> : null}
+      {wide ? <ExerciseWhere exercise={exercise} /> : null}
       <Link to={paths.exercises()} className="text-link">
         Change exercise
       </Link>
@@ -141,73 +145,18 @@ function ExerciseLine({ exercise, wide }: { exercise: Exercise; wide: boolean })
   );
 }
 
-function seconds(ms: number): string {
-  return `${(ms / 1000).toFixed(2)} s`;
-}
-
-function TimesPanel({ exercise, referenceMs, wide }: { exercise: Exercise; referenceMs: number | null; wide: boolean }) {
-  const titleId = useId();
-  const medal = exercise.nextMedal;
-  if (exercise.bestMs === null && referenceMs === null && medal === null) return null;
+function MedalGap({ medal, wide }: { medal: NonNullable<Exercise['nextMedal']>; wide: boolean }) {
   return (
-    <section className="panel drive-times" aria-labelledby={titleId}>
-      <h2 id={titleId}>Times from the game</h2>
-      <div className="times-row">
-        {exercise.bestMs !== null ? (
-          <div>
-            <b>{formatTime(exercise.bestMs)}</b>
-            <span>your best</span>
-          </div>
-        ) : null}
-        {referenceMs !== null ? (
-          <div className="reference-time">
-            <b>{formatTime(referenceMs)}</b>
-            <span>reference</span>
-          </div>
-        ) : null}
-        {medal !== null ? (
-          <div>
-            <b>{seconds(medal.gapMs)}</b>
-            <span>{wide ? `to ${medal.medal}, ${formatTime(medal.targetMs)}` : `to ${medal.medal}`}</span>
-          </div>
-        ) : null}
-      </div>
-    </section>
+    <div>
+      <b>{formatSeconds(medal.gapMs)}</b>
+      <span>{wide ? `to ${medal.medal}, ${formatTime(medal.targetMs)}` : `to ${medal.medal}`}</span>
+    </div>
   );
 }
 
-function ReferenceMap({ title, reference }: { title: string; reference: ReferenceData }) {
-  const [open, setOpen] = useState(false);
-  const { trace, cues, corners } = reference;
-  return (
-    <MapPanel title={`Reference line, ${Math.round(trace.lengthM)} m`} legend={['reference', 'turn', 'cue', 'muted']} onView={() => setOpen(true)}>
-      <TrackMap
-        label="Reference line with the voice cues and the turns"
-        reference={trace}
-        marks={[
-          ...cornerMarks(corners),
-          ...cues.map((cue, index) => ({ sM: cue.sM, label: String(index + 1), muted: cue.muted, title: `Cue ${index + 1}: ${cue.phrase ?? cue.kind}` }))
-        ]}
-      />
-      <MapDialog
-        open={open}
-        onClose={() => setOpen(false)}
-        title={title}
-        lengthM={trace.lengthM}
-        reference={trace}
-        corners={corners}
-        items={cueItems(cues)}
-        listTitle="Voice cues"
-        listHint="Select a cue to find it on the line."
-      />
-    </MapPanel>
-  );
-}
-
-export function DriveStart(props: DriveStartProps) {
+export function DriveStart({ reference, ...props }: DriveStartProps) {
   const { exercise } = props;
   const wide = useWideLayout();
-  const reference = useReferenceData(exercise.activeReferenceId);
   const data = reference.data ?? null;
   return (
     <section className="drive-start">
@@ -216,7 +165,9 @@ export function DriveStart(props: DriveStartProps) {
       <div className="drive-columns">
         <div className="drive-stack">
           <StartPanel {...props} />
-          <TimesPanel exercise={exercise} referenceMs={data?.trace.timeMs ?? null} wide={wide} />
+          <TimesPanel bestMs={exercise.bestMs} referenceMs={data?.trace.timeMs ?? null}>
+            {exercise.nextMedal ? <MedalGap medal={exercise.nextMedal} wide={wide} /> : null}
+          </TimesPanel>
         </div>
         {data ? (
           <ReferenceMap title={exercise.name} reference={data} />

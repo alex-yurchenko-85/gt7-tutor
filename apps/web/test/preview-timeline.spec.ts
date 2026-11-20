@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CuePreview, PreviewCue, PreviewDrop } from '@gt7/contracts';
-import { cuesDue, notSpokenSummary, notSpokenText, previewClips, previewPositionM, withoutMuted } from '../src/features/cues/preview-timeline.ts';
+import { cuesDue, notSpokenSummary, notSpokenText, previewClips, previewPositionM } from '../src/features/cues/preview-timeline.ts';
 
 const preview: CuePreview = { timeMs: 2500, gridM: 10, gridTimeMs: [0, 1000, 1500, 2500], cues: [], dropped: [] };
 
@@ -51,14 +51,12 @@ describe('preview timeline', () => {
     expect(clean(notSpokenSummary(2))).toBe('2 cues are not spoken on the reference line.');
   });
 
-  it('without_muted_drops_the_big_stop_of_a_muted_brake', () => {
+  it('preview_clips_lists_each_clip_once_in_order', () => {
     const cues: PreviewCue[] = [
       { key: 'big-stop@291', rowKey: null, clip: 'big-stop', followClip: null, atMs: 100 },
       { key: 'brake@291', rowKey: 'brake@291', clip: 'hard-brake', followClip: 'speed-85', atMs: 200 },
       { key: 'throttle@411', rowKey: 'throttle@411', clip: 'full-throttle', followClip: null, atMs: 300 }
     ];
-    const kept = withoutMuted({ ...preview, cues }, ['brake@291']);
-    expect(kept.cues.map(cue => cue.key)).toEqual(['throttle@411']);
     expect(previewClips({ ...preview, cues })).toEqual(['big-stop', 'hard-brake', 'speed-85', 'full-throttle']);
   });
 });

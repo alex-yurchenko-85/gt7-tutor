@@ -23,6 +23,10 @@ export function abortReasonText(reason: string): string {
   return ABORT_REASONS[reason] ?? reason;
 }
 
+export function formatSeconds(ms: number): string {
+  return `${(ms / 1000).toFixed(2)} s`;
+}
+
 export function signedSeconds(ms: number, digits = 2): string {
   const text = (Math.abs(ms) / 1000).toFixed(digits);
   if (Number(text) === 0) return text;

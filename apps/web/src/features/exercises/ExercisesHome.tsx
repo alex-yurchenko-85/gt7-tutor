@@ -4,7 +4,7 @@ import { api } from '../../api/client.ts';
 import { useLiveState } from '../../api/live.tsx';
 import { currentExercise } from '../../app/current-exercise.ts';
 import { useDemo } from '../../app/demo.tsx';
-import { formatTime } from '../../app/format.ts';
+import { formatSeconds, formatTime } from '../../app/format.ts';
 import { Icon } from '../../app/icons.tsx';
 import { landing } from '../../app/landing.ts';
 import { useWideLayout } from '../../app/layout.ts';
@@ -24,10 +24,6 @@ const ALL = 'All';
 type Details = { collection: string | null; entry: CatalogueListEntry | null };
 
 type HomeData = { exercises: Exercise[]; progress: Progress; settings: Settings };
-
-function seconds(ms: number): string {
-  return `${(ms / 1000).toFixed(2)} s`;
-}
 
 function homeWhere(details: Details): string {
   return whereText({ collection: details.collection, code: details.entry?.code, track: details.entry?.track, car: details.entry?.car });
@@ -58,7 +54,7 @@ function ContinueCard({ exercise, details, wide }: { exercise: Exercise; details
             {gap ? (
               <span className="continue-gap">
                 {' '}
-                · {seconds(gap.gapMs)} to {gap.medal}
+                · {formatSeconds(gap.gapMs)} to {gap.medal}
               </span>
             ) : null}
           </p>
@@ -72,7 +68,7 @@ function ContinueCard({ exercise, details, wide }: { exercise: Exercise; details
           </div>
           {gap ? (
             <div className="continue-gap">
-              <b>{seconds(gap.gapMs)}</b>
+              <b>{formatSeconds(gap.gapMs)}</b>
               <span>
                 to {gap.medal}, {formatTime(gap.targetMs)}
               </span>

@@ -90,6 +90,7 @@
     "cues": [
       {
         "id": "1:big-stop@291",
+        "eventKey": "big-stop@291",
         "kind": "big-stop",
         "targetSpeedKph": null,
         "clip": "big-stop",
@@ -102,6 +103,7 @@
       },
       {
         "id": "1:brake@291",
+        "eventKey": "brake@291",
         "kind": "hard-brake",
         "targetSpeedKph": 115,
         "clip": "hard-brake",
@@ -114,6 +116,7 @@
       },
       {
         "id": "1:throttle@411",
+        "eventKey": "throttle@411",
         "kind": "full-throttle",
         "targetSpeedKph": 140,
         "clip": "full-throttle",
@@ -126,6 +129,7 @@
       },
       {
         "id": "1:keep-left@406",
+        "eventKey": "keep-left@406",
         "kind": "keep-left",
         "targetSpeedKph": null,
         "clip": "keep-left",
@@ -138,6 +142,7 @@
       },
       {
         "id": "1:ease-off@564",
+        "eventKey": "ease-off@564",
         "kind": "ease-off",
         "targetSpeedKph": null,
         "clip": "ease-off",
@@ -150,6 +155,7 @@
       },
       {
         "id": "1:keep-right@685",
+        "eventKey": "keep-right@685",
         "kind": "keep-right",
         "targetSpeedKph": null,
         "clip": "keep-right",
@@ -162,6 +168,7 @@
       },
       {
         "id": "1:ease-off@792",
+        "eventKey": "ease-off@792",
         "kind": "ease-off",
         "targetSpeedKph": null,
         "clip": "ease-off",

@@ -498,7 +498,7 @@ describe('cue preview', () => {
     const routes = api.calls.map(call => `${call.method} ${call.path}`);
     const patch = routes.indexOf('PATCH /api/exercises/e0000000-0000-4000-8000-000000000001');
     expect(patch).toBeGreaterThan(-1);
-    expect(routes.slice(patch).filter(route => route === PREVIEW_ROUTE).length).toBeGreaterThan(0);
+    expect(routes.slice(patch).filter(route => route === PREVIEW_ROUTE)).toHaveLength(1);
     expect(api.calls[patch]!.body).toEqual({ cueOffsetsMs: { 'brake@332': 300 } });
   });
 
@@ -539,16 +539,6 @@ describe('cue preview', () => {
     await advance(5000);
     expect(played).toEqual([]);
     expect(vi.getTimerCount()).toBe(0);
-  });
-
-  it('a_muted_cue_in_old_preview_data_is_not_played', async () => {
-    const { played, button } = await openPreview({ api: exerciseApi(exercise({ mutedCues: ['brake@332'] })).on(PREVIEW_ROUTE, PLAYING) });
-    fake();
-    await act(async () => {
-      fireEvent.click(button);
-    });
-    await advance(3500);
-    expect(played).toEqual([['full-throttle']]);
   });
 
   it('phone_view_button_has_no_text', async () => {

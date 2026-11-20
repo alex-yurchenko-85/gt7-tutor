@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type DependencyList } from 'react';
 
-export type Resource<T> = { data: T | null; error: Error | null; loading: boolean; reload(): void };
+export type Resource<T> = { data: T | null; error: Error | null; loading: boolean; reload(): void; replace(value: T): void };
 
 function sameInputs(a: DependencyList, b: DependencyList): boolean {
   return a.length === b.length && a.every((value, index) => Object.is(value, b[index]));
@@ -39,7 +39,12 @@ export function useResource<T>(load: () => Promise<T>, deps: DependencyList): Re
     };
   }, [...deps, version]);
   const reload = useCallback(() => setVersion(value => value + 1), []);
-  return changedInputs ? { data: null, error: null, loading: true, reload } : { data, error, loading, reload };
+  const replace = useCallback((value: T) => {
+    setData(value);
+    setError(null);
+    setLoading(false);
+  }, []);
+  return changedInputs ? { data: null, error: null, loading: true, reload, replace } : { data, error, loading, reload, replace };
 }
 
 export function errorText(error: unknown): string {

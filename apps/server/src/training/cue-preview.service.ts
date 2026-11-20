@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { CuePreview, PreviewCue, PreviewDrop, PreviewDropReason } from '@gt7/contracts';
-import { DEFAULT_CONFIG, replayCoach, type CoachTrace, type SuppressReason } from '@gt7/core';
+import type { CuePreview, PreviewCue, PreviewDrop, PreviewDropReason, Sample } from '@gt7/contracts';
+import { DEFAULT_CONFIG, activeTimesMs, replayCoach, type CoachTrace, type ReferencePath, type SuppressReason } from '@gt7/core';
 import type { Knex } from 'knex';
 import { LiveHub } from '../live/live-hub.service.js';
 import { ownedExercise, ownedReference } from '../ownership/owned.js';
@@ -16,8 +16,31 @@ function dropReason(why: SuppressReason): PreviewDropReason {
   return 'other';
 }
 
-function eventKeyOf(cueId: string): string {
-  return cueId.slice(cueId.indexOf(':') + 1);
+function withoutPauses(samples: Sample[]): Sample[] {
+  const active = activeTimesMs(samples);
+  const baseMs = samples[0]?.receivedMonoMs ?? 0;
+  return samples.map((sample, index) => ({ ...sample, playerSession: true, receivedMonoMs: baseMs + active[index]!, clockMs: baseMs + active[index]! }));
+}
+
+function timersByRawIndex(samples: Sample[]): Map<number, number> {
+  let lastMs = 0;
+  return new Map(
+    samples.map(sample => {
+      if (sample.gameTimerMs >= 0) lastMs = sample.gameTimerMs;
+      return [sample.rawIndex, lastMs];
+    })
+  );
+}
+
+function pathTimeAtTimer(path: ReferencePath, timerMs: number): number {
+  const points = path.points;
+  if (timerMs <= points[0]!.timerMs) return 0;
+  const after = points.findIndex(point => point.timerMs >= timerMs);
+  if (after < 0) return points.at(-1)!.timeMs;
+  const from = points[after - 1]!;
+  const to = points[after]!;
+  const span = to.timerMs - from.timerMs;
+  return span > 0 ? from.timeMs + ((timerMs - from.timerMs) / span) * (to.timeMs - from.timeMs) : to.timeMs;
 }
 
 @Injectable()
@@ -37,7 +60,7 @@ export class CuePreviewService {
     const reference = await ownedReference(this.db, userId, referenceId);
     const exercise = await ownedExercise(this.db, userId, reference.exercise_id);
     const analysis = await this.references.analysisOf(reference);
-    const samples = (await this.references.referenceSamples(reference)).map(sample => ({ ...sample, playerSession: true }));
+    const samples = withoutPauses(await this.references.referenceSamples(reference));
     const deviceDelayMs = this.hub.deviceDelayMs(userId);
     const trace = replayCoach(samples, analysis, DEFAULT_CONFIG, {
       deviceDelayMs,
@@ -48,29 +71,29 @@ export class CuePreviewService {
       sideCueDistanceM: exercise.side_cue_distance_m
     });
     const rowKeys = new Set(analysis.events.map(event => event.key));
-    const startRawIndex = trace.attemptEvents.find(event => event.type === 'started')?.rawIndex ?? null;
-    const startMonoMs = samples.find(sample => sample.rawIndex === startRawIndex)?.receivedMonoMs ?? null;
-    const cues = startMonoMs === null ? [] : this.spokenCues(trace, rowKeys, startMonoMs, deviceDelayMs);
+    const started = trace.attemptEvents.some(event => event.type === 'started');
+    const timerAt = timersByRawIndex(samples);
+    const atMs = (rawIndex: number) => Math.round(pathTimeAtTimer(analysis.path, timerAt.get(rawIndex)!) + deviceDelayMs);
+    const cues = started ? this.spokenCues(trace, rowKeys, atMs) : [];
     return {
       timeMs: analysis.timeMs,
       gridM: DEFAULT_CONFIG.reviewGridM,
       gridTimeMs: referenceGrid(analysis.path).map(point => Math.round(point.timeMs)),
       cues: cues.map(({ cue }) => cue),
-      dropped: startMonoMs === null ? [] : this.droppedRows(trace, analysis.events, cues)
+      dropped: started ? this.droppedRows(trace, analysis.events, cues) : []
     };
   }
 
-  private spokenCues(trace: CoachTrace, rowKeys: Set<string>, startMonoMs: number, deviceDelayMs: number): { cue: PreviewCue; rawIndex: number }[] {
+  private spokenCues(trace: CoachTrace, rowKeys: Set<string>, atMs: (rawIndex: number) => number): { cue: PreviewCue; rawIndex: number }[] {
     return trace.cues.map(cue => {
-      const key = eventKeyOf(cue.id);
       return {
         rawIndex: cue.rawIndex,
         cue: {
-          key,
-          rowKey: rowKeys.has(key) ? key : null,
+          key: cue.eventKey,
+          rowKey: rowKeys.has(cue.eventKey) ? cue.eventKey : null,
           clip: cue.clip,
           followClip: cue.followClip,
-          atMs: Math.round(cue.decidedMonoMs - startMonoMs + deviceDelayMs)
+          atMs: atMs(cue.rawIndex)
         }
       };
     });

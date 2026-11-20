@@ -374,7 +374,7 @@ const MarksLayer = memo(function MarksLayer({ marks, placed }: { marks: TrackMar
               </text>
             ) : null}
             {mark.muted && mark.label ? <MuteBadge x={rounded(cx + radius * 0.75)} y={rounded(cy - radius * 0.75)} /> : null}
-            {mark.notSpoken && !mark.muted && mark.label ? <NotSpokenBadge x={rounded(cx + radius * 0.75)} y={rounded(cy - radius * 0.75)} /> : null}
+            {mark.notSpoken && mark.label ? <NotSpokenBadge x={rounded(cx + radius * 0.75)} y={rounded(cy - radius * 0.75)} /> : null}
           </>
         );
         return mark.onSelect ? (

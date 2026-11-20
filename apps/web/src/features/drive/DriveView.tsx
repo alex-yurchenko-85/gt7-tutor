@@ -148,9 +148,17 @@ function MissedStart({ onDismiss }: { onDismiss(): void }) {
   );
 }
 
-type StageProps = { state: LiveState; exercise: Exercise; finishedAttempt: string | null; clipsFailed: boolean; onDriveAgain(): void; onStop(): void };
+type StageProps = {
+  state: LiveState;
+  exercise: Exercise;
+  reference: ReferenceData | null;
+  finishedAttempt: string | null;
+  clipsFailed: boolean;
+  onDriveAgain(): void;
+  onStop(): void;
+};
 
-function Stage({ state, exercise, finishedAttempt, clipsFailed, onDriveAgain, onStop }: StageProps) {
+function Stage({ state, exercise, reference, finishedAttempt, clipsFailed, onDriveAgain, onStop }: StageProps) {
   const { deviceId } = useLiveConnection();
   const { connected } = useLiveState(snapshot => snapshot);
   const demo = useDemo() !== null;
@@ -158,7 +166,6 @@ function Stage({ state, exercise, finishedAttempt, clipsFailed, onDriveAgain, on
   const voice = voiceStatus(state, deviceId);
   const problem = connectionProblem(state, connected, demo);
   const live = problem === null;
-  const reference = useReferenceData(exercise.activeReferenceId).data ?? null;
   const missedStart = useMissedStart(state);
   const marks = useMemo(() => (reference ? cornerMarks(reference.corners) : []), [reference]);
 
@@ -226,6 +233,7 @@ function DriveExercise({ exercise }: { exercise: Exercise }) {
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [clipsFailed, setClipsFailed] = useState(false);
+  const reference = useReferenceData(exercise.activeReferenceId);
   const liveArmed = state !== null && TRAINING_MODES.includes(state.mode) && state.exerciseId === exercise.id;
   const armed = liveArmed || justArmed;
   useImmersive(armed);
@@ -269,6 +277,7 @@ function DriveExercise({ exercise }: { exercise: Exercise }) {
           <Stage
             state={state}
             exercise={exercise}
+            reference={reference.data ?? null}
             finishedAttempt={finishedAttempt}
             clipsFailed={clipsFailed}
             onDriveAgain={() => finishedAttempt && setDismissed(finishedAttempt)}
@@ -283,7 +292,7 @@ function DriveExercise({ exercise }: { exercise: Exercise }) {
   return (
     <>
       {errorLine}
-      <DriveStart exercise={exercise} clipsFailed={clipsFailed} onClipsFailed={setClipsFailed} onArmed={onArmed} />
+      <DriveStart exercise={exercise} reference={reference} clipsFailed={clipsFailed} onClipsFailed={setClipsFailed} onArmed={onArmed} />
     </>
   );
 }
