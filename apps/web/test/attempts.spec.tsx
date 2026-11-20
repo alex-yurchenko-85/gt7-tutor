@@ -173,6 +173,7 @@ describe('attempts', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Delete 1 attempt…' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Delete attempt 2?' });
     expect(dialog).toHaveTextContent('Your best: 0:26.800 → 0:27.100');
+    expect(within(dialog).getByRole('button', { name: 'Delete attempt' })).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Keep it' }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Select attempt 2' })).toBeChecked();
@@ -217,7 +218,7 @@ describe('attempts', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: 'Select attempt 3' }));
     await userEvent.click(screen.getByRole('button', { name: 'Delete 1 attempt…' }));
     const dialog = screen.getByRole('alertdialog');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete 1 attempt' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete attempt' }));
     expect(await within(dialog).findByText('Stop the training or the recording first.')).toBeInTheDocument();
   });
 });

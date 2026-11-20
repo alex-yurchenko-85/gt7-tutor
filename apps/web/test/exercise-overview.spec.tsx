@@ -201,54 +201,12 @@ describe('exercise overview', () => {
     expect(within(tabs).getByRole('link', { name: /^Attempts/ })).toHaveTextContent('Attempts 6');
   });
 
-  const PAGE = '/exercises/e0000000-0000-4000-8000-000000000001';
-
-  it('remove_exercise_confirms_with_counts', async () => {
+  it('overview_has_no_remove_action', async () => {
     setViewportWidth(1280);
-    const api = exerciseApi(exercise({ name: 'Racing Line: Intermediate', attemptCount: 6, referenceCount: 2, bestMs: 27100, status: 'bronze', step: 3 }))
-      .on('POST /api/exercises/remove', { exercises: 1, attempts: 6, references: 2, cleanup: null })
-      .install();
-    renderApp({ path: PAGE });
-    expect(await screen.findByText('Removes the exercise with its 6 attempts and 2 references.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Remove exercise…' }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Remove Racing Line: Intermediate?' });
-    expect(dialog).toHaveTextContent('The exercise goes, with everything recorded for it:');
-    expect(dialog).toHaveTextContent('6 attempts, with their cues and differences');
-    expect(dialog).toHaveTextContent('2 references, the active one too');
-    expect(dialog).toHaveTextContent('your best time 0:27.100 and the bronze medal');
-    expect(dialog).toHaveTextContent('The catalogue entry stays. You can add the exercise again from Add exercise. You cannot undo the removal.');
-    const cleanup = within(dialog).getByRole('checkbox', { name: 'Also clean up the raw captures that nothing uses afterwards' });
-    expect(cleanup).toBeChecked();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove exercise' }));
-    await waitFor(() => expect(api.called('POST /api/exercises/remove')).toBe(true));
-    expect(api.calls.find(call => call.path === '/api/exercises/remove')!.body).toEqual({ ids: ['e0000000-0000-4000-8000-000000000001'], cleanup: true });
-  });
-
-  it('remove_exercise_without_history_has_no_cleanup_box', async () => {
-    setViewportWidth(390);
-    const api = exerciseApi(exerciseAtStep(1)).on('POST /api/exercises/remove', { exercises: 1, attempts: 0, references: 0, cleanup: null }).install();
-    renderApp({ path: PAGE });
-    expect(await screen.findByText('Removes the exercise from My exercises.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Remove exercise…' }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Remove Yangwang Experience / Racing Lines?' });
-    expect(dialog).toHaveTextContent('It has no attempts and no reference yet.');
-    expect(within(dialog).queryByRole('checkbox')).toBeNull();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove exercise' }));
-    await waitFor(() => expect(api.called('POST /api/exercises/remove')).toBe(true));
-    expect(api.calls.find(call => call.path === '/api/exercises/remove')!.body).toEqual({ ids: ['e0000000-0000-4000-8000-000000000001'], cleanup: false });
-  });
-
-  it('remove_exercise_returns_to_exercises_and_forgets_current', async () => {
-    setViewportWidth(1280);
-    exerciseApi(exercise({ attemptCount: 1, referenceCount: 1 }))
-      .on('POST /api/exercises/remove', { exercises: 1, attempts: 1, references: 1, cleanup: null })
-      .install();
-    rememberExercise();
-    renderApp({ path: PAGE });
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove exercise…' }));
-    expect(screen.getByRole('alertdialog')).toHaveTextContent('1 attempt, with its cues and differences');
-    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove exercise' }));
-    await waitFor(() => expect(window.location.pathname).toBe('/'));
-    expect(window.localStorage.getItem(`gt7.currentExercise.${USER.id}`)).toBeNull();
+    exerciseApi(exercise({ attemptCount: 6, referenceCount: 2 })).install();
+    renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001' });
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull();
+    expect(screen.queryByText(/Removes the exercise/)).toBeNull();
   });
 });

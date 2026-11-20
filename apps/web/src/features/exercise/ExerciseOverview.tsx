@@ -5,7 +5,6 @@ import { cornerMarks } from '../../charts/corner-marks.ts';
 import { MapDialog } from '../../charts/MapDialog.tsx';
 import { TrackMap } from '../../charts/TrackMap.tsx';
 import { rememberExercise } from '../../app/current-exercise.ts';
-import { DangerRow } from '../../app/DangerRow.tsx';
 import { formatTime, signedSeconds } from '../../app/format.ts';
 import { Icon } from '../../app/icons.tsx';
 import { LoadProblem } from '../../app/NotFound.tsx';
@@ -15,7 +14,6 @@ import { Link, paths, useRouter } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
 import { differenceName, sizeText } from '../cues/cue-format.ts';
 import { primaryAction, STEP_LABELS, type Action } from '../exercises/next-step.ts';
-import { RemoveExercisesDialog } from '../exercises/RemoveExercisesDialog.tsx';
 import { spokenCues } from '../drive/cue-display.ts';
 import { ExerciseHeader } from './ExerciseHeader.tsx';
 import { useExercise } from './use-exercise.ts';
@@ -218,23 +216,6 @@ function useReference(referenceId: string | null) {
   );
 }
 
-function RemoveThisExercise({ exercise }: { exercise: Exercise }) {
-  const { navigate } = useRouter();
-  const [confirming, setConfirming] = useState(false);
-  const hint =
-    exercise.attemptCount > 0 || exercise.referenceCount > 0
-      ? `Removes the exercise with its ${counted(exercise.attemptCount, 'attempt')} and ${counted(exercise.referenceCount, 'reference')}.`
-      : 'Removes the exercise from My exercises.';
-  return (
-    <>
-      <DangerRow title="Remove this exercise" hint={hint} action="Remove exercise…" onAction={() => setConfirming(true)} />
-      {confirming ? (
-        <RemoveExercisesDialog exercises={[exercise]} fromPage currentId={exercise.id} onKeep={() => setConfirming(false)} onRemoved={() => navigate(paths.exercises())} />
-      ) : null}
-    </>
-  );
-}
-
 function Overview({ exercise }: { exercise: Exercise }) {
   const reference = useReference(exercise.activeReferenceId);
   const data = reference.data ?? null;
@@ -255,7 +236,6 @@ function Overview({ exercise }: { exercise: Exercise }) {
           <p className="sub">{errorText(reference.error)}</p>
         ) : null}
       </div>
-      <RemoveThisExercise exercise={exercise} />
     </>
   );
 }

@@ -44,7 +44,7 @@ export function DeleteAttemptsDialog({ selected, all, onKeep, onDeleted }: Delet
     <ConfirmDialog
       title={one ? `Delete attempt ${numbers}?` : `Delete ${selected.length} attempts?`}
       keepLabel={one ? 'Keep it' : 'Keep them'}
-      confirmLabel={`Delete ${counted(selected.length, 'attempt')}`}
+      confirmLabel={one ? 'Delete attempt' : `Delete ${counted(selected.length, 'attempt')}`}
       working={working}
       error={error}
       onKeep={onKeep}

@@ -634,6 +634,7 @@ describe('attempt review', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Attempt 1 · no time' })).toBeInTheDocument();
     expect(await screen.findByText('Only a complete attempt can become a reference.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Use this attempt as a reference' })).not.toBeInTheDocument();
+    expect(screen.getByText('Only a complete attempt can become a reference.').nextElementSibling).toBe(screen.getByRole('button', { name: 'Delete this attempt…' }));
   });
 
   it('promote_refused_as_not_complete_shows_the_error', async () => {
@@ -691,10 +692,15 @@ describe('attempt review', () => {
       })
       .on('POST /api/attempts/delete', { deleted: 1 });
     renderApp({ path: '/attempts/a0000000-0000-4000-8000-000000000001/review' });
-    await userEvent.click(await screen.findByRole('button', { name: 'Delete this attempt…' }));
+    const remove = await screen.findByRole('button', { name: 'Delete this attempt…' });
+    const promote = screen.getByRole('button', { name: 'Use this attempt as a reference' });
+    expect(remove).toHaveClass('btn', 'danger');
+    expect(promote.nextElementSibling).toBe(remove);
+    expect(screen.queryByText('Removes the attempt with its cues and differences.')).not.toBeInTheDocument();
+    await userEvent.click(remove);
     const dialog = await screen.findByRole('alertdialog', { name: 'Delete attempt 1?' });
     expect(await within(dialog).findByText(/Your best:/)).toHaveTextContent('Your best: 0:27.100 → no time');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete 1 attempt' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete attempt' }));
     await waitFor(() => expect(window.location.pathname).toBe('/exercises/e0000000-0000-4000-8000-000000000001/attempts'));
     expect(api.calls.find(call => call.path === '/api/attempts/delete')!.body).toEqual({ ids: ['a0000000-0000-4000-8000-000000000001'] });
   });

@@ -266,7 +266,6 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onRemoved }: MyExe
         {confirming ? (
           <RemoveExercisesDialog
             exercises={exercises.filter(exercise => picked.has(exercise.id))}
-            fromPage={false}
             currentId={currentId}
             onKeep={() => setConfirming(false)}
             onRemoved={removed}

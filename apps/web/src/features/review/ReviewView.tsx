@@ -5,7 +5,6 @@ import { ChannelChart, type ChartBand, type ChartSeries, type ChartTick } from '
 import { signedTickLabel, tickLabel, tickStep, valueTicks } from '../../charts/ticks.ts';
 import { TrackMap, type TrackCallout, type TrackLine } from '../../charts/TrackMap.tsx';
 import { SIDE_FACTOR, beyondSide, largestSideInZones, sideScaledLine } from '../../charts/geometry.ts';
-import { DangerRow } from '../../app/DangerRow.tsx';
 import { useWideLayout } from '../../app/layout.ts';
 import { abortReasonText, formatDateTime, formatDay, formatTime, metres, signedSeconds } from '../../app/format.ts';
 import { rememberedExerciseId, rememberExercise } from '../../app/current-exercise.ts';
@@ -440,6 +439,7 @@ function AttemptFacts({ attempt }: { attempt: AttemptSummary }) {
       ) : (
         <p className="sub">Only a complete attempt can become a reference.</p>
       )}
+      <DeleteThisAttempt attempt={attempt} />
       {problem ? (
         <p className="error" role="alert">
           {problem}
@@ -590,7 +590,9 @@ function DeleteThisAttempt({ attempt }: { attempt: AttemptSummary }) {
   const list = useResource(() => (confirming ? api.attempts(attempt.exerciseId) : Promise.resolve(null)), [attempt.exerciseId, confirming]);
   return (
     <>
-      <DangerRow title="Delete this attempt" hint="Removes the attempt with its cues and differences." action="Delete this attempt…" onAction={() => setConfirming(true)} />
+      <button className="btn danger" type="button" onClick={() => setConfirming(true)}>
+        Delete this attempt…
+      </button>
       {confirming ? (
         <DeleteAttemptsDialog
           selected={[attempt]}
@@ -621,7 +623,6 @@ export function ReviewView({ attemptId }: { attemptId: string }) {
     <section>
       <ReviewHeader attempt={data} exercise={exercise.data ?? null} review={review.data ?? null} />
       {review.data && !exercise.loading ? <ReviewBody key={review.data.referenceId} attempt={data} review={review.data} references={references.data ?? []} sideCueDistanceM={exercise.data?.sideCueDistanceM ?? null} /> : <p className="sub">Comparing with the reference…</p>}
-      <DeleteThisAttempt attempt={data} />
     </section>
   );
 }

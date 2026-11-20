@@ -53,10 +53,9 @@ function OneExercise({ exercise }: { exercise: Exercise }) {
   );
 }
 
-function SeveralExercises({ exercises, currentId }: { exercises: Exercise[]; currentId: string | null }) {
+function SeveralExercises({ exercises }: { exercises: Exercise[] }) {
   const attempts = exercises.reduce((total, exercise) => total + exercise.attemptCount, 0);
   const references = exercises.reduce((total, exercise) => total + exercise.referenceCount, 0);
-  const current = exercises.find(exercise => exercise.id === currentId);
   return (
     <>
       <ul>
@@ -71,27 +70,25 @@ function SeveralExercises({ exercises, currentId }: { exercises: Exercise[]; cur
           With them go <b>{counted(attempts, 'attempt')}</b> with {theirs(attempts)} cues and differences, and <b>{counted(references, 'reference')}</b>.
         </p>
       ) : null}
-      {current ? <p>{current.name} is your current exercise. The Drive button and Continue move to another exercise.</p> : null}
     </>
   );
 }
 
 type RemoveExercisesDialogProps = {
   exercises: Exercise[];
-  fromPage: boolean;
   currentId: string | null;
   onKeep(): void;
   onRemoved(): void;
 };
 
-export function RemoveExercisesDialog({ exercises, fromPage, currentId, onKeep, onRemoved }: RemoveExercisesDialogProps) {
+export function RemoveExercisesDialog({ exercises, currentId, onKeep, onRemoved }: RemoveExercisesDialogProps) {
   const { user } = useSession();
   const [cleanup, setCleanup] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const withHistory = exercises.some(hasHistory);
   const one = exercises.length === 1;
-  const single = fromPage && one;
+  const current = exercises.find(exercise => exercise.id === currentId);
 
   const confirm = async () => {
     const ids = exercises.map(exercise => exercise.id);
@@ -110,15 +107,16 @@ export function RemoveExercisesDialog({ exercises, fromPage, currentId, onKeep, 
 
   return (
     <ConfirmDialog
-      title={single ? `Remove ${exercises[0]!.name}?` : `Remove ${counted(exercises.length, 'exercise')}?`}
+      title={one ? `Remove ${exercises[0]!.name}?` : `Remove ${counted(exercises.length, 'exercise')}?`}
       keepLabel={one ? 'Keep it' : 'Keep them'}
-      confirmLabel={single ? 'Remove exercise' : `Remove ${counted(exercises.length, 'exercise')}`}
+      confirmLabel={one ? 'Remove exercise' : `Remove ${counted(exercises.length, 'exercise')}`}
       working={working}
       error={error}
       onKeep={onKeep}
       onConfirm={confirm}
     >
-      {single ? <OneExercise exercise={exercises[0]!} /> : <SeveralExercises exercises={exercises} currentId={currentId} />}
+      {one ? <OneExercise exercise={exercises[0]!} /> : <SeveralExercises exercises={exercises} />}
+      {current ? <p>{current.name} is your current exercise. The Drive button and Continue move to another exercise.</p> : null}
       <p>{catalogueText(exercises)}</p>
       {withHistory ? (
         <label className="confirm-check">

@@ -185,10 +185,9 @@ Your own exercise has the same needs. If the game does not time a demonstration 
 
 ### Remove an exercise
 
-- One exercise: open it, then select **Remove exercise…** at the bottom of **Overview**.
-- Several exercises: on the Exercises home, select **Select**, mark the exercises, then select **Remove N exercises…**. The quick buttons **Without history**, **All** and **None** help you mark them.
+On the Exercises home, select **Select**, mark one or more exercises, then select **Remove N exercises…**. The quick buttons **Without history**, **All** and **None** help you mark them.
 
-The dialog lists what goes: the attempts with their cues and differences, the references, the best time and the medal.
+For one exercise, the dialog lists what goes: the attempts with their cues and differences, the references, the best time and the medal. For more exercises, it lists each exercise with its attempts and references.
 **Also clean up the raw captures that nothing uses afterwards** is on by default. You cannot undo the removal. The catalogue entry stays, so you can add the exercise again.
 
 ## Record the reference
@@ -372,10 +371,10 @@ The header shows the attempt number, the time from the game and the gap to the r
 
 Read a difference with care. `Braked 37 m later` compares your brake that is nearest to the brake of the reference, within 60 m. If you pressed the brake two times, the charts show both.
 
-Other actions at the bottom:
+Other actions under **Source**:
 
 - **Use this attempt as a reference** (complete attempts only): the attempt becomes the active reference. The demonstration stays in the reference history.
-- **Delete this attempt…**: removes the attempt with its cues and differences. See [Delete data](#delete-data).
+- **Delete this attempt…**: opens a dialog that shows what goes. **Delete attempt** removes the attempt with its cues and differences. See [Delete data](#delete-data).
 - **Drive again** at the top opens Drive for this exercise.
 
 ## See all attempts and recurring differences
@@ -512,7 +511,7 @@ An entry that has your exercises stays. After an update, **Restore** makes the p
 | Delete one attempt | Review → **Delete this attempt…** | The attempt, its cues and differences | References, other attempts. The raw capture stays until a clean-up. |
 | Delete several attempts | Attempts → **Select** → **Delete N attempts…** | The selected attempts, their cues and differences. Your best time and the recurring differences are counted again. | References. The raw captures stay until a clean-up. |
 | Delete a reference | References → **Delete** | The reference | Only possible when the reference is not active and no attempt uses it |
-| Remove an exercise | Overview → **Remove exercise…**, or Exercises → **Select** | The exercise, its attempts, references, best time and medal | The catalogue entry. You can add the exercise again. |
+| Remove an exercise | Exercises → **Select** | The exercise, its attempts, references, best time and medal | The catalogue entry. You can add the exercise again. |
 | Clean up captures | Setup → Data → **Clean up captures…** | The parts of the raw captures that no reference and no attempt uses | All references and attempts |
 | Delete history: **Attempts of one exercise** | Setup → Data → **Delete history…** | The attempts of the selected exercise | Its references, the other exercises, the settings |
 | Delete history: **All attempts** | Same | All attempts of your profile | Exercises, references, settings |
