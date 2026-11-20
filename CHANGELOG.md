@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.9.1](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.9.0...v1.9.1) (2026-11-20)
+
+### Bug Fixes
+
+* time the cue preview without the pauses of the reference and redraw only the preview clock ([d145abf](https://github.com/alex-yurchenko-85/gt7-tutor/commit/d145abfb677b38d4ffc2108d285004f324f00f5d))
+
 # [1.9.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.8.0...v1.9.0) (2026-11-20)
 
 ### Features
