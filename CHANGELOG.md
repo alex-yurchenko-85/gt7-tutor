@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.5.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.4.2...v1.5.0) (2026-11-20)
+
+### Features
+
+* say clearer cue words and mark turns, start and finish on the maps ([734cb98](https://github.com/alex-yurchenko-85/gt7-tutor/commit/734cb987d3eabc0a8a3ff0fdc0748a7a8d66e374))
+
 ## [1.4.2](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.4.1...v1.4.2) (2026-11-19)
 
 ### Bug Fixes
