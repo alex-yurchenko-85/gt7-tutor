@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { Exercise } from '@gt7/contracts';
-import { CORNERS, CUES, exercise, exerciseApi } from './fixtures.ts';
+import { CORNERS, CUES, REFERENCE_ID, exercise, exerciseApi } from './fixtures.ts';
 import { renderApp, setViewportWidth } from './support.tsx';
 
 describe('cue list', () => {
@@ -55,15 +55,25 @@ describe('cue list', () => {
     const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const user = userEvent.setup();
     const row = await screen.findByRole('listitem', { name: 'Cue 2' });
-    await user.click(within(row).getByRole('button', { name: 'Mute' }));
+    expect(within(row).getByRole('button', { name: 'Hear Full throttle' }).querySelector('[data-icon="play"]')).not.toBeNull();
+    const mute = within(row).getByRole('button', { name: 'Mute cue 2' });
+    expect(mute).toHaveAttribute('aria-pressed', 'false');
+    expect(mute.querySelector('[data-icon="speaker"]')).not.toBeNull();
+    expect(row).not.toHaveClass('off');
+    await user.click(mute);
     await waitFor(() => expect(api.calls.find(call => call.method === 'PATCH')?.body).toEqual({ mutedCues: ['ease-off@600', 'throttle@491'] }));
-    expect(within(row).getByRole('button', { name: 'Unmute' })).toHaveAttribute('aria-pressed', 'true');
-    expect(row).toHaveTextContent('Muted. The voice does not say this cue.');
+    const unmute = within(row).getByRole('button', { name: 'Unmute cue 2' });
+    expect(unmute).toHaveAttribute('aria-pressed', 'true');
+    expect(unmute.querySelector('[data-icon="speaker-off"]')).not.toBeNull();
+    expect(row).toHaveClass('off');
+    expect(within(row).getByText('Muted')).toBeInTheDocument();
+    expect(row).toHaveTextContent('The voice does not say this cue, and Drive does not show it.');
+    expect(within(row).getByRole('slider')).toBeInTheDocument();
     view.unmount();
 
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const again = await screen.findByRole('listitem', { name: 'Cue 2' });
-    expect(within(again).getByRole('button', { name: 'Unmute' })).toBeInTheDocument();
+    expect(within(again).getByRole('button', { name: 'Unmute cue 2' })).toBeInTheDocument();
   });
 
   function patchingApi(start: Exercise = exercise()) {
@@ -81,10 +91,13 @@ describe('cue list', () => {
     exerciseApi().install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
+    const throttle = screen.getByRole('listitem', { name: 'Cue 2' });
     expect(within(row).getByText('Hard brake. Eighty five')).toBeInTheDocument();
     expect(within(row).getByLabelText('Target speed')).toHaveTextContent('85 km/h');
-    expect(row).toHaveTextContent('Big stop first');
-    const throttle = screen.getByRole('listitem', { name: 'Cue 2' });
+    expect(row).toHaveTextContent('Big brake ahead first');
+    expect(screen.getByText(/the voice says “Closer to apex” only when you run wide/)).toBeInTheDocument();
+    expect(within(row).getByLabelText('Target speed')).toHaveTextContent('lowest speed');
+    expect(within(throttle).getByLabelText('Target speed')).not.toHaveTextContent('lowest speed');
     expect(within(throttle).getByLabelText('Target speed')).toHaveTextContent('95 km/h');
     expect(within(screen.getByRole('listitem', { name: 'Cue 3' })).getByLabelText('Target speed')).toHaveTextContent('–');
   });
@@ -95,6 +108,7 @@ describe('cue list', () => {
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const toggle = await screen.findByRole('switch', { name: 'Speak target speeds' });
     expect(toggle).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByText('After a brake phrase, the voice says the lowest speed of the reference in that place, for example “Hard brake. Eighty five”.')).toBeInTheDocument();
     await userEvent.setup().click(toggle);
     await waitFor(() => expect(api.calls.find(call => call.method === 'PATCH')?.body).toEqual({ speakTargets: false }));
     await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'false'));
@@ -105,8 +119,13 @@ describe('cue list', () => {
     const api = patchingApi().install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const control = await screen.findByRole('combobox', { name: 'Side cue distance' });
+    const name = screen.getByText('Side cue distance', { selector: 'label' });
+    expect(control.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(control.parentElement).toBe(name.parentElement);
+    expect(screen.queryByRole('heading', { name: 'What the voice will say' })).toBeNull();
     expect(within(control).getAllByRole('option').map(option => option.textContent)).toEqual(['Off', '0.5 m', '1 m', '1.5 m', '2 m', '2.5 m', '3 m']);
     expect(control).toHaveDisplayValue('2 m');
+    expect(screen.getByText('The voice says “More left” or “More right” when the car stays more than 2 m from the reference line.')).toBeInTheDocument();
     await userEvent.setup().selectOptions(control, '1 m');
     await waitFor(() => expect(api.calls.find(call => call.method === 'PATCH')?.body).toEqual({ sideCueDistanceM: 1 }));
     await waitFor(() => expect(control).toHaveDisplayValue('1 m'));
@@ -118,7 +137,7 @@ describe('cue list', () => {
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const control = await screen.findByRole('combobox', { name: 'Side cue distance' });
     expect(control).toHaveDisplayValue('Off');
-    expect(screen.getByText('The voice does not say “Keep left” or “Keep right”.')).toBeInTheDocument();
+    expect(screen.getByText('The voice does not say “More left” or “More right”.')).toBeInTheDocument();
     const user = userEvent.setup();
     await user.selectOptions(control, '1.5 m');
     await waitFor(() => expect(control).toHaveDisplayValue('1.5 m'));
@@ -170,8 +189,9 @@ describe('cue list', () => {
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     const row = await screen.findByRole('listitem', { name: 'Cue 1' });
     fireEvent.change(within(row).getByRole('slider', { name: 'Move cue 1 earlier or later' }), { target: { value: '-300' } });
-    await userEvent.setup().click(within(screen.getByRole('listitem', { name: 'Cue 2' })).getByRole('button', { name: 'Mute' }));
-    await screen.findByRole('button', { name: 'Unmute' });
+    const second = screen.getByRole('listitem', { name: 'Cue 2' });
+    await userEvent.setup().click(within(second).getByRole('button', { name: 'Mute cue 2' }));
+    await within(second).findByRole('button', { name: 'Unmute cue 2' });
     expect(within(row).getByRole('status', { name: 'Timing of cue 1' })).toHaveTextContent('0.3 s earlier');
   });
 
@@ -230,14 +250,22 @@ describe('cue list', () => {
     expect(CUES.map(cue => cue.sM)).toEqual([332, 491, 600]);
   });
 
-  it('maps_mark_turn_in_and_apex', async () => {
+  it('maps_show_each_turn_as_a_band_with_its_label', async () => {
     setViewportWidth(1280);
-    exerciseApi().install();
+    exerciseApi()
+      .on(`GET /api/references/${REFERENCE_ID}/corners`, [
+        { ...CORNERS[0]!, zoneFromSM: 2, zoneToSM: 6 },
+        { ...CORNERS[1]!, zoneFromSM: 8, zoneToSM: 12 },
+        { ...CORNERS[2]!, zoneFromSM: 14, zoneToSM: 18 }
+      ])
+      .install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000001/cues' });
     await screen.findByRole('listitem', { name: 'Turn 1' });
-    const apexes = [...document.querySelectorAll('.track-map .track-mark.apex')];
-    expect(apexes.map(mark => mark.textContent)).toEqual(['Apex of turn 1T1', 'Apex of turn 2T2', 'Apex of turn 3T3']);
-    expect(document.querySelectorAll('.track-map .track-mark.turn-in line')).toHaveLength(3);
+    expect(document.querySelectorAll('.track-map .track-turn')).toHaveLength(3);
+    expect([...document.querySelectorAll('.track-map .track-turn-label')].map(label => label.textContent)).toEqual(['T1', 'T2', 'T3']);
+    expect(screen.getByText('turn')).toBeInTheDocument();
+    expect(screen.queryByText('apex of a turn')).toBeNull();
+    expect(screen.queryByText('turn-in')).toBeNull();
   });
 });
 

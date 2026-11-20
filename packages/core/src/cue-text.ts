@@ -25,7 +25,7 @@ const FOCUS_ACTIONS: Record<FindingKindName, string> = {
   'slow-corner': 'Carry more speed.',
   'throttle-late': 'Throttle earlier.',
   'off-line': 'Stay on the line.',
-  'wide-apex': 'Tighter at the apex.'
+  'wide-apex': 'Closer to the apex.'
 };
 
 const UNITS = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];

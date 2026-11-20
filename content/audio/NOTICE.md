@@ -27,7 +27,7 @@ It is a maintainer command. No speech synthesis runs during training.
 
 ## Clip set
 
-- 13 action and system phrases, for example `Hard brake`, `Full throttle`, `Tighter`, `Big stop` and `Guidance paused`.
+- 13 action and system phrases, for example `Hard brake`, `Full throttle`, `Closer to apex`, `Big brake ahead` and `Guidance paused`.
 - 60 focus sentences, `focus-<kind>-<turn>`, for turns one to ten, for example `Turn one. Brake later.`.
 - 65 target speed numbers, `speed-<kph>`, from `thirty` to `three fifty` in steps of 5. The voice speaks a number only after a brake phrase.
 

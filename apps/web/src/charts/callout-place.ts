@@ -1,4 +1,4 @@
-import type { Point } from './geometry.ts';
+import { clamp, type Point } from './geometry.ts';
 
 export type Box = { x: number; y: number; width: number; height: number };
 
@@ -21,10 +21,6 @@ export type CalloutPlace = { box: Box; end: Point };
 const LEADER_STEPS = [1, 1.5, 2, 3];
 const SHIFTS = [0, 0.5, -0.5];
 const TAKEN_PENALTY = 1_000_000;
-
-function clamp(value: number, low: number, high: number): number {
-  return Math.max(low, Math.min(high, value));
-}
 
 export function coveredPoints(box: Box, points: Point[], clearance: number): number {
   let count = 0;

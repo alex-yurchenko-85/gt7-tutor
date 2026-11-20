@@ -2,7 +2,7 @@ import { KPH_PER_MPS, type FindingKindName } from '@gt7/contracts';
 import type { Review } from './compare.ts';
 import type { CoreConfig } from './config.ts';
 import { outsideM, type Corner } from './corners.ts';
-import type { ReferenceCueEvent } from './cue-events.ts';
+import { brakeWindowEndM, type ReferenceCueEvent } from './cue-events.ts';
 import { median } from './statistics.ts';
 
 export type Finding = { kind: FindingKindName; eventKey: string | null; sM: number; size: number; unit: 'm' | 'm/s' };
@@ -65,7 +65,7 @@ function slowCornerFindings(review: Review, config: CoreConfig): Finding[] {
   const brakes = review.referenceEvents.filter(event => event.kind === 'brake');
   return brakes.flatMap((brake, index) => {
     const nextBrakeM = brakes[index + 1]?.sM ?? Number.POSITIVE_INFINITY;
-    const untilM = Math.min((brake.endSM ?? brake.sM) + config.findings.cornerExtensionM, nextBrakeM - review.gridM);
+    const untilM = brakeWindowEndM(brake.endSM ?? brake.sM, nextBrakeM - review.gridM, config);
     const fromCell = Math.ceil(brake.sM / review.gridM);
     const toCell = Math.floor(untilM / review.gridM);
     const reference = minimumIn(review.reference.v, fromCell, toCell);

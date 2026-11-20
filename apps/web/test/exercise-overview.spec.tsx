@@ -42,7 +42,7 @@ describe('exercise overview', () => {
     setViewportWidth(1280);
     const sections: [string, string | null][] = [
       ['/exercises/e0000000-0000-4000-8000-000000000001', null],
-      ['/exercises/e0000000-0000-4000-8000-000000000001/cues', 'What the voice will say'],
+      ['/exercises/e0000000-0000-4000-8000-000000000001/cues', null],
       ['/exercises/e0000000-0000-4000-8000-000000000001/references', 'Reference history'],
       ['/exercises/e0000000-0000-4000-8000-000000000001/attempts', null]
     ];

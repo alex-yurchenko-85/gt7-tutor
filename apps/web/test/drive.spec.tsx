@@ -290,9 +290,9 @@ describe('action cues on Drive', () => {
     send(socket, driving({ seq: 2, lastCue: cue({ id: 'c2', kind: 'full-throttle', targetSpeedKph: 95, clip: 'full-throttle' }) }));
     expect(current()).toHaveTextContent('Full throttle95');
     send(socket, driving({ seq: 3, lastCue: cue({ id: 'c3', kind: 'tighter', targetSpeedKph: null, clip: 'tighter' }) }));
-    expect(current()).toHaveTextContent(/^Tighter$/);
+    expect(current()).toHaveTextContent(/^Closer to apex$/);
     send(socket, driving({ seq: 4, lastCue: cue({ id: 'c4', kind: 'big-stop', targetSpeedKph: null, clip: 'big-stop' }) }));
-    expect(current()).toHaveTextContent(/^Big stop$/);
+    expect(current()).toHaveTextContent(/^Big brake ahead$/);
     send(socket, driving({ seq: 5, lastCue: cue({ id: 'c5', kind: 'light-brake', targetSpeedKph: 120, clip: 'light-brake' }) }));
     expect(current()).toHaveTextContent('Light brake120');
   });

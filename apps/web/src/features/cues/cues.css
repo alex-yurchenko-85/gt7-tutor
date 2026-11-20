@@ -50,7 +50,8 @@
   font: 700 19px/1.15 var(--font-display);
 }
 
-.note .phrase small {
+.note .phrase small,
+.note .target small {
   display: block;
   color: var(--mute);
 }
@@ -78,6 +79,12 @@
 
 .note.off {
   color: var(--mute);
+  background: repeating-linear-gradient(135deg, var(--bg) 0 10px, var(--paper) 10px 20px);
+}
+
+.note .tag.ink {
+  margin-left: 10px;
+  vertical-align: 3px;
 }
 
 .note.off .glyph {
@@ -266,10 +273,15 @@
   margin-bottom: 14px;
 }
 
+.side-distance .setting-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
 .side-distance label {
-  display: block;
   font: 700 17px var(--font-display);
-  margin-bottom: 4px;
 }
 
 .side-distance select {
@@ -324,31 +336,13 @@
 }
 
 .speak-switch .sub {
-  margin-top: 2px;
+  margin-top: 6px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .speak-switch .knob {
     transition: none;
   }
-}
-
-.note .act button {
-  border: 1.5px solid var(--ink);
-  padding: 4px 10px;
-  min-height: 44px;
-  min-width: 64px;
-  font-size: 14px;
-}
-
-.note .act button[aria-pressed='true'] {
-  background: var(--ink);
-  color: var(--onink);
-}
-
-.note .act button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 @media (max-width: 899px) {

@@ -632,7 +632,7 @@ describe('Coach', () => {
     });
   });
 
-  describe('Tighter', () => {
+  describe('Closer to apex', () => {
     const bendEvents: ReferenceCueEvent[] = [event('brake', 60, 50, 90), event('throttle', 150, null)];
     const bendCorner = (bend: 1 | -1): Corner => findCorners(bendPath(bend), bendEvents, DEFAULT_CONFIG)[0]!;
     const corner = bendCorner(1);

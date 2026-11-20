@@ -39,7 +39,7 @@
       "targetSpeedKph": null,
       "voice": "ease-off",
       "bigStop": false,
-      "text": "Ease off"
+      "text": "Lift off"
     },
     {
       "key": "throttle@568",
@@ -59,7 +59,7 @@
       "targetSpeedKph": null,
       "voice": "ease-off",
       "bigStop": false,
-      "text": "Ease off"
+      "text": "Lift off"
     },
     {
       "key": "throttle@796",

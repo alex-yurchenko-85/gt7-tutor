@@ -40,11 +40,26 @@ describe('phrase strength', () => {
     ]);
   });
 
-  it('brake_strength_limits', () => {
-    expect(brakeOf(200, 140.1).voice).toBe('brake');
-    expect(brakeOf(200, 140).voice).toBe('hard-brake');
-    expect(brakeOf(200, 175.1).voice).toBe('light-brake');
-    expect(brakeOf(200, 175).voice).toBe('brake');
+  it('brake_strength_is_the_share_of_speed_lost', () => {
+    expect(brakeOf(200, 120.1).voice).toBe('brake');
+    expect(brakeOf(200, 120).voice).toBe('hard-brake');
+    expect(brakeOf(200, 170.1).voice).toBe('light-brake');
+    expect(brakeOf(200, 170).voice).toBe('brake');
+    expect(brakeOf(100, 60).voice).toBe('hard-brake');
+    expect(brakeOf(100, 85).voice).toBe('brake');
+    expect(brakeOf(250, 190).voice).toBe('brake');
+  });
+
+  it('brake_strength_uses_the_lowest_speed', () => {
+    const coastAfterBrake = (sM: number): ProfilePoint => {
+      if (sM < 100) return cruise;
+      if (sM < 150) return { speedKph: 200 - (70 * (sM - 100)) / 50, throttle: 0, brake: 0.8 };
+      if (sM < 180) return { speedKph: 130 - (sM - 150) * 0.5, throttle: 0, brake: 0 };
+      return { speedKph: Math.min(250, 115 + (sM - 180) * 0.5), throttle: 1, brake: 0 };
+    };
+    const brake = buildCueEvents(profiledPath(400, coastAfterBrake), DEFAULT_CONFIG).find(event => event.kind === 'brake')!;
+    expect(brake.voice).toBe('hard-brake');
+    expect(brake.targetSpeedKph).toBe(115);
   });
 
   it('throttle_below_095_is_throttle', () => {
@@ -100,6 +115,32 @@ describe('buildCueEvents', () => {
     expect(brake.sM).toBe(100);
     expect(brake.endSM).toBe(150);
     expect(brake.targetSpeedKph).toBe(80);
+  });
+
+  it('braking_target_is_the_lowest_speed_up_to_40_m_after_the_zone', () => {
+    const longCoast = (sM: number): ProfilePoint => {
+      if (sM < 100) return cruise;
+      if (sM < 150) return { speedKph: 200 - (110 * (sM - 100)) / 50, throttle: 0, brake: 0.8 };
+      if (sM < 230) return { speedKph: 90 - (sM - 150) * 0.25, throttle: 0, brake: 0 };
+      return { speedKph: Math.min(250, 70 + (sM - 230) * 0.5), throttle: 1, brake: 0 };
+    };
+    const brake = buildCueEvents(profiledPath(500, longCoast), DEFAULT_CONFIG).find(event => event.kind === 'brake')!;
+    expect(brake.endSM).toBe(150);
+    expect(brake.targetSpeedKph).toBe(80);
+  });
+
+  it('braking_target_stops_at_the_next_brake', () => {
+    const twoBrakes = (sM: number): ProfilePoint => {
+      if (sM < 100) return cruise;
+      if (sM < 150) return { speedKph: 200 - (110 * (sM - 100)) / 50, throttle: 0, brake: 0.8 };
+      if (sM < 165) return { speedKph: 90 - (sM - 150) * 0.1, throttle: 0, brake: 0 };
+      if (sM < 200) return { speedKph: 88.5 - (38.5 * (sM - 165)) / 35, throttle: 0, brake: 0.8 };
+      return { speedKph: Math.min(250, 50 + (sM - 200) * 0.5), throttle: 1, brake: 0 };
+    };
+    const brakes = buildCueEvents(profiledPath(500, twoBrakes), DEFAULT_CONFIG).filter(event => event.kind === 'brake');
+    expect(brakes.map(event => event.sM)).toEqual([100, 165]);
+    expect(brakes[0]!.targetSpeedKph).toBe(85);
+    expect(brakes[1]!.targetSpeedKph).toBe(50);
   });
 
   it('acceleration_names_the_upcoming_target', () => {

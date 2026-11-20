@@ -187,7 +187,6 @@ describe('attempt review', () => {
     expect(rows[2]).toHaveTextContent('1.3 m inside');
     expect(rows[2]).toHaveTextContent('no speed match at the apex');
     expect(rows[3]).toHaveTextContent('no match at the apex');
-    expect(document.querySelectorAll('.track-map .track-mark.apex')).toHaveLength(4);
   });
 
   it('review_shows_the_same_corner_speed_after_the_unit_change', async () => {
@@ -295,6 +294,8 @@ describe('attempt review', () => {
       ['T1', '80.0', '160.0'],
       ['T2', '480.0', '240.0']
     ]);
+    expect(document.querySelectorAll('.track-map .track-turn')).toHaveLength(2);
+    expect([...document.querySelectorAll('.track-map .track-turn-label')].map(label => label.textContent)).toEqual(['T1', 'T2']);
   });
 
   it('empty_turn_zone_has_no_band_and_no_label', async () => {

@@ -6,6 +6,18 @@ const MIN_HEIGHT = 220;
 
 export type Point = [number, number];
 
+export function rounded(value: number): number {
+  return Number(value.toFixed(1));
+}
+
+export function clamp(value: number, low: number, high: number): number {
+  return Math.max(low, Math.min(high, value));
+}
+
+export function zoneIndexes(fromSM: number, toSM: number, gridM: number, length: number): [number, number] {
+  return [Math.max(0, Math.ceil(fromSM / gridM)), Math.min(length - 1, Math.floor(toSM / gridM))];
+}
+
 export function finitePoints(line: TrackLine): Point[] {
   return line.x.flatMap((x, index) => {
     const z = line.z[index];
@@ -25,7 +37,7 @@ export function projection(lines: TrackLine[]) {
   const height = Math.max(MIN_HEIGHT, Math.round((z1 - z0) * scale) + 2 * PAD);
   const offsetX = (WIDTH - (x1 - x0) * scale) / 2;
   const offsetY = (height - (z1 - z0) * scale) / 2;
-  const project = (x: number, z: number): Point => [Number((offsetX + (x - x0) * scale).toFixed(1)), Number((offsetY + (z - z0) * scale).toFixed(1))];
+  const project = (x: number, z: number): Point => [rounded(offsetX + (x - x0) * scale), rounded(offsetY + (z - z0) * scale)];
   return { height, project };
 }
 
@@ -128,8 +140,8 @@ export type SidePeak = { turn: number; sM: number; lat: number };
 export function largestSideInZones(zones: TurnZone[], lat: Values, gridM: number): SidePeak[] {
   return zones.flatMap(zone => {
     let peak: SidePeak | null = null;
-    const last = Math.min(lat.length - 1, Math.floor(zone.zoneToSM / gridM));
-    for (let index = Math.max(0, Math.ceil(zone.zoneFromSM / gridM)); index <= last; index++) {
+    const [first, last] = zoneIndexes(zone.zoneFromSM, zone.zoneToSM, gridM, lat.length);
+    for (let index = first; index <= last; index++) {
       const side = valueAt(lat, index);
       if (side !== null && (!peak || Math.abs(side) > Math.abs(peak.lat))) peak = { turn: zone.number, sM: index * gridM, lat: side };
     }

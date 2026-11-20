@@ -558,7 +558,7 @@ describe('exercises, captures and references', () => {
       text: 'Hard brake'
     });
     expect(cues.body[1]).toMatchObject({ phrase: 'Full throttle', voice: 'full-throttle', targetSpeedKph: 140, bigStop: false, muted: true, clip: 'full-throttle', followClip: null, text: 'Full throttle' });
-    expect(cues.body[2]).toMatchObject({ phrase: 'Ease off', voice: 'ease-off', targetSpeedKph: null, bigStop: false, muted: false, clip: 'ease-off', followClip: null, text: 'Ease off' });
+    expect(cues.body[2]).toMatchObject({ phrase: 'Lift off', voice: 'ease-off', targetSpeedKph: null, bigStop: false, muted: false, clip: 'ease-off', followClip: null, text: 'Lift off' });
     await http().patch(`/api/exercises/${exerciseId}`).set('Cookie', cookie).send({ speakTargets: false }).expect(200);
     const quiet = await http().get(`/api/references/${referenceId}/cues`).set('Cookie', cookie).expect(200);
     expect(quiet.body[0]).toMatchObject({ phrase: 'Hard brake', targetSpeedKph: 115, clip: 'hard-brake', followClip: 'speed-115', text: 'Hard brake' });

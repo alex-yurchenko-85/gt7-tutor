@@ -239,9 +239,9 @@ Other choices on this screen:
 The list shows each cue and each turn in the order of the section. Each cue row has:
 
 - The distance from the start of the section and the phrase, for example `291 m`, `Hard brake. One fifteen`.
-- The target speed in km/h, rounded down to 5. `–` means that the cue has no target speed, for example a brake to a stop: GT7 Tutor gives targets only from 30 to 350 km/h.
-- **Hear**: plays the phrase on this device.
-- **Mute** / **Unmute**: a muted cue is not spoken. The Drive screen does not show it either.
+- The target speed in km/h, rounded down to 5. For a brake it is the lowest speed of the reference in that place, and the row says `lowest speed`. For a throttle cue it is the speed of the reference 2 s later. `–` means that the cue has no target speed, for example a brake to a stop: GT7 Tutor gives targets only from 30 to 350 km/h.
+- **Hear** (play icon): plays the phrase on this device.
+- **Mute** (speaker icon) / **Unmute** (crossed-out speaker on a black fill): a muted cue is not spoken. The Drive screen does not show it either. A muted row has a striped grey background, the phrase struck through and the tag `MUTED`. Its timing stays and applies again after **Unmute**.
 - **Timing**: moves this cue up to 1 s earlier or 0.5 s later, in steps of 0.1 s.
 - Notes from your attempts, for example `Braked early in 2 of 3 attempts, median 26 m`. A yellow row marks a place where a difference repeats.
 
@@ -249,10 +249,10 @@ The turn rows (`T1`) show the turn-in, the apex, the radius and the speed of the
 
 Settings above the list:
 
-- **Speak target speeds**: on, the voice says the number after a brake phrase. Off, it says the action only.
-- **Side cue distance**: `Off`, or 0.5 m to 3 m. The voice says `Keep left` or `Keep right` when the car stays farther than this distance from the reference line.
+- **Speak target speeds**: on, the voice says the lowest speed of the reference after a brake phrase. Off, it says the action only.
+- **Side cue distance**: `Off`, or 0.5 m to 3 m. The voice says `More left` or `More right` when the car stays farther than this distance from the reference line.
 
-On the map, select a cue number to mute or unmute that cue.
+On the map, a yellow band marks each turn, from the turn-in to the end of the turn, with its label `T1`. A short bar and an arrow mark the start and the direction of travel, and a chequered bar marks the finish. Select a cue number to mute or unmute that cue. A muted cue has a dashed grey circle with a small crossed-out speaker. When two cues are so close that their numbers would cover each other, the numbers move to the two sides of the line, with a short line to their places.
 Changes apply from the next **Start an attempt**. A training that already runs keeps the old settings.
 
 ## Drive an attempt
@@ -280,24 +280,27 @@ GT7 Tutor finds the start and the finish of the attempt by itself. The time of t
 
 ### During the attempt
 
-![The Drive screen during attempt 1: the cue FULL THROTTLE 140, Cue 2 of 6 before T1, the next cue Ease off in 140 m, speed 95 km/h, 424 m of 818, +1.4 s to reference, and the map with the position.](images/drive-cue.webp)
+![The Drive screen during attempt 5: the cue FULL THROTTLE 140, Cue 2 of 6 before T1, the next cue Full throttle in 14 m, speed 95 km/h, 397 m of 818, +1.2 s to reference, and the map with turn 1 as a yellow band, the position inside it, the start bar with its arrow and the chequered finish.](images/drive-cue.webp)
 
 | Part | Meaning |
 | --- | --- |
-| Large words | The current cue, for example `HARD BRAKE 115` or `FULL THROTTLE`. It shows for about 3 s. |
+| Large words | The current cue, for example `HARD BRAKE 115` or `FULL THROTTLE 140`. The number has the size of the words. It shows for about 3 s. The cue area has one height for all cues, so the lines below it do not move. |
 | `Cue 2 of 6 · before T1` | The number of the cue and the next turn |
 | `Next: … in … m` | The next cue and the distance to it |
 | km/h | Your speed |
 | `m of 818` | Your distance on the reference |
 | `s to reference` | Your time at this place minus the time of the reference at the same place. A positive value means that you are slower. |
-| Map | Your position on the reference line, with the turns |
+| Map | Your position on the reference line. Each turn is a yellow band from the turn-in to the end of the turn, with its label, for example `T1`. A short bar and an arrow mark the start and the direction of travel; a chequered bar marks the finish. |
 | **Telemetry**, **Voice** | The status dots. Green means ready. |
 
 The voice speaks about half a second before the place where the reference does the action. Other cues:
 
-- `Big stop` before a long, hard brake.
-- `Tighter` when you run wide before an apex.
-- `Keep left` or `Keep right`, if **Side cue distance** is on.
+- `Hard brake`, `Brake` or `Light brake`: the reference loses at least 40 %, at least 15 % or less than 15 % of its speed.
+- `Lift off`: the reference takes the foot off the throttle and does not brake.
+- `Throttle on` or `Full throttle`: the reference opens the throttle; `Full throttle` when it reaches full throttle within 2 s.
+- `Big brake ahead` before a long, hard brake.
+- `Closer to apex` when you run wide before an apex.
+- `More left` or `More right`, if **Side cue distance** is on.
 - `Guidance paused` and `Guidance resumed` when GT7 Tutor cannot follow your position.
 
 When you pause the game, the screen shows `Paused. Cues stop until you continue.` The attempt continues after the pause.
@@ -306,7 +309,7 @@ When you pause the game, the screen shows `Paused. Cues stop until you continue.
 
 ### After the finish
 
-![The summary of attempt 1: the time 0:18.824 from the game, the focus for the next attempt Turn one. Brake earlier., the gap to your best, the largest difference, and the buttons Review this attempt and Drive again.](images/drive-summary.webp)
+![The summary of attempt 5: the time 0:18.824 from the game, the focus for the next attempt Turn one. Carry more speed., the gap to your best +1.75 s, the largest difference 291 m. Braked 37 m later, and the buttons Review this attempt and Drive again.](images/drive-summary.webp)
 
 The summary shows:
 
@@ -351,7 +354,7 @@ Select **Stop** at the top right. If an attempt runs, GT7 Tutor stops it with th
 **Goal:** see where and how your attempt is different from the reference.
 **Where:** **Review this attempt** after the finish, or **Review** in the **Attempts** tab.
 
-![The review of attempt 1 with Side distance × 6: the reference line in blue and your line in orange, the label T1 · 3.5 m left, the differences by turn with 0.75 s lost in T1, and the selected difference 23 km/h slower in the corner.](images/review-side.webp)
+![The review of attempt 2 with Side distance × 6: the reference line in blue and your line in orange, the label T1 · 3.5 m left, the differences by turn with 0.75 s lost in T1, and the selected difference 23 km/h slower in the corner.](images/review-side.webp)
 
 The header shows the attempt number, the time from the game and the gap to the reference, for example `Attempt 1 · 0:18.824 +2.74 s`.
 
@@ -552,7 +555,7 @@ On a phone, **Exercises**, **Drive** and **Setup** are in the bottom bar. Setup 
 
 | Exercises on a phone | Drive on a phone |
 | --- | --- |
-| ![Exercises on a phone with the bottom bar Exercises, Drive and Setup.](images/phone-exercises.webp) | ![The Drive screen on a phone with the cue TIGHTER.](images/phone-drive-cue.webp) |
+| ![Exercises on a phone with the bottom bar Exercises, Drive and Setup.](images/phone-exercises.webp) | ![The Drive screen on a phone with the cue CLOSER TO APEX.](images/phone-drive-cue.webp) |
 
 The recording screen on a phone fills the screen. Use **Start recording** and **Stop recording** at the bottom, and **Close** to go back.
 

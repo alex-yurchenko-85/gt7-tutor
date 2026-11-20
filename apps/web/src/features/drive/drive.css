@@ -175,14 +175,17 @@ main.view.immersive {
   flex-direction: column;
   min-width: 0;
   padding: 28px 24px 24px;
+  container-type: inline-size;
 }
 
 .drive-stage .cue {
-  min-height: 190px;
+  --cue-size: min(96px, calc(100cqi / 5.8));
+  --cue-line: 0.95;
+  height: calc(var(--cue-size) * var(--cue-line) * 2 + 38px);
 }
 
 .drive-stage .cue-word {
-  font: 800 clamp(64px, 6vw, 96px) / 0.95 var(--font-display);
+  font: 800 var(--cue-size) / var(--cue-line) var(--font-display);
   letter-spacing: 0.01em;
   text-transform: uppercase;
   overflow-wrap: anywhere;
@@ -203,7 +206,6 @@ main.view.immersive {
 .drive-stage .cue-number {
   display: block;
   color: var(--stage-ink);
-  font-size: clamp(96px, 10vw, 160px);
   font-variant-numeric: tabular-nums;
 }
 
@@ -359,18 +361,6 @@ main.view.immersive {
   .stage-left {
     padding: 28px 16px 20px;
     border-bottom: 1px solid var(--stage-line);
-  }
-
-  .drive-stage .cue {
-    min-height: 150px;
-  }
-
-  .drive-stage .cue-word {
-    font-size: 88px;
-  }
-
-  .drive-stage .cue-number {
-    font-size: 110px;
   }
 
   .stage-map {

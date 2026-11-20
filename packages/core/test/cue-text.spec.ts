@@ -40,13 +40,13 @@ describe('cue text', () => {
     expect(cueText('hard-brake')).toBe('Hard brake');
     expect(cueText('brake')).toBe('Brake');
     expect(cueText('light-brake')).toBe('Light brake');
-    expect(cueText('ease-off')).toBe('Ease off');
-    expect(cueText('throttle')).toBe('Throttle');
+    expect(cueText('ease-off')).toBe('Lift off');
+    expect(cueText('throttle')).toBe('Throttle on');
     expect(cueText('full-throttle')).toBe('Full throttle');
-    expect(cueText('keep-left')).toBe('Keep left');
-    expect(cueText('keep-right')).toBe('Keep right');
-    expect(cueText('tighter')).toBe('Tighter');
-    expect(cueText('big-stop')).toBe('Big stop');
+    expect(cueText('keep-left')).toBe('More left');
+    expect(cueText('keep-right')).toBe('More right');
+    expect(cueText('tighter')).toBe('Closer to apex');
+    expect(cueText('big-stop')).toBe('Big brake ahead');
     expect(cueText('guidance-paused')).toBe('Guidance paused');
     expect(cueText('guidance-resumed')).toBe('Guidance resumed');
     expect(cueText('voice-check')).toBe('Voice check');
@@ -58,7 +58,7 @@ describe('cue text', () => {
     expect(focusText('brake-late', 2)).toBe('Turn two. Brake earlier.');
     expect(focusText('slow-corner', 3)).toBe('Turn three. Carry more speed.');
     expect(focusText('throttle-late', 4)).toBe('Turn four. Throttle earlier.');
-    expect(focusText('wide-apex', 10)).toBe('Turn ten. Tighter at the apex.');
+    expect(focusText('wide-apex', 10)).toBe('Turn ten. Closer to the apex.');
     expect(focusText('off-line', 11)).toBe('Turn 11. Stay on the line.');
   });
 
@@ -66,7 +66,7 @@ describe('cue text', () => {
     expect(focusClipKey('brake-late', 10)).toBe('focus-brake-late-10');
     expect(focusClipKey('brake-early', 1)).toBe('focus-brake-early-1');
     expect(focusClipKey('brake-late', 11)).toBeNull();
-    expect(clipText('focus-wide-apex-1')).toBe('Turn one. Tighter at the apex.');
+    expect(clipText('focus-wide-apex-1')).toBe('Turn one. Closer to the apex.');
   });
 
   it('speed_clips_say_the_number', () => {

@@ -8,7 +8,7 @@ describe('units', () => {
     expect(kph(36)).toBe(10);
     expect(kph(0)).toBe(0);
     expect(kph(88.6) * KPH_PER_MPS).toBeCloseTo(88.6, 12);
-    expect(DEFAULT_CONFIG.voice).toMatchObject({ hardBrakeLossMps: kph(60), lightBrakeLossMps: kph(25), bigStopEntryMps: kph(200), bigStopLossMps: kph(100) });
+    expect(DEFAULT_CONFIG.voice).toMatchObject({ hardBrakeShare: 0.4, brakeShare: 0.15, bigStopEntryMps: kph(200), bigStopLossMps: kph(100) });
     expect(DEFAULT_CONFIG.incompatibleOverspeedMps).toBe(kph(15));
     expect(DEFAULT_CONFIG.findings.slowCornerMps).toBe(kph(8));
     expect(DEFAULT_CONFIG.target.roundDownKph).toBe(5);

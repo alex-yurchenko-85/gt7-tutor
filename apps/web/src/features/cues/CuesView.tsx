@@ -16,6 +16,8 @@ import { api } from '../../api/client.ts';
 import { useLiveConnection } from '../../api/live.tsx';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { TrackMap } from '../../charts/TrackMap.tsx';
+import { IconButton } from '../../app/IconButton.tsx';
+import { Icon } from '../../app/icons.tsx';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { counted } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
@@ -119,8 +121,14 @@ function CueRow({ cue, number, muted, offsetMs, recurring, reaction, onToggle, o
       </span>
       <span className="phrase">
         <b>{cue.phrase ?? 'No voice cue'}</b>
-        {cue.bigStop ? <small>Big stop first, about 2 s before this point</small> : null}
-        {muted ? <small>Muted. The voice does not say this cue.</small> : null}
+        {muted ? (
+          <span className="tag ink">
+            <Icon name="speaker-off" size={14} />
+            Muted
+          </span>
+        ) : null}
+        {cue.bigStop ? <small>Big brake ahead first, about 2 s before this point</small> : null}
+        {muted ? <small>The voice does not say this cue, and Drive does not show it.</small> : null}
         {reaction ? (
           <small className="reaction">
             You start to brake {reactionText(reaction.medianMs)} here ({attemptsText(reaction.count)})
@@ -136,17 +144,14 @@ function CueRow({ cue, number, muted, offsetMs, recurring, reaction, onToggle, o
         ) : (
           <>
             <b>{cue.targetSpeedKph}</b> km/h
+            {cue.kind === 'brake' ? <small>lowest speed</small> : null}
           </>
         )}
       </span>
       <span className="act">
         <span className="pair">
-          <button type="button" onClick={onHear} disabled={!cue.phrase} aria-label={`Hear ${cue.phrase ?? 'cue'}`}>
-            Hear
-          </button>
-          <button type="button" aria-pressed={muted} onClick={onToggle}>
-            {muted ? 'Unmute' : 'Mute'}
-          </button>
+          <IconButton icon="play" label={`Hear ${cue.phrase ?? 'cue'}`} onClick={onHear} disabled={!cue.phrase} />
+          <IconButton icon={muted ? 'speaker-off' : 'speaker'} label={`${muted ? 'Unmute' : 'Mute'} cue ${number}`} primary={muted} pressed={muted} onClick={onToggle} />
         </span>
         <OffsetSlider number={number} offsetMs={offsetMs} onChange={onOffset} />
       </span>
@@ -204,7 +209,7 @@ function SpeakTargetsSwitch({ on, onChange }: SpeakSwitchProps) {
       </button>
       <p className="sub">
         {on
-          ? 'The voice says the number after a brake phrase, for example “Hard brake. Eighty five”.'
+          ? 'After a brake phrase, the voice says the lowest speed of the reference in that place, for example “Hard brake. Eighty five”.'
           : 'The voice says the action only. The screen still shows the target speeds.'}
       </p>
     </div>
@@ -218,24 +223,26 @@ type SideDistanceProps = { distanceM: number | null; onChange(next: number | nul
 function SideCueDistance({ distanceM, onChange }: SideDistanceProps) {
   return (
     <div className="side-distance">
-      <label htmlFor="side-cue-distance">Side cue distance</label>
-      <select
-        id="side-cue-distance"
-        className="input"
-        value={distanceM === null ? SIDE_CUES_OFF : String(distanceM)}
-        onChange={event => onChange(event.target.value === SIDE_CUES_OFF ? null : Number(event.target.value))}
-      >
-        <option value={SIDE_CUES_OFF}>Off</option>
-        {SIDE_CUE_DISTANCES_M.map(value => (
-          <option key={value} value={String(value)}>
-            {value} m
-          </option>
-        ))}
-      </select>
+      <div className="setting-row">
+        <select
+          id="side-cue-distance"
+          className="input"
+          value={distanceM === null ? SIDE_CUES_OFF : String(distanceM)}
+          onChange={event => onChange(event.target.value === SIDE_CUES_OFF ? null : Number(event.target.value))}
+        >
+          <option value={SIDE_CUES_OFF}>Off</option>
+          {SIDE_CUE_DISTANCES_M.map(value => (
+            <option key={value} value={String(value)}>
+              {value} m
+            </option>
+          ))}
+        </select>
+        <label htmlFor="side-cue-distance">Side cue distance</label>
+      </div>
       <p className="sub">
         {distanceM === null
-          ? 'The voice does not say “Keep left” or “Keep right”.'
-          : `The voice says “Keep left” or “Keep right” when the car stays more than ${distanceM} m from the reference line.`}
+          ? 'The voice does not say “More left” or “More right”.'
+          : `The voice says “More left” or “More right” when the car stays more than ${distanceM} m from the reference line.`}
       </p>
     </div>
   );
@@ -354,7 +361,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
         </ol>
         <p className="sub" style={{ marginTop: 12 }}>
           Yellow rows mark places where a difference from the reference repeats in your recent attempts.
-          Target speeds round down to 5 km/h. Turns are found from the bend of the reference line; the voice says “Tighter” only when you run wide
+          Target speeds round down to 5 km/h. Turns are found from the bend of the reference line; the voice says “Closer to apex” only when you run wide
           before an apex.
         </p>
       </div>
@@ -381,12 +388,8 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
             reference line
           </span>
           <span>
-            <i className="apex" />
-            apex of a turn
-          </span>
-          <span>
-            <i className="turn-in" />
-            turn-in
+            <i className="turn" />
+            turn
           </span>
           <span>Select a number on the map to mute that cue</span>
           <span>Map orientation is not confirmed</span>
@@ -402,7 +405,7 @@ export function CuesView({ exerciseId }: { exerciseId: string }) {
   if (!exercise.data) return <p className="sub">Reading the exercise…</p>;
   return (
     <section>
-      <ExerciseHeader exercise={exercise.data} title="What the voice will say" />
+      <ExerciseHeader exercise={exercise.data} />
       {exercise.data.activeReferenceId ? (
         <CueList exercise={exercise.data} referenceId={exercise.data.activeReferenceId} />
       ) : (

@@ -47,9 +47,28 @@
   fill: var(--ink);
 }
 
-.track-mark.muted circle {
-  fill: transparent;
+.track-mark .leader {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.track-mark circle.dot {
+  stroke-width: 1.5;
+}
+
+.track-mark.muted circle.marker {
+  fill: var(--bg);
   stroke: var(--mute);
+  stroke-dasharray: 4 3;
+}
+
+.track-mark .mute-badge {
+  color: var(--paper);
+}
+
+.track-mark .mute-badge circle {
+  fill: var(--ink);
+  stroke: none;
 }
 
 .track-mark.muted text {
@@ -78,29 +97,45 @@
   fill: var(--ink);
 }
 
-.track-mark.turn-in line {
-  stroke: var(--red);
-  stroke-width: 4;
-  stroke-linecap: butt;
+.track-turn {
+  fill: none;
+  stroke: var(--yellow);
+  stroke-width: 16;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.track-mark.apex circle {
-  fill: var(--yellow);
-  stroke: #14181f;
+.track-start {
+  stroke: var(--ink);
+  stroke-width: 5;
 }
 
-.track-mark.apex text {
-  fill: #14181f;
-  font-size: 12px;
+.track-direction line,
+.track-direction polyline {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.track-mark.apex .leader {
-  stroke: #14181f;
+.track-finish .on {
+  fill: var(--ink);
+}
+
+.track-finish .off {
+  fill: var(--paper);
+}
+
+.track-finish .frame {
+  fill: none;
+  stroke: var(--ink);
   stroke-width: 1.5;
 }
 
-.track-mark.apex circle.dot {
-  stroke-width: 1.5;
+.track-turn-label {
+  font: 800 18px var(--font-display);
+  fill: var(--ink);
 }
 
 .track-map.dark .track-reference {
@@ -121,8 +156,28 @@
   fill: #ffffff;
 }
 
+.track-map.dark .track-mark.muted circle.marker {
+  fill: #262b34;
+  stroke: #8d95a1;
+}
+
+.track-map.dark .track-mark.muted text {
+  fill: #8d95a1;
+}
+
+.track-map.dark .track-mark .mute-badge {
+  color: #14181f;
+}
+
+.track-map.dark .track-mark .mute-badge circle {
+  fill: #ffffff;
+  stroke: none;
+}
+
 .track-map.dark .track-cursor {
   fill: #ffd60a;
+  stroke: #14181f;
+  stroke-width: 3;
 }
 
 .legend {
@@ -150,18 +205,9 @@
   background: var(--you);
 }
 
-.legend .apex {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+.legend .turn {
+  height: 8px;
   background: var(--yellow);
-  border: 1.5px solid #14181f;
-}
-
-.legend .turn-in {
-  width: 4px;
-  height: 12px;
-  background: var(--red);
 }
 
 .channel-label {
@@ -220,17 +266,23 @@
   vector-effect: non-scaling-stroke;
 }
 
-.track-map.dark .track-mark.apex circle {
-  fill: #ffd60a;
-  stroke: #14181f;
+.track-map.dark .track-start,
+.track-map.dark .track-direction line,
+.track-map.dark .track-direction polyline,
+.track-map.dark .track-finish .frame {
+  stroke: #ffffff;
 }
 
-.track-map.dark .track-mark.apex .leader {
-  stroke: #ffd60a;
+.track-map.dark .track-finish .on {
+  fill: #ffffff;
 }
 
-.track-map.dark .track-mark.apex text {
-  fill: #14181f;
+.track-map.dark .track-finish .off {
+  fill: #5b6472;
+}
+
+.track-map.dark .track-turn-label {
+  fill: #ffffff;
 }
 
 .chart-band {

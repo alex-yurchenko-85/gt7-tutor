@@ -43,8 +43,8 @@ export type CoreConfig = {
   };
   target: { roundDownKph: number; throttleLookAheadMs: number };
   voice: {
-    hardBrakeLossMps: number;
-    lightBrakeLossMps: number;
+    hardBrakeShare: number;
+    brakeShare: number;
     fullThrottle: number;
     bigStopEntryMps: number;
     bigStopLossMps: number;
@@ -137,8 +137,8 @@ export const DEFAULT_CONFIG: CoreConfig = {
   },
   target: { roundDownKph: 5, throttleLookAheadMs: 2000 },
   voice: {
-    hardBrakeLossMps: kph(60),
-    lightBrakeLossMps: kph(25),
+    hardBrakeShare: 0.4,
+    brakeShare: 0.15,
     fullThrottle: 0.95,
     bigStopEntryMps: kph(200),
     bigStopLossMps: kph(100),

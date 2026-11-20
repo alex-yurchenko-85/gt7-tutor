@@ -238,21 +238,24 @@ Guidance uses only trusted matches.
 
 | Value | Rule |
 | --- | --- |
-| Target speed, brake | Speed at the end of the zone |
+| Lowest speed, brake | Lowest reference speed from the brake point to 40 m (`findings.cornerExtensionM`) after the end of the zone. It stops at the next brake zone. Review uses the same range for `slow-corner`. |
+| Target speed, brake | The lowest speed |
 | Target speed, throttle | Reference speed 2 s later |
 | Target rounding | Down to 5 km/h. Outside 30 to 350 km/h: no target. |
-| `Hard brake` | Speed loss ≥ 16.67 m/s (60 km/h) |
-| `Brake` | Loss ≥ 6.94 m/s (25 km/h) |
-| `Light brake` | Smaller loss |
-| `Big stop` before a brake | Entry ≥ 55.56 m/s (200 km/h) and loss ≥ 27.78 m/s (100 km/h) |
-| `Full throttle` | Reference throttle reaches 0.95 within 2 s. Else `Throttle`. |
+| Loss, brake | Entry speed − lowest speed. Share = loss / entry speed. |
+| `Hard brake` | Share ≥ 0.40 (`voice.hardBrakeShare`) |
+| `Brake` | Share ≥ 0.15 (`voice.brakeShare`) |
+| `Light brake` | Smaller share |
+| `Big brake ahead` before a brake | Entry ≥ 55.56 m/s (200 km/h) and loss ≥ 27.78 m/s (100 km/h) |
+| `Lift off` | Every `ease-off` event |
+| `Full throttle` | Reference throttle reaches 0.95 within 2 s. Else `Throttle on`. |
 
 `cue-text.ts` makes all cue text and clip keys:
 
-- Clip = phrase key, for example `hard-brake`. Follow clip of a brake with a target = `speed-<km/h>`, played only with `Speak target speeds`.
+- Clip = phrase key, for example `hard-brake`. The keys keep the kind names: `ease-off` says `Lift off`, `big-stop` says `Big brake ahead`, `tighter` says `Closer to apex`, `keep-left` and `keep-right` say `More left` and `More right`. Follow clip of a brake with a target = `speed-<km/h>`, played only with `Speak target speeds`.
 - Spoken text with targets on: `Hard brake. Eighty five`.
 - `CUE_WORDS` in `@gt7/contracts` gives the shown words.
-- `clipsOf(events, corners)` lists every clip of a reference. These are the event clips and follow clips, `Big stop` if any, `Tighter` if a corner exists, and `Voice check`. It adds the side cues, the guidance cues and the focus sentences up to turn 10.
+- `clipsOf(events, corners)` lists every clip of a reference. These are the event clips and follow clips, `Big brake ahead` if any, `Closer to apex` if a corner exists, and `Voice check`. It adds the side cues, the guidance cues and the focus sentences up to turn 10.
 
 ## Corners
 
@@ -296,21 +299,21 @@ Time to an event: `(−v + √(v² + 2ad)) / a` for distance `d`, speed `v`, acc
 | Rule | Value |
 | --- | --- |
 | Cue due | time ≤ device delay + 500 ms + cue offset + sample period |
-| `Big stop` due | time ≤ device delay + 2000 ms + offset of its brake + sample period |
+| `Big brake ahead` due | time ≤ device delay + 2000 ms + offset of its brake + sample period |
 | Sample period | Time since the last coach step, ≤ 100 ms. First step: 1000 / 60 ms. |
 | Cue offset | −500 to +1000 ms, step 100 ms. Positive is earlier. |
 | Too late | time < device delay |
 
-`Big stop` is also too late in two cases. Its phrase cannot end before the lead of its brake. Or a brake or ease-off between the car and its brake becomes due before the phrase ends. It gets `cooldown` for 1500 ms after a last cue with priority ≥ 90.
+`Big brake ahead` is also too late in two cases. Its phrase cannot end before the lead of its brake. Or a brake or ease-off between the car and its brake becomes due before the phrase ends. It gets `cooldown` for 1500 ms after a last cue with priority ≥ 90.
 
 ### Targets and mutes
 
 | Cue | Event kind | Place | Mute key |
 | --- | --- | --- | --- |
 | Brake, ease-off, throttle | `brake`, `ease-off`, `throttle` | The event | Event key |
-| `Big stop` | `big-stop` | Its brake | Key of its brake |
-| `Tighter` | `tighter` | Decision place | `tighter` |
-| `Keep left`, `Keep right` | `keep-left`, `keep-right` | Decision place | `keep-left`, `keep-right` |
+| `Big brake ahead` | `big-stop` | Its brake | Key of its brake |
+| `Closer to apex` | `tighter` | Decision place | `tighter` |
+| `More left`, `More right` | `keep-left`, `keep-right` | Decision place | `keep-left`, `keep-right` |
 | `Guidance paused`, `Guidance resumed` | `guidance` | None | None |
 
 - The coach checks mutes once, when it chooses the cue of a sample.
@@ -322,10 +325,10 @@ Time to an event: `(−v + √(v² + 2ad)) / a` for distance `d`, speed `v`, acc
 | Cue | Priority |
 | --- | --- |
 | `Hard brake`, `Brake`, `Light brake` | 100 |
-| `Big stop` | 95 |
-| `Ease off` | 90 |
-| `Keep left`, `Keep right`, `Tighter` | 50 |
-| `Throttle`, `Full throttle` | 20 |
+| `Big brake ahead` | 95 |
+| `Lift off` | 90 |
+| `More left`, `More right`, `Closer to apex` | 50 |
+| `Throttle on`, `Full throttle` | 20 |
 | `Guidance paused`, `Guidance resumed`, focus | 10 |
 
 - The highest priority of a sample speaks. The others get `lower-priority`.
@@ -350,7 +353,7 @@ A due throttle event opens a window. The cue speaks at the first sample, never a
 - `Guidance paused` speaks after 2000 ms of suspension. `Guidance resumed` speaks only after `Guidance paused`. Neither speaks when a brake or ease-off cue would fall inside it.
 - A cue that became due during suspension never replays.
 
-### Tighter
+### Closer to apex
 
 More than 2 m outside for ≥ 300 ms between turn-in and apex. Once per corner.
 
@@ -358,7 +361,7 @@ More than 2 m outside for ≥ 300 ms between turn-in and apex. Once per corner.
 
 Distance from `CoachSettings`: off, or 0.5 to 3 m. Default `DEFAULT_SIDE_CUE_DISTANCE_M` 2 m.
 
-- `|lateralM|` above the distance for 300 ms: `Keep left` for positive, `Keep right` for negative.
+- `|lateralM|` above the distance for 300 ms: `More left` for positive, `More right` for negative.
 - Once per excursion. The car must return within the distance first. A side cue that loses to another cue or to cooldown does not repeat in that excursion.
 - No side cue between turn-in and apex. The hold time continues, so the cue can speak after the apex.
 
@@ -393,7 +396,7 @@ An attempt brake more than 60 m from the reference brake is not matched. The fin
 | `slow-corner` | `Carry more speed.` |
 | `throttle-late` | `Throttle earlier.` |
 | `off-line` | `Stay on the line.` |
-| `wide-apex` | `Tighter at the apex.` |
+| `wide-apex` | `Closer to the apex.` |
 
 **`brakeReactions(samples, cues)`**: time from the clip start to the brake rise above 0.10. Brake above 0.10 at the clip start: the last rise before the clip. Else: the first rise after it. More than 3000 ms away: no value. Negative: braked before the cue.
 

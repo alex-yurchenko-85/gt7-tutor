@@ -768,6 +768,16 @@ p + p {
   color: var(--red);
 }
 
+.tag.ink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--ink);
+  color: var(--onink);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .dot {
   display: inline-block;
   width: 10px;

@@ -64,10 +64,23 @@ function speedAtTime(points: EventPoint[], timeMs: number): number {
   return from.speedMps + (to.speedMps - from.speedMps) * u;
 }
 
-function brakeVoice(lossMps: number, config: CoreConfig): EventVoice {
-  if (lossMps + ROUNDING_EPSILON >= config.voice.hardBrakeLossMps) return 'hard-brake';
-  if (lossMps + ROUNDING_EPSILON >= config.voice.lightBrakeLossMps) return 'brake';
+function brakeVoice(entryMps: number, lossMps: number, config: CoreConfig): EventVoice {
+  const share = entryMps > 0 ? lossMps / entryMps : 0;
+  if (share + ROUNDING_EPSILON >= config.voice.hardBrakeShare) return 'hard-brake';
+  if (share + ROUNDING_EPSILON >= config.voice.brakeShare) return 'brake';
   return 'light-brake';
+}
+
+export function brakeWindowEndM(zoneEndM: number, nextBrakeM: number, config: CoreConfig): number {
+  return Math.min(zoneEndM + config.findings.cornerExtensionM, nextBrakeM);
+}
+
+function lowestSpeedMps(points: EventPoint[], zone: Zone, nextFrom: number | undefined, config: CoreConfig): number {
+  const untilM = brakeWindowEndM(points[zone.to]!.sM, nextFrom === undefined ? Number.POSITIVE_INFINITY : points[nextFrom]!.sM, config);
+  const endIndex = nextFrom ?? points.length;
+  let lowest = Number.POSITIVE_INFINITY;
+  for (let index = zone.from; index < endIndex && points[index]!.sM <= untilM; index++) lowest = Math.min(lowest, points[index]!.speedMps);
+  return lowest;
 }
 
 function isBigStop(entryMps: number, lossMps: number, config: CoreConfig): boolean {
@@ -75,15 +88,16 @@ function isBigStop(entryMps: number, lossMps: number, config: CoreConfig): boole
 }
 
 function brakeEvents(points: EventPoint[], zones: Zone[], config: CoreConfig): Detected[] {
-  return zones.map(zone => {
+  return zones.map((zone, index) => {
     const entryMps = points[zone.from]!.speedMps;
-    const lossMps = entryMps - points[zone.to]!.speedMps;
+    const lowestMps = lowestSpeedMps(points, zone, zones[index + 1]?.from, config);
+    const lossMps = entryMps - lowestMps;
     return {
       kind: 'brake',
       sM: points[zone.from]!.sM,
       endSM: points[zone.to]!.sM,
-      targetSpeedKph: targetKph(points[zone.to]!.speedMps, config),
-      voice: brakeVoice(lossMps, config),
+      targetSpeedKph: targetKph(lowestMps, config),
+      voice: brakeVoice(entryMps, lossMps, config),
       bigStop: isBigStop(entryMps, lossMps, config)
     };
   });

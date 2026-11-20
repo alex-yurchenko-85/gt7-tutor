@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { WIDTH, finitePoints, lineSegments, projection, type Point } from './geometry.ts';
+import { WIDTH, clamp, finitePoints, lineSegments, projection, rounded, zoneIndexes, type Point } from './geometry.ts';
+import { Icon } from '../app/icons.tsx';
 import { placeCallout, type Box } from './callout-place.ts';
 import './charts.css';
 
@@ -7,7 +8,8 @@ export type TrackLine = { gridM: number; x: (number | null)[]; z: (number | null
 
 export type TrackMark = {
   sM: number;
-  kind?: 'cue' | 'turn-in' | 'apex';
+  kind?: 'turn';
+  toSM?: number;
   title: string;
   label?: string;
   selected?: boolean;
@@ -46,82 +48,269 @@ const NO_MARKS: TrackMark[] = [];
 const NO_CALLOUTS: TrackCallout[] = [];
 const NO_POINTS: Point[] = [];
 
-const TICK_HALF_PX = 9;
-const APEX_OFFSET_PX = 30;
-const APEX_RADIUS_PX = 12;
+const CUE_RADIUS_PX = 13;
+const TURN_LABEL_OFFSETS_PX = [24, 40, 56];
+const TURN_LABEL_RADIUS_PX = 14;
+const SPREAD_GAP_PX = 28;
+const SPREAD_OFFSET_PX = 30;
+const END_LABEL_OFFSETS_PX = [24, 44, 64];
+const END_LABEL_HALF_PX = 24;
+const END_LABEL_SIDE_PX = 40;
+const START_BAR_HALF_PX = 11;
+const ARROW_SIDE_PX = 22;
+const ARROW_LENGTH_PX = 34;
+const ARROW_HEAD_PX = 9;
+const FINISH_HALF_PX = 15;
+const FINISH_DEPTH_PX = 10;
+const FINISH_CELLS = 6;
+const DIRECTION_SPAN_PX = 6;
+const BADGE_RADIUS_PX = 8;
+const BADGE_ICON_PX = 12;
 
-type Normal = { x: number; y: number; nx: number; ny: number };
+type Project = (x: number, z: number) => Point;
 
-function normalAt(reference: TrackLine, sM: number, project: (x: number, z: number) => Point): Normal | null {
+function normalAt(reference: TrackLine, sM: number, project: Project): Point | null {
   const here = pointOn(reference, sM);
   const ahead = pointOn(reference, sM + reference.gridM * 2);
   if (!here || !ahead) return null;
   const [x, y] = project(here[0], here[1]);
   const [ax, ay] = project(ahead[0], ahead[1]);
   const length = Math.hypot(ax - x, ay - y) || 1;
-  return { x, y, nx: -(ay - y) / length, ny: (ax - x) / length };
+  return [-(ay - y) / length, (ax - x) / length];
 }
 
-type MarkProps = { mark: TrackMark; reference: TrackLine; project: (x: number, z: number) => Point };
+type Circle = { at: Point; r: number };
 
-function TurnInTick({ mark, reference, project }: MarkProps) {
-  const at = normalAt(reference, mark.sM, project);
-  if (!at) return null;
-  const dx = at.nx * TICK_HALF_PX;
-  const dy = at.ny * TICK_HALF_PX;
-  return (
-    <g className="track-mark turn-in">
-      <title>{mark.title}</title>
-      <line x1={at.x - dx} y1={at.y - dy} x2={at.x + dx} y2={at.y + dy} />
-    </g>
-  );
+function inside([x, y]: Point, margin: number, height: number): Point {
+  return [rounded(clamp(x, margin, WIDTH - margin)), rounded(clamp(y, margin, height - margin))];
 }
 
-function ApexMark({ mark, reference, project }: MarkProps) {
-  const at = normalAt(reference, mark.sM, project);
-  if (!at) return null;
-  const cx = at.x - at.nx * APEX_OFFSET_PX;
-  const cy = at.y - at.ny * APEX_OFFSET_PX;
-  return (
-    <g className="track-mark apex">
-      <title>{mark.title}</title>
-      <line className="leader" x1={at.x} y1={at.y} x2={cx} y2={cy} />
-      <circle className="dot" cx={at.x} cy={at.y} r={4} />
-      <circle cx={cx} cy={cy} r={APEX_RADIUS_PX} />
-      <text x={cx} y={cy + 4} textAnchor="middle">
-        {mark.label}
-      </text>
-    </g>
-  );
+function firstClear(spots: Point[], r: number, taken: Circle[]): Point {
+  return spots.find(spot => taken.every(circle => Math.hypot(circle.at[0] - spot[0], circle.at[1] - spot[1]) >= circle.r + r)) ?? spots[0]!;
+}
+
+function markRadius(mark: TrackMark): number {
+  return mark.label ? CUE_RADIUS_PX : mark.selected ? 10 : 7;
 }
 
 type Geometry = {
   height: number;
-  project: (x: number, z: number) => Point;
+  project: Project;
   referenceSegments: string[];
   attemptSegments: string[] | null;
   farSegments: string[];
   startPoint: Point | null;
   endPoint: Point | null;
+  startDirection: Point | null;
+  endDirection: Point | null;
 };
 
+function directionAway(points: Point[]): Point | null {
+  const [from] = points;
+  if (!from) return null;
+  const to = points.find(point => Math.hypot(point[0] - from[0], point[1] - from[1]) >= DIRECTION_SPAN_PX);
+  if (!to) return null;
+  const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
+  return [(to[0] - from[0]) / length, (to[1] - from[1]) / length];
+}
+
 function geometryOf(reference: TrackLine, attempt: TrackLine | null | undefined, far: TrackLine | null | undefined): Geometry | null {
-  if (finitePoints(reference).length < 2) return null;
+  const finite = finitePoints(reference);
+  if (finite.length < 2) return null;
   const { height, project } = projection(attempt ? [reference, attempt] : [reference]);
-  const projected = (point: Point | null) => (point ? project(point[0], point[1]) : null);
+  const line = finite.map(([x, z]) => project(x, z));
+  const fromEnd = directionAway([...line].reverse());
   return {
     height,
     project,
     referenceSegments: lineSegments(reference, project),
     attemptSegments: attempt ? lineSegments(attempt, project) : null,
     farSegments: far ? lineSegments(far, project) : [],
-    startPoint: projected(pointOn(reference, 0)),
-    endPoint: projected(pointOn(reference, (reference.x.length - 1) * reference.gridM))
+    startPoint: line[0]!,
+    endPoint: line.at(-1)!,
+    startDirection: directionAway(line),
+    endDirection: fromEnd ? [-fromEnd[0], -fromEnd[1]] : null
   };
 }
 
+type Placed = { anchor: Point; centre: Point; spread: boolean };
+type TurnPlace = { key: number; segments: string[]; label: { text: string; at: Point } | null };
+type Ends = { start: Point | null; finish: Point | null };
+type Layout = { placed: (Placed | null)[]; turns: TurnPlace[]; ends: Ends; taken: Circle[] };
+
+const NO_LAYOUT: Layout = { placed: [], turns: [], ends: { start: null, finish: null }, taken: [] };
+
+function placeMarks(marks: TrackMark[], reference: TrackLine, attempt: TrackLine | null | undefined, { project, height }: Geometry): (Placed | null)[] {
+  const placed: (Placed | null)[] = marks.map(mark => {
+    if (mark.kind === 'turn') return null;
+    const point = pointOn(mark.onAttempt && attempt ? attempt : reference, mark.sM);
+    if (!point) return null;
+    const anchor = project(point[0], point[1]);
+    return { anchor, centre: anchor, spread: false };
+  });
+  const spread = (cluster: number[]) => {
+    if (cluster.length < 2) return;
+    cluster.forEach((index, order) => {
+      const normal = normalAt(reference, marks[index]!.sM, project);
+      const { anchor } = placed[index]!;
+      if (!normal) return;
+      const distance = (order % 2 === 0 ? -1 : 1) * (SPREAD_OFFSET_PX + Math.floor(order / 2) * SPREAD_GAP_PX);
+      placed[index] = { anchor, centre: inside([anchor[0] + normal[0] * distance, anchor[1] + normal[1] * distance], CUE_RADIUS_PX + 2, height), spread: true };
+    });
+  };
+  const labelled = marks.flatMap((mark, index) => (placed[index] && mark.label ? [index] : [])).sort((a, b) => marks[a]!.sM - marks[b]!.sM);
+  let cluster: number[] = [];
+  for (const index of labelled) {
+    const last = cluster.at(-1);
+    if (last !== undefined) {
+      const [ax, ay] = placed[last]!.anchor;
+      const [bx, by] = placed[index]!.anchor;
+      if (Math.hypot(bx - ax, by - ay) >= SPREAD_GAP_PX) {
+        spread(cluster);
+        cluster = [];
+      }
+    }
+    cluster.push(index);
+  }
+  spread(cluster);
+  return placed;
+}
+
+function placeTurns(marks: TrackMark[], reference: TrackLine, { project, height }: Geometry, taken: Circle[]): TurnPlace[] {
+  return marks.flatMap((mark, key): TurnPlace[] => {
+    if (mark.kind !== 'turn' || mark.toSM === undefined) return [];
+    const [first, last] = zoneIndexes(mark.sM, mark.toSM, reference.gridM, reference.x.length);
+    const zone: TrackLine = { gridM: reference.gridM, x: reference.x.slice(first, last + 1), z: reference.z.slice(first, last + 1) };
+    const segments = lineSegments(zone, project);
+    const points = finitePoints(zone).map(([x, z]) => project(x, z));
+    if (segments.length === 0) return [];
+    if (!mark.label) return [{ key, segments, label: null }];
+    const middle = points[Math.floor(points.length / 2)]!;
+    const chord: Point = [(points[0]![0] + points.at(-1)![0]) / 2, (points[0]![1] + points.at(-1)![1]) / 2];
+    const bend = Math.hypot(middle[0] - chord[0], middle[1] - chord[1]);
+    const normal = normalAt(reference, (mark.sM + mark.toSM) / 2, project);
+    const outward: Point = bend >= 1 ? [(middle[0] - chord[0]) / bend, (middle[1] - chord[1]) / bend] : normal ? [-normal[0], -normal[1]] : [0, -1];
+    const spots = TURN_LABEL_OFFSETS_PX.map(offset => inside([middle[0] + outward[0] * offset, middle[1] + outward[1] * offset], TURN_LABEL_RADIUS_PX + 2, height));
+    const at = firstClear(spots, TURN_LABEL_RADIUS_PX, taken);
+    taken.push({ at, r: TURN_LABEL_RADIUS_PX });
+    return [{ key, segments, label: { text: mark.label, at } }];
+  });
+}
+
+function placeEnds(geometry: Geometry, taken: Circle[]): Ends {
+  const beyond = (point: Point | null, direction: Point | null, sign: 1 | -1): Point | null => {
+    if (!point || !direction) return null;
+    const spot = (along: number, across: number): Point =>
+      inside([point[0] + sign * direction[0] * along - direction[1] * across, point[1] + sign * direction[1] * along + direction[0] * across], END_LABEL_HALF_PX, geometry.height);
+    const at = firstClear([...END_LABEL_OFFSETS_PX.map(offset => spot(offset, 0)), spot(0, END_LABEL_SIDE_PX), spot(0, -END_LABEL_SIDE_PX)], END_LABEL_HALF_PX, taken);
+    taken.push({ at, r: END_LABEL_HALF_PX });
+    return at;
+  };
+  return { start: beyond(geometry.startPoint, geometry.startDirection, -1), finish: beyond(geometry.endPoint, geometry.endDirection, 1) };
+}
+
+function layoutOf(marks: TrackMark[], reference: TrackLine, attempt: TrackLine | null | undefined, geometry: Geometry): Layout {
+  const placed = placeMarks(marks, reference, attempt, geometry);
+  const taken: Circle[] = placed.flatMap((place, index) => (place ? [{ at: place.centre, r: markRadius(marks[index]!) }] : []));
+  const turns = placeTurns(marks, reference, geometry, taken);
+  const ends = placeEnds(geometry, taken);
+  return { placed, turns, ends, taken };
+}
+
+type StartShape = { barFrom: Point; barTo: Point; tail: Point; tip: Point; heads: [Point, Point] };
+
+function startShape(at: Point, [dx, dy]: Point): StartShape {
+  const nx = -dy;
+  const ny = dx;
+  const tail: Point = [at[0] + nx * ARROW_SIDE_PX, at[1] + ny * ARROW_SIDE_PX];
+  const tip: Point = [tail[0] + dx * ARROW_LENGTH_PX, tail[1] + dy * ARROW_LENGTH_PX];
+  const head = (side: 1 | -1): Point => [rounded(tip[0] - dx * ARROW_HEAD_PX + side * nx * 6), rounded(tip[1] - dy * ARROW_HEAD_PX + side * ny * 6)];
+  return {
+    barFrom: [rounded(at[0] - nx * START_BAR_HALF_PX), rounded(at[1] - ny * START_BAR_HALF_PX)],
+    barTo: [rounded(at[0] + nx * START_BAR_HALF_PX), rounded(at[1] + ny * START_BAR_HALF_PX)],
+    tail: [rounded(tail[0]), rounded(tail[1])],
+    tip: [rounded(tip[0]), rounded(tip[1])],
+    heads: [head(1), head(-1)]
+  };
+}
+
+function StartMark({ shape }: { shape: StartShape }) {
+  const { barFrom, barTo, tail, tip, heads } = shape;
+  return (
+    <>
+      <line className="track-start" x1={barFrom[0]} y1={barFrom[1]} x2={barTo[0]} y2={barTo[1]} />
+      <g className="track-direction" aria-hidden="true">
+        <line x1={tail[0]} y1={tail[1]} x2={tip[0]} y2={tip[1]} />
+        <polyline points={[heads[0], tip, heads[1]].map(point => point.join(',')).join(' ')} />
+      </g>
+    </>
+  );
+}
+
+function FinishMark({ at, direction }: { at: Point; direction: Point }) {
+  const angle = rounded((Math.atan2(direction[0], -direction[1]) * 180) / Math.PI);
+  const size = (2 * FINISH_HALF_PX) / FINISH_CELLS;
+  const cells = [0, 1].flatMap(row =>
+    Array.from({ length: FINISH_CELLS }, (_, column) => (
+      <rect
+        key={`${row}-${column}`}
+        className={(row + column) % 2 === 0 ? 'on' : 'off'}
+        x={-FINISH_HALF_PX + column * size}
+        y={-FINISH_DEPTH_PX / 2 + (row * FINISH_DEPTH_PX) / 2}
+        width={size}
+        height={FINISH_DEPTH_PX / 2}
+      />
+    ))
+  );
+  return (
+    <g className="track-finish" transform={`translate(${at[0]} ${at[1]}) rotate(${angle})`} aria-hidden="true">
+      {cells}
+      <rect className="frame" x={-FINISH_HALF_PX} y={-FINISH_DEPTH_PX / 2} width={2 * FINISH_HALF_PX} height={FINISH_DEPTH_PX} />
+    </g>
+  );
+}
+
+const EndsLayer = memo(function EndsLayer({ geometry, ends }: { geometry: Geometry; ends: Ends }) {
+  const { startPoint, endPoint, startDirection, endDirection } = geometry;
+  const labels: [string, Point | null][] = [
+    ['start', ends.start],
+    ['finish', ends.finish]
+  ];
+  return (
+    <>
+      {startPoint && startDirection ? <StartMark shape={startShape(startPoint, startDirection)} /> : null}
+      {endPoint && endDirection ? <FinishMark at={endPoint} direction={endDirection} /> : null}
+      {labels.map(([text, at]) =>
+        at ? (
+          <text key={text} className="track-label" x={at[0]} y={at[1]} textAnchor="middle" dominantBaseline="central">
+            {text}
+          </text>
+        ) : null
+      )}
+    </>
+  );
+});
+
+const TurnsLayer = memo(function TurnsLayer({ turns }: { turns: TurnPlace[] }) {
+  return <>{turns.flatMap(turn => turn.segments.map((points, index) => <polyline key={`${turn.key}-${index}`} className="track-turn" points={points} />))}</>;
+});
+
+const TurnLabelsLayer = memo(function TurnLabelsLayer({ turns }: { turns: TurnPlace[] }) {
+  return (
+    <>
+      {turns.map(({ key, label }) =>
+        label ? (
+          <text key={key} className="track-turn-label" x={label.at[0]} y={label.at[1]} textAnchor="middle" dominantBaseline="central">
+            {label.text}
+          </text>
+        ) : null
+      )}
+    </>
+  );
+});
+
 const LinesLayer = memo(function LinesLayer({ geometry }: { geometry: Geometry }) {
-  const { referenceSegments, attemptSegments, farSegments, startPoint, endPoint } = geometry;
+  const { referenceSegments, attemptSegments, farSegments } = geometry;
   return (
     <>
       {referenceSegments.map((points, index) => (
@@ -131,42 +320,46 @@ const LinesLayer = memo(function LinesLayer({ geometry }: { geometry: Geometry }
       {farSegments.map((points, index) => (
         <polyline key={`f${index}`} className="track-far" points={points} />
       ))}
-      {startPoint ? (
-        <text className="track-label" x={startPoint[0]} y={startPoint[1] - 16} textAnchor="end">
-          start
-        </text>
-      ) : null}
-      {endPoint ? (
-        <text className="track-label" x={endPoint[0]} y={endPoint[1] - 16}>
-          finish
-        </text>
-      ) : null}
     </>
   );
 });
 
-type MarksLayerProps = { marks: TrackMark[]; reference: TrackLine; attempt: TrackLine | null | undefined; project: (x: number, z: number) => Point };
+function MuteBadge({ x, y }: { x: number; y: number }) {
+  return (
+    <g className="mute-badge" transform={`translate(${x} ${y})`} aria-hidden="true">
+      <circle r={BADGE_RADIUS_PX} />
+      <g transform={`translate(${-BADGE_ICON_PX / 2} ${-BADGE_ICON_PX / 2})`}>
+        <Icon name="speaker-off" size={BADGE_ICON_PX} />
+      </g>
+    </g>
+  );
+}
 
-const MarksLayer = memo(function MarksLayer({ marks, reference, attempt, project }: MarksLayerProps) {
-  const projected = (point: Point | null) => (point ? project(point[0], point[1]) : null);
+const MarksLayer = memo(function MarksLayer({ marks, placed }: { marks: TrackMark[]; placed: (Placed | null)[] }) {
   return (
     <>
       {marks.map((mark, index) => {
-        if (mark.kind === 'turn-in') return <TurnInTick key={index} mark={mark} reference={reference} project={project} />;
-        if (mark.kind === 'apex') return <ApexMark key={index} mark={mark} reference={reference} project={project} />;
-        const at = projected(pointOn(mark.onAttempt && attempt ? attempt : reference, mark.sM));
-        if (!at) return null;
-        const radius = mark.label ? 13 : mark.selected ? 10 : 7;
+        const place = placed[index];
+        if (!place) return null;
+        const [cx, cy] = place.centre;
+        const radius = markRadius(mark);
         const className = `track-mark${mark.selected ? ' selected' : ''}${mark.muted ? ' muted' : ''}${mark.onAttempt ? ' on-attempt' : ''}`;
         const content = (
           <>
             <title>{mark.title}</title>
-            <circle cx={at[0]} cy={at[1]} r={radius} />
+            {place.spread ? (
+              <>
+                <line className="leader" x1={place.anchor[0]} y1={place.anchor[1]} x2={cx} y2={cy} />
+                <circle className="dot" cx={place.anchor[0]} cy={place.anchor[1]} r={3.5} />
+              </>
+            ) : null}
+            <circle className="marker" cx={cx} cy={cy} r={radius} />
             {mark.label ? (
-              <text x={at[0]} y={at[1] + 5} textAnchor="middle">
+              <text x={cx} y={cy + 5} textAnchor="middle">
                 {mark.label}
               </text>
             ) : null}
+            {mark.muted && mark.label ? <MuteBadge x={rounded(cx + radius * 0.75)} y={rounded(cy - radius * 0.75)} /> : null}
           </>
         );
         return mark.onSelect ? (
@@ -202,41 +395,24 @@ const CALLOUT_LEADER = 70;
 const CALLOUT_MARGIN = 4;
 const CALLOUT_CLEARANCE = 6;
 const CALLOUT_DOT_PX = 7;
-const LABEL_WIDTH = 48;
 const RING_STEPS = 8;
 
 function ring([x, y]: Point, radius: number): Point[] {
   return [[x, y], ...Array.from({ length: RING_STEPS }, (_, index) => [x + radius * Math.cos((index * 2 * Math.PI) / RING_STEPS), y + radius * Math.sin((index * 2 * Math.PI) / RING_STEPS)] as Point)];
 }
 
-function labelPoints(point: Point | null, toLeft: boolean): Point[] {
-  if (!point) return [];
-  return Array.from({ length: 7 }, (_, index) => [point[0] + (toLeft ? -1 : 1) * (index * LABEL_WIDTH) / 6, point[1] - 21] as Point);
+function startPoints({ startPoint, startDirection }: Geometry): Point[] {
+  if (!startPoint || !startDirection) return [];
+  const { barFrom, barTo, tail, tip } = startShape(startPoint, startDirection);
+  return [barFrom, barTo, tail, [(tail[0] + tip[0]) / 2, (tail[1] + tip[1]) / 2], tip];
 }
 
-type ObstacleInput = { geometry: Geometry; reference: TrackLine; attempt: TrackLine | null | undefined; marks: TrackMark[] };
-
-function obstaclesOf({ geometry, reference, attempt, marks }: ObstacleInput): Point[] {
-  const { project } = geometry;
-  const projectAll = (line: TrackLine) => finitePoints(line).map(([x, z]) => project(x, z));
-  const markPoints = marks.flatMap(mark => {
-    const at = normalAt(reference, mark.sM, project);
-    if (!at) return [];
-    if (mark.kind === 'turn-in') return [[at.x - at.nx * TICK_HALF_PX, at.y - at.ny * TICK_HALF_PX] as Point, [at.x + at.nx * TICK_HALF_PX, at.y + at.ny * TICK_HALF_PX] as Point];
-    if (mark.kind === 'apex') return ring([at.x - at.nx * APEX_OFFSET_PX, at.y - at.ny * APEX_OFFSET_PX], APEX_RADIUS_PX);
-    const point = pointOn(mark.onAttempt && attempt ? attempt : reference, mark.sM);
-    return point ? ring(project(point[0], point[1]), mark.label ? 13 : 10) : [];
-  });
-  return [
-    ...projectAll(reference),
-    ...(attempt ? projectAll(attempt) : []),
-    ...labelPoints(geometry.startPoint, true),
-    ...labelPoints(geometry.endPoint, false),
-    ...markPoints
-  ];
+function obstaclesOf(geometry: Geometry, reference: TrackLine, attempt: TrackLine | null | undefined, taken: Circle[]): Point[] {
+  const projectAll = (line: TrackLine) => finitePoints(line).map(([x, z]) => geometry.project(x, z));
+  return [...projectAll(reference), ...(attempt ? projectAll(attempt) : []), ...startPoints(geometry), ...taken.flatMap(circle => ring(circle.at, circle.r))];
 }
 
-type CalloutsLayerProps = { callouts: TrackCallout[]; reference: TrackLine; line: TrackLine; obstacles: Point[]; project: (x: number, z: number) => Point; height: number; scale: number };
+type CalloutsLayerProps = { callouts: TrackCallout[]; reference: TrackLine; line: TrackLine; obstacles: Point[]; project: Project; height: number; scale: number };
 
 const CalloutsLayer = memo(function CalloutsLayer({ callouts, reference, line, obstacles, project, height, scale }: CalloutsLayerProps) {
   const width = CALLOUT_WIDTH * scale;
@@ -251,7 +427,7 @@ const CalloutsLayer = memo(function CalloutsLayer({ callouts, reference, line, o
         const anchor = project(point[0], point[1]);
         const { box, end } = placeCallout({
           anchor,
-          normal: [normal.nx, normal.ny],
+          normal,
           side: callout.side,
           width,
           height: boxHeight,
@@ -304,7 +480,8 @@ export function TrackMap({ reference, attempt, far, callouts = NO_CALLOUTS, mark
   const geometry = useMemo(() => geometryOf(reference, attempt, far), [reference, attempt, far]);
   const svg = useRef<SVGSVGElement>(null);
   const calloutScale = useUnitsPerPixel(svg, geometry?.height ?? 1, callouts.length > 0);
-  const obstacles = useMemo(() => (geometry && callouts.length > 0 ? obstaclesOf({ geometry, reference, attempt, marks }) : NO_POINTS), [geometry, callouts, reference, attempt, marks]);
+  const layout = useMemo(() => (geometry ? layoutOf(marks, reference, attempt, geometry) : NO_LAYOUT), [geometry, marks, reference, attempt]);
+  const obstacles = useMemo(() => (geometry && callouts.length > 0 ? obstaclesOf(geometry, reference, attempt, layout.taken) : NO_POINTS), [geometry, callouts, reference, attempt, layout]);
   if (!geometry) return null;
   const { height, project } = geometry;
   const cursorLine = attempt ?? reference;
@@ -312,8 +489,11 @@ export function TrackMap({ reference, attempt, far, callouts = NO_CALLOUTS, mark
   const cursorPoint = cursor ? project(cursor[0], cursor[1]) : null;
   return (
     <svg ref={svg} className={`track-map${dark ? ' dark' : ''}`} viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-label={label}>
+      <TurnsLayer turns={layout.turns} />
       <LinesLayer geometry={geometry} />
-      <MarksLayer marks={marks} reference={reference} attempt={attempt} project={project} />
+      <EndsLayer geometry={geometry} ends={layout.ends} />
+      <TurnLabelsLayer turns={layout.turns} />
+      <MarksLayer marks={marks} placed={layout.placed} />
       <CalloutsLayer callouts={callouts} reference={reference} line={cursorLine} obstacles={obstacles} project={project} height={height} scale={calloutScale} />
       {cursorPoint ? <circle className="track-cursor" cx={cursorPoint[0]} cy={cursorPoint[1]} r={8} /> : null}
     </svg>

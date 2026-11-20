@@ -12,6 +12,8 @@ export type IconName =
   | 'search'
   | 'profiles'
   | 'speaker'
+  | 'speaker-off'
+  | 'play'
   | 'sign-out'
   | 'chevron-left'
   | 'chevron-right'
@@ -71,6 +73,8 @@ const SHAPES: Record<IconName, ReactNode> = {
     </>
   ),
   speaker: <path d="M11 5L6 9H2v6h4l5 4V5zM16 9a4 4 0 010 6" />,
+  'speaker-off': <path d="M11 5L6 9H2v6h4l5 4V5zM16 9l6 6M22 9l-6 6" />,
+  play: <path d="M7 4.5v15l12-7.5z" fill="currentColor" />,
   'sign-out': <path d="M9 21H4V3h5M16 17l5-5-5-5M21 12H9" />,
   'chevron-left': <path d="M15 6l-6 6 6 6" />,
   'chevron-right': <path d="M9 6l6 6-6 6" />,

@@ -20,11 +20,11 @@
     },
     "ease-off": {
       "file": "clips/ease-off.wav",
-      "durationMs": 614
+      "durationMs": 660
     },
     "throttle": {
       "file": "clips/throttle.wav",
-      "durationMs": 544
+      "durationMs": 765
     },
     "full-throttle": {
       "file": "clips/full-throttle.wav",
@@ -32,19 +32,19 @@
     },
     "keep-left": {
       "file": "clips/keep-left.wav",
-      "durationMs": 696
+      "durationMs": 629
     },
     "keep-right": {
       "file": "clips/keep-right.wav",
-      "durationMs": 701
+      "durationMs": 659
     },
     "tighter": {
       "file": "clips/tighter.wav",
-      "durationMs": 556
+      "durationMs": 1094
     },
     "big-stop": {
       "file": "clips/big-stop.wav",
-      "durationMs": 698
+      "durationMs": 901
     },
     "guidance-paused": {
       "file": "clips/guidance-paused.wav",
@@ -260,23 +260,23 @@
     },
     "focus-wide-apex-1": {
       "file": "clips/focus-wide-apex-1.wav",
-      "durationMs": 1787
+      "durationMs": 1828
     },
     "focus-wide-apex-2": {
       "file": "clips/focus-wide-apex-2.wav",
-      "durationMs": 1851
+      "durationMs": 1871
     },
     "focus-wide-apex-3": {
       "file": "clips/focus-wide-apex-3.wav",
-      "durationMs": 1915
+      "durationMs": 1951
     },
     "focus-wide-apex-4": {
       "file": "clips/focus-wide-apex-4.wav",
-      "durationMs": 1908
+      "durationMs": 1909
     },
     "focus-wide-apex-5": {
       "file": "clips/focus-wide-apex-5.wav",
-      "durationMs": 1933
+      "durationMs": 1960
     },
     "focus-wide-apex-6": {
       "file": "clips/focus-wide-apex-6.wav",
@@ -284,19 +284,19 @@
     },
     "focus-wide-apex-7": {
       "file": "clips/focus-wide-apex-7.wav",
-      "durationMs": 2010
+      "durationMs": 1997
     },
     "focus-wide-apex-8": {
       "file": "clips/focus-wide-apex-8.wav",
-      "durationMs": 1834
+      "durationMs": 1853
     },
     "focus-wide-apex-9": {
       "file": "clips/focus-wide-apex-9.wav",
-      "durationMs": 1969
+      "durationMs": 1953
     },
     "focus-wide-apex-10": {
       "file": "clips/focus-wide-apex-10.wav",
-      "durationMs": 1889
+      "durationMs": 1925
     },
     "speed-30": {
       "file": "clips/speed-30.wav",
