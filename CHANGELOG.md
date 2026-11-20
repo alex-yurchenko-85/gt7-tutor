@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.9.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.8.0...v1.9.0) (2026-11-20)
+
+### Features
+
+* preview the cues on the reference line and mark the cues that the voice does not say ([752e977](https://github.com/alex-yurchenko-85/gt7-tutor/commit/752e9775930348408e62cb1be5d08e52827439af))
+
 # [1.8.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.7.0...v1.8.0) (2026-11-20)
 
 ### Features
