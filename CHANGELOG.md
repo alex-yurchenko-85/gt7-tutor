@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.6.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.5.0...v1.6.0) (2026-11-20)
+
+### Features
+
+* move delete actions to a button in the review and to the exercises list ([130af37](https://github.com/alex-yurchenko-85/gt7-tutor/commit/130af3775c8b340e8b98c7129476d1004218bf7e))
+
 # [1.5.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.4.2...v1.5.0) (2026-11-20)
 
 ### Features
