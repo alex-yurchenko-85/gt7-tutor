@@ -69,14 +69,19 @@ describe('exercises home', () => {
     expect(card).toHaveTextContent('to bronze, 0:26.000');
     expect(within(card).getByText('Next: drive attempts')).toBeInTheDocument();
     expect(within(card).queryByRole('list', { name: 'Three steps' })).toBeNull();
-    expect(within(card).getByRole('link', { name: 'Start an attempt' })).toHaveAttribute('href', '/drive');
-    expect(within(card).getByRole('link', { name: 'Open the exercise' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}`);
+    const drive = within(card).getByRole('button', { name: 'Drive' });
+    expect(drive).toHaveClass('continue-primary');
+    expect(drive.querySelector('[data-icon="drive"]')).not.toBeNull();
+    expect(within(card).getByRole('link', { name: 'Attempts' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}/attempts`);
+    expect(within(card).getByRole('link', { name: 'Racing Line: Intermediate' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}`);
+    expect(within(card).queryByRole('link', { name: 'Open the exercise' })).toBeNull();
+    expect(within(card).queryByRole('link', { name: /^Open the attempts|^Start an attempt/ })).toBeNull();
   });
 
   it('home_has_no_attempt_mode_text', async () => {
     homeApi();
     renderApp();
-    await screen.findByRole('link', { name: 'Start an attempt' });
+    await screen.findByRole('button', { name: 'Drive' });
     expect(document.body.textContent).not.toMatch(/baseline|guided|without voice|No device plays the voice/i);
   });
 
@@ -135,7 +140,7 @@ describe('exercises home', () => {
     const view = renderApp();
     await screen.findByRole('region', { name: /My exercises/ });
     await openLive(view.sockets, liveState({ mode: 'armed', exerciseId: EXERCISE_ID, connection: 'connected' }));
-    await waitFor(() => expect(window.location.pathname).toBe('/drive'));
+    await waitFor(() => expect(window.location.pathname).toBe(`/exercises/${EXERCISE_ID}/drive`));
     window.history.back();
   });
 
@@ -155,6 +160,26 @@ describe('exercises home', () => {
     renderApp();
     const card = await screen.findByRole('region', { name: 'Racing Line: Intermediate' });
     expect(card).toHaveTextContent('Next: drive attempts');
+    expect(within(card).getByRole('button', { name: 'Drive' })).toBeInTheDocument();
+    expect(within(card).getByRole('link', { name: 'Attempts' })).toHaveClass('continue-link');
+  });
+
+  it('continue_without_a_reference_links_to_the_recording', async () => {
+    homeApi();
+    window.localStorage.setItem('gt7.currentExercise.user-1', BASICS.id);
+    renderApp();
+    const card = await screen.findByRole('region', { name: 'Cornering Basics 1' });
+    expect(within(card).getByRole('link', { name: 'Record the reference' })).toHaveAttribute('href', `/exercises/${BASICS.id}/record`);
+    expect(within(card).queryByRole('button', { name: 'Drive' })).toBeNull();
+  });
+
+  it('continue_drive_arms_and_opens_the_stage', async () => {
+    const api = homeApi().on('POST /api/training/arm', { status: 201, body: { captureId: 'cap-9', exerciseId: EXERCISE_ID, referenceId: 'ref-demo' } });
+    renderApp();
+    const card = await screen.findByRole('region', { name: 'Racing Line: Intermediate' });
+    await userEvent.setup().click(within(card).getByRole('button', { name: 'Drive' }));
+    await waitFor(() => expect(window.location.pathname).toBe(`/exercises/${EXERCISE_ID}/drive`));
+    expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: EXERCISE_ID });
   });
 
   it('filter_lists_only_families_with_exercises', async () => {
@@ -167,7 +192,7 @@ describe('exercises home', () => {
   it('filter_is_hidden_with_one_family', async () => {
     homeApi([RACING]);
     renderApp();
-    await screen.findByRole('link', { name: /Racing Line: Intermediate/ });
+    await screen.findByRole('region', { name: /My exercises/ });
     expect(screen.queryByRole('group', { name: 'Filter' })).toBeNull();
   });
 

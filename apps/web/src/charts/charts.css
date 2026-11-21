@@ -523,3 +523,425 @@
   stroke-width: 3;
   vector-effect: non-scaling-stroke;
 }
+
+.race-chart-plot svg {
+  display: block;
+  width: 100%;
+}
+
+.race-chart-pit {
+  fill: var(--line);
+  opacity: 0.8;
+}
+
+.race-chart-lap {
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.race-chart-end {
+  position: absolute;
+  right: -5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translateY(-50%);
+}
+
+.race-chart-laps {
+  padding-left: 46px;
+}
+
+.race-chart-laps div {
+  position: relative;
+  height: 18px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--mute);
+}
+
+.race-chart-laps span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+.chart-line.lap {
+  stroke: var(--mute);
+  stroke-width: 1;
+  opacity: 0.75;
+}
+
+.strip-body {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.strip-laps {
+  display: grid;
+  padding-top: 26px;
+  font-size: 12px;
+  color: var(--mute);
+}
+
+.strip-laps span {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 34px;
+}
+
+.strip-plot {
+  padding-top: 26px;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.strip-place {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--soft);
+}
+
+.strip-place b {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 11px var(--font-display);
+  transform: translateX(-50%);
+}
+
+.strip-place b.before {
+  transform: translateX(calc(-100% - 1px));
+}
+
+.strip-place b.after {
+  transform: translateX(1px);
+}
+
+.strip-row {
+  position: relative;
+  height: 34px;
+}
+
+.strip-rule {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--line);
+}
+
+.strip-pit {
+  position: absolute;
+  top: calc(50% - 5px);
+  height: 10px;
+  background: var(--ink);
+}
+
+.strip-moment {
+  position: absolute;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+
+.strip-moment i {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 2.5px solid var(--red);
+  background: var(--paper);
+}
+
+.strip-moment.all i {
+  background: var(--red);
+}
+
+.strip-moment[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+
+.strip-moment:focus-visible {
+  outline: 3px solid var(--ref);
+  outline-offset: 0;
+  border-radius: 50%;
+}
+
+.strip-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1.5px solid var(--ink);
+  pointer-events: none;
+}
+
+.strip-box {
+  position: absolute;
+  z-index: 2;
+  min-width: 200px;
+  padding: 8px 10px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+  pointer-events: none;
+}
+
+.strip-box b,
+.strip-box span {
+  display: block;
+}
+
+.strip-box.right {
+  transform: translateX(16px);
+}
+
+.strip-box.left {
+  transform: translateX(calc(-100% - 16px));
+}
+
+.strip-box.right.up {
+  transform: translate(16px, -100%);
+}
+
+.strip-box.left.up {
+  transform: translate(calc(-100% - 16px), -100%);
+}
+
+@media (max-width: 899px) {
+  .strip-laps span,
+  .strip-row {
+    height: 44px;
+  }
+
+  .strip-moment {
+    width: 44px;
+    height: 44px;
+  }
+
+  .strip-moment[aria-pressed='true']::after {
+    inset: 10px;
+  }
+}
+
+.track-map.plain .track-reference {
+  stroke: var(--mute);
+  opacity: 0.45;
+}
+
+.track-mark.off-all circle.marker,
+.track-mark.off-part circle.marker {
+  stroke: var(--red);
+  stroke-width: 2.5;
+}
+
+.track-mark.off-all circle.marker {
+  fill: var(--red);
+}
+
+.track-mark.off-part circle.marker {
+  fill: var(--paper);
+}
+
+.track-mark.off-all.selected circle.marker,
+.track-mark.off-part.selected circle.marker {
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+
+.track-mark.place circle.marker {
+  fill: var(--ink);
+  stroke: var(--ink);
+}
+
+.track-mark.place text {
+  fill: var(--paper);
+  font: 800 12px var(--font-display);
+}
+
+.map-legend .off-all,
+.map-legend .off-part,
+.map-legend .place {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.map-legend .off-all {
+  background: var(--red);
+}
+
+.map-legend .off-part {
+  border: 2px solid var(--red);
+  background: var(--paper);
+}
+
+.map-legend .place {
+  width: 16px;
+  height: 16px;
+  background: var(--ink);
+}
+
+.chart-field {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.chart-field .channel-label {
+  align-items: baseline;
+  margin-top: 0;
+}
+
+.field-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.field-unit {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--mute);
+}
+
+.chart-field .channel-body,
+.chart-field .strip-body {
+  grid-template-columns: 30px minmax(0, 1fr);
+}
+
+.chart-field .plot {
+  border: 0;
+  border-left: 1px solid var(--mute);
+  border-bottom: 1px solid var(--mute);
+  background: transparent;
+}
+
+.chart-field .y-axis span {
+  left: 0;
+  right: auto;
+}
+
+.chart-field .strip-laps span {
+  justify-content: flex-start;
+}
+
+.chart-field .distance-axis {
+  padding-left: 36px;
+}
+
+.chart-field .race-chart-laps {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 6px;
+  padding-left: 0;
+}
+
+.axis-name {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  color: var(--mute);
+}
+
+.y-axis .axis-bold,
+.race-chart-laps .axis-pit {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.map-panel-head.no-title {
+  justify-content: flex-end;
+}
+
+.race-chart-active {
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.race-cursor-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed var(--ink);
+  pointer-events: none;
+}
+
+.race-cursor-dot {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.race-cursor-box {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  padding: 6px 10px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.race-cursor-box.right.below {
+  transform: translate(12px, 12px);
+}
+
+.race-cursor-box.left.below {
+  transform: translate(calc(-100% - 12px), 12px);
+}
+
+.race-cursor-box.right.above {
+  transform: translate(12px, calc(-100% - 12px));
+}
+
+.race-cursor-box.left.above {
+  transform: translate(calc(-100% - 12px), calc(-100% - 12px));
+}
+
+.race-cursor-box span {
+  font-size: 12px;
+}

@@ -96,3 +96,34 @@ export async function insertAttempt(db: Knex, attempt: StoredAttempt): Promise<s
 export async function rawPathOf(db: Knex, dataDir: string, captureId: string): Promise<string> {
   return join(dataDir, (await db('captures').where({ id: captureId }).first()).raw_path as string);
 }
+
+export async function insertRace(db: Knex, userId: string, rawPath = 'raw/race.ndjson'): Promise<string> {
+  const [capture] = await db('captures').insert({ user_id: userId, purpose: 'race', raw_path: rawPath, started_at: new Date(), ended_at: new Date(), complete: true }).returning('id');
+  const [race] = await db('races')
+    .insert({
+      user_id: userId,
+      capture_id: capture.id,
+      first_raw_index: 0,
+      last_raw_index: 100,
+      car_id: 3602,
+      first_lap: 1,
+      laps_in_race: 2,
+      cars: 16,
+      start_position: 8,
+      finish_position: 7,
+      race_ms: 118000,
+      best_lap: 2,
+      best_lap_ms: 58000,
+      reference_lap: 2,
+      complete: true,
+      position_steps: JSON.stringify([{ tMs: 0, position: 8 }]),
+      fuel_points: JSON.stringify([{ tMs: 0, fuel: 100 }]),
+      recurring: JSON.stringify([]),
+      started_at: new Date()
+    })
+    .returning('id');
+  await db('race_laps').insert(
+    [1, 2].map(number => ({ race_id: race.id, number, first_raw_index: number * 40, last_raw_index: number * 40 + 39, time_ms: 58000 + (2 - number) * 2000, position_start: 8, position_end: 8, top_speed_mps: 50, fuel_start: 100, fuel_end: 90, pit_in: false, pit_out: false }))
+  );
+  return race.id as string;
+}

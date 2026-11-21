@@ -10,6 +10,7 @@ import { ExercisesModule } from './exercises/exercises.module.js';
 import type { AppConfig } from './config/app-config.js';
 import { HealthModule } from './health/health.module.js';
 import { HistoryModule } from './history/history.module.js';
+import { RacesModule } from './races/races.module.js';
 import { ReferencesModule } from './references/references.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { TrainingModule } from './training/training.module.js';
@@ -31,6 +32,7 @@ export class AppModule {
         CapturesModule,
         ReferencesModule,
         TrainingModule,
+        RacesModule,
         AttemptsModule,
         HistoryModule,
         HealthModule,

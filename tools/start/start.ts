@@ -16,7 +16,7 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const READY_TIMEOUT_MS = 120000;
 const POLL_MS = 500;
 const REQUEST_TIMEOUT_MS = 2000;
-const KILL_AFTER_MS = 10000;
+const KILL_AFTER_MS = 15000;
 
 type AppInfo = { demo: { profileName: string; password: string; ready: boolean } | null };
 

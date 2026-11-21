@@ -27,7 +27,7 @@ export function connectionProblem(state: LiveState, socketConnected: boolean, de
   if (!socketConnected) return 'Connection to GT7 Tutor lost. Cues are not shown until it returns.';
   if (state.connection === 'disconnected') {
     return demo
-      ? 'The demo attempt has ended. Select Stop training, then Play a demo attempt again.'
+      ? 'The demo attempt has ended. Select Stop training, then select Drive.'
       : 'No packets from the console. Check that GT7 is running and that the address in Setup is right.';
   }
   if (state.connection === 'stale') return demo ? 'Waiting for the recorded data.' : 'Waiting for packets from the console.';
@@ -45,11 +45,4 @@ export function cueNote(cue: LiveCue, spoken: ReferenceCue[], corners: CornerInf
   if (!reference) return null;
   const turn = corners.find(corner => reference.sM < corner.zoneToSM);
   return `Cue ${index + 1} of ${spoken.length}${turn ? ` · before T${turn.number}` : ''}`;
-}
-
-export function nextCueProgress(sM: number, inM: number, spoken: ReferenceCue[]): number {
-  const from = spoken.filter(cue => cue.sM <= sM).at(-1)?.sM ?? 0;
-  const to = sM + inM;
-  if (to <= from) return 1;
-  return Math.min(1, Math.max(0, (sM - from) / (to - from)));
 }

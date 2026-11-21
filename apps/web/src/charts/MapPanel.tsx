@@ -6,6 +6,7 @@ export type LegendKey = 'reference' | 'you' | 'turn' | 'cue' | 'muted' | 'not-sp
 
 export type MapPanelProps = {
   title: string;
+  hideTitle?: boolean;
   legend: LegendKey[];
   far?: string | null;
   notes?: string[];
@@ -14,6 +15,8 @@ export type MapPanelProps = {
   children: ReactNode;
   below?: ReactNode;
   viewIcon?: boolean;
+  legendTexts?: Partial<Record<LegendKey, string>>;
+  extraLegend?: { mark: string; text: string }[];
 };
 
 const LEGEND: { key: LegendKey; mark: string; text: string }[] = [
@@ -25,11 +28,11 @@ const LEGEND: { key: LegendKey; mark: string; text: string }[] = [
   { key: 'not-spoken', mark: 'cue not-spoken', text: 'cue not spoken' }
 ];
 
-export function MapPanel({ title, legend, far = null, notes = [], actions, onView, children, below, viewIcon = false }: MapPanelProps) {
+export function MapPanel({ title, hideTitle = false, legend, far = null, notes = [], actions, onView, children, below, viewIcon = false, legendTexts = {}, extraLegend = [] }: MapPanelProps) {
   return (
     <section className="panel map-panel" aria-label={title}>
-      <div className="map-panel-head">
-        <h2>{title}</h2>
+      <div className={hideTitle ? 'map-panel-head no-title' : 'map-panel-head'}>
+        {hideTitle ? null : <h2>{title}</h2>}
         {actions ? <div className="map-panel-actions">{actions}</div> : null}
         <button type="button" className={`icon-button${viewIcon ? ' icon-only' : ''}`} aria-label="View the map in full screen" onClick={onView}>
           <Icon name="expand" size={16} />
@@ -41,6 +44,12 @@ export function MapPanel({ title, legend, far = null, notes = [], actions, onVie
       <div className="legend map-legend">
         {LEGEND.filter(item => legend.includes(item.key)).map(item => (
           <span key={item.key}>
+            <i className={item.mark} />
+            {legendTexts[item.key] ?? item.text}
+          </span>
+        ))}
+        {extraLegend.map(item => (
+          <span key={item.text}>
             <i className={item.mark} />
             {item.text}
           </span>

@@ -10,6 +10,10 @@ export function rounded(value: number): number {
   return Number(value.toFixed(1));
 }
 
+export function percent(value: number): string {
+  return `${(value * 100).toFixed(2)}%`;
+}
+
 export function clamp(value: number, low: number, high: number): number {
   return Math.max(low, Math.min(high, value));
 }

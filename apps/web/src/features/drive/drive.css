@@ -1,72 +1,3 @@
-.drive-exercise {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 8px;
-  margin: 0;
-  color: var(--mute);
-  font-size: 16px;
-}
-
-.drive-exercise .text-link {
-  color: var(--ink);
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.drive-columns {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: 24px;
-  align-items: start;
-  margin-top: 16px;
-}
-
-.drive-stack {
-  display: grid;
-  gap: 20px;
-  min-width: 0;
-}
-
-.arm-panel {
-  padding: 22px;
-}
-
-.arm-panel .text-links {
-  margin-top: 4px;
-}
-
-.voice-notice {
-  margin: 0 0 14px;
-  font-size: 15px;
-}
-
-.voice-notice p {
-  margin: 0;
-}
-
-.voice-notice .btn {
-  margin-top: 10px;
-  background: var(--paper);
-  min-height: 44px;
-  font-size: 17px;
-  white-space: normal;
-}
-
-.arm-panel > .sub {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.arm-button {
-  background: var(--yellow);
-  color: #14181f;
-  border: 2px solid #14181f;
-  min-height: 52px;
-  font-weight: 700;
-}
-
 main.view.immersive {
   max-width: none;
   padding: 0;
@@ -106,7 +37,7 @@ main.view.immersive {
   color: var(--stage-ink);
   color-scheme: dark;
   display: grid;
-  grid-template-columns: minmax(340px, 1fr) minmax(0, 1.3fr);
+  grid-template-columns: minmax(340px, 1fr) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   height: 100vh;
   height: 100dvh;
@@ -119,7 +50,7 @@ main.view.immersive {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 24px;
+  padding: 12px 24px 12px 36px;
   border-bottom: 1px solid var(--stage-line);
 }
 
@@ -135,22 +66,15 @@ main.view.immersive {
   overflow-wrap: anywhere;
 }
 
-.stage-row {
-  display: flex;
+.drive-stage .race-status-word.stage-status-row {
   flex-wrap: wrap;
-  gap: 4px 12px;
-  margin-top: 4px;
-  font-size: 13px;
+  gap: 4px 24px;
 }
 
 .stage-status {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-}
-
-.stage-status .dot {
-  margin: 0;
+  gap: 8px;
 }
 
 .stage-button {
@@ -179,14 +103,17 @@ main.view.immersive {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 28px 24px 24px;
+  padding: 40px 24px 24px 36px;
   container-type: inline-size;
 }
 
 .drive-stage .cue {
   --cue-size: min(96px, calc(100cqi / 5.8));
   --cue-line: 0.95;
-  height: calc(var(--cue-size) * var(--cue-line) * 2 + 38px);
+}
+
+.drive-stage .cue.running {
+  min-height: calc(var(--cue-size) * var(--cue-line) * 2);
 }
 
 .drive-stage .cue-word {
@@ -222,51 +149,33 @@ main.view.immersive {
   text-transform: none;
 }
 
-.cue-note {
-  margin: 8px 0 0;
-  font-size: 18px;
-  color: var(--stage-mute);
+.stage-text .race-lead {
+  margin-top: 24px;
 }
 
-.drive-stage .next {
-  margin-top: 16px;
+.stage-text .race-note {
+  margin-top: 12px;
 }
 
-.next-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 1.4em;
-  font-size: 15px;
-  color: var(--stage-mute);
+.stage-text .cue:not(.running):has(.cue-word:empty) + .race-lead {
+  margin-top: 0;
 }
 
-.next-bar {
-  height: 6px;
-  margin-top: 6px;
-  background: var(--stage-line);
+.stage-text.running .race-lead,
+.stage-text.running .race-note {
+  min-height: 1lh;
 }
 
-.next-bar span {
-  display: block;
-  height: 6px;
-  background: var(--stage-ink);
-}
-
-.live-numbers {
+.stage-voice {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 20px;
-  font-size: 13px;
-  color: var(--stage-mute);
+  justify-items: start;
+  gap: 12px;
+  margin-top: 12px;
 }
 
-.live-numbers b {
-  display: block;
-  font: 800 44px/1 var(--font-display);
-  color: var(--stage-ink);
-  font-variant-numeric: tabular-nums;
+.stage-voice .race-note,
+.stage-voice .drive-stage .live-numbers {
+  margin-top: 24px;
 }
 
 .live-numbers .gap b {
@@ -340,19 +249,6 @@ main.view.immersive {
 }
 
 @media (max-width: 899px) {
-  .drive-columns {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-  }
-
-  .drive-stack {
-    gap: 16px;
-  }
-
-  .arm-panel {
-    padding: 16px;
-  }
-
   .drive-stage {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto minmax(0, 1fr);
@@ -373,7 +269,6 @@ main.view.immersive {
 }
 
 @media (hover: hover) {
-  .btn.arm-button:hover:not(:disabled),
   .stage-summary .btn:hover:not(:disabled) {
     background: #f0c400;
   }
@@ -383,11 +278,122 @@ main.view.immersive {
   }
 }
 
-.btn.arm-button:active:not(:disabled),
 .stage-summary .btn:active:not(:disabled) {
   background: #e0b600;
 }
 
 .stage-summary .btn.ghost:active:not(:disabled) {
   background: transparent;
+}
+
+.drive-stage .race-status-word {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--stage-ink);
+}
+
+.drive-stage .race-status-sub {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: var(--stage-mute);
+}
+
+.race-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--stage-dim);
+}
+
+.race-dot.green {
+  background: var(--ok);
+}
+
+.race-dot.red {
+  background: var(--red);
+}
+
+.race-dot.yellow {
+  background: var(--yellow);
+}
+
+.race-word {
+  margin: 0;
+  font: 800 104px/0.95 var(--font-display);
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
+
+.race-word.dim {
+  color: var(--stage-dim);
+}
+
+.race-word.yellow {
+  color: var(--yellow);
+}
+
+.race-lead {
+  max-width: 640px;
+  margin: 18px 0 0;
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+.race-note {
+  max-width: 560px;
+  margin: 14px 0 0;
+  color: var(--stage-mute);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.race-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px 56px;
+  margin-top: 36px;
+}
+
+.race-stat {
+  display: grid;
+  align-content: start;
+}
+
+.race-stat b {
+  font: 800 40px/1.05 var(--font-display);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.race-stat span {
+  color: var(--stage-mute);
+  font-size: 14px;
+}
+
+.race-stat.yellow b {
+  color: var(--yellow);
+}
+
+@media (max-width: 899px) {
+  .race-word {
+    font-size: 72px;
+  }
+
+  .race-lead {
+    font-size: 18px;
+  }
+
+  .race-stats {
+    gap: 20px 36px;
+    margin-top: 24px;
+  }
+
+  .race-stat b {
+    font-size: 32px;
+  }
 }

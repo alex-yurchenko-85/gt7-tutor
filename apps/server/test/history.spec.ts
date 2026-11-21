@@ -7,7 +7,8 @@ import { hashToken } from '../src/auth/auth.service.js';
 import { SESSION_COOKIE, readCookie } from '../src/auth/session-cookie.js';
 import { SampleCache } from '../src/captures/sample-cache.js';
 import { LiveHub, type LiveClient } from '../src/live/live-hub.service.js';
-import { DEMONSTRATION, TestApi, createReplayApp, insertAttempt, rawPathOf as rawPathIn } from './support/api.js';
+import { RaceRecorder } from '../src/races/race-recorder.service.js';
+import { DEMONSTRATION, TestApi, createReplayApp, insertAttempt, insertRace, rawPathOf as rawPathIn } from './support/api.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
 import { ManualSource } from './support/live.js';
 import { eventually } from '../../../tools/testing/eventually.js';
@@ -139,7 +140,7 @@ describe('deleting attempts and history', () => {
       .set('Cookie', cookie)
       .send({ scope: 'exercise', exerciseId: first.exerciseId, cleanup: false })
       .expect(200);
-    expect(response.body).toEqual({ attempts: 2, references: 0, cleanup: null });
+    expect(response.body).toEqual({ attempts: 2, references: 0, races: 0, cleanup: null });
     expect(await db('attempts').where({ exercise_id: first.exerciseId })).toEqual([]);
     expect(await db('attempts').where({ exercise_id: second.exerciseId })).toHaveLength(1);
     expect(await db('references').where({ id: first.referenceId })).toHaveLength(1);
@@ -153,7 +154,7 @@ describe('deleting attempts and history', () => {
     const other = await anotherProfile(app!, cookie, 'Second');
     const foreign = await exerciseWithAttempts(1, other);
     const response = await http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'attempts', cleanup: false }).expect(200);
-    expect(response.body).toEqual({ attempts: 3, references: 0, cleanup: null });
+    expect(response.body).toEqual({ attempts: 3, references: 0, races: 0, cleanup: null });
     expect(await db('attempts').whereIn('exercise_id', [first.exerciseId, second.exerciseId])).toEqual([]);
     expect(await db('attempts').where({ exercise_id: foreign.exerciseId })).toHaveLength(1);
   });
@@ -163,7 +164,7 @@ describe('deleting attempts and history', () => {
     const other = await anotherProfile(app!, cookie, 'Second');
     const foreign = await exerciseWithAttempts(1, other);
     const response = await http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'everything', cleanup: false }).expect(200);
-    expect(response.body).toEqual({ attempts: 2, references: 1, cleanup: null });
+    expect(response.body).toEqual({ attempts: 2, references: 1, races: 0, cleanup: null });
     const exercise = await http().get(`/api/exercises/${first.exerciseId}`).set('Cookie', cookie).expect(200);
     expect(exercise.body).toMatchObject({ status: 'new', activeReferenceId: null });
     const listed = await http().get('/api/exercises').set('Cookie', cookie).expect(200);
@@ -171,6 +172,37 @@ describe('deleting attempts and history', () => {
     expect(await db('captures').where({ id: first.captureId })).toHaveLength(1);
     expect(await db('references').where({ id: foreign.referenceId })).toHaveLength(1);
     expect(await db('attempts').where({ exercise_id: foreign.exerciseId })).toHaveLength(1);
+  });
+
+  it('everything_scope_removes_the_races_of_the_profile_only', async () => {
+    const other = await anotherProfile(app!, cookie, 'Second');
+    const own = [await insertRace(db, await userIdOf('Driver')), await insertRace(db, await userIdOf('Driver'))];
+    const foreign = await insertRace(db, await userIdOf('Second'));
+    const attempts = await http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'attempts', cleanup: false }).expect(200);
+    expect(attempts.body).toEqual({ attempts: 0, references: 0, races: 0, cleanup: null });
+    expect(await db('races').whereIn('id', own)).toHaveLength(2);
+    const everything = await http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'everything', cleanup: false }).expect(200);
+    expect(everything.body).toEqual({ attempts: 0, references: 0, races: 2, cleanup: null });
+    expect(await db('races').whereIn('id', own)).toEqual([]);
+    expect(await db('race_laps').whereIn('race_id', own)).toEqual([]);
+    expect(await db('races').where({ id: foreign })).toHaveLength(1);
+    expect((await http().get('/api/races').set('Cookie', other).expect(200)).body.map((race: { id: string }) => race.id)).toEqual([foreign]);
+  });
+
+  it('delete_profile_counts_and_removes_its_races', async () => {
+    const raceId = await insertRace(db, await userIdOf('Driver'));
+    const recorder = app!.get(RaceRecorder);
+    const forgotten: string[][] = [];
+    const forget = recorder.forgetRaces.bind(recorder);
+    recorder.forgetRaces = (userId, ids) => {
+      forgotten.push(ids);
+      forget(userId, ids);
+    };
+    const response = await http().post('/api/profiles/me/delete').set('Cookie', cookie).send({ password: PASSWORD }).expect(200);
+    expect(response.body).toMatchObject({ exercises: 0, attempts: 0, references: 0, races: 1 });
+    expect(forgotten).toEqual([[raceId]]);
+    expect(await db('races').where({ id: raceId })).toEqual([]);
+    expect(await db('race_laps').where({ race_id: raceId })).toEqual([]);
   });
 
   it('cleanup_flag_returns_cleanup_result', async () => {
@@ -274,7 +306,7 @@ describe('deleting attempts and history', () => {
     hub.receive(client, { type: 'claim-voice', deviceId: 'phone', ready: true });
     expect(hub.voiceReady(driverId)).toBe(true);
     const response = await http().post('/api/profiles/me/delete').set('Cookie', cookie).send({ password: PASSWORD }).expect(200);
-    expect(response.body).toEqual({ exercises: 1, attempts: 2, references: 1, cleanup: { captures: 1, bytesBefore: ownSize, bytesAfter: 0 } });
+    expect(response.body).toEqual({ exercises: 1, attempts: 2, references: 1, races: 0, cleanup: { captures: 1, bytesBefore: ownSize, bytesAfter: 0 } });
     expect(String(response.headers['set-cookie'])).toMatch(/gt7_session=;/);
     await eventually(() => closed);
     expect(hub.voiceReady(driverId)).toBe(false);

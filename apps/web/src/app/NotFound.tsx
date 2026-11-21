@@ -2,7 +2,7 @@ import { errorText } from './resource.ts';
 import { isNotFound } from './ids.ts';
 import { Link, paths } from './router.tsx';
 
-export type NotFoundKind = 'page' | 'attempt' | 'exercise';
+export type NotFoundKind = 'page' | 'attempt' | 'exercise' | 'race';
 
 type Copy = { kicker: string; title: string; reason: string };
 
@@ -17,6 +17,11 @@ const COPY: Record<NotFoundKind, Copy> = {
     title: 'This attempt is not here',
     reason: 'It was deleted, it belongs to another profile, or the link is old.'
   },
+  race: {
+    kicker: 'RACE NOT FOUND',
+    title: 'This race is not here',
+    reason: 'It was deleted, it belongs to another profile, or the link is old.'
+  },
   exercise: {
     kicker: 'EXERCISE NOT FOUND',
     title: 'This exercise is not here',
@@ -25,6 +30,13 @@ const COPY: Record<NotFoundKind, Copy> = {
 };
 
 function SecondAction({ kind, exerciseId }: { kind: NotFoundKind; exerciseId: string | undefined }) {
+  if (kind === 'race') {
+    return (
+      <Link to={paths.races()} className="btn inline ghost">
+        Open Races
+      </Link>
+    );
+  }
   if (kind === 'exercise') {
     return (
       <Link to={paths.addExercise()} className="btn inline ghost">

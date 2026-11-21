@@ -8,6 +8,7 @@ import { conflict } from '../http-errors.js';
 import { dropOldest } from '../drop-oldest.js';
 import { LiveHub, type ProfileState } from '../live/live-hub.service.js';
 import { ownedExercise, type ReferenceRow } from '../ownership/owned.js';
+import { RaceRecorder } from '../races/race-recorder.service.js';
 import { ReferencesService } from '../references/references.service.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { FOCUS_ATTEMPTS, focusOf, recentFindings } from '../attempts/attempt-focus.js';
@@ -56,6 +57,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     private readonly captures: CaptureService,
     private readonly references: ReferencesService,
     private readonly hub: LiveHub,
+    private readonly races: RaceRecorder,
     config: ConfigService
   ) {
     this.phraseMs = phraseDurations(config.getOrThrow<string>('AUDIO_DIR'));
@@ -83,7 +85,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
   async arm(userId: string, request: ArmTrainingRequest): Promise<ArmResponse> {
     if (this.stopping) throw shuttingDown();
     const exercise = await ownedExercise(this.db, userId, request.exerciseId);
-    if (this.training) throw conflict('busy', 'A capture or training is already active.');
+    if (this.training || this.races.busy) throw conflict('busy', 'A capture or training is already active.');
     if (!exercise.active_reference_id) throw conflict('no-reference', 'Record and confirm a reference first.');
     const done = this.start({
       userId,
@@ -149,7 +151,12 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
   }
 
   busyFor(userId: string): boolean {
-    return this.training?.userId === userId || this.pendingArm?.userId === userId || this.captures.activeCapture?.userId === userId;
+    return (
+      this.training?.userId === userId ||
+      this.pendingArm?.userId === userId ||
+      this.captures.activeCapture?.userId === userId ||
+      this.races.busyFor(userId)
+    );
   }
 
   async disarm(userId: string): Promise<{ ok: true }> {
@@ -175,6 +182,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
   profileState(userId: string): ProfileState {
     const capture = this.captures.activeCapture;
     const owner = this.training?.userId ?? capture?.userId ?? null;
+    const race = this.races.liveFor(userId);
     const neutral: ProfileState = {
       connection: 'disconnected',
       mode: 'idle',
@@ -191,12 +199,14 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
       lastAttemptId: this.lastAttemptIds.get(userId) ?? null,
       referenceId: null,
       gapMs: null,
-      startMissed: false
+      startMissed: false,
+      lastRaceId: this.races.lastRaceId(userId),
+      race: null
     };
-    if (owner !== userId) return neutral;
+    if (owner !== userId) return race ? { ...neutral, mode: race.mode, race: race.race } : neutral;
     const storageError = this.captures.incompleteReason();
     const base = { ...neutral, connection: this.connection(), exerciseId: capture?.exerciseId ?? null, recordingComplete: storageError === null, storageError };
-    if (!this.training) return { ...base, mode: 'capturing' };
+    if (!this.training) return race && race.mode !== 'idle' ? { ...base, mode: race.mode, race: race.race } : { ...base, mode: 'capturing' };
     const view = this.training.session.state;
     const { exerciseId, referenceId } = this.training.session.snapshot;
     return { ...base, ...view, exerciseId, referenceId };
@@ -219,7 +229,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     if (this.training && now !== null) this.training.session.tick(now);
     const capture = this.captures.activeCapture;
     const mode: LiveMode | 'none' = this.training?.session.state.mode ?? (capture ? 'capturing' : 'none');
-    const signature = `${capture?.id ?? '-'}:${mode}:${this.connection()}:${this.captures.incompleteReason() ?? ''}`;
+    const signature = `${capture?.id ?? '-'}:${mode}:${this.races.signature()}:${this.connection()}:${this.captures.incompleteReason() ?? ''}`;
     if (signature !== this.lastSignature) this.hub.changed();
     this.lastSignature = signature;
   }

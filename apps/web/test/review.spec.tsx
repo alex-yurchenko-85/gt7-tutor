@@ -65,6 +65,8 @@ describe('attempt review', () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
     const speed = await screen.findByRole('slider', { name: 'Speed, km/h' });
+    expect(document.querySelector('.chart-field')).toBeNull();
+    expect(screen.getByText('Speed, km/h')).not.toHaveClass('visually-hidden');
     const before = { chart: cursorX(), map: mapCursor() };
     speed.focus();
     await userEvent.setup().keyboard('{ArrowRight}{ArrowRight}');
@@ -534,22 +536,22 @@ describe('attempt review', () => {
     expect(heights).toEqual(['120px', '120px', '120px', '140px', '120px']);
   });
 
-  it('drive_again_drives_the_exercise_of_the_attempt', async () => {
-    reviewApi();
-    window.localStorage.setItem(`gt7.currentExercise.${USER.id}`, 'e0000000-0000-4000-8000-000000000002');
+  it('drive_drives_the_exercise_of_the_attempt', async () => {
+    const api = reviewApi().on('POST /api/training/arm', { status: 201, body: { captureId: 'cap-9', exerciseId: EXERCISE_ID, referenceId: 'ref-demo' } });
     renderApp({ path: REVIEW_PATH });
-    const link = await screen.findByRole('link', { name: 'Drive again' });
-    expect(link).toHaveAttribute('href', '/drive');
-    await userEvent.setup().click(link);
-    expect(window.location.pathname).toBe('/drive');
-    expect(window.localStorage.getItem(`gt7.currentExercise.${USER.id}`)).toBe(attemptSummary().exerciseId);
+    const drive = await screen.findByRole('button', { name: 'Drive' });
+    expect(drive).toHaveClass('yellow');
+    expect(screen.queryByText('Drive again')).toBeNull();
+    await userEvent.setup().click(drive);
+    await waitFor(() => expect(window.location.pathname).toBe(`/exercises/${attemptSummary().exerciseId}/drive`));
+    expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: attemptSummary().exerciseId });
   });
 
   it('review_header_shows_time_gap_and_breadcrumb', async () => {
     reviewApi(review({ referenceTimeMs: 25470 }));
     renderApp({ path: REVIEW_PATH });
     expect(await screen.findByRole('heading', { level: 2, name: 'Attempt 1 · 0:27.100 +1.63 s' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'All attempts' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}/attempts`);
+    expect(screen.queryByRole('link', { name: 'All attempts' })).toBeNull();
     const crumbs = await screen.findByRole('navigation', { name: 'Breadcrumb' });
     expect(crumbs).toHaveTextContent('Exercises / Yangwang Experience / Racing Lines');
     expect(within(crumbs).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
@@ -655,7 +657,7 @@ describe('attempt review', () => {
     const tabs = await screen.findByRole('navigation', { name: 'Exercise' });
     expect(within(tabs).getByRole('link', { name: /^Attempts/ })).toHaveAttribute('aria-current', 'page');
     expect(within(tabs).getByRole('link', { name: 'Cues' })).toHaveAttribute('href', expect.stringMatching(/\/cues$/));
-    expect(screen.getByRole('link', { name: 'All attempts' })).toHaveAttribute('href', expect.stringMatching(/\/attempts$/));
+    expect(screen.queryByRole('link', { name: 'All attempts' })).toBeNull();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(exercise().name);
     expect(screen.getByRole('heading', { level: 2, name: /^Attempt \d+ · / })).toBeInTheDocument();
     const crumb = screen.getByRole('navigation', { name: 'Breadcrumb' });
@@ -669,25 +671,25 @@ describe('attempt review', () => {
     expect(await screen.findByRole('slider', { name: 'Speed, km/h' })).toBeInTheDocument();
     expect(document.querySelector('.track-map')).not.toBeNull();
     expect(screen.queryByRole('navigation', { name: 'Exercise' })).toBeNull();
-    expect(screen.getByRole('link', { name: 'All attempts' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Drive' })).toBeInTheDocument();
   });
 
-  it('review_drive_again_opens_the_right_column', async () => {
+  it('review_drive_opens_the_right_column', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
     const differences = await screen.findByRole('heading', { name: 'Differences by turn' });
-    const drive = screen.getByRole('link', { name: 'Drive again' });
+    const drive = screen.getByRole('button', { name: 'Drive' });
     expect(drive.compareDocumentPosition(differences) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(document.querySelector('.track-map')!.compareDocumentPosition(drive) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('review_drive_again_follows_the_lede_on_a_phone', async () => {
+  it('review_drive_follows_the_lede_on_a_phone', async () => {
     setViewportWidth(390);
     reviewApi();
     renderApp({ path: REVIEW_PATH });
     await screen.findByRole('heading', { name: 'Differences by turn' });
     const lede = screen.getByText(/Times from the game\./);
-    const drive = screen.getByRole('link', { name: 'Drive again' });
+    const drive = screen.getByRole('button', { name: 'Drive' });
     expect(lede.compareDocumentPosition(drive) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(drive.compareDocumentPosition(document.querySelector('.track-map')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

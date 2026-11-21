@@ -23,7 +23,7 @@ export class CapturesController {
 
   @Post('captures/:id/stop')
   stop(@CurrentUser() user: ProfileUser, @Param('id', ParseUUIDPipe) id: string): Promise<CaptureInfo> {
-    return this.captures.stop(user.id, id);
+    return this.captures.stopByRequest(user.id, id);
   }
 
   @Post('settings/connection/check')

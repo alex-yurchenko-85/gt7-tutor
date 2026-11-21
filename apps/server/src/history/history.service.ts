@@ -15,6 +15,7 @@ import { AuthService } from '../auth/auth.service.js';
 import { StorageService } from '../captures/storage.service.js';
 import { ownedExercise } from '../ownership/owned.js';
 import { LiveHub } from '../live/live-hub.service.js';
+import { RaceRecorder } from '../races/race-recorder.service.js';
 import type { CaptureRow } from '../ownership/owned.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { TrainingService } from '../training/training.service.js';
@@ -41,7 +42,8 @@ export class HistoryService {
     private readonly training: TrainingService,
     private readonly storage: StorageService,
     private readonly auth: AuthService,
-    private readonly hub: LiveHub
+    private readonly hub: LiveHub,
+    private readonly races: RaceRecorder
   ) {}
 
   async deleteAttempts(userId: string, ids: string[]): Promise<DeleteAttemptsResult> {
@@ -63,9 +65,11 @@ export class HistoryService {
           : [(await ownedExercise(trx, userId, request.exerciseId)).id];
       const attempts = await trx('attempts').whereIn('exercise_id', exerciseIds).del();
       const references = request.scope === 'everything' ? await trx('references').whereIn('exercise_id', exerciseIds).del() : 0;
-      return { attempts, references };
+      const raceIds = request.scope === 'everything' ? await trx('races').where({ user_id: userId }).del().returning('id') : [];
+      return { attempts, references, raceIds: raceIds.map((row: { id: string }) => row.id) };
     });
-    return { ...counts, cleanup: request.cleanup ? await this.storage.cleanup(userId) : null };
+    this.races.forgetRaces(userId, counts.raceIds);
+    return { attempts: counts.attempts, references: counts.references, races: counts.raceIds.length, cleanup: request.cleanup ? await this.storage.cleanup(userId) : null };
   }
 
   async removeExercises(userId: string, request: RemoveExercisesRequest): Promise<RemoveExercisesResult> {
@@ -84,13 +88,15 @@ export class HistoryService {
   async deleteProfile(user: ProfileUser, request: DeleteProfileRequest, address: string): Promise<DeleteProfileResult> {
     await this.waitUntilIdle(user.id);
     await this.auth.confirmPassword(user, request.password, address);
-    const { counts, captures } = await this.db.transaction(async trx => {
+    const { counts, captures, raceIds } = await this.db.transaction(async trx => {
       const exerciseIds = await trx('exercises').where({ user_id: user.id }).pluck<string[]>('id');
       const removed = await countExerciseRows(trx, exerciseIds);
       const rows = await trx<CaptureRow>('captures').where({ user_id: user.id }).select('raw_path');
+      const raceIds = await trx('races').where({ user_id: user.id }).pluck<string[]>('id');
       await trx('users').where({ id: user.id }).del();
-      return { counts: removed, captures: rows };
+      return { counts: { ...removed, races: raceIds.length }, captures: rows, raceIds };
     });
+    this.races.forgetRaces(user.id, raceIds);
     this.hub.changed();
     return { ...counts, cleanup: await this.storage.removeFiles(captures) };
   }

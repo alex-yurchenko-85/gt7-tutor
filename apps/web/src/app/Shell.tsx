@@ -11,6 +11,7 @@ import { Logo } from './Logo.tsx';
 import { ProfileMenu } from './ProfileMenu.tsx';
 import { Link, paths, useRouter, type Route } from './router.tsx';
 import { RunningCapture } from './RunningCapture.tsx';
+import { RunningRace } from './RunningRace.tsx';
 import { RunningTraining } from './RunningTraining.tsx';
 import { TrainingNameContext } from './use-training.ts';
 import { useSession } from './session.tsx';
@@ -19,12 +20,14 @@ import { Views } from './Views.tsx';
 
 type NavItem = { label: string; to: string; icon: IconName; matches(route: Route): boolean };
 
-const EXERCISE_ROUTES: Route['name'][] = ['exercises', 'exercise', 'add-exercise', 'cues', 'references', 'record', 'attempts', 'review'];
+const EXERCISE_ROUTES: Route['name'][] = ['exercises', 'add-exercise', 'cues', 'references', 'record', 'attempts', 'drive', 'review'];
 
 const EXERCISES: NavItem = { label: 'Exercises', to: paths.exercises(), icon: 'list', matches: route => EXERCISE_ROUTES.includes(route.name) };
-const DRIVE: NavItem = { label: 'Drive', to: paths.drive(), icon: 'drive', matches: route => route.name === 'drive' };
+const RACE_ROUTES: Route['name'][] = ['races', 'race-record', 'race'];
+
+const RACES: NavItem = { label: 'Races', to: paths.races(), icon: 'flag', matches: route => RACE_ROUTES.includes(route.name) };
 const SETUP: NavItem = { label: 'Setup', to: paths.setup(), icon: 'gear', matches: route => route.name === 'setup' || route.name === 'delete-history' };
-const ITEMS = [EXERCISES, DRIVE, SETUP];
+const ITEMS = [EXERCISES, RACES, SETUP];
 
 export function StatusDot({ status }: { status: Status }) {
   return <span className={`dot ${status.tone}`} aria-hidden="true" />;
@@ -129,6 +132,7 @@ export function Shell({ children }: { children?: ReactNode }) {
       {immersive ? null : <DemoLabel />}
       {immersive ? null : <RunningCapture />}
       {immersive ? null : <RunningTraining />}
+      {immersive ? null : <RunningRace />}
       <main className={immersive ? 'view immersive' : 'view'}>
         <ImmersiveContext.Provider value={setImmersive}>{children ?? <Views />}</ImmersiveContext.Provider>
       </main>

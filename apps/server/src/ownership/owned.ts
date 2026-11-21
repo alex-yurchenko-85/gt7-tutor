@@ -58,6 +58,33 @@ export type AttemptRow = {
   created_at: Date;
 };
 
+export type RaceRow = {
+  id: string;
+  user_id: string;
+  capture_id: string;
+  first_raw_index: number;
+  last_raw_index: number;
+  track_name: string | null;
+  track_candidates: string[];
+  car_id: number;
+  first_lap: number;
+  laps_in_race: number;
+  cars: number;
+  start_position: number;
+  finish_position: number;
+  race_ms: number;
+  best_lap: number;
+  best_lap_ms: number;
+  reference_lap: number;
+  lap_length_m: number | null;
+  complete: boolean;
+  position_steps: { tMs: number; position: number }[];
+  fuel_points: { tMs: number; fuel: number }[];
+  recurring: unknown[];
+  started_at: Date;
+  created_at: Date;
+};
+
 function found<T>(row: T | undefined, what: string): T {
   if (!row) throw new NotFoundException(`${what} not found`);
   return row;
@@ -85,4 +112,8 @@ export async function ownedAttempt(db: Knex, userId: string, id: string): Promis
     .where({ 'a.id': id, 'e.user_id': userId })
     .first<AttemptRow | undefined>('a.*');
   return found(row, 'Attempt');
+}
+
+export async function ownedRace(db: Knex, userId: string, id: string): Promise<RaceRow> {
+  return found(await db<RaceRow>('races').where({ id, user_id: userId }).first(), 'Race');
 }

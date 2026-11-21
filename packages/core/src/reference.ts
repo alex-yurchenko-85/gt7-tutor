@@ -142,6 +142,19 @@ export function buildReference(samples: Sample[], config: CoreConfig = DEFAULT_C
   return { points: withTangents(resample(moving, along, lengthM)), lengthM };
 }
 
+export function nearestSM(path: ReferencePath, position: Vec3): number {
+  let nearest = path.points[0]!;
+  let nearestM = distance(nearest.position, position);
+  for (const point of path.points) {
+    const m = distance(point.position, position);
+    if (m < nearestM) {
+      nearest = point;
+      nearestM = m;
+    }
+  }
+  return nearest.sM;
+}
+
 export function pointAt(path: ReferencePath, sM: number): ReferencePoint {
   const clamped = Math.min(path.lengthM, Math.max(0, sM));
   const index = Math.min(Math.floor(clamped / POINT_SPACING_M), path.points.length - 2);

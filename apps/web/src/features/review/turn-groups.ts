@@ -26,8 +26,9 @@ function byTimeLost(a: TurnGroup, b: TurnGroup): number {
   return b.lostMs - a.lostMs || a.turn - b.turn;
 }
 
-export function groupByTurn(findings: Difference[], losses: TurnLossInfo[], order: TurnOrder = 'track'): TurnGroup[] {
+export function groupByTurn(findings: Difference[], losses: TurnLossInfo[], order: TurnOrder = 'track', allTurns = false): TurnGroup[] {
   const groups = new Map<number | null, TurnGroup>();
+  if (allTurns) for (const loss of losses) groups.set(loss.turn, emptyGroup(loss.turn, losses));
   findings.forEach((difference, index) => {
     const group = groups.get(difference.turn) ?? emptyGroup(difference.turn, losses);
     group.items.push({ difference, index });

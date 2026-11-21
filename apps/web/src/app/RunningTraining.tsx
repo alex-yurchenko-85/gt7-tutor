@@ -20,7 +20,7 @@ export function RunningTraining() {
   const { route } = useRouter();
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  if (!training.on || route.name === 'drive') return null;
+  if (!training.on || (route.name === 'drive' && route.exerciseId === training.exerciseId)) return null;
 
   const stop = async () => {
     setBusy(true);
@@ -38,9 +38,11 @@ export function RunningTraining() {
     <div className="running-bar" role="status" aria-label="Training">
       <span className="running-bar-text">{barText(training, wide)}</span>
       <div className="running-bar-actions">
-        <Link to={paths.drive()} className="btn ghost inline">
-          Open Drive
-        </Link>
+        {training.exerciseId ? (
+          <Link to={paths.drive(training.exerciseId)} className="btn ghost inline">
+            Open Drive
+          </Link>
+        ) : null}
         <button className="btn inline" type="button" onClick={() => void stop()} disabled={busy}>
           Stop training
         </button>

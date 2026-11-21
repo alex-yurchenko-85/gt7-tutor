@@ -343,3 +343,4 @@ describe('attempts', () => {
     expect(api.called('POST /api/attempts/delete')).toBe(false);
   });
 });
+

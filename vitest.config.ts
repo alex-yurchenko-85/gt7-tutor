@@ -25,6 +25,7 @@ export default defineConfig({
         'apps/server/src/exercises/exercise-step.ts',
         'apps/server/src/config/app-config.ts',
         'apps/server/src/captures/sample-cache.ts',
+        'apps/server/src/races/live-race.ts',
         'apps/server/src/training/training-session.ts'
       ],
       exclude: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.d.ts', 'apps/web/src/main.tsx', 'tools/start/start.ts']

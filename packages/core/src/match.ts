@@ -104,10 +104,12 @@ export class Matcher {
   private lastSM: number | null = null;
   private lastMatchMonoMs = 0;
   private lastSample: Sample | null = null;
+  private readonly startSM: number | null;
 
-  constructor(path: ReferencePath, config: CoreConfig) {
+  constructor(path: ReferencePath, config: CoreConfig, startSM?: number) {
     this.path = path;
     this.config = config;
+    this.startSM = startSM ?? null;
     this.segments = segmentsOf(path, config);
     this.lastSegment = path.points.length - 2;
   }
@@ -117,8 +119,8 @@ export class Matcher {
     this.lastSample = sample;
     const { searchBackM, searchForwardMinM, searchForwardMarginM, searchLateralM, heightM, headingDeg, headingMinSpeedMps, progressWeight } =
       this.config.match;
-    let fromM = 0;
-    let toM = searchForwardMinM;
+    let fromM = this.startSM === null ? 0 : this.startSM - searchBackM;
+    let toM = (this.startSM ?? 0) + searchForwardMinM;
     let expectedM: number | null = null;
     if (this.lastSM !== null) {
       const travelM = (sample.speedMps * Math.max(0, sample.receivedMonoMs - this.lastMatchMonoMs)) / 1000;

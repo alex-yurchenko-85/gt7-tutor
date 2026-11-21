@@ -47,4 +47,14 @@ describe('turn label places', () => {
     expect(places[0]!.centre).toBe(8);
     expect(places[1]!.centre).toBe(792);
   });
+
+  it('drops_a_label_that_fits_in_no_row_when_asked', () => {
+    const bands = ['T1', 'T2', 'T3', 'T4'].map((label, index) => ({ fromSM: 100 + index * 10, toSM: 105 + index * 10, label }));
+    expect(turnLabelPlaces(bands, 4000, 800).map(place => place.label)).toEqual(['T1', 'T2', 'T3', 'T4']);
+    expect(turnLabelPlaces(bands, 4000, 800, true).map(place => [place.label, place.row])).toEqual([
+      ['T1', 0],
+      ['T2', 1]
+    ]);
+  });
 });
+

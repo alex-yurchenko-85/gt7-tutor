@@ -3,8 +3,6 @@ import {
   eventKeyPlace,
   type AttemptReaction,
   type BrakeReactionSummary,
-  type CornerInfo,
-  type CornerReview,
   type AttemptList,
   type Sample,
   type AttemptReview,
@@ -19,16 +17,12 @@ import {
   findDifferences,
   buildReview,
   median,
-  outsideM,
-  seriesAt,
   turnLosses,
-  turnOf,
   type Corner,
   type Finding,
   type PlayedBrakeCue,
   type Review
 } from '@gt7/core';
-import { cornerInfos } from '../references/references.service.js';
 import { FOCUS_ATTEMPTS, focusOf, focusSummary } from './attempt-focus.js';
 import type { Knex } from 'knex';
 import { ownedAttempt, ownedExercise, type AttemptRow, type CaptureRow, type ReferenceRow } from '../ownership/owned.js';
@@ -36,13 +30,10 @@ import { ReferencesService } from '../references/references.service.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { FINDING_COLUMNS, saveComparison, toFinding, type FindingRow } from './finding-rows.js';
 import { localDate } from './local-date.js';
+import { reviewBody, withTurn } from './review-shapes.js';
 
 export function attemptTimeMs(row: Pick<AttemptRow, 'completion' | 'game_ms'>): number | null {
   return row.completion === 'complete' ? row.game_ms : null;
-}
-
-export function withTurn(finding: Finding, corners: Corner[]): Difference {
-  return { ...finding, turn: turnOf(corners, finding.sM) };
 }
 
 function largest(findings: Difference[]): Difference | null {
@@ -57,21 +48,6 @@ type CueRow = { event_key: string; event_kind: string; outcome: string; decided_
 
 function playedBrakeCues(rows: CueRow[]): PlayedBrakeCue[] {
   return rows.map(row => ({ eventKey: row.event_key, clipStartMonoMs: row.decided_mono_ms + (row.start_delay_ms ?? row.device_delay_ms ?? 0) }));
-}
-
-function cornerReviews(review: Review): CornerReview[] {
-  const infos = cornerInfos(review.corners, review.lengthM);
-  return review.corners.map((corner, index) => cornerReview(corner, infos[index]!, review));
-}
-
-function cornerReview(corner: Corner, info: CornerInfo, review: Review): CornerReview {
-  const lateralM = seriesAt(review.attempt.lat, review.gridM, corner.apexSM);
-  const speedMps = seriesAt(review.attempt.v, review.gridM, corner.apexSM);
-  return {
-    ...info,
-    outsideM: lateralM === null ? null : outsideM(corner, lateralM),
-    speedMps
-  };
 }
 
 function isVoicedBrake(row: Pick<CueRow, 'event_kind' | 'outcome'>): boolean {
@@ -115,15 +91,12 @@ export class AttemptsService {
     const reference = await this.referenceFor(attempt, referenceId ?? attempt.reference_id);
     const { review, findings, samples, referenceTimeMs } = await this.compare(attempt, reference);
     const cues = await this.db('cue_events').where({ attempt_id: id }).orderBy('decided_mono_ms');
-    const { corners, ...series } = review;
     const reactions: AttemptReaction[] = brakeReactions(samples, playedBrakeCues(cues.filter(isVoicedBrake)));
     return {
       referenceId: reference.id,
       referenceTimeMs,
-      ...series,
-      findings: findings.map(finding => withTurn(finding, corners)),
-      turnLosses: turnLosses(corners, review.lengthM, review.gridM, review.attempt.t, review.reference.t),
-      corners: cornerReviews(review),
+      ...reviewBody(review, findings),
+      turnLosses: turnLosses(review.corners, review.lengthM, review.gridM, review.attempt.t, review.reference.t),
       reactions,
       cues: cues.map(
         (row): StoredCueEvent => ({

@@ -91,6 +91,28 @@ export type CoreConfig = {
     followSpeedRatio: number;
     followSpeedBaseMps: number;
   };
+  race: {
+    sessionLostMs: number;
+    afterFinishMs: number;
+    unsupportedAfterMs: number;
+    offTrackMinWheels: number;
+    offTrackJoinMs: number;
+    recurringLaps: number;
+    recurringWithinM: number;
+    pitStoppedMps: number;
+    trackWithinM: number;
+    fuelStepMs: number;
+    distanceStepMs: number;
+    minLaps: number;
+    silenceEndMs: number;
+    matchLateralM: number;
+    matchHeightM: number;
+    eventWindowM: number;
+    offLineM: number;
+    brakeM: number;
+    throttleLateM: number;
+    slowCornerMps: number;
+  };
 };
 
 export const DEFAULT_SIDE_CUE_DISTANCE_M = 2;
@@ -184,5 +206,27 @@ export const DEFAULT_CONFIG: CoreConfig = {
     confirmMaxMedianPedal: 0.05,
     followSpeedRatio: 0.05,
     followSpeedBaseMps: 0.5
+  },
+  race: {
+    sessionLostMs: 1000,
+    afterFinishMs: 2000,
+    unsupportedAfterMs: 5000,
+    offTrackMinWheels: 2,
+    offTrackJoinMs: 1000,
+    recurringLaps: 3,
+    recurringWithinM: 80,
+    pitStoppedMps: 0.1,
+    trackWithinM: 60,
+    fuelStepMs: 2000,
+    distanceStepMs: 250,
+    minLaps: 2,
+    silenceEndMs: 10000,
+    matchLateralM: 20,
+    matchHeightM: 6,
+    eventWindowM: 120,
+    offLineM: 5,
+    brakeM: 15,
+    throttleLateM: 30,
+    slowCornerMps: kph(10)
   }
 };

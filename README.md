@@ -42,6 +42,8 @@ GT7 Tutor leads you through three steps for each exercise:
 2. **Attempts.** Drive the exercise. GT7 Tutor finds the start and the finish of each attempt by itself, and the time comes from the game. The Drive screen shows the next action, and a voice device says it, for example `Hard brake. One fifteen`, about half a second before the place where the reference does it.
 3. **Review.** Compare each attempt with the reference on a map and in speed, pedal and side-distance charts. The differences are grouped by turn, with the time lost in each turn. Differences that repeat in your last attempts show on the cue list.
 
+GT7 Tutor can also record a race by laps. Select **Record a race**, then drive the race in the game. The recording starts and stops with the race. After the race, the **Laps** tab shows the lap times, the pit stops, the position and the fuel. **Compare** puts two laps of the race side by side, by turn. **Off the track** shows where your wheels left the track and the places where it happened in 3 or more laps.
+
 The [user guide](docs/user-guide/README.md) shows each screen and each step.
 
 <table>
@@ -234,8 +236,9 @@ Do not make GT7 Tutor reachable from the internet.
 ## Documentation
 
 - [User guide](docs/user-guide/README.md): every screen, from the first profile to the review, with screenshots.
-- [Telemetry protocol](docs/protocol.md): transport, decryption, the byte layout of a packet and the game timer.
-- [Core algorithms](docs/algorithms.md): reference, matching, voice decisions and differences.
+- [Telemetry protocol](docs/protocol.md): transport, decryption, the byte layout of a packet, the game timer, and how GT7 Tutor receives and stores the packets.
+- [Algorithms](docs/algorithms.md): the reference line, the matching, the voice cues, the differences and the race analysis, each as a task and its solution.
+- [Test fixtures](docs/fixtures.md): the recorded telemetry of the tests and the demo.
 - [CONTRIBUTING.md](CONTRIBUTING.md): the rules for a change.
 
 ## For developers
@@ -247,12 +250,14 @@ pnpm test:integration      # server tests against PostgreSQL
 pnpm test:coverage         # unit tests with a coverage report in coverage/
 pnpm capture --ip <PS5 address> --seconds 60 --purpose demo
 pnpm replay --file <raw capture .ndjson>
+pnpm race:import --file <raw capture .ndjson> --profile <profile name>
 pnpm evaluate-coach --attempt ce-slow --reference demo-a --first 457 --last 1422
 pnpm catalogue:build --record fixtures/catalogue-sources   # network, rewrites the catalogue
 pnpm audio:generate        # network, about 400 MB, rewrites the voice clips
 ```
 
 Always pass `--ip` with the current console address.
+`pnpm race:import` copies a raw capture into `DATA_DIR/raw/`. It stores the first race of that capture in the database for the profile. The source file does not change. The command uses `DATABASE_URL` and `DATA_DIR` of the server.
 `pnpm db:reset` drops the database of `DATABASE_URL` (by default `gt7_tutor`), creates it again and migrates it. It deletes all data of that database. Use it only for a broken development database.
 `pnpm test:integration` checks that UDP port 33740 is free. Stop a recording or a training of a running server before you start it.
 
@@ -270,6 +275,11 @@ Always pass `--ip` with the current console address.
 | Generation | A new attempt context that invalidates earlier matches and audio cues |
 | Trusted match | A position match that passes the configured direction, distance and freshness checks |
 | Game timer | The run time that the game sends in each packet. It starts and finishes an attempt. |
+| Race | A race by laps that GT7 Tutor recorded, from the grid or the first recorded lap line to the finish |
+| Lap | One lap of a race. It keeps the lap number of the game. |
+| Pit stop | A stop in the pit lane between an in-lap and an out-lap |
+| Off the track | A moment with two or more wheels on a surface that is not the track or a kerb |
+| Recurring place | A place of the track with off-track moments in 3 or more laps of one race |
 
 ## Files and dependencies
 
@@ -278,7 +288,7 @@ Always pass `--ip` with the current console address.
 `content/` holds the catalogue file (`content/catalogue/`) and the voice clips (`content/audio/`).
 `apps/server/db/migrations/` holds the database migrations. Each schema change is a new migration file.
 `start.sh` and `tools/start/` hold the start script. `tools/setup/` holds `pnpm db:reset`.
-`fixtures/` holds short recorded captures for tests and for `./start.sh --demo`. They do not contain the console address.
+`fixtures/` holds short recorded captures for tests and for `./start.sh --demo`, and short cuts of two recorded races for the race tests. They do not contain the console address.
 `tools/` holds the capture, replay and evaluation commands.
 `docs/` holds the user guide and the technical documents.
 The landing page at gt7tutor.app lives in <https://github.com/alex-yurchenko-85/gt7-tutor-site>. `.github/assets/` holds the logo files of this README.

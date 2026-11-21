@@ -8,12 +8,11 @@ import { TurnTag } from './TurnTag.tsx';
 const RECURRING_MINIMUM = 3;
 const RECURRING_SHOWN = 3;
 
-export function RecurringDifferences({ exercise, quiet = false }: { exercise: Exercise; quiet?: boolean }) {
+export function RecurringDifferences({ exercise }: { exercise: Exercise }) {
   const enough = exercise.completeAttempts >= RECURRING_MINIMUM;
   const recurring = useResource(() => (enough ? api.recurring(exercise.id) : Promise.resolve([])), [exercise.id, enough]);
   const [expanded, setExpanded] = useState(false);
   const items = recurring.data ?? [];
-  if (quiet && (!enough || items.length === 0)) return null;
   const shown = expanded ? items : items.slice(0, RECURRING_SHOWN);
   const lead =
     items.length > 0

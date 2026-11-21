@@ -1,0 +1,380 @@
+.drive-stage.race-stage {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto;
+  grid-auto-rows: auto;
+  align-content: start;
+  background: var(--night);
+}
+
+.drive-stage.race-stage.with-map {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 40px;
+}
+
+.race-stage-main,
+.race-stage-end {
+  grid-column: 1;
+  min-width: 0;
+  padding: 0 24px 0 36px;
+}
+
+.race-stage.with-map .race-stage-main {
+  padding-right: 0;
+}
+
+.race-stage-main {
+  padding-top: 40px;
+}
+
+.race-stage-map {
+  grid-column: 2;
+  grid-row: 2 / span 2;
+  min-width: 0;
+  padding: 40px 24px 24px 0;
+}
+
+.race-trail {
+  display: block;
+  width: 100%;
+  max-height: calc(100dvh - 140px);
+}
+
+.race-trail-fit {
+  transform-origin: 0 0;
+  transition: transform 0.6s ease;
+}
+
+.race-trail-line {
+  fill: none;
+  stroke: var(--yellow);
+  stroke-width: 4px;
+  stroke-linecap: butt;
+  stroke-linejoin: round;
+}
+
+.race-trail-car {
+  fill: var(--stage-ink);
+}
+
+.race-trail-glow {
+  fill: var(--yellow);
+  opacity: 0.3;
+}
+
+.race-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.race-kicker.dim {
+  color: var(--stage-mute);
+  font-weight: 500;
+}
+
+.race-dim-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.race-dim-dot {
+  background: var(--stage-dim);
+}
+
+.race-of {
+  font-size: 48px;
+  color: var(--stage-dim);
+}
+
+.race-values {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  min-width: min(630px, 100%);
+  max-width: 100%;
+}
+
+.race-finished {
+  margin: 0;
+  color: var(--stage-mute);
+  font: 800 28px var(--font-display);
+  letter-spacing: 0.08em;
+}
+
+.race-finished + .race-word {
+  margin-top: 4px;
+  font-size: 220px;
+}
+
+.race-finished + .race-word .race-of {
+  font-size: 0.36em;
+}
+
+.lap-circles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: 0;
+  min-width: 100%;
+  margin: 40px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lap-circle {
+  flex: none;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--stage-border);
+}
+
+.lap-circle.done {
+  background: var(--yellow);
+}
+
+.lap-circle.now {
+  border: 4px solid var(--yellow);
+  background: var(--night);
+}
+
+.lap-circle.skip {
+  border: 2px dashed var(--stage-dim);
+  background: transparent;
+}
+
+.lap-circle.best {
+  box-shadow:
+    0 0 0 3px var(--night),
+    0 0 0 5px var(--yellow);
+}
+
+.lap-pit {
+  flex: none;
+  width: 2px;
+  height: 24px;
+  background: var(--stage-mute);
+}
+
+.lap-key {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 40px 0 0;
+  padding: 0;
+  color: var(--stage-mute);
+  font-size: 14px;
+  list-style: none;
+}
+
+.lap-key li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lap-key i {
+  display: inline-flex;
+  flex: none;
+  justify-content: center;
+  width: 22px;
+}
+
+.lap-key .lap-circle {
+  width: 14px;
+  height: 14px;
+}
+
+.lap-key .lap-circle.now {
+  border-width: 3px;
+}
+
+.lap-key .lap-circle.best {
+  box-shadow:
+    0 0 0 2px var(--night),
+    0 0 0 4px var(--yellow);
+}
+
+.lap-key .lap-pit {
+  height: 14px;
+}
+
+.race-fuel-bar {
+  width: 220px;
+  height: 8px;
+  margin-top: 10px;
+  background: var(--stage-border);
+}
+
+.race-fuel-bar i {
+  display: block;
+  height: 8px;
+  background: var(--stage-ink);
+}
+
+.race-stage-end {
+  padding-bottom: 32px;
+}
+
+.race-open {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 36px;
+}
+
+.race-open .race-note {
+  margin: 0;
+}
+
+.race-stage .race-open-button {
+  min-height: 52px;
+  padding: 0 26px;
+  font-size: 20px;
+}
+
+.race-open-bar {
+  max-width: 420px;
+  height: 4px;
+  margin-top: 18px;
+  overflow: hidden;
+  background: var(--stage-border);
+}
+
+.race-open-bar i {
+  display: block;
+  height: 4px;
+  background: var(--yellow);
+}
+
+.race-stage-end > .stage-button {
+  margin-top: 36px;
+}
+
+.race-stage-end .stage-alert {
+  margin-top: 20px;
+}
+
+.race-stage.motion .race-dot.red,
+.race-stage.motion .lap-circles .lap-circle.now {
+  animation: race-pulse 1.6s ease-in-out infinite;
+}
+
+.race-stage.motion .race-word.rise {
+  animation: race-rise 0.5s ease-out both;
+}
+
+.race-stage.motion .race-trail-glow {
+  animation: race-pulse 1.2s ease-in-out infinite;
+}
+
+.race-stage.motion .race-open-bar i {
+  animation: race-bar 2.4s linear both;
+}
+
+.race-stage:not(.motion) .race-open-bar i {
+  width: 100%;
+}
+
+@keyframes race-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes race-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes race-bar {
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+@media (max-width: 899px) {
+  .drive-stage.race-stage.with-map {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .race-stage-main,
+  .race-stage-end {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .race-stage-main {
+    padding-top: 28px;
+  }
+
+  .race-values {
+    width: auto;
+    min-width: 0;
+  }
+
+  .race-stage-map {
+    grid-column: 1;
+    grid-row: auto;
+    padding: 24px 16px 0;
+  }
+
+  .race-stage-laps {
+    min-width: 0;
+    padding: 0 16px;
+  }
+
+  .race-trail {
+    max-height: 56vh;
+  }
+
+  .race-of {
+    font-size: 36px;
+  }
+
+  .race-finished + .race-word {
+    font-size: 132px;
+  }
+
+  .lap-circles {
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .lap-circle,
+  .lap-pit {
+    height: 18px;
+  }
+
+  .lap-circle {
+    width: 18px;
+  }
+
+  .lap-key {
+    margin-top: 18px;
+  }
+}

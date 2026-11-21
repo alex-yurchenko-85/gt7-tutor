@@ -21,6 +21,7 @@
     "db:reset": "node tools/setup/db-reset.ts",
     "capture": "node --conditions=source tools/capture.ts",
     "replay": "node --conditions=source tools/replay.ts",
+    "race:import": "pnpm --filter @gt7/server... run build && node --conditions=source tools/import-race.ts",
     "fixture": "node tools/make-fixture.ts",
     "evaluate-coach": "node --conditions=source tools/evaluate-coach.ts",
     "catalogue:build": "node --conditions=source tools/build-catalogue.ts",

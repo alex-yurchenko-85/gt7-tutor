@@ -4,7 +4,7 @@ import { fixturePath } from '../../../tools/testing/fixture-path.ts';
 import { toSample } from '../src/decode.ts';
 import { withPacketClock } from '../src/packet-clock.ts';
 
-export type FixtureName = 'b3-run' | 'b1-run' | 'ce-clean' | 'ce-slow' | 'ce-pause' | 'ce-off-track-reset' | 'ce-off-track-end' | 'demo-a' | 'demo-b' | 'demo-c';
+export type FixtureName = 'b3-run' | 'b1-run' | 'ce-clean' | 'ce-slow' | 'ce-pause' | 'ce-off-track-reset' | 'ce-off-track-end' | 'demo-a' | 'demo-b' | 'demo-c' | 'race-grid-start' | 'race-lap-line' | 'race-finish' | 'race-pit-stop' | 'race-off-track';
 
 export function readFixture(name: FixtureName): RawDatagram[] {
   return readFileSync(fixturePath(name), 'utf8')

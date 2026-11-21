@@ -19,7 +19,7 @@ describe('running training', () => {
     await sendLiveState(view, { mode: 'finished', exerciseId: EXERCISE_ID });
     const bar = await screen.findByRole('status', { name: 'Training' });
     await waitFor(() => expect(bar).toHaveTextContent(`The training is on: ${NAME}. Restart the exercise in GT7 to drive the next attempt.`));
-    expect(within(bar).getByRole('link', { name: 'Open Drive' })).toHaveAttribute('href', '/drive');
+    expect(within(bar).getByRole('link', { name: 'Open Drive' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}/drive`);
     expect(within(bar).getByRole('button', { name: 'Stop training' })).toBeInTheDocument();
   });
 
@@ -42,9 +42,17 @@ describe('running training', () => {
     expect(await screen.findByRole('status', { name: 'Training' })).toHaveTextContent('The training is on. Restart the exercise in GT7 to drive the next attempt.');
   });
 
+  it('bar_shows_on_the_drive_page_of_another_exercise', async () => {
+    trainingApi().install();
+    const view = renderApp({ path: '/exercises/e0000000-0000-4000-8000-000000000002/drive' });
+    await sendLiveState(view, { mode: 'armed', exerciseId: EXERCISE_ID });
+    const bar = await screen.findByRole('status', { name: 'Training' });
+    expect(within(bar).getByRole('link', { name: 'Open Drive' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}/drive`);
+  });
+
   it('bar_is_absent_on_drive_and_when_idle', async () => {
     trainingApi().install();
-    const drive = renderApp({ path: '/drive' });
+    const drive = renderApp({ path: `/exercises/${EXERCISE_ID}/drive` });
     await sendLiveState(drive, { mode: 'armed', exerciseId: EXERCISE_ID });
     expect(screen.queryByRole('status', { name: 'Training' })).toBeNull();
     drive.unmount();

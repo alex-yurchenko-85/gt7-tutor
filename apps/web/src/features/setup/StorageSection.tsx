@@ -48,7 +48,7 @@ export function StorageSection() {
       <div className="pref narrow-controls">
         <span className="pref-text">
           <span>Clean up captures</span>
-          <span className="sub">Keeps the parts that references and attempts use and removes the rest. You cannot undo it.</span>
+          <span className="sub">Keeps the parts that references, attempts and races use and removes the rest. You cannot undo it.</span>
         </span>
         <div className="pref-control">
           {confirming ? (
@@ -75,7 +75,7 @@ export function StorageSection() {
       <div className="pref narrow-controls">
         <span className="pref-text">
           <span>Delete history</span>
-          <span className="sub">Deletes attempts, or attempts and references, of one exercise or of all. The exercises stay.</span>
+          <span className="sub">Deletes the attempts of one exercise or of all. Start over also deletes the references and the races. The exercises stay.</span>
         </span>
         <div className="pref-control">
           <Link to={paths.deleteHistory()} className="btn danger">

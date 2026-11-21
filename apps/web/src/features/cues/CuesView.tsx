@@ -19,7 +19,6 @@ import { MapDialog, cueItems } from '../../charts/MapDialog.tsx';
 import { MapPanel } from '../../charts/MapPanel.tsx';
 import { TrackMap, type TrackMark } from '../../charts/TrackMap.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
-import { Icon } from '../../app/icons.tsx';
 import { useWideLayout } from '../../app/layout.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { formatTime } from '../../app/format.ts';
@@ -129,12 +128,6 @@ function CueRow({ cue, number, muted, offsetMs, recurring, reaction, notSpoken, 
       </span>
       <span className="phrase">
         <b>{cue.phrase ?? 'No voice cue'}</b>
-        {muted ? (
-          <span className="tag ink">
-            <Icon name="speaker-off" size={14} />
-            Muted
-          </span>
-        ) : null}
         {speaking ? <span className="tag ink">Speaking</span> : null}
         {notSpoken !== null ? (
           <span className="tag outline">
@@ -147,7 +140,6 @@ function CueRow({ cue, number, muted, offsetMs, recurring, reaction, notSpoken, 
           </span>
         ) : null}
         {cue.bigStop ? <small>Big brake ahead first, about 2 s before this point</small> : null}
-        {muted ? <small>The voice does not say this cue, and Drive does not show it.</small> : null}
         {notSpoken !== null ? <small className="not-spoken">{notSpoken}</small> : null}
         {reaction ? (
           <small className="reaction">

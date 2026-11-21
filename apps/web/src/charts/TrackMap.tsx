@@ -18,6 +18,8 @@ export type TrackMark = {
   speaking?: boolean;
   onAttempt?: boolean;
   onSelect?: () => void;
+  variant?: 'off-all' | 'off-part' | 'place';
+  beside?: boolean;
 };
 
 export type TrackCallout = { turn: number; sM: number; side: 1 | -1; title: string; detail: string };
@@ -30,6 +32,8 @@ type TrackMapProps = {
   marks?: TrackMark[];
   cursorSM?: number | null;
   dark?: boolean;
+  plain?: boolean;
+  lapLine?: boolean;
   label: string;
 };
 
@@ -55,9 +59,16 @@ const TURN_LABEL_OFFSETS_PX = [24, 40, 56];
 const TURN_LABEL_RADIUS_PX = 14;
 const SPREAD_GAP_PX = 28;
 const SPREAD_OFFSET_PX = 30;
+const PLACE_RADIUS_PX = 11;
 const END_LABEL_OFFSETS_PX = [24, 44, 64];
 const END_LABEL_HALF_PX = 24;
 const END_LABEL_SIDE_PX = 40;
+const LAP_LINE_LABEL_OFFSETS_PX: [number, number][] = [
+  [0, END_LABEL_SIDE_PX],
+  [0, -END_LABEL_SIDE_PX],
+  [0, 2 * END_LABEL_SIDE_PX],
+  [0, -2 * END_LABEL_SIDE_PX]
+];
 const START_BAR_HALF_PX = 11;
 const ARROW_SIDE_PX = 22;
 const ARROW_LENGTH_PX = 34;
@@ -92,6 +103,7 @@ function firstClear(spots: Point[], r: number, taken: Circle[]): Point {
 }
 
 function markRadius(mark: TrackMark): number {
+  if (mark.variant === 'place') return PLACE_RADIUS_PX;
   return mark.label ? CUE_RADIUS_PX : mark.selected ? 10 : 7;
 }
 
@@ -175,6 +187,14 @@ function placeMarks(marks: TrackMark[], reference: TrackLine, attempt: TrackLine
     cluster.push(index);
   }
   spread(cluster);
+  marks.forEach((mark, index) => {
+    const place = placed[index];
+    if (!mark.beside || !place || place.spread) return;
+    const normal = normalAt(reference, mark.sM, project);
+    if (!normal) return;
+    const { anchor } = place;
+    placed[index] = { anchor, centre: inside([anchor[0] - normal[0] * SPREAD_OFFSET_PX, anchor[1] - normal[1] * SPREAD_OFFSET_PX], CUE_RADIUS_PX + 2, height), spread: true };
+  });
   return placed;
 }
 
@@ -199,23 +219,25 @@ function placeTurns(marks: TrackMark[], reference: TrackLine, { project, height 
   });
 }
 
-function placeEnds(geometry: Geometry, taken: Circle[]): Ends {
-  const beyond = (point: Point | null, direction: Point | null, sign: 1 | -1): Point | null => {
+function placeEnds(geometry: Geometry, taken: Circle[], lapLine: boolean): Ends {
+  const place = (point: Point | null, direction: Point | null, sign: 1 | -1, offsets: [number, number][]): Point | null => {
     if (!point || !direction) return null;
-    const spot = (along: number, across: number): Point =>
+    const spot = ([along, across]: [number, number]): Point =>
       inside([point[0] + sign * direction[0] * along - direction[1] * across, point[1] + sign * direction[1] * along + direction[0] * across], END_LABEL_HALF_PX, geometry.height);
-    const at = firstClear([...END_LABEL_OFFSETS_PX.map(offset => spot(offset, 0)), spot(0, END_LABEL_SIDE_PX), spot(0, -END_LABEL_SIDE_PX)], END_LABEL_HALF_PX, taken);
+    const at = firstClear(offsets.map(spot), END_LABEL_HALF_PX, taken);
     taken.push({ at, r: END_LABEL_HALF_PX });
     return at;
   };
-  return { start: beyond(geometry.startPoint, geometry.startDirection, -1), finish: beyond(geometry.endPoint, geometry.endDirection, 1) };
+  if (lapLine) return { start: place(geometry.startPoint, geometry.startDirection, 1, LAP_LINE_LABEL_OFFSETS_PX), finish: null };
+  const beyond: [number, number][] = [...END_LABEL_OFFSETS_PX.map((offset): [number, number] => [offset, 0]), [0, END_LABEL_SIDE_PX], [0, -END_LABEL_SIDE_PX]];
+  return { start: place(geometry.startPoint, geometry.startDirection, -1, beyond), finish: place(geometry.endPoint, geometry.endDirection, 1, beyond) };
 }
 
-function layoutOf(marks: TrackMark[], reference: TrackLine, attempt: TrackLine | null | undefined, geometry: Geometry): Layout {
+function layoutOf(marks: TrackMark[], reference: TrackLine, attempt: TrackLine | null | undefined, geometry: Geometry, lapLine: boolean): Layout {
   const placed = placeMarks(marks, reference, attempt, geometry);
   const taken: Circle[] = placed.flatMap((place, index) => (place ? [{ at: place.centre, r: markRadius(marks[index]!) }] : []));
   const turns = placeTurns(marks, reference, geometry, taken);
-  const ends = placeEnds(geometry, taken);
+  const ends = placeEnds(geometry, taken, lapLine);
   return { placed, turns, ends, taken };
 }
 
@@ -272,8 +294,22 @@ function FinishMark({ at, direction }: { at: Point; direction: Point }) {
   );
 }
 
-const EndsLayer = memo(function EndsLayer({ geometry, ends }: { geometry: Geometry; ends: Ends }) {
+const EndsLayer = memo(function EndsLayer({ geometry, ends, lapLine }: { geometry: Geometry; ends: Ends; lapLine: boolean }) {
   const { startPoint, endPoint, startDirection, endDirection } = geometry;
+  if (lapLine) {
+    if (!startPoint || !startDirection) return null;
+    const { barFrom, barTo } = startShape(startPoint, startDirection);
+    return (
+      <>
+        <line className="track-start" x1={barFrom[0]} y1={barFrom[1]} x2={barTo[0]} y2={barTo[1]} />
+        {ends.start ? (
+          <text className="track-label" x={ends.start[0]} y={ends.start[1]} textAnchor="middle" dominantBaseline="central">
+            lap line
+          </text>
+        ) : null}
+      </>
+    );
+  }
   const labels: [string, Point | null][] = [
     ['start', ends.start],
     ['finish', ends.finish]
@@ -357,7 +393,7 @@ const MarksLayer = memo(function MarksLayer({ marks, placed }: { marks: TrackMar
         if (!place) return null;
         const [cx, cy] = place.centre;
         const radius = markRadius(mark);
-        const className = `track-mark${mark.selected ? ' selected' : ''}${mark.muted ? ' muted' : ''}${mark.speaking ? ' speaking' : ''}${mark.onAttempt ? ' on-attempt' : ''}`;
+        const className = `track-mark${mark.selected ? ' selected' : ''}${mark.muted ? ' muted' : ''}${mark.speaking ? ' speaking' : ''}${mark.onAttempt ? ' on-attempt' : ''}${mark.variant ? ` ${mark.variant}` : ''}`;
         const content = (
           <>
             <title>{mark.title}</title>
@@ -491,11 +527,11 @@ function useUnitsPerPixel(svg: RefObject<SVGSVGElement | null>, height: number, 
   return units;
 }
 
-export function TrackMap({ reference, attempt, far, callouts = NO_CALLOUTS, marks = NO_MARKS, cursorSM, dark = false, label }: TrackMapProps) {
+export function TrackMap({ reference, attempt, far, callouts = NO_CALLOUTS, marks = NO_MARKS, cursorSM, dark = false, plain = false, lapLine = false, label }: TrackMapProps) {
   const geometry = useMemo(() => geometryOf(reference, attempt, far), [reference, attempt, far]);
   const svg = useRef<SVGSVGElement>(null);
   const calloutScale = useUnitsPerPixel(svg, geometry?.height ?? 1, callouts.length > 0);
-  const layout = useMemo(() => (geometry ? layoutOf(marks, reference, attempt, geometry) : NO_LAYOUT), [geometry, marks, reference, attempt]);
+  const layout = useMemo(() => (geometry ? layoutOf(marks, reference, attempt, geometry, lapLine) : NO_LAYOUT), [geometry, marks, reference, attempt, lapLine]);
   const obstacles = useMemo(() => (geometry && callouts.length > 0 ? obstaclesOf(geometry, reference, attempt, layout.taken) : NO_POINTS), [geometry, callouts, reference, attempt, layout]);
   if (!geometry) return null;
   const { height, project } = geometry;
@@ -503,10 +539,10 @@ export function TrackMap({ reference, attempt, far, callouts = NO_CALLOUTS, mark
   const cursor = cursorSM === null || cursorSM === undefined ? null : pointOn(cursorLine, cursorSM);
   const cursorPoint = cursor ? project(cursor[0], cursor[1]) : null;
   return (
-    <svg ref={svg} className={`track-map${dark ? ' dark' : ''}`} viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-label={label}>
+    <svg ref={svg} className={`track-map${dark ? ' dark' : ''}${plain ? ' plain' : ''}`} viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-label={label}>
       <TurnsLayer turns={layout.turns} />
       <LinesLayer geometry={geometry} />
-      <EndsLayer geometry={geometry} ends={layout.ends} />
+      <EndsLayer geometry={geometry} ends={layout.ends} lapLine={lapLine} />
       <TurnLabelsLayer turns={layout.turns} />
       <MarksLayer marks={marks} placed={layout.placed} />
       <CalloutsLayer callouts={callouts} reference={reference} line={cursorLine} obstacles={obstacles} project={project} height={height} scale={calloutScale} />

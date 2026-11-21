@@ -10,11 +10,13 @@ type ConfirmDialogProps = {
   confirmDisabled?: boolean;
   error?: string | null;
   notice?: ReactNode;
+  role?: 'alertdialog' | 'dialog';
+  confirmTone?: 'destructive' | 'primary';
   onKeep(): void;
   onConfirm(): void;
 };
 
-export function ConfirmDialog({ title, children, keepLabel, confirmLabel, working = false, confirmDisabled = false, error = null, notice = null, onKeep, onConfirm }: ConfirmDialogProps) {
+export function ConfirmDialog({ title, children, keepLabel, confirmLabel, working = false, confirmDisabled = false, error = null, notice = null, role = 'alertdialog', confirmTone = 'destructive', onKeep, onConfirm }: ConfirmDialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const keep = useRef<HTMLButtonElement>(null);
   const titleId = useId();
@@ -36,7 +38,7 @@ export function ConfirmDialog({ title, children, keepLabel, confirmLabel, workin
   return (
     <dialog
       ref={dialog}
-      role="alertdialog"
+      role={role}
       aria-modal="true"
       aria-labelledby={titleId}
       aria-describedby={bodyId}
@@ -65,7 +67,7 @@ export function ConfirmDialog({ title, children, keepLabel, confirmLabel, workin
         <button ref={keep} type="button" className="btn ghost inline" onClick={onKeep} disabled={working}>
           {keepLabel}
         </button>
-        <button type="button" className="btn destructive inline" onClick={onConfirm} disabled={working || confirmDisabled}>
+        <button type="button" className={confirmTone === 'destructive' ? 'btn destructive inline' : 'btn inline'} onClick={onConfirm} disabled={working || confirmDisabled}>
           {confirmLabel}
         </button>
       </div>

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { medalTargetsSchema, type ExerciseStatusName } from './catalogue.ts';
 import { CUE_OFFSET_MAX_MS, CUE_OFFSET_MIN_MS, CUE_OFFSET_STEP_MS, RECURRING_DEFAULT_LAST } from './constants.ts';
 
-export const capturePurposeSchema = z.enum(['demo', 'player']);
+export const capturePurposeSchema = z.enum(['demo', 'player', 'race']);
 
 export type CapturePurpose = z.infer<typeof capturePurposeSchema>;
 
@@ -110,7 +110,7 @@ export type Settings = { ps5Ip: string | null; gameVersion: string | null };
 export const createCaptureSchema = z
   .object({
     exerciseId: z.uuid(),
-    purpose: capturePurposeSchema
+    purpose: z.enum(['demo', 'player'])
   })
   .strict();
 
@@ -216,7 +216,7 @@ export const deleteHistorySchema = z
 
 export type DeleteHistoryRequest = z.infer<typeof deleteHistorySchema>;
 
-export type DeleteHistoryResult = { attempts: number; references: number; cleanup: CleanupResult | null };
+export type DeleteHistoryResult = { attempts: number; references: number; races: number; cleanup: CleanupResult | null };
 
 export const removeExercisesSchema = z.object({ ids: z.array(z.uuid()).min(1).max(500), cleanup: z.boolean() }).strict();
 
@@ -224,7 +224,7 @@ export type RemoveExercisesRequest = z.infer<typeof removeExercisesSchema>;
 
 export type RemoveExercisesResult = { exercises: number; attempts: number; references: number; cleanup: CleanupResult | null };
 
-export type DeleteProfileResult = { exercises: number; attempts: number; references: number; cleanup: CleanupResult };
+export type DeleteProfileResult = { exercises: number; attempts: number; references: number; races: number; cleanup: CleanupResult };
 
 export const medalSchema = z.enum(['bronze', 'silver', 'gold']);
 

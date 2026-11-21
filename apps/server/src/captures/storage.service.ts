@@ -55,7 +55,7 @@ export class StorageService {
   }
 
   async cleanup(userId: string): Promise<CleanupResult> {
-    const rows = (await this.db<CaptureRow>('captures').where({ user_id: userId })).filter(row => row.id !== this.captures.activeCaptureId);
+    const rows = (await this.db<CaptureRow>('captures').where({ user_id: userId })).filter(row => !this.captures.inUse(row.id));
     const result: CleanupResult = { captures: 0, bytesBefore: 0, bytesAfter: 0 };
     for (const row of rows) {
       const path = this.captures.rawPath(row);
@@ -84,7 +84,7 @@ export class StorageService {
   private async usedRanges(captureId: string): Promise<RawRange[]> {
     const select = (table: string) =>
       this.db(table).where({ capture_id: captureId }).select<{ first: number; last: number }[]>('first_raw_index as first', 'last_raw_index as last');
-    return [...(await select('references')), ...(await select('attempts'))];
+    return [...(await select('references')), ...(await select('attempts')), ...(await select('races'))];
   }
 
   private async directoryBytes(): Promise<number> {

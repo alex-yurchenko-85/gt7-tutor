@@ -7,7 +7,10 @@ import { buildReference, type ReferencePath } from './reference.ts';
 export type ReferenceAnalysis = { path: ReferencePath; events: ReferenceCueEvent[]; corners: Corner[]; timeMs: number };
 
 export function analyseReference(samples: Sample[], config: CoreConfig): ReferenceAnalysis {
-  const path = buildReference(samples, config);
+  return analysisOf(buildReference(samples, config), samples.at(-1)!.gameTimerMs, config);
+}
+
+export function analysisOf(path: ReferencePath, timeMs: number, config: CoreConfig): ReferenceAnalysis {
   const events = buildCueEvents(path, config);
-  return { path, events, corners: findCorners(path, events, config), timeMs: samples.at(-1)!.gameTimerMs };
+  return { path, events, corners: findCorners(path, events, config), timeMs };
 }

@@ -12,6 +12,7 @@ export function DeleteProfileDialog({ onKeep }: { onKeep(): void }) {
   const { user, ended } = useSession();
   const exercises = useResource(() => api.exercises(), []);
   const storage = useResource(() => api.storage(), []);
+  const races = useResource(() => api.races(), []);
   const [password, setPassword] = useState('');
   const [working, setWorking] = useState(false);
   const gate = useTrainingGate('delete');
@@ -52,6 +53,9 @@ export function DeleteProfileDialog({ onKeep }: { onKeep(): void }) {
         </li>
         <li>
           <b>{attempts === null ? 'the attempts' : counted(attempts, 'attempt')}</b> with {theirs(attempts ?? 0)} cues and differences
+        </li>
+        <li>
+          <b>{races.data ? counted(races.data.length, 'race') : 'the races'}</b> with {theirs(races.data?.length ?? 0)} laps, pit stops and places off the track
         </li>
         <li>
           {storage.data ? (

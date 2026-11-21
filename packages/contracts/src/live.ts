@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MAX_OUTPUT_LATENCY_MS } from './constants.ts';
+import type { LiveRace } from './race.ts';
 
 export const cueKindSchema = z.enum([
   'hard-brake',
@@ -56,7 +57,7 @@ export type LiveGuidance = { mode: GuidanceMode; reason: GuidanceReason };
 
 export type ConnectionState = 'connected' | 'stale' | 'disconnected';
 
-export type LiveMode = 'idle' | 'capturing' | 'armed' | 'driving' | 'paused' | 'finished';
+export type LiveMode = 'idle' | 'capturing' | 'armed' | 'driving' | 'paused' | 'finished' | 'race-waiting' | 'race-running';
 
 export type LiveState = {
   seq: number;
@@ -78,6 +79,8 @@ export type LiveState = {
   referenceId: string | null;
   gapMs: number | null;
   startMissed: boolean;
+  lastRaceId: string | null;
+  race: LiveRace | null;
 };
 
 export type ServerMsg =

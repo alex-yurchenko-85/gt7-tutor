@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { CornerInfo, ReferenceCue } from '@gt7/contracts';
+import { metres } from '../app/format.ts';
 import { Icon } from '../app/icons.tsx';
 import { useWideLayout } from '../app/layout.ts';
 import { useScrollLock } from '../app/scroll-lock.ts';
@@ -20,6 +21,10 @@ export type MapDialogProps = {
   items: MapDialogItem[];
   listTitle: string;
   listHint: string;
+  mapLabel?: string;
+  lineName?: string;
+  lapLine?: boolean;
+  metresText?: (value: number) => string;
 };
 
 export function cueItems(cues: ReferenceCue[], isMuted: (cue: ReferenceCue) => boolean = cue => cue.muted): MapDialogItem[] {
@@ -40,7 +45,7 @@ function itemMark(item: MapDialogItem, selected: boolean, onSelect: () => void):
   };
 }
 
-export function MapDialog({ open, onClose, title, lengthM, reference, attempt = null, corners, items, listTitle, listHint }: MapDialogProps) {
+export function MapDialog({ open, onClose, title, lengthM, reference, attempt = null, corners, items, listTitle, listHint, mapLabel, lineName = 'Reference line', lapLine = false, metresText = metres }: MapDialogProps) {
   const wide = useWideLayout();
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -90,7 +95,7 @@ export function MapDialog({ open, onClose, title, lengthM, reference, attempt = 
         </button>
         <div className="map-dialog-title">
           <h2 id={titleId}>{title}</h2>
-          <p>{`Reference line, ${Math.round(lengthM)} m.${wide ? ' Press Esc to close.' : ''}`}</p>
+          <p>{`${lineName}, ${metresText(lengthM)}.${wide ? ' Press Esc to close.' : ''}`}</p>
         </div>
         <div className="map-dialog-layers">
           <label>
@@ -105,7 +110,7 @@ export function MapDialog({ open, onClose, title, lengthM, reference, attempt = 
       </header>
       <div className="map-dialog-body">
         <div className="map-dialog-map">
-          <TrackMap label={attempt ? `Reference line and your line of ${title}` : `Reference line of ${title}`} reference={reference} attempt={attempt} marks={marks} dark />
+          <TrackMap label={mapLabel ?? (attempt ? `Reference line and your line of ${title}` : `Reference line of ${title}`)} reference={reference} attempt={attempt} marks={marks} lapLine={lapLine} dark />
         </div>
         <aside className="map-dialog-cues" aria-labelledby={`${titleId}-cues`}>
           <h3 id={`${titleId}-cues`}>{listTitle}</h3>

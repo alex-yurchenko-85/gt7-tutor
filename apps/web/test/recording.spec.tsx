@@ -408,8 +408,21 @@ describe('reference recording', () => {
     await recordOnce(user, 1);
     await user.click(await screen.findByRole('button', { name: 'Use this as the reference' }));
     expect(await screen.findByRole('heading', { name: 'The reference is active' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Back to the exercise' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}`);
+    const drive = screen.getByRole('button', { name: 'Drive' });
+    expect(drive).toHaveClass('stage-button', 'primary');
+    expect(screen.queryByRole('link', { name: 'Back to the exercise' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Hear the cues' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}/cues`);
+  });
+
+  it('created_drive_arms_and_opens_the_stage', async () => {
+    const api = recordingApi().on('POST /api/training/arm', { status: 201, body: { captureId: 'cap-9', exerciseId: EXERCISE_ID, referenceId: REFERENCE_ID } });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    const user = timedUser();
+    await recordOnce(user, 1);
+    await user.click(await screen.findByRole('button', { name: 'Use this as the reference' }));
+    await user.click(await screen.findByRole('button', { name: 'Drive' }));
+    await waitFor(() => expect(window.location.pathname).toBe(`/exercises/${EXERCISE_ID}/drive`));
+    expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: EXERCISE_ID });
   });
 
   it('check_that_does_not_match_asks_for_a_new_reference', async () => {

@@ -5,7 +5,7 @@ import { TRAINING_MODES } from './current-exercise.ts';
 
 export const TrainingNameContext = createContext<string | null>(null);
 
-export type Training = { on: boolean; running: boolean; exerciseName: string | null; attemptNumber: number | null; stop(): Promise<void> };
+export type Training = { on: boolean; running: boolean; exerciseId: string | null; exerciseName: string | null; attemptNumber: number | null; stop(): Promise<void> };
 
 export async function stopTraining(): Promise<void> {
   try {
@@ -20,9 +20,10 @@ export function useTraining(): Training {
   const on = useLiveState(({ state }) => state !== null && TRAINING_MODES.includes(state.mode));
   const running = useLiveState(({ state }) => state?.mode === 'driving' || state?.mode === 'paused');
   const attemptNumber = useLiveState(({ state }) => state?.attemptNumber ?? null);
+  const exerciseId = useLiveState(({ state }) => state?.exerciseId ?? null);
   const exerciseName = useContext(TrainingNameContext);
   const stop = useCallback(() => stopTraining(), []);
-  return { on, running, exerciseName: on ? exerciseName : null, attemptNumber: running ? attemptNumber : null, stop };
+  return { on, running, exerciseId: on ? exerciseId : null, exerciseName: on ? exerciseName : null, attemptNumber: running ? attemptNumber : null, stop };
 }
 
 export type TrainingGate = { notice: string | null; blocked: boolean; label(plain: string): string; before(): Promise<void> };

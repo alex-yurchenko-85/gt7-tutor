@@ -1,10 +1,10 @@
 # GT7 Tutor user guide
 
-This guide shows how to use GT7 Tutor, from the first start to the review of your attempts.
+This guide shows how to use GT7 Tutor, from the first start to the review of your attempts and your races.
 To install and start GT7 Tutor, read the [README](../../README.md#quick-setup-macos-and-linux) first.
 
 About the screenshots: they come from GT7 Tutor with recorded data from the project, not from a live PS5.
-The recorded data is the Circuit Experience of Autódromo de Interlagos, sector 2.
+The recorded data of the exercises is the Circuit Experience of Autódromo de Interlagos, sector 2. The recorded data of the races is two races of 5 and 7 laps.
 On the screenshots, the console status can show `recorded data` or `Receiving telemetry`. With your PS5, the same screens show your own data.
 The profile names `Sam` and `demo` are test names.
 
@@ -22,13 +22,14 @@ The profile names `Sam` and `demo` are test names.
 10. [Review an attempt](#review-an-attempt)
 11. [See all attempts and recurring differences](#see-all-attempts-and-recurring-differences)
 12. [Track your progress](#track-your-progress)
-13. [Manage references](#manage-references)
-14. [Profiles: sign in, sign out, switch, change and delete](#profiles-sign-in-sign-out-switch-change-and-delete)
-15. [Other settings](#other-settings)
-16. [Delete data](#delete-data)
-17. [Use a phone](#use-a-phone)
-18. [Try the demo](#try-the-demo)
-19. [Common problems](#common-problems)
+13. [Record a race and look at it](#record-a-race-and-look-at-it)
+14. [Manage references](#manage-references)
+15. [Profiles: sign in, sign out, switch, change and delete](#profiles-sign-in-sign-out-switch-change-and-delete)
+16. [Other settings](#other-settings)
+17. [Delete data](#delete-data)
+18. [Use a phone](#use-a-phone)
+19. [Try the demo](#try-the-demo)
+20. [Common problems](#common-problems)
 
 ## Words in this guide
 
@@ -43,7 +44,13 @@ The profile names `Sam` and `demo` are test names.
 | Voice device | The one browser that plays the cues for your profile: the computer or a phone. |
 | Difference | A place where your attempt is not the same as the reference, for example `Braked 17 m earlier`. A difference is not always a driver error. The reference is one recorded drive, not the best possible line. |
 | Recurring difference | A difference at the same place in at least half of your last complete attempts. |
-| Capture | The raw file of all telemetry that GT7 Tutor received during a recording or an attempt. |
+| Capture | The raw file of all telemetry that GT7 Tutor received during a recording, an attempt or a race. |
+| Race | A race by laps in the game that GT7 Tutor recorded, from the start or the first recorded lap line to the finish. |
+| Lap | One lap of a race, from one lap line to the next. A lap keeps the number that the game gives it. |
+| Best lap | The lap of the race with the shortest lap time of the game. |
+| Pit stop | A stop in the pit lane between two laps. The lap before the stop is the in-lap. The lap after it is the out-lap. |
+| Off the track | A moment with two or more wheels on a surface that is not the track or a kerb, for example grass or gravel. |
+| Recurring place | A place of the track where you went off the track in 3 or more laps of one race. |
 
 ## What you need
 
@@ -93,7 +100,7 @@ The page **Get ready to train** has three steps. The bar shows how many steps ar
 **Result:** GT7 Tutor saves the address and listens for packets for a short time. The step shows one of these:
 
 - `Receiving telemetry`: the connection works.
-- `Address saved, no telemetry yet`: GT7 Tutor saved the address but received no packets. The step is marked done, but you cannot train yet. See [No packets from the console](#no-packets-from-the-console).
+- `Address saved, no telemetry yet`: GT7 Tutor saved the address but received no packets. GT7 Tutor marks the step done, but you cannot train yet. See [No packets from the console](#no-packets-from-the-console).
 
 The address is for this computer. All profiles use it.
 
@@ -117,15 +124,17 @@ Select **Add an exercise**. The next section tells you how to find the exercise.
 
 ## Find your way in the application
 
-![The Exercises home on a computer: the Continue card, then My exercises over the full width with Select and + Add exercise, and one exercise row with its status and best time.](images/exercises-home.webp)
+![The Exercises home on a computer. The Continue card has the buttons Drive and Attempts. Under it, My exercises has Select, + Add exercise and one exercise row.](images/exercises-home.webp)
 
 The application has three items in the menu:
 
 | Item | On a computer | On a phone |
 | --- | --- | --- |
 | **Exercises**: your exercises, the catalogue and each exercise | Top bar | Bottom bar |
-| **Drive**: the screen that you use while you drive | Top bar | Bottom bar |
+| **Races**: the races that you recorded, by day, and **Record a race** | Top bar | Bottom bar |
 | **Setup**: console, voice, profiles, preferences, catalogue, data | Top bar | Bottom bar |
+
+There is no Drive item in the menu. The yellow **Drive** button starts an attempt. It is on the **Attempts** tab, on the review of an attempt and on the **Continue** card. See [Drive an attempt](#drive-an-attempt).
 
 The top bar also has:
 
@@ -141,20 +150,22 @@ The dots have these states:
 
 ![The profile menu with Manage profiles, Voice on this device, Theme and Sign out.](images/profile-menu.webp)
 
-The **current exercise** is the exercise that you opened last. **Drive** and the **Continue** card on the Exercises home use it.
+The **current exercise** is the exercise that you opened last. The **Continue** card on the Exercises home shows it. The pages of an exercise and its Drive screen make it the current exercise.
 
-Each exercise has a page with a header and four tabs.
+Each exercise has a page with a header and three tabs.
 The header has the breadcrumb `Exercises / <exercise name>`. Select **Exercises** in it to go back to the Exercises home.
 Under the exercise name, one line gives the family, the collection with the code, and the track, for example `Licence · National B, B-4 · Alsace – Village`. An exercise that you created yourself shows only its family.
+Under that line, a band shows the times from the game: `your best`, the time of the `reference` and the `gap to the reference`. The band shows only the times that GT7 Tutor knows.
 
 | Tab | Content |
 | --- | --- |
-| **Overview** | The next action, the times from the game, the recurring differences and the map of the reference |
-| **Cues** | What the voice will say, and where |
+| **Cues** | What the voice will say, and where. The exercise opens on this tab. |
 | **References** | The history of the references of the exercise |
-| **Attempts** | All attempts, by day, and the recurring differences. The tab shows the number of all attempts, also the attempts that did not finish. |
+| **Attempts** | The **Drive** button, all attempts by day, and the recurring differences |
 
-The review of an attempt keeps the header and the tabs of its exercise. The **Attempts** tab is marked there.
+The review of an attempt keeps the header and the tabs of its exercise. GT7 Tutor marks the **Attempts** tab there.
+
+Each race has a page with the breadcrumb `Races / <track name>` and three tabs: **Laps**, **Compare** and **Off the track**. See [Record a race and look at it](#record-a-race-and-look-at-it).
 
 ## Add an exercise
 
@@ -168,11 +179,11 @@ The review of an attempt keeps the header and the tabs of its exercise. The **At
    - Select a track in **All tracks**.
 3. Select **Add** in the row of the exercise.
 
-**Result:** GT7 Tutor opens the page of the new exercise. Its first step is **Record the reference**.
+**Result:** GT7 Tutor opens the **Cues** tab of the new exercise. It says `The cues come from the reference. This exercise has no reference yet.` and shows the button **Record the reference**.
 
-![The page of a new exercise: the breadcrumb, the tabs Overview, Cues, References and Attempts, Next: record the reference with the button Record the reference, and No reference yet.](images/exercise-new.webp)
+![The page of a new exercise with the tabs Cues, References and Attempts. The text says that the exercise has no reference yet. Under it is the button Record the reference.](images/exercise-new.webp)
 
-![Add an exercise, filtered to Circuit Experience and the search Interlagos. One row shows, with the Add button. Below is the form Your own exercise.](images/add-exercise.webp)
+![Add an exercise, with the filter Circuit Experience and the search Interlagos. One row shows, with the Add button. Below it is the form Your own exercise.](images/add-exercise.webp)
 
 The column **Medal targets** shows the gold, silver and bronze times when the catalogue has them. `Not listed` means that the catalogue has no targets for the exercise.
 An exercise that you already added shows **Added · open**.
@@ -203,7 +214,7 @@ For one exercise, the dialog lists what goes: the attempts with their cues and d
 ## Record the reference
 
 **Goal:** give GT7 Tutor the drive that it compares your attempts with.
-**Before you start:** the console address is saved, GT7 runs, and no other recording runs.
+**Before you start:** you saved the console address, GT7 runs, and no other recording runs.
 
 ![Record the reference: Recording 1 needed, Recording 2 optional, and the button Start recording.](images/record-start.webp)
 
@@ -222,7 +233,7 @@ For one exercise, the dialog lists what goes: the attempts with their cues and d
 
 1. Select **Use this as the reference**.
 
-**Result:** `The reference is active`. Select **Hear the cues** to see what the voice will say, or **Back to the exercise**.
+**Result:** `The reference is active`. Select **Drive** to start an attempt at once, or **Hear the cues** to see what the voice will say.
 
 Other choices on this screen:
 
@@ -244,16 +255,16 @@ While an attempt runs, the screen says `Attempt <n> runs. Finish it or stop the 
 ## Set up the cues
 
 **Goal:** choose what the voice says, and when.
-**Where:** the **Cues** tab of the exercise, or **Hear the cues first** on **Overview**.
+**Where:** the **Cues** tab of the exercise, or **Hear the cues** after you record the reference.
 
-![The Cues tab: the switch Speak target speeds, the list Side cue distance, the list of cues with distance, phrase and target speed, and the map Reference line with numbered cues, the Preview and View buttons and the legend. The line above the list says that 2 cues are not spoken on the reference line.](images/cues.webp)
+![The Cues tab. At the top are the switch Speak target speeds and the list Side cue distance. Below them is the list of cues with distance, phrase and target speed. At the right is the map Reference line with numbered cues.](images/cues.webp)
 
 The list shows each cue and each turn in the order of the section. Each cue row has:
 
 - The distance from the start of the section and the phrase, for example `291 m`, `Hard brake. One fifteen`.
 - The target speed in km/h, rounded down to 5. For a brake it is the lowest speed of the reference in that place, and the row says `lowest speed`. For a throttle cue it is the speed of the reference 2 s later. `–` means that the cue has no target speed, for example a brake to a stop: GT7 Tutor gives targets only from 30 to 350 km/h.
 - **Hear** (play icon): plays the phrase on this device.
-- **Mute** (speaker icon) / **Unmute** (crossed-out speaker on a black fill): a muted cue is not spoken. The Drive screen does not show it either. A muted row has a striped grey background, the phrase struck through and the tag `MUTED`. Its timing stays and applies again after **Unmute**.
+- **Mute** (speaker icon) / **Unmute** (crossed-out speaker on a black fill): a muted cue is not spoken. The Drive screen does not show it either. A muted row has a striped grey background and the phrase struck through. Its timing stays and applies again after **Unmute**.
 - **Timing**: moves this cue up to 1 s earlier or 0.5 s later, in steps of 0.1 s.
 - Notes from your attempts, for example `Braked early in 2 of 3 attempts, median 26 m`. A yellow row marks a place where a difference repeats.
 - The tag `NOT SPOKEN`: on the reference line, the voice does not say this cue. The line under the phrase tells why. An example is `The voice still says cue 3 here. Mute cue 3 or this cue, or move cue 3 earlier.` The voice says one cue at a time, so a cue that comes too soon after another cue stays silent. The line above the list gives the number of these cues. A muted cue does not get this tag.
@@ -267,7 +278,7 @@ Settings above the list:
 
 The map is on the right, in a frame with the title `Reference line, <length> m`. The legend under the map has the words `reference line`, `turn`, `voice cue`, `muted cue`, `cue not spoken` and `Select a number to mute that cue`. **View** opens the map in full screen, with the list of the voice cues. Select a cue in the list to find it on the line. Press Esc or select **Back** to close the full-screen map. On a phone, the map is above the list of cues.
 
-On the map, a yellow band marks each turn, from the turn-in to the end of the turn, with its label `T1`. A short bar and an arrow mark the start and the direction of travel, and a chequered bar marks the finish. Select a cue number to mute or unmute that cue. A muted cue has a dashed grey circle with a small crossed-out speaker. A cue with the tag `NOT SPOKEN` has a small black circle with three dots. When two cues are so close that their numbers would cover each other, the numbers move to the two sides of the line, with a short line to their places.
+On the map, a yellow band marks each turn, from the turn-in to the end of the turn, with its label `T1`. A short bar and an arrow mark the start and the direction of travel. A chequered bar marks the finish. Select a cue number to mute or unmute that cue. A muted cue has a dashed grey circle with a small crossed-out speaker. A cue with the tag `NOT SPOKEN` has a small black circle with three dots. Two cues can be so close that their numbers would cover each other. Then the numbers move to the two sides of the line, with a short line to their places.
 
 ### Preview the cues
 
@@ -277,11 +288,11 @@ On the map, a yellow band marks each turn, from the turn-in to the end of the tu
 2. Listen to the cues. The number of the cue that the voice says turns black on the map, and its row shows the tag `SPEAKING`. Under the map, a bar and the time show the progress, for example `0:11.3 of 0:16.1, measured`. The line `The voice says:` gives the phrase and the cue number.
 3. To stop before the end, select **Stop** (square icon).
 
-![The Cues tab while the preview plays: the yellow dot on the reference line, cue 3 Lift off with the tag SPEAKING, cue 4 with the tag NOT SPOKEN, and the time 0:11.3 of 0:16.1, measured.](images/cues-preview.webp)
+![The Cues tab while the preview plays. A yellow dot moves on the reference line. Cue 3 Lift off has the tag SPEAKING. Cue 4 has the tag NOT SPOKEN. The time is 0:11.3 of 0:16.1, measured.](images/cues-preview.webp)
 
 The preview stops by itself at the end of the reference. It also stops when you change a setting of this tab, and when you leave the tab. The preview does not start a training, and it does not record an attempt. **Preview** is only on the **Cues** tab. On a phone, **Preview**, **Stop** and **View** are icon buttons.
 
-Changes apply from the next **Start an attempt**. A training that already runs keeps the old settings.
+Changes apply from the next **Drive**. A training that already runs keeps the old settings.
 
 ## Drive an attempt
 
@@ -290,52 +301,56 @@ Changes apply from the next **Start an attempt**. A training that already runs k
 
 ### Start
 
-1. Select **Drive** in the menu.
-2. Read the line `Exercise: <name>`. The name is a link to the exercise. On a computer, the line also shows where the exercise is. To pick another exercise, select **Change exercise**. It opens **Exercises**.
-3. Look at the notice. If you see `No device plays the voice. The screen still shows the cues.`, select **Use this device for voice** when this device must speak. The notice also shows when this device has the voice but the sound did not start. If another device plays the voice, the notice does not show.
-4. Select **Start an attempt**.
+1. Open the **Attempts** tab of the exercise, the review of an attempt, or the **Continue** card on the Exercises home.
+2. Select **Drive**. On the **Attempts** tab and on the review, it is the yellow button with the word **Drive**. On the **Continue** card, it is the main button **Drive**.
 
-![Drive before the start: the line Exercise, the hint, the button Start an attempt, the link Hear the cues first, the times from the game and the map of the reference line.](images/drive-start.webp)
+**Result:** the dark Drive screen opens at once and shows `READY` in grey. There is no other page before it.
 
-The screen has these parts:
+![The Drive screen in the state READY. At the top are the dots Telemetry and Voice and the exercise name. The large grey word READY is above the text Open the exercise in GT7 and drive, with the first cue after the start.](images/drive-ready.webp)
 
-| Part | Content |
-| --- | --- |
-| Hint | `Select Start an attempt. Then open the exercise in GT7 and drive. GT7 Tutor finds the start and the finish.` |
-| **Hear the cues first** | Opens the **Cues** tab of the exercise. |
-| **Times from the game** | Your best time, the time of the reference, and the time to the next medal. The panel shows only the times that GT7 Tutor knows. |
-| **Reference line** | The map of the reference with its length, for example `Reference line, 818 m`. Select **View** to open it larger. |
+The READY screen shows:
 
-An attempt can start without a voice device. If GT7 Tutor cannot load the voice clips, the message shows under **Start an attempt**.
-
-**Result:** the dark Drive screen shows `READY` and `Waiting for the start`, and the first cue.
-
-![The Drive screen in the state READY, Waiting for the start, with the first cue Hard brake One fifteen.](images/drive-ready.webp)
+- `Open the exercise in GT7 and drive.`
+- `GT7 Tutor finds the start and the finish. You can look at the TV now. First cue after the start: <phrase>.`
+- `No device plays the voice.` with the button **Use this device for voice**, when no device plays the voice. Select the button when this device must speak. The line also shows when this device has the voice but the sound did not start. If another device plays the voice, the line does not show.
+- The map of the reference line at the right.
 
 1. In GT7, start the exercise and drive. You do not need to touch GT7 Tutor.
 
 GT7 Tutor finds the start and the finish of the attempt by itself. The time of the attempt is the time from the game.
 
+An attempt can start without a voice device. If GT7 Tutor cannot load the voice clips, the Drive screen shows a message.
+
+Other states of the **Drive** button:
+
+- Without an active reference, the **Attempts** tab shows `Record the reference first.` with the link **Record** in place of **Drive**. The **Continue** card shows **Record the reference**.
+- When the training of another exercise is on, a dialog asks `The training of <exercise> is on. Stop it and start this exercise?`. Select **Stop and start** to stop that training and start this exercise. Select **Cancel** to keep that training.
+- While an attempt of another exercise runs, the text `Attempt <n> runs. Finish it or stop the training first.` shows under the button. Nothing starts.
+- When the training of this exercise is on, **Drive** opens its Drive screen.
+- If the start fails, the error shows under the button.
+
 ### During the attempt
 
-![The Drive screen during attempt 5: the cue FULL THROTTLE 140, Cue 2 of 6 before T1, the next cue Full throttle in 13 m, speed 95 km/h, 398 m of 818, +1.3 s to reference, and the map with turn 1 as a yellow band, the position inside it, the start bar with its arrow and the chequered finish.](images/drive-cue.webp)
+![The Drive screen during attempt 3 with the cue FULL THROTTLE 140. Under it are Next: Full throttle, in 2 m and Cue 2 of 6 · before T1. The values are 95 km/h, 409 m of 818 and +1.3 s to reference. The map shows turn 1 as a yellow band.](images/drive-cue.webp)
 
 | Part | Meaning |
 | --- | --- |
-| Large words | The current cue, for example `HARD BRAKE 115` or `FULL THROTTLE 140`. The number has the size of the words. It shows for about 3 s. The cue area has one height for all cues, so the lines below it do not move. |
-| `Cue 2 of 6 · before T1` | The number of the cue and the next turn |
-| `Next: … in … m` | The next cue and the distance to it |
+| **Telemetry**, **Voice** | The status dots in the top row. Green means ready. The line under them gives `Attempt <n> · <exercise>`. |
+| Large yellow words | The current cue, for example `HARD BRAKE 115` or `FULL THROTTLE 140`. The number has the size of the words. It shows for about 3 s. The cue area has one height for all cues, so the lines below it do not move. |
+| `Next: …, in … m` | The next cue and the distance to it |
+| `Cue 2 of 6 · before T1` | The number of the current cue and the next turn |
 | km/h | Your speed |
 | `m of 818` | Your distance on the reference |
 | `s to reference` | Your time at this place minus the time of the reference at the same place. A positive value means that you are slower. |
-| Map | Your position on the reference line. Each turn is a yellow band from the turn-in to the end of the turn, with its label, for example `T1`. A short bar and an arrow mark the start and the direction of travel; a chequered bar marks the finish. |
-| **Telemetry**, **Voice** | The status dots. Green means ready. |
+| Map | Your position on the reference line. Each turn is a yellow band from the turn-in to the end of the turn, with its label, for example `T1`. A short bar and an arrow mark the start and the direction of travel. A chequered bar marks the finish. |
+
+The lines `Next` and `Cue … of …` keep their place while the attempt runs, also when they are empty.
 
 The voice speaks about half a second before the place where the reference does the action. Other cues:
 
 - `Hard brake`, `Brake` or `Light brake`: the reference loses at least 40 %, at least 15 % or less than 15 % of its speed.
 - `Lift off`: the reference takes the foot off the throttle and does not brake.
-- `Throttle on` or `Full throttle`: the reference opens the throttle; `Full throttle` when it reaches full throttle within 2 s.
+- `Throttle on` or `Full throttle`: the reference opens the throttle. The cue is `Full throttle` when the reference reaches full throttle within 2 s.
 - `Big brake ahead` before a long, hard brake.
 - `Closer to apex` when you run wide before an apex.
 - `More left` or `More right`, if **Side cue distance** is on.
@@ -343,11 +358,11 @@ The voice speaks about half a second before the place where the reference does t
 
 When you pause the game, the screen shows `Paused. Cues stop until you continue.` The attempt continues after the pause.
 
-![The Drive screen with Paused. Cues stop until you continue.](images/drive-paused.webp)
+![The Drive screen with the text Paused. Cues stop until you continue.](images/drive-paused.webp)
 
 ### After the finish
 
-![The summary of attempt 5: the time 0:18.824 from the game, the focus for the next attempt Turn one. Carry more speed., the gap to your best +1.75 s, the largest difference 291 m. Braked 37 m later, and the buttons Review this attempt and Drive again.](images/drive-summary.webp)
+![The summary of attempt 4: the time 0:18.824 from the game and the focus Turn one. Carry more speed. Then the gap to your best +1.41 s, the largest difference and the buttons Review this attempt and Drive again.](images/drive-summary.webp)
 
 The summary shows:
 
@@ -363,39 +378,39 @@ Then:
 
 An attempt that does not finish shows `No time` and the reason, for example `left the track`, `restarted` or `training stopped`. Only a complete attempt has a time.
 
-![The summary of attempt 4: No time, The attempt did not finish (left the track).](images/drive-aborted.webp)
+![The summary of attempt 2: No time. The attempt did not finish (left the track).](images/drive-aborted.webp)
 
 ### Drive with or without the voice
 
 You decide which help you use:
 
-- **With the voice:** a voice device is set. The voice says the cues.
-- **Without the voice:** select **Turn voice off here** in **Setup** → **Voice**, or do not choose a voice device. The Drive screen shows `No device plays the voice. The screen still shows the cues.` The attempt starts and the screen shows the cues.
+- **With the voice:** you chose a voice device. The voice says the cues.
+- **Without the voice:** select **Turn voice off here** in **Setup** → **Voice**, or do not choose a voice device. The READY screen shows `No device plays the voice.` The attempt starts, and the screen shows the cues.
 - **Without some cues:** mute them in the **Cues** tab.
 
 GT7 Tutor compares every attempt with the reference from the game demonstration. It does not compare attempts with the voice against attempts without the voice.
 
 ### Stop
 
-Select **Stop training** at the top right. If an attempt runs, GT7 Tutor stops it with the reason `training stopped`, and the attempt has no time.
+Select **Stop training** at the top right. If an attempt runs, GT7 Tutor stops it with the reason `training stopped`, and the attempt has no time. GT7 Tutor then opens the **Attempts** tab of the exercise.
 
 ### The training bar on the other screens
 
-While the training is on, every screen except Drive shows a yellow bar under the top bar:
+While the training is on, every screen except the Drive screen of that exercise shows a yellow bar under the top bar:
 
 - `The training is on: <exercise>. Restart the exercise in GT7 to drive the next attempt.`
 - While an attempt runs: `Attempt <n> runs: <exercise>. Stop training ends it without a time.`
 
 On a phone, the bar shows only the first sentence.
 
-- **Open Drive** opens the Drive screen.
+- **Open Drive** opens the Drive screen of the exercise that trains.
 - **Stop training** ends the training. If an attempt runs, the attempt has no time.
 
 The training stays on when you open another screen. Stop it when you do not drive.
 
 ### Possible problems
 
-- `The attempt did not start` with `The exercise was already running when you pressed Start.`: restart the exercise in GT7. Select **OK** to close the message.
+- `The attempt did not start` with `The exercise was already running when you selected Drive. Restart the exercise in the game.`: restart the exercise in GT7. Select **OK** to close the message.
 - `No packets from the console. Check that GT7 is running and that the address in Setup is right.`: see [No packets from the console](#no-packets-from-the-console).
 - `Connection to GT7 Tutor lost.`: the browser lost the server. Check that GT7 Tutor runs and that the device is on the home network.
 - `This exercise has no reference yet. Record it first.`: select **Record the reference**.
@@ -406,13 +421,12 @@ The training stays on when you open another screen. Stop it when you do not driv
 **Goal:** see where and how your attempt is different from the reference.
 **Where:** **Review this attempt** after the finish, or a row in the **Attempts** tab.
 
-![The review of attempt 2 with Side distance × 6: the reference line in blue and your line in orange, the label T1 · 3.5 m left, the differences by turn with 0.75 s lost in T1, and the selected difference 23 km/h slower in the corner.](images/review-side.webp)
+![The review of attempt 2 with Side distance × 6. The reference line is blue and your line is orange, with the label T1 · 3.5 m left. At the right are the yellow Drive button and the differences by turn. The difference 23 km/h slower in the corner is selected.](images/review-side.webp)
 
 The review shows the header and the tabs of the exercise. Under them:
 
-- **All attempts** goes back to the **Attempts** tab.
-- The attempt number, the time from the game and the gap to the reference, for example `Attempt 1 · 0:18.824 +2.74 s`.
-- On a computer, **Drive again** is at the top of the right column. On a phone, it is under the date of the attempt.
+- The attempt number, the time from the game and the gap to the reference, for example `Attempt 1 · 0:18.824 +2.74 s`. Select the **Attempts** tab to go back to all attempts.
+- The yellow **Drive** button starts the next attempt. On a computer, it is at the top of the right column. On a phone, it is under the attempt title, above **Your line**.
 
 | Part | What it shows |
 | --- | --- |
@@ -425,7 +439,7 @@ The review shows the header and the tabs of the exercise. Under them:
 | Charts | Speed, throttle, brake, the distance from the reference line, and the time lost. Move the pointer or a finger across a chart. The map shows the same place. |
 | **Compare with** | Another reference of the exercise. The review then compares the same attempt with that reference. |
 
-![The review charts: speed, throttle, brake, distance from the reference line and time lost to the reference, with the yellow zone of turn 1.](images/review-charts.webp)
+![The whole review page. The charts show speed, throttle, brake, the distance from the reference line and the time lost to the reference. A yellow zone marks turn 1.](images/review-charts.webp)
 
 Read a difference with care. `Braked 37 m later` compares your brake that is nearest to the brake of the reference, within 60 m. If you pressed the brake two times, the charts show both.
 
@@ -433,18 +447,20 @@ Other actions under **Source**:
 
 - **Use this attempt as a reference** (complete attempts only): the attempt becomes the active reference. The demonstration stays in the reference history.
 - **Delete attempt**: opens a dialog that shows what goes. **Delete attempt** in the dialog deletes the attempt with its cues and differences. **Keep it** closes the dialog. See [Delete data](#delete-data).
-- **Drive again** opens Drive for this exercise.
 
 ## See all attempts and recurring differences
 
 **Where:** the **Attempts** tab of the exercise.
 
-![The Attempts tab: three attempts of 20 November with time, gap to best and largest difference. The buttons Select and Hide aborted are above the Recurring differences panel.](images/attempts.webp)
+![The Attempts tab with three attempts of one day: time, gap to best and largest difference. Select and Hide aborted are in the row of the day heading. The yellow Drive button is above Recurring differences.](images/attempts.webp)
 
-- Attempts are grouped by day. Each day shows its best time.
+- The yellow **Drive** button starts an attempt. See [Drive an attempt](#drive-an-attempt). On a computer, it is at the top of the right column. On a phone, it is under the tabs, with **Select** and **Hide aborted** under it.
+- Without attempts, the tab says `No attempts yet. Select Drive, then drive the exercise in the game.`
+- GT7 Tutor groups the attempts by day. Each day shows its best time.
 - **Time from the game**: the time of a complete attempt. `No time` and `aborted` with the reason for an attempt that did not finish.
 - **Gap to best** and **Largest difference**. On a phone, the row shows the largest difference under the time.
 - Select a row to open the review of the attempt.
+- On a computer, **Select** and **Hide aborted** are at the right end of the first day heading.
 - **Hide aborted** hides the attempts that did not finish. The button then says **Show aborted** and is filled. Select **Show aborted** to show the attempts again.
 - **Select** lets you mark attempts and delete them. In this mode, a click on a row marks the attempt and does not open the review. See [Delete data](#delete-data).
 
@@ -454,7 +470,7 @@ Other actions under **Source**:
 
 The **Exercises** home shows:
 
-- **Continue**: the current exercise, the next step, for example `Next: drive attempts`, your best time and the gap to the next medal. The main button shows the next action: **Record the reference**, **Start an attempt** or **Open the attempts**.
+- **Continue**: the current exercise, the next step, for example `Next: drive attempts`, your best time and the gap to the next medal. The main button is **Drive** when the exercise has an active reference, and **Record the reference** when it has none. **Attempts** opens the **Attempts** tab. Select the exercise name to open the exercise.
 - **My exercises**: each exercise in one row, with its status tag and, on a computer, its best time. On a computer, buttons filter the list by family, for example **All**, **Licence** and **Circuit Experience**. The filter shows only the families of your exercises, and only when you have exercises of more than one family.
 
 | Status | Meaning |
@@ -466,21 +482,173 @@ The **Exercises** home shows:
 
 The next step of an exercise moves by itself. `Next: record the reference` shows until an active reference exists. Then `Next: drive attempts` shows. `Next: review your attempts` comes after 3 complete attempts against the active reference.
 
-![Overview of the exercise: Next: review your attempts, the times from the game, Recurring differences, and the map Reference line with its numbered cues and the View button.](images/exercise-overview.webp)
+## Record a race and look at it
 
-The **Overview** tab shows the next step, **Times from the game** (your best, the reference and the gap) and **Recurring differences**. **Recurring differences** shows the same rows as the **Attempts** tab. It shows only when a difference repeats in your last complete attempts. The map has the same frame as on the **Cues** tab. **View** opens the map in full screen.
+GT7 Tutor can record a race by laps in the game. After the race, you look at your laps, compare two laps, and find the places where you went off the track. A race does not need a reference, and it gives no voice cues.
+
+### Record a race
+
+**Goal:** record a race of the game lap by lap.
+**Before you start:** you saved the console address, GT7 runs, and no recording or training runs.
+
+1. Select **Races** in the menu.
+2. Select **Record a race** (on a phone: **Record**).
+3. In GT7, start a race of 2 or more laps.
+
+**Result:** the dark recording screen opens. It starts and stops with the race. You do not need to touch GT7 Tutor during the race.
+
+![Races with My races 2, the buttons Select and Record a race, and two races of one day. Each row gives the track, the car, the laps, the position and the best lap.](images/races-list.webp)
+
+The recording screen has these states:
+
+| State | Large word | What the screen shows |
+| --- | --- | --- |
+| Waiting | `WAITING` in grey | `Start a race of 2 or more laps in the game.` and `The recording starts with the race and stops at the finish. You can look at the TV now.` |
+| On the grid | `LAP 1 of <n>` | `this lap`, your position, `last lap` and `best lap` as `–`, and the fuel |
+| A lap runs | `LAP <n> of <n>` in yellow | `this lap` (the live lap time), the position, for example `P 8` `of 20`, `last lap`, `best lap · lap <n>`, and the fuel with `about <n> laps left` and a bar |
+| Finished | `FINISHED` and your finish position, for example `P 6 of 20` | `You started in position <n>. The race is in your list.`, the `race time` and the `best lap` |
+| Stopped | `RECORDING STOPPED` | The number of laps in your list, the time of the recorded laps, the best lap and the position |
+
+![The recording screen while lap 3 runs. At the top are the red dot Recording and the car. The yellow word is LAP 3 of 5. Under it are this lap, the position, last lap, best lap, the fuel and the lap circles. At the right is the map with the trail of the car.](images/race-recording.webp)
+
+Other parts of the recording screen:
+
+- The dot at the top left: `Recording` with a red dot while GT7 Tutor records the race. `Recording · no telemetry` with a yellow dot when no packets come. `Telemetry` with a green dot, or `No telemetry` with a grey dot, while the screen waits and after the end.
+- The line under the dot: the car, or `Race recording` while the screen waits.
+- The lap circles: one circle for each lap of the race. A small key under them gives the meaning of the signs that show, from `lap not recorded`, `lap done`, `this lap`, `lap to come`, `best lap` and `pit stop after this lap`.
+- The map: the line of the track that you drove, with a trail that fades behind the car.
+- The button at the top right: **Cancel** while the screen waits, **Stop recording** during the race, **Close** after the end.
+
+The recording continues when you pause the game and during a pit stop.
+
+**How the recording ends:**
+
+- At the finish. The screen shows `FINISHED`, then opens the race by itself after a moment. Select **Open the race** to open it at once.
+- When you leave the race in the game, for example to the menu, or when you restart the race. GT7 Tutor keeps the complete laps.
+- When no packets come for 10 s during the race.
+- When you select **Stop recording**. GT7 Tutor keeps the complete laps.
+- When GT7 Tutor stops on the computer. GT7 Tutor keeps the complete laps.
+
+GT7 Tutor stores a race that ends before the finish as not finished, for example `3 of 5 laps, not finished`. It does not store a lap that did not end. If no lap is complete, the screen says `No complete lap was recorded. Nothing was saved.` Select **Back to Races**.
+
+**A recording that starts during a race.** You can select **Record a race** while a race runs. The screen then shows `The race runs already` and `The recording starts at the next lap line.` GT7 Tutor does not record the lap that runs and the laps before it. The laps keep the numbers of the game. GT7 Tutor stores the race as not finished, for example `laps 5 to 7 of 7, not finished`. Its start position is the position at the first recorded lap line.
+
+**Only a race by laps.** GT7 Tutor records only a race of 2 or more laps. In another session, for example a time trial or a race by time, the screen says `This is not a race of 2 or more laps. Only a race by laps can be recorded.` The recording waits for a race by laps.
+
+**The bar on the other screens.** While a race recording runs, the other screens show a yellow bar under the top bar:
+
+- `Waiting for the race. Start a race by laps in the game.`
+- `Recording a race · lap <n> of <n>`
+- `Recording a race · it starts at the next lap line`
+
+Select **Open the recording** to go back to the recording screen, or **Stop recording** to stop it.
+
+A recording of a race needs the training off. If a recording or a training runs, **Record a race** shows `A recording or a training runs. Stop it first.`
+
+### Name the track
+
+The game does not send the name of the track. When only one circuit of the catalogue has a length near the length of your lap, GT7 Tutor gives the race that name. Else the list shows `Race without a track name`.
+
+1. Open the race.
+2. Under the track name, select **Name the track** (or **Change the name**).
+3. Select one of the tracks in the list, or select **Another name** and type the name.
+4. Select **Save the name**.
+
+The list gives up to 5 circuits of the catalogue with a length near the length of your lap. The nearest length is first. Select **Cancel** to close the dialog without a change.
+
+### Laps
+
+**Where:** select a race in **Races**. The race opens on the **Laps** tab.
+
+![The Laps tab of a race of 7 laps. The band gives the car, the race time, the best lap and the position from 20 to 2. Below are the lap table with a pit stop row and the chart Position in the race.](images/race-laps.webp)
+
+The header of the race shows the date and the time of the start and the lap length, for example `lap length 6,181 m`.
+
+**The band** at the top shows:
+
+- The car, the laps, the number of cars and the pit stops, for example `7 laps · 20 cars · 2 pit stops`.
+- `race time`: the sum of the lap times of the game. For a race that is not finished: `time of the recorded laps`.
+- `best lap · lap <n>`, in yellow.
+- The position from the start to the finish, for example `20 → 2` with `position, start to finish`.
+
+**The lap table** has one row for each recorded lap:
+
+| Column | Content |
+| --- | --- |
+| **Lap** | The number of the lap in the game |
+| **Time** | The lap time of the game. The best lap has the tag `best`. The in-lap has the note `into the pit lane`, and the out-lap has the note `out of the pit lane`. |
+| **Gap to best** | The lap time minus the time of the best lap, for example `+1.142 s` |
+| **Position** | The position at the start and at the end of the lap, for example `11 → 6` |
+| **Top speed** | The highest speed of the lap |
+| **Off the track** | The number of moments with all four wheels off the track (a red dot), and with two or three wheels off (a red ring). `none` when the lap has no moment. |
+
+A pit stop row comes between the in-lap and the out-lap, for example `PIT STOP 35.48 s in the pit lane Fuel 38 → 100`. The time is the time from the stop to the pit exit.
+
+Select a lap row to compare that lap with the reference lap. See [Compare two laps](#compare-two-laps).
+
+The **reference lap** of a race is its fastest lap that is not lap 1 and has no pit stop. Lap 1 starts on the grid, not at the lap line. Without such a lap, for example in a race of 2 laps, it is the fastest lap of the race. Usually the reference lap is the best lap. When it is another lap, the hint under the table names it, for example `Select a lap to compare it with lap 4, the best lap without a pit stop.`
+
+**Position in the race** shows your position, lap by lap, over the race time. Grey bands mark the pit stops. The labels `P1` and `P2` under the chart name the pit stops. Move the pointer or a finger across the chart. A box and the line over the chart give the lap, the distance from the lap line and the position at that time, for example `Cursor at lap 3, 1,200 m: position 8, up from 9.`
+
+**Fuel** shows the fuel, lap by lap. It shows only when the fuel changes during the race.
+
+**Speed, all laps** shows the speed of each lap over the distance from the lap line. The legend names the line of the best lap and the lines of the other laps. The turns are yellow bands. On a computer, a box at the cursor gives the speed of each lap.
+
+### Compare two laps
+
+**Where:** the **Compare** tab of the race, or a row of the lap table.
+
+![The Compare tab with the heading Lap 7 is 2.020 s slower than lap 4 and the two lap selects. Below are the map of the two lines and the differences by turn.](images/race-compare.webp)
+
+The heading gives the gap of the two lap times of the game, for example `Lap 7 is 2.020 s slower than lap 4`. Use the two selects to choose the lap and the lap to compare it with. By default, the tab compares the last lap that is not the reference lap with the reference lap.
+
+The tab shows the same parts as the review of an attempt. These parts are the map with the two lines, **Differences by turn**, and the charts of speed, throttle, brake and time lost. Here the other lap takes the place of the reference. It is one of your laps, not the best possible line. See [Review an attempt](#review-an-attempt).
+
+With an in-lap or an out-lap:
+
+- A gap in the line is the pit lane.
+- The curve of an out-lap starts at the pit exit. A note under the chart tells you that the rest of the gap is in the pit lane.
+
+`These two laps do not match. Choose another lap.`: GT7 Tutor could not put one lap on the line of the other. Choose another lap.
+
+### Off the track
+
+**Where:** the **Off the track** tab of the race.
+
+![The Off the track tab with 20 moments off the track. It shows the map Places and the panel Recurring places with A and B. Below are the off-track chart lap by lap, the height of the track and the speed of the best lap.](images/race-off-track.webp)
+
+The heading gives the number of moments off the track, and how many of them had all four wheels off.
+
+- **Places**: the map of the line of the reference lap. A red dot marks a moment with all four wheels off. A red ring marks a moment with two or three wheels off. A black circle with a letter marks a recurring place. Select a mark to put the cursor there. **View** opens the map in full screen with the list of the moments.
+- **Recurring places**: the places where you went off the track in 3 or more laps. An example row is `3,190 m. All four wheels off in 1 lap.` with the letter `A`. The row also gives the speed of the reference lap at that place and the largest speed loss. At the right, it gives the number of laps, for example `6 of 7`. Under the list: the number of other places, each in 1 or 2 laps.
+- **Off the track** (chart): one row for each lap, with a mark for each moment over the distance from the lap line. A black bar marks the pit lane. Select a mark to see the lap, the wheels and the speeds.
+- **Height of the track**: the height above the lowest place of the lap.
+- **Speed of the best lap** (or **Speed of lap <n>**): the speed of the reference lap at each place.
+
+The three charts and the map use the same cursor. The recurring places are yellow bands on the charts.
+
+A race without a moment shows `No moments off the track in this race.`
+
+### Delete a race
+
+1. In **Races**, select **Select**.
+2. Mark one or more races.
+3. Select **Delete N races**.
+4. Select **Delete race** (or **Delete races**) to delete, or **Keep race** (or **Keep races**) to close the dialog.
+
+The laps, the pit stops and the places off the track of the race go. You cannot undo it. The raw capture stays until a clean-up: **Clean up captures** in **Setup** → **Data** frees the disk space.
 
 ## Manage references
 
 **Where:** the **References** tab of the exercise.
 
-![The References tab: one reference, Demonstration, active, 20 November, no game version, frames 457–1422, 4 attempts use it.](images/references.webp)
+![The References tab with one reference: Demonstration, active, no game version, frames 457–1422, 3 attempts use it.](images/references.webp)
 
 A reference is never overwritten. Each new reference joins the history. One reference is active. Each attempt remembers the reference that it was driven against.
 
 - **Record a new reference** opens the recording screen.
 - **Make active** (an attempt) or **Return to the demonstration** makes another reference active.
-- **Needs a check**: you changed the **GT7 version** in **Setup** → **Preferences**, and this reference was recorded with another version or with no version. Select **Check with one recording** and record the demonstration once. GT7 Tutor then says if the reference still matches the game.
+- **Needs a check**: you changed the **GT7 version** in **Setup** → **Preferences**, and you recorded this reference with another version or with no version. Select **Check with one recording** and record the demonstration once. GT7 Tutor then says if the reference still matches the game.
 - **Delete** shows only for a reference that is not active and that no attempt uses. It opens a dialog. Select **Delete reference** to delete the reference, or **Keep it** to close the dialog.
 
 ## Profiles: sign in, sign out, switch, change and delete
@@ -515,7 +683,7 @@ Everyone on your home network can see the profile names. After too many wrong pa
 2. Type the **Current password** and the **New password** (at least 8 characters).
 3. Select **Save**.
 
-Other devices that use this profile are signed out. This device stays signed in.
+GT7 Tutor signs out the other devices that use this profile. This device stays signed in.
 
 ### Delete a profile
 
@@ -529,7 +697,7 @@ See [Delete data](#delete-data).
 
 The computer must accept UDP on port 33740. If the check finds no packets, allow the port in the firewall.
 
-![Setup, Console: the PS5 address, and Receiving: 30 packets in 0.5 s, Car: Nissan GT-R NISMO GT3 '13. The data in this screenshot is recorded data.](images/setup-console.webp)
+![Setup, Console: the PS5 address and the text Receiving: 30 packets in 0.5 s, Car: Nissan GT-R NISMO GT3 '13. The data in this screenshot is recorded data.](images/setup-console.webp)
 
 The PS5 address can change after a router restart. Then type the new address and select **Save and check**.
 
@@ -559,12 +727,12 @@ The **Voice device** line shows one of these texts:
 
 ### Catalogue
 
-![Setup, Catalogue: 100 licence tests, 58 Circuit Experience, 20 Brand Central, 122 circuit layouts and 590 cars, the catalogue version and the button Check for updates.](images/setup-catalogue.webp)
+![Setup, Catalogue: the numbers of licence tests, Circuit Experience, Brand Central, circuit layouts and cars. Below are the catalogue version and the button Check for updates.](images/setup-catalogue.webp)
 
 The catalogue is the list of exercises that you can add. **Catalogue version** is the date when the project read the public sources.
 
 1. Select the refresh button (**Check for updates**). GT7 Tutor reads the public sources again over the internet. It sends no data about you or your driving.
-2. Read the differences: **Added**, **Changed** and **Removed**. Nothing changes yet.
+2. Read the differences under the headings `Added`, `Changed` and `Removed`. Nothing changes yet.
 3. Select **Apply update** to use the new catalogue.
 
 An entry that has your exercises stays. After an update, **Restore** makes the previous catalogue active again.
@@ -576,16 +744,19 @@ An entry that has your exercises stays. After an update, **Restore** makes the p
 | Action | Where | What goes | What stays |
 | --- | --- | --- | --- |
 | Delete one attempt | Review → **Delete attempt** | The attempt, its cues and differences | References, other attempts. The raw capture stays until a clean-up. |
-| Delete several attempts | Attempts → **Select** → **Delete N attempts** | The selected attempts, their cues and differences. Your best time and the recurring differences are counted again. | References. The raw captures stay until a clean-up. |
+| Delete several attempts | Attempts → **Select** → **Delete N attempts** | The selected attempts, their cues and differences. GT7 Tutor counts your best time and the recurring differences again. | References. The raw captures stay until a clean-up. |
 | Delete a reference | References → **Delete** → **Delete reference** | The reference | Only possible when the reference is not active and no attempt uses it |
 | Delete an exercise | Exercises → **Select** → **Delete N exercises** | The exercise, its attempts, references, best time and medal | The catalogue entry. You can add the exercise again. |
-| Clean up captures | Setup → Data → **Clean up captures** | The parts of the raw captures that no reference and no attempt uses | All references and attempts |
-| Delete history: **Attempts of one exercise** | Setup → Data → **Delete history** | The attempts of the selected exercise | Its references, the other exercises, the settings |
-| Delete history: **All attempts** | Same | All attempts of your profile | Exercises, references, settings |
-| Delete history: **Start over** | Same | All attempts, references and exercise progress of your profile | The profile, the password, the voice and console settings, the catalogue |
-| Delete a profile | Setup → Profiles → **Delete profile** | The exercises, references, attempts and captures of the profile, and its sign-in on every device | Other profiles and the settings of this computer |
+| Delete races | Races → **Select** → **Delete N races** | The selected races with their laps, pit stops and places off the track | The exercises. The raw captures stay until a clean-up. |
+| Clean up captures | Setup → Data → **Clean up captures** | The parts of the raw captures that no reference, no attempt and no race uses | All references, attempts and races |
+| Delete history: **Attempts of one exercise** | Setup → Data → **Delete history** | The attempts of the selected exercise | Its references, the other exercises, the races, the settings |
+| Delete history: **All attempts** | Same | All attempts of your profile | Exercises, references, races, settings |
+| Delete history: **Start over** | Same | All attempts, references, races and exercise progress of your profile | The profile, the password, the voice and console settings, the catalogue |
+| Delete a profile | Setup → Profiles → **Delete profile** | The exercises, references, attempts, races and captures of the profile, and its sign-in on every device | Other profiles and the settings of this computer |
 
-![Setup, Data: your captures, raw captures of all profiles, Clean up captures and Delete history.](images/setup-data.webp)
+![Setup, Data: your captures, the raw captures of all profiles, Clean up captures and Delete history.](images/setup-data.webp)
+
+A race uses much disk space: its raw capture takes about 2.4 MB per minute of the race. A race of 7 laps can take about 45 MB. To free the space, delete the race, then select **Clean up captures**.
 
 A delete needs the training off. When the training is on, a delete dialog and the **Delete history** page say `The training of <exercise> is on. It stops when you delete.` The delete button then says **Stop the training and delete**. One click stops the training, then deletes. If the training does not stop, GT7 Tutor shows the error and does not delete.
 While an attempt runs, the dialog says `Attempt <n> runs. Finish it or stop the training first.`, and you cannot delete.
@@ -596,10 +767,10 @@ While an attempt runs, the dialog says `Attempt <n> runs. Finish it or stop the 
 2. Select what to delete. For **Attempts of one exercise**, select the **Exercise**.
 3. Leave **Also clean up the raw captures that nothing uses afterwards** on to free disk space.
 4. Read **This deletes** and **This keeps**.
-5. Type your profile name to confirm.
+5. Type your profile name. GT7 Tutor deletes only after this step.
 6. Select the red button, for example **Delete all attempts**.
 
-![Delete history: the three choices, the clean-up option, This deletes and This keeps, the field for the profile name and the button Delete all attempts.](images/delete-history.webp)
+![Delete history with the three choices, the clean-up option, This deletes and This keeps. Below are the field for the profile name and the button Delete all attempts.](images/delete-history.webp)
 
 **Delete a profile:**
 
@@ -620,11 +791,12 @@ The phone and the computer must be on the same home network.
 2. Sign in with your profile.
 3. Select **Use this device for voice** if the phone must speak.
 
-On a phone, **Exercises**, **Drive** and **Setup** are in the bottom bar. Setup shows all its sections on one page.
+On a phone, **Exercises**, **Races** and **Setup** are in the bottom bar. Setup shows all its sections on one page.
+On the **Laps** tab of a race, each lap row has two lines. The first line gives the time and the gap to the best lap. The second line gives the position, the top speed and the pit lane note.
 
-| Exercises on a phone | Drive on a phone |
-| --- | --- |
-| ![Exercises on a phone with the bottom bar Exercises, Drive and Setup.](images/phone-exercises.webp) | ![The Drive screen on a phone with the cue CLOSER TO APEX.](images/phone-drive-cue.webp) |
+| Exercises on a phone | Drive on a phone | A race on a phone |
+| --- | --- | --- |
+| ![Exercises on a phone with the bottom bar Exercises, Races and Setup.](images/phone-exercises.webp) | ![The Drive screen on a phone with a cue, the next cue and the values.](images/phone-drive-cue.webp) | ![The Laps tab of a race on a phone: the band and the lap rows with two lines each.](images/phone-race-laps.webp) |
 
 The recording screen on a phone fills the screen. Use **Start recording** and **Stop recording** at the bottom, and **Close** to go back.
 
@@ -640,15 +812,17 @@ Two limits come from the phone browser:
 The demo shows GT7 Tutor with recorded data. You need no PS5. To start it, see the [README](../../README.md#try-the-demo-without-a-console).
 
 1. Open the address that the start script shows. A yellow label `Demo: recorded data, no console` is at the top of each screen.
-2. On **Who is driving?**, the profile `demo` and its password are filled in. Select **Sign in**.
-3. Select **Drive**, then **Use this device for voice**.
-4. Select **Play a demo attempt**. A recorded attempt plays in real time, with the cues on the screen and on the voice device.
-5. After the summary, select **Review this attempt**.
+2. On **Who is driving?**, the demo fills in the profile `demo` and its password. Select **Sign in**.
+3. Select **Use this device for voice** in **Setup** → **Voice**.
+4. Open the exercise, then the **Attempts** tab.
+5. Select **Drive**. The Drive screen opens, and a recorded attempt plays in real time, with the cues on the screen and on the voice device.
+6. After the summary, select **Review this attempt**.
 
 ![The demo sign-in on a phone with the profile demo and its password.](images/phone-demo-sign-in.webp)
 
 The demo has its own database. It does not change your profiles.
 In the demo, you cannot change the console address, the password or the catalogue, and you cannot delete the profile.
+The demo has no race. To see the race screens, record a race with your PS5.
 
 ## Common problems
 
@@ -676,7 +850,7 @@ You see `No packets`, `Address saved, no telemetry yet` or `No packets from the 
 
 ### The attempt does not start
 
-- The exercise was already running when you selected **Start an attempt**. Restart the exercise in GT7.
+- The exercise was already running when you selected **Drive**. Restart the exercise in GT7.
 - The game does not time this exercise from the start. GT7 Tutor cannot follow this exercise.
 
 ### No reference can be found
@@ -686,3 +860,18 @@ The game does not time the demonstration of this exercise, or the recording stop
 ### The page says the server did not answer
 
 GT7 Tutor does not run on the computer. Start it with `./start.sh`, then reload the page.
+
+### The race recording waits and does not start
+
+The recording screen shows `WAITING`.
+
+1. Check the **Console** dot. Without telemetry, see [No packets from the console](#no-packets-from-the-console).
+2. Start a race by laps in GT7. The recording starts on the grid, or at the next lap line when the race already runs.
+
+### This is not a race of 2 or more laps
+
+The session in GT7 is not a race by laps, for example a time trial, a race of 1 lap or a race by time. GT7 Tutor records only a race of 2 or more laps. Start such a race, or select **Cancel**.
+
+### The recording of this race is no longer on the disk
+
+`The recording of this race is no longer on the disk. The lap table stays.`: the raw capture of the race is missing, for example after you deleted files in the data folder. The lap table and the band stay. **Compare**, **Speed, all laps** and the map of **Off the track** need the raw capture. Without it, **Off the track** shows the moments as a list by lap.

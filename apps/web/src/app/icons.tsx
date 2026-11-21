@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 
 export type IconName =
   | 'list'
+  | 'flag'
+  | 'fuel'
   | 'drive'
   | 'gear'
   | 'monitor'
@@ -28,6 +30,8 @@ const GEAR =
 
 const SHAPES: Record<IconName, ReactNode> = {
   list: <path d="M4 6h16M4 12h16M4 18h10" />,
+  flag: <path d="M5 21V4M5 4h13l-2 4 2 4H5" />,
+  fuel: <path d="M4 20V5h9v15M3 20h11M4 10h9M13 8h3l2 2v7a1.5 1.5 0 0 1-3 0v-3h-2" />,
   drive: (
     <>
       <circle cx="12" cy="12" r="9" />

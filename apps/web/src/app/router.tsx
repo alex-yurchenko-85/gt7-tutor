@@ -2,11 +2,12 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 export type SetupSection = 'console' | 'voice' | 'profiles' | 'preferences' | 'catalogue' | 'data';
 
+export type RaceTab = 'laps' | 'compare' | 'off-track';
+
 export type Route =
   | { name: 'exercises' }
-  | { name: 'exercise'; exerciseId: string }
   | { name: 'add-exercise' }
-  | { name: 'drive' }
+  | { name: 'drive'; exerciseId: string }
   | { name: 'setup' }
   | { name: 'delete-history' }
   | { name: 'cues'; exerciseId: string }
@@ -14,17 +15,23 @@ export type Route =
   | { name: 'record'; exerciseId: string }
   | { name: 'attempts'; exerciseId: string }
   | { name: 'review'; attemptId: string }
+  | { name: 'races' }
+  | { name: 'race-record' }
+  | { name: 'race'; raceId: string; tab: RaceTab }
   | { name: 'not-found' };
 
 const SIMPLE: Record<string, Route> = {
   '/': { name: 'exercises' },
   '/exercises/add': { name: 'add-exercise' },
-  '/drive': { name: 'drive' },
   '/setup': { name: 'setup' },
-  '/setup/delete-history': { name: 'delete-history' }
+  '/setup/delete-history': { name: 'delete-history' },
+  '/races': { name: 'races' },
+  '/races/record': { name: 'race-record' }
 };
 
-const EXERCISE_VIEWS = ['cues', 'references', 'record', 'attempts'] as const;
+const EXERCISE_VIEWS = ['cues', 'references', 'record', 'attempts', 'drive'] as const;
+
+const RACE_TABS: RaceTab[] = ['compare', 'off-track'];
 
 function cleanPath(path: string): string {
   return path.replace(/\/+$/, '') || '/';
@@ -35,12 +42,16 @@ export function parseRoute(path: string): Route {
   const simple = SIMPLE[clean];
   if (simple) return simple;
   const page = /^\/exercises\/([^/]+)$/.exec(clean);
-  if (page) return { name: 'exercise', exerciseId: decodeURIComponent(page[1]!) };
+  if (page) return { name: 'cues', exerciseId: decodeURIComponent(page[1]!) };
   const exercise = /^\/exercises\/([^/]+)\/([a-z]+)$/.exec(clean);
   const view = EXERCISE_VIEWS.find(name => name === exercise?.[2]);
   if (exercise && view) return { name: view, exerciseId: decodeURIComponent(exercise[1]!) };
   const review = /^\/attempts\/([^/]+)\/review$/.exec(clean);
   if (review) return { name: 'review', attemptId: decodeURIComponent(review[1]!) };
+  const race = /^\/races\/([^/]+)(?:\/([a-z-]+))?$/.exec(clean);
+  const tabName = race?.[2];
+  const tab = tabName === undefined ? 'laps' : RACE_TABS.find(name => name === tabName);
+  if (race && tab) return { name: 'race', raceId: decodeURIComponent(race[1]!), tab };
   return { name: 'not-found' };
 }
 
@@ -48,7 +59,7 @@ export const paths = {
   exercises: () => '/',
   exercise: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}`,
   addExercise: () => '/exercises/add',
-  drive: () => '/drive',
+  drive: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}/drive`,
   setup: (section?: SetupSection) => (section ? `/setup#${section}` : '/setup'),
   deleteHistory: () => '/setup/delete-history',
   cues: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}/cues`,
@@ -56,7 +67,12 @@ export const paths = {
   record: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}/record`,
   attempts: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}/attempts`,
   review: (attemptId: string, referenceId?: string) =>
-    `/attempts/${encodeURIComponent(attemptId)}/review${referenceId ? `?reference=${encodeURIComponent(referenceId)}` : ''}`
+    `/attempts/${encodeURIComponent(attemptId)}/review${referenceId ? `?reference=${encodeURIComponent(referenceId)}` : ''}`,
+  races: () => '/races',
+  raceRecord: () => '/races/record',
+  race: (raceId: string, tab: RaceTab = 'laps') => `/races/${encodeURIComponent(raceId)}${tab === 'laps' ? '' : `/${tab}`}`,
+  raceCompare: (raceId: string, lap: number, withLap?: number) =>
+    `/races/${encodeURIComponent(raceId)}/compare?lap=${lap}${withLap === undefined ? '' : `&with=${withLap}`}`
 };
 
 type NavigateOptions = { replace?: boolean };

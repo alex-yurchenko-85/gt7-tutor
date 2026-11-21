@@ -1,0 +1,20 @@
+.exercise-times div {
+  display: grid;
+}
+
+.exercise-times span {
+  color: var(--mute);
+  font-size: 14px;
+}
+
+.exercise-times .reference-time b {
+  color: var(--ref);
+}
+
+.exercise-times .gap-slower b {
+  color: var(--red);
+}
+
+.exercise-times .gap-faster b {
+  color: var(--ok);
+}

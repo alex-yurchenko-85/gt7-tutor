@@ -12,7 +12,7 @@ type Scope = DeleteHistoryRequest['scope'];
 
 type ScopeText = { title: string; detail: string; deletes: string; keeps: string; action: string };
 
-function scopeTexts(exercises: Exercise[], chosen: Exercise | null): Record<Scope, ScopeText> {
+function scopeTexts(exercises: Exercise[], chosen: Exercise | null, races: number | null): Record<Scope, ScopeText> {
   const attempts = exercises.reduce((total, exercise) => total + exercise.attemptCount, 0);
   const references = exercises.reduce((total, exercise) => total + exercise.referenceCount, 0);
   const withAttempts = exercises.filter(exercise => exercise.attemptCount > 0).length;
@@ -20,22 +20,22 @@ function scopeTexts(exercises: Exercise[], chosen: Exercise | null): Record<Scop
   return {
     exercise: {
       title: 'Attempts of one exercise',
-      detail: 'For a fresh start on one exercise. Its references stay.',
+      detail: 'For a fresh start on one exercise. Its references and the races stay.',
       deletes: `${counted(chosenAttempts, 'attempt')} of ${chosen?.name ?? 'the exercise'}, with ${theirs(chosenAttempts)} cues and differences.`,
-      keeps: 'the references, the other exercises, the settings.',
+      keeps: 'the references, the other exercises, the races, the settings.',
       action: `Delete ${counted(chosenAttempts, 'attempt')}`
     },
     attempts: {
       title: 'All attempts',
-      detail: `${counted(attempts, 'attempt')} in ${counted(withAttempts, 'exercise')}. References and exercises stay.`,
+      detail: `${counted(attempts, 'attempt')} in ${counted(withAttempts, 'exercise')}. References, exercises and races stay.`,
       deletes: `${attempts === 1 ? 'the' : 'all'} ${counted(attempts, 'attempt')} of this profile, with ${theirs(attempts)} cues and differences.`,
-      keeps: 'the exercises, the references, the settings.',
+      keeps: 'the exercises, the references, the races, the settings.',
       action: 'Delete all attempts'
     },
     everything: {
       title: 'Start over',
-      detail: 'All attempts, references and exercise progress. The profile and its settings stay.',
-      deletes: `${counted(attempts, 'attempt')}, ${counted(references, 'reference')}, the progress of ${counted(exercises.length, 'exercise')}.`,
+      detail: 'All attempts, references, exercise progress and races. The profile and its settings stay.',
+      deletes: `${counted(attempts, 'attempt')}, ${counted(references, 'reference')}, ${races === null ? 'the races' : counted(races, 'race')}, the progress of ${counted(exercises.length, 'exercise')}.`,
       keeps: 'the profile, the password, the voice and console settings, the catalogue.',
       action: 'Delete everything and start over'
     }
@@ -44,8 +44,13 @@ function scopeTexts(exercises: Exercise[], chosen: Exercise | null): Record<Scop
 
 const SCOPES: Scope[] = ['exercise', 'attempts', 'everything'];
 
+function listed(parts: string[]): string {
+  return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)!}` : parts[0]!;
+}
+
 function doneText(result: DeleteHistoryResult): string {
-  const deleted = `Deleted ${counted(result.attempts, 'attempt')}${result.references > 0 ? ` and ${counted(result.references, 'reference')}` : ''}.`;
+  const parts = [counted(result.attempts, 'attempt'), result.references > 0 ? counted(result.references, 'reference') : null, result.races > 0 ? counted(result.races, 'race') : null];
+  const deleted = `Deleted ${listed(parts.filter((part): part is string => part !== null))}.`;
   if (!result.cleanup) return deleted;
   return `${deleted} Cleaned ${counted(result.cleanup.captures, 'capture')}: ${megabytes(result.cleanup.bytesBefore)} before, ${megabytes(result.cleanup.bytesAfter)} after.`;
 }
@@ -72,6 +77,7 @@ function DataSummary({ exercises }: { exercises: Exercise[] | null }) {
 export function DeleteHistoryView() {
   const { user } = useSession();
   const exercises = useResource(() => api.exercises(), []);
+  const races = useResource(() => api.races(), []);
   const [scope, setScope] = useState<Scope>('attempts');
   const [exerciseId, setExerciseId] = useState<string | null>(null);
   const [cleanup, setCleanup] = useState(true);
@@ -83,7 +89,7 @@ export function DeleteHistoryView() {
   const confirmId = useId();
   const list = exercises.data ?? [];
   const chosen = list.find(exercise => exercise.id === exerciseId) ?? list[0] ?? null;
-  const texts = scopeTexts(list, chosen);
+  const texts = scopeTexts(list, chosen, races.data?.length ?? null);
   const current = texts[scope];
   const matches = typed === user.name;
 
@@ -97,6 +103,7 @@ export function DeleteHistoryView() {
       setDone(doneText(await api.deleteHistory(body)));
       setTyped('');
       exercises.reload();
+      races.reload();
     } catch (failure) {
       setError(deletionErrorText(failure));
     } finally {

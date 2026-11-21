@@ -10,6 +10,7 @@ import { formatTime } from '../../app/format.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { consoleState, type ConsoleState, type Status } from '../../app/status.ts';
+import { DriveAction } from '../drive/DriveButton.tsx';
 import { useExercise } from '../exercise/use-exercise.ts';
 import './record.css';
 
@@ -364,9 +365,9 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
           <h2 className="record-done">The reference is active</h2>
           <p>Next: drive attempts. The Drive screen shows the cues, and a voice device also says them.</p>
           <div className="record-actions">
-            <Link to={paths.exercise(exerciseId)} className="stage-button primary">
-              Back to the exercise
-            </Link>
+            <DriveAction exerciseId={exerciseId} referenceId={null} className="stage-button primary" problemClass="stage-alert">
+              Drive
+            </DriveAction>
             <Link to={paths.cues(exerciseId)} className="stage-button">
               Hear the cues
             </Link>
@@ -424,9 +425,9 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
             {checkText(checkResult)}
           </p>
           <div className="record-actions">
-            <Link to={paths.exercise(exerciseId)} className="stage-button primary">
-              Back to the exercise
-            </Link>
+            <DriveAction exerciseId={exerciseId} referenceId={null} className="stage-button primary" problemClass="stage-alert">
+              Drive
+            </DriveAction>
           </div>
         </div>
       );

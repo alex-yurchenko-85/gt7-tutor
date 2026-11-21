@@ -1,7 +1,4 @@
-import type { Exercise, ExerciseStatusName, ExerciseStep } from '@gt7/contracts';
-import { paths } from '../../app/router.tsx';
-
-export type Action = { label: string; to: string };
+import type { ExerciseStatusName, ExerciseStep } from '@gt7/contracts';
 
 const NEXT_TITLE: Record<ExerciseStep, string> = {
   1: 'Next: record the reference',
@@ -28,15 +25,4 @@ export function orderedFamilies(families: string[]): string[] {
 
 export function nextTitle(step: ExerciseStep): string {
   return NEXT_TITLE[step];
-}
-
-export function primaryAction(exercise: Exercise): Action {
-  switch (exercise.step) {
-    case 1:
-      return { label: 'Record the reference', to: paths.record(exercise.id) };
-    case 2:
-      return { label: 'Start an attempt', to: paths.drive() };
-    case 3:
-      return { label: 'Open the attempts', to: paths.attempts(exercise.id) };
-  }
 }

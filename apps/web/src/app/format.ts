@@ -13,10 +13,14 @@ const ABORT_REASONS: Record<string, string> = {
 
 export function formatTime(ms: number | null, digits = GAME_TIME_DIGITS): string {
   if (ms === null) return 'no time';
-  const totalSeconds = ms / 1000;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds - minutes * 60;
-  return `${minutes}:${seconds.toFixed(digits).padStart(digits + 3, '0')}`;
+  const perSecond = 10 ** digits;
+  const units = Math.round((ms / 1000) * perSecond);
+  const wholeSeconds = Math.floor(units / perSecond);
+  const fraction = digits > 0 ? `.${String(units % perSecond).padStart(digits, '0')}` : '';
+  const hours = Math.floor(wholeSeconds / 3600);
+  const minutes = Math.floor((wholeSeconds % 3600) / 60);
+  const seconds = String(wholeSeconds % 60).padStart(2, '0');
+  return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}${fraction}` : `${minutes}:${seconds}${fraction}`;
 }
 
 export function abortReasonText(reason: string): string {
@@ -54,8 +58,21 @@ export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+export function formatHourMinute(iso: string): string {
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+}
+
+export function localDay(iso: string): string {
+  const date = new Date(iso);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function formatClock(at: Date): string {
   return at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+export function groupedMetres(value: number): string {
+  return `${Math.round(value).toLocaleString('en-GB')} m`;
 }
 
 export function metres(value: number): string {

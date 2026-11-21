@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CatalogueListEntry, Exercise, Progress, Settings } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { useLiveState } from '../../api/live.tsx';
-import { currentExercise } from '../../app/current-exercise.ts';
+import { currentExercise, liveExerciseId } from '../../app/current-exercise.ts';
 import { useDemo } from '../../app/demo.tsx';
 import { formatSeconds, formatTime } from '../../app/format.ts';
 import { Icon } from '../../app/icons.tsx';
@@ -13,10 +13,11 @@ import { counted } from '../../app/plural.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { SelectionBar } from '../../app/SelectionBar.tsx';
 import { useSession } from '../../app/session.tsx';
+import { DriveAction } from '../drive/DriveButton.tsx';
 import { whereText } from '../exercise/use-exercise-where.ts';
 import { GetReady } from '../get-ready/GetReady.tsx';
 import { DeleteExercisesDialog, historyText } from './DeleteExercisesDialog.tsx';
-import { nextTitle, orderedFamilies, primaryAction, STATUS_LABEL } from './next-step.ts';
+import { nextTitle, orderedFamilies, STATUS_LABEL } from './next-step.ts';
 import './exercises.css';
 
 const ALL = 'All';
@@ -30,7 +31,6 @@ function homeWhere(details: Details): string {
 }
 
 function ContinueCard({ exercise, details, wide }: { exercise: Exercise; details: Details; wide: boolean }) {
-  const primary = primaryAction(exercise);
   const gap = exercise.nextMedal;
   const kicker = wide
     ? ['Continue', [exercise.family, details.collection].filter(Boolean).join(', '), details.entry?.track].filter(Boolean).join(' · ')
@@ -39,7 +39,11 @@ function ContinueCard({ exercise, details, wide }: { exercise: Exercise; details
     <section className="continue" aria-labelledby="continue-title">
       <div className="continue-main">
         <p className="continue-kicker">{kicker}</p>
-        <h2 id="continue-title">{exercise.name}</h2>
+        <h2 id="continue-title">
+          <Link to={paths.exercise(exercise.id)} className="continue-name">
+            {exercise.name}
+          </Link>
+        </h2>
         {wide ? (
           <p className="continue-next">{nextTitle(exercise.step)}</p>
         ) : (
@@ -77,11 +81,18 @@ function ContinueCard({ exercise, details, wide }: { exercise: Exercise; details
         </div>
       ) : null}
       <div className="continue-actions">
-        <Link to={primary.to} className="btn continue-primary" primary>
-          {primary.label}
-        </Link>
-        <Link to={paths.exercise(exercise.id)} className={wide ? 'btn continue-open' : 'continue-link'}>
-          Open the exercise
+        {exercise.activeReferenceId ? (
+          <DriveAction exerciseId={exercise.id} referenceId={exercise.activeReferenceId} className="btn continue-primary" problemClass="error continue-problem">
+            <Icon name="drive" size={20} />
+            Drive
+          </DriveAction>
+        ) : (
+          <Link to={paths.record(exercise.id)} className="btn continue-primary">
+            Record the reference
+          </Link>
+        )}
+        <Link to={paths.attempts(exercise.id)} className={wide ? 'btn continue-open' : 'continue-link'}>
+          Attempts
         </Link>
       </div>
     </section>
@@ -250,14 +261,14 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onDeleted }: MyExe
   );
 }
 
-function useDriveRedirect(target: string | null) {
+function useDriveRedirect(target: string | null, exerciseId: string | null) {
   const { navigate } = useRouter();
   const done = useRef(false);
   useEffect(() => {
-    if (target !== 'drive' || done.current) return;
+    if (target !== 'drive' || exerciseId === null || done.current) return;
     done.current = true;
-    navigate(paths.drive(), { replace: true });
-  }, [target, navigate]);
+    navigate(paths.drive(exerciseId), { replace: true });
+  }, [target, exerciseId, navigate]);
 }
 
 export function ExercisesHome() {
@@ -273,7 +284,7 @@ export function ExercisesHome() {
   const target = data.data
     ? landing({ ps5Ip: data.data.settings.ps5Ip, liveMode: state?.mode ?? null, exerciseCount: data.data.exercises.length, demo })
     : null;
-  useDriveRedirect(target);
+  useDriveRedirect(target, liveExerciseId(state));
   const detailsOf = useMemo(() => {
     const collections = new Map(data.data?.progress.exercises.map(item => [item.id, item.collection]) ?? []);
     const entries = new Map(catalogue.data?.map(entry => [entry.id, entry]) ?? []);

@@ -174,3 +174,14 @@ export function useLiveState<T>(select: (snapshot: LiveSnapshot) => T): T {
   };
   return useSyncExternalStore(store.subscribe, read, read);
 }
+
+export function useLiveListener(listener: (snapshot: LiveSnapshot) => void): void {
+  const store = useContext(LiveStateContext);
+  if (!store) throw new Error('useLiveListener needs a LiveProvider');
+  const current = useRef(listener);
+  current.current = listener;
+  useEffect(() => {
+    current.current(store.get());
+    return store.subscribe(() => current.current(store.get()));
+  }, [store]);
+}

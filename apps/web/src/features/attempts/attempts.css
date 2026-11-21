@@ -124,7 +124,7 @@ tr.aborted td {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -154,17 +154,61 @@ tr.picked td {
   background: var(--soft);
 }
 
+.attempts-layout {
+  margin-top: 24px;
+}
+
+.attempt-day + .attempt-day {
+  margin-top: 24px;
+}
+
+.attempt-day-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  margin-bottom: 12px;
+}
+
+.attempt-day-head h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.attempts-empty {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px 24px;
+  background: var(--paper);
+}
+
+.attempts-empty p {
+  margin: 0;
+  color: var(--mute);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.attempts-record {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px;
+  min-height: 48px;
+  margin: 0;
+}
+
 @media (min-width: 900px) {
   .attempts-layout {
     grid-template-rows: auto 1fr;
     row-gap: 0;
   }
 
-  .attempts-layout > .attempts-tools {
+  .attempts-layout > .attempts-drive {
     grid-column: 2;
     grid-row: 1;
-    min-height: 48px;
-    margin-bottom: 8px;
   }
 
   .attempts-layout > .attempts-main {
@@ -172,20 +216,35 @@ tr.picked td {
     grid-row: 1 / -1;
   }
 
-  .attempts-main > .attempt-day:first-child > h2 {
-    margin-top: calc((48px - 20px * 1.1) / 2);
-    margin-bottom: calc(48px + 8px - (48px - 20px * 1.1) / 2 - 20px * 1.1);
-  }
-
   .attempts-layout > .attempts-recurring {
     grid-column: 2;
     grid-row: 2;
+    margin-top: 12px;
   }
 }
 
 @media (max-width: 899px) {
   .attempts-layout {
     row-gap: 0;
+  }
+
+  .attempts-layout > .attempts-tools {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    margin-top: 12px;
+  }
+
+  .attempts-layout > .attempts-tools .btn {
+    width: 100%;
+  }
+
+  .attempts-layout > .attempts-main {
+    margin-top: 24px;
+  }
+
+  .attempts-empty {
+    padding: 12px 24px;
   }
 
   .attempts-layout > .attempts-recurring {

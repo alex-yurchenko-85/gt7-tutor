@@ -62,8 +62,8 @@ describe('cue list', () => {
     expect(unmute).toHaveAttribute('aria-pressed', 'true');
     expect(unmute.querySelector('[data-icon="speaker-off"]')).not.toBeNull();
     expect(row).toHaveClass('off');
-    expect(within(row).getByText('Muted')).toBeInTheDocument();
-    expect(row).toHaveTextContent('The voice does not say this cue, and Drive does not show it.');
+    expect(within(row).queryByText('Muted')).toBeNull();
+    expect(row).not.toHaveTextContent('The voice does not say this cue');
     expect(within(row).getByRole('slider')).toBeInTheDocument();
     view.unmount();
 
@@ -320,7 +320,7 @@ describe('cues not spoken', () => {
       .install();
     renderApp({ path: CUES_PATH });
     const row = await screen.findByRole('listitem', { name: 'Cue 2' });
-    await within(row).findByText('Muted');
+    await within(row).findByRole('button', { name: 'Unmute cue 2' });
     expect(within(row).queryByText('Not spoken')).toBeNull();
   });
 

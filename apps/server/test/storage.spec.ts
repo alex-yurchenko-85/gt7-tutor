@@ -10,7 +10,7 @@ import { exerciseStatuses } from '../src/exercises/exercise-status.js';
 import { exerciseStep } from '../src/exercises/exercise-step.js';
 import { createDisposableDatabase, createMigratedDatabase, migrationConfig, migrationsDirectory, type DisposableDatabase } from './support/database.js';
 
-const applicationTables = ['users', 'sessions', 'settings', 'exercises', 'captures', 'references', 'attempts', 'cue_events', 'attempt_findings', 'attempt_comparisons'];
+const applicationTables = ['users', 'sessions', 'settings', 'exercises', 'captures', 'references', 'attempts', 'cue_events', 'attempt_findings', 'attempt_comparisons', 'races', 'race_laps', 'race_events'];
 
 async function tableNames(db: Knex): Promise<string[]> {
   const result = await db.raw<{ rows: { table_name: string }[] }>(
@@ -23,6 +23,11 @@ const migrations = readdirSync(migrationsDirectory).filter(name => name.endsWith
 
 async function migrateUpTo(db: Knex, last: string): Promise<void> {
   for (const name of migrations.slice(0, migrations.indexOf(last) + 1)) await db.migrate.up({ ...migrationConfig(), name });
+}
+
+async function migrateDownTo(db: Knex, last: string): Promise<void> {
+  const completed = async () => ((await db.migrate.list(migrationConfig())) as [{ name: string }[], unknown])[0];
+  while ((await completed()).at(-1)?.name !== last) await db.migrate.down(migrationConfig());
 }
 
 async function withDatabase(test: (db: Knex) => Promise<void>): Promise<void> {
@@ -136,11 +141,7 @@ describe('database schema', () => {
       await db('references').insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 40, last_raw_index: 50, origin: 'demo', timer_ms: 16082 });
       expect(await db('references').where({ first_raw_index: 40 }).pluck('timer_ms')).toEqual([16082]);
       await db('references').where({ first_raw_index: 40 }).delete();
-      await db.migrate.down(migrationConfig());
-      await db.migrate.down(migrationConfig());
-      await db.migrate.down(migrationConfig());
-      await db.migrate.down(migrationConfig());
-      await db.migrate.down(migrationConfig());
+      await migrateDownTo(db, '003-slow-corner-size-in-mps.cjs');
       expect(await columns()).not.toContain('timer_ms');
       expect(await stored()).toEqual(old);
       await db.migrate.latest(migrationConfig());
@@ -175,10 +176,7 @@ describe('database schema', () => {
       await expect(db('attempt_comparisons').insert({ attempt_id: attempts[0].id, reference_id: references[0].id })).rejects.toMatchObject({ code: '23505' });
       await db('attempts').where({ id: attempts[1].id }).delete();
       expect(await pairs()).toHaveLength(2);
-      await db.migrate.down(migrationConfig());
-      await db.migrate.down(migrationConfig());
-      await db.migrate.down(migrationConfig());
-      await db.migrate.down(migrationConfig());
+      await migrateDownTo(db, '004-add-reference-timer.cjs');
       expect(await tableNames(db)).not.toContain('attempt_comparisons');
       await db.migrate.latest(migrationConfig());
       expect(await pairs()).toEqual(expected.filter(pair => !pair.startsWith(attempts[1].id)));
@@ -261,7 +259,7 @@ describe('database schema', () => {
       await db.migrate.latest(migrationConfig());
       expect(await columns()).not.toContain('start_cue_mono_ms');
       expect(await stored()).toEqual(kept);
-      await db.migrate.down(migrationConfig());
+      await migrateDownTo(db, '007-remove-reference-start-kind.cjs');
       expect(await columns()).toContain('start_cue_mono_ms');
       expect(await db('captures').orderBy('raw_path').pluck('start_cue_mono_ms')).toEqual([null, null, null]);
       await db('captures').where({ raw_path: 'raw/a.ndjson' }).update({ start_cue_mono_ms: 1500.5 });

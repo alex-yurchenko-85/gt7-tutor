@@ -49,4 +49,25 @@ describe('map panel', () => {
     expect(screen.getByTestId('map').compareDocumentPosition(below) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(below.compareDocumentPosition(document.querySelector('.legend')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it('shows_the_title_as_a_heading', () => {
+    render(
+      <MapPanel title="Your line" legend={['reference']} onView={() => undefined}>
+        <svg />
+      </MapPanel>
+    );
+    expect(screen.getByRole('heading', { level: 2, name: 'Your line' })).toBeInTheDocument();
+  });
+
+  it('keeps_a_hidden_title_as_the_name_of_the_panel_only', () => {
+    render(
+      <MapPanel title="Map of the line of lap 4 and the line of lap 3" hideTitle legend={['reference']} onView={() => undefined}>
+        <svg />
+      </MapPanel>
+    );
+    const panel = screen.getByRole('region', { name: 'Map of the line of lap 4 and the line of lap 3' });
+    expect(panel.querySelector('h2')).toBeNull();
+    expect(panel.querySelector('.map-panel-head')).toHaveClass('no-title');
+  });
 });
+

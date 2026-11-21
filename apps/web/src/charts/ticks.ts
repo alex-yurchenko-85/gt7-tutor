@@ -43,3 +43,9 @@ export function signedTickLabel(value: number, step: number): string {
 export function tickLabel(value: number, step: number): string {
   return value.toFixed(decimals(step));
 }
+
+export function labelledTicks(min: number, max: number, count: number, label: (value: number, step: number) => string = tickLabel): { value: number; label: string }[] {
+  const values = valueTicks(min, max, count);
+  const step = tickStep(values);
+  return values.map(value => ({ value, label: label(value, step) }));
+}

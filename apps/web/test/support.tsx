@@ -212,6 +212,8 @@ export function liveState(overrides: Partial<LiveState> = {}): LiveState {
     referenceId: null,
     gapMs: null,
     startMissed: false,
+    lastRaceId: null,
+    race: null,
     ...overrides
   };
 }

@@ -12,7 +12,8 @@ function historyApi(): ApiStub {
     .on('GET /api/settings', { ps5Ip: '10.0.0.5', gameVersion: null })
     .on('GET /api/storage', { rawBytes: 12_000_000, profileRawBytes: 11_700_000, profileCaptures: 8 })
     .on('GET /api/exercises', [RACING, LICENCE])
-    .on('POST /api/history/delete', { attempts: 8, references: 3, cleanup: { captures: 2, bytesBefore: 11_700_000, bytesAfter: 4_000_000 } })
+    .on('GET /api/races', [{ id: 'a0000000-0000-4000-8000-000000000001' }, { id: 'a0000000-0000-4000-8000-000000000002' }])
+    .on('POST /api/history/delete', { attempts: 8, references: 3, races: 2, cleanup: { captures: 2, bytesBefore: 11_700_000, bytesAfter: 4_000_000 } })
     .install();
 }
 
@@ -27,7 +28,7 @@ describe('delete history', () => {
     const section = await screen.findByRole('region', { name: 'Delete history' });
     expect(section).toHaveTextContent(`This affects the profile ${USER.name} only. It cannot be undone.`);
     expect(within(section).getByRole('radio', { name: /^All attempts/ })).toBeChecked();
-    expect(await within(section).findByRole('radio', { name: 'All attempts 8 attempts in 2 exercises. References and exercises stay.' })).toBeChecked();
+    expect(await within(section).findByRole('radio', { name: 'All attempts 8 attempts in 2 exercises. References, exercises and races stay.' })).toBeChecked();
     const action = within(section).getByRole('button', { name: 'Delete all attempts' });
     expect(action).toBeDisabled();
     await typeName(USER.name.toLowerCase());
@@ -42,8 +43,10 @@ describe('delete history', () => {
     const api = historyApi();
     renderApp({ path: '/setup/delete-history' });
     const section = await screen.findByRole('region', { name: 'Delete history' });
+    expect(section).toHaveTextContent('This keeps: the exercises, the references, the races, the settings.');
+    expect(within(section).getByRole('radio', { name: 'Start over All attempts, references, exercise progress and races. The profile and its settings stay.' })).toBeInTheDocument();
     await userEvent.click(within(section).getByRole('radio', { name: /Start over/ }));
-    expect(section).toHaveTextContent('This deletes: 8 attempts, 3 references, the progress of 2 exercises.');
+    expect(section).toHaveTextContent('This deletes: 8 attempts, 3 references, 2 races, the progress of 2 exercises.');
     const cleanup = within(section).getByRole('checkbox', { name: /Also clean up the raw captures that nothing uses afterwards/ });
     expect(cleanup).toBeChecked();
     await userEvent.click(cleanup);
@@ -51,11 +54,13 @@ describe('delete history', () => {
     await userEvent.click(within(section).getByRole('button', { name: 'Delete everything and start over' }));
     await waitFor(() => expect(api.called('POST /api/history/delete')).toBe(true));
     expect(api.calls.find(call => call.path === '/api/history/delete')!.body).toEqual({ scope: 'everything', cleanup: false });
-    expect(await within(section).findByRole('status')).toHaveTextContent('Deleted 8 attempts and 3 references.');
+    expect(await within(section).findByRole('status')).toHaveTextContent('Deleted 8 attempts, 3 references and 2 races.');
 
     await userEvent.click(within(section).getByRole('radio', { name: /Attempts of one exercise/ }));
     await userEvent.selectOptions(within(section).getByLabelText('Exercise'), 'Cornering Basics 1 (2 attempts)');
     expect(section).toHaveTextContent('This deletes: 2 attempts of Cornering Basics 1, with their cues and differences.');
+    expect(section).toHaveTextContent('This keeps: the references, the other exercises, the races, the settings.');
+    expect(within(section).getByRole('radio', { name: 'Attempts of one exercise For a fresh start on one exercise. Its references and the races stay.' })).toBeChecked();
     await userEvent.click(cleanup);
     await typeName(USER.name);
     await userEvent.click(within(section).getByRole('button', { name: 'Delete 2 attempts' }));
@@ -102,5 +107,27 @@ describe('delete history', () => {
     await userEvent.click(within(section).getByRole('button', { name: 'Stop the training and delete' }));
     await waitFor(() => expect(api.called('POST /api/history/delete')).toBe(true));
     expect(api.calls.filter(call => call.method === 'POST').map(call => call.path).slice(0, 2)).toEqual(['/api/training/disarm', '/api/history/delete']);
+  });
+
+  it('delete_history_result_names_only_what_went', async () => {
+    historyApi().on('POST /api/history/delete', { attempts: 1, references: 0, races: 0, cleanup: null });
+    renderApp({ path: '/setup/delete-history' });
+    const section = await screen.findByRole('region', { name: 'Delete history' });
+    await typeName(USER.name);
+    await userEvent.click(within(section).getByRole('button', { name: 'Delete all attempts' }));
+    expect(await within(section).findByRole('status')).toHaveTextContent(/^Deleted 1 attempt\.$/);
+  });
+
+  it('start_over_names_one_race_and_the_result_counts_races', async () => {
+    historyApi()
+      .on('GET /api/races', [{ id: 'a0000000-0000-4000-8000-000000000001' }])
+      .on('POST /api/history/delete', { attempts: 0, references: 0, races: 1, cleanup: null });
+    renderApp({ path: '/setup/delete-history' });
+    const section = await screen.findByRole('region', { name: 'Delete history' });
+    await userEvent.click(within(section).getByRole('radio', { name: /Start over/ }));
+    await waitFor(() => expect(section).toHaveTextContent('This deletes: 8 attempts, 3 references, 1 race, the progress of 2 exercises.'));
+    await typeName(USER.name);
+    await userEvent.click(within(section).getByRole('button', { name: 'Delete everything and start over' }));
+    expect(await within(section).findByRole('status')).toHaveTextContent(/^Deleted 0 attempts and 1 race\.$/);
   });
 });

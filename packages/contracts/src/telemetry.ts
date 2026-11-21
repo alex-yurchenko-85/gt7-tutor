@@ -32,6 +32,13 @@ export type Sample = {
   brake: number;
   gear: number;
   lap: number;
+  lapsInRace: number;
+  bestLapMs: number;
+  lastLapMs: number;
+  racePosition: number;
+  carsInRace: number;
+  fuel: number;
+  surface: string;
   carId: number;
   flags: number;
   playerSession: boolean;

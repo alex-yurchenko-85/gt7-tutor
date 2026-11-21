@@ -35,6 +35,17 @@ describe('decode', () => {
     expect(timerAt(6442)).toBe(15839);
   });
 
+  it('decode_reads_the_race_fields', () => {
+    const sample = samplesOf('race-lap-line').find(candidate => candidate.lap === 2)!;
+    expect(sample.lapsInRace).toBe(5);
+    expect(sample.lastLapMs).toBe(83585);
+    expect(sample.bestLapMs).toBe(83585);
+    expect(sample.carsInRace).toBe(20);
+    expect(sample.racePosition).toBe(9);
+    expect(sample.fuel).toBe(100);
+    expect(sample.surface).toBe('TTTT');
+  });
+
   it('decode_keeps_the_minus_one', () => {
     const sample = samplesOf('ce-off-track-reset').find(candidate => candidate.rawIndex === 7974)!;
     expect(sample.gameTimerMs).toBe(-1);

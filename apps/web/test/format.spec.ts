@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDateTime, formatGap, signedSeconds } from '../src/app/format.ts';
+import { formatDateTime, formatGap, formatTime, signedSeconds } from '../src/app/format.ts';
 
 describe('format', () => {
   it('signed_seconds_rounds_and_has_no_sign_at_zero', () => {
@@ -20,5 +20,16 @@ describe('format', () => {
   it('format_date_time_has_short_month_year_and_time', () => {
     expect(formatDateTime(new Date(2026, 10, 16, 14, 5).toISOString())).toBe('16 Nov 2026, 14:05');
     expect(formatDateTime(new Date(2026, 10, 3, 0, 7).toISOString())).toBe('3 Nov 2026, 00:07');
+  });
+
+  it('format_time_shows_hours_from_one_hour', () => {
+    expect(formatTime(null)).toBe('no time');
+    expect(formatTime(89123)).toBe('1:29.123');
+    expect(formatTime(59999)).toBe('0:59.999');
+    expect(formatTime(3599999)).toBe('59:59.999');
+    expect(formatTime(3600000)).toBe('1:00:00.000');
+    expect(formatTime(6000725)).toBe('1:40:00.725');
+    expect(formatTime(6000725, 1)).toBe('1:40:00.7');
+    expect(formatTime(3599960, 1)).toBe('1:00:00.0');
   });
 });

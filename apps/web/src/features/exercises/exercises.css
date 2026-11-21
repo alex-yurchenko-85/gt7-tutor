@@ -57,6 +57,11 @@
   min-width: 240px;
 }
 
+.continue .continue-problem {
+  margin: 0;
+  color: #ff7a80;
+}
+
 .continue .btn {
   margin-top: 0;
   min-height: 52px;
@@ -264,4 +269,21 @@
   .exercise-row.selecting {
     grid-template-columns: 44px minmax(0, 1fr) auto;
   }
+}
+
+.continue-name {
+  color: inherit;
+  text-decoration: none;
+}
+
+.continue-name:hover,
+.continue-name:focus-visible {
+  text-decoration: underline;
+}
+
+.continue .continue-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }

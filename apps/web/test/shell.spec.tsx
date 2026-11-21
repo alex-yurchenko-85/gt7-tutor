@@ -9,6 +9,8 @@ import { SessionContext } from '../src/app/session.tsx';
 import { Shell } from '../src/app/Shell.tsx';
 import { ApiStub, FakeSockets, liveState, renderApp, setViewportWidth, signedIn, USER, openLive } from './support.tsx';
 
+const RACE_ID = 'a0000000-0000-4000-8000-000000000001';
+
 afterEach(() => {
   delete document.documentElement.dataset.theme;
   window.localStorage.clear();
@@ -49,7 +51,7 @@ describe('shell', () => {
     renderApp();
     const nav = await screen.findByRole('navigation', { name: 'Main' });
     expect(within(nav).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
-    expect(within(nav).getByRole('link', { name: 'Drive' })).toHaveAttribute('href', '/drive');
+    expect(within(nav).queryByRole('link', { name: 'Drive' })).toBeNull();
     expect(within(nav).getByRole('link', { name: 'Setup' })).toHaveAttribute('href', '/setup');
     expect(screen.getByRole('link', { name: /^Console/ })).toHaveAttribute('href', '/setup#console');
     expect(screen.getByRole('link', { name: /^Voice/ })).toHaveAttribute('href', '/setup#voice');
@@ -106,7 +108,7 @@ describe('shell', () => {
     expect(within(nav).getByRole('link', { name: 'Setup' })).not.toHaveAttribute('aria-current');
   });
 
-  it('phone_bottom_nav_has_three_items_and_a_gear', async () => {
+  it('phone_bottom_nav_has_three_items_with_icons', async () => {
     setViewportWidth(390);
     exerciseApi().install();
     renderApp();
@@ -114,10 +116,10 @@ describe('shell', () => {
     expect(nav).toHaveAttribute('data-placement', 'bottom');
     expect(nav.closest('header')).toBeNull();
     const links = within(nav).getAllByRole('link');
-    expect(links.map(link => link.textContent)).toEqual(['Exercises', 'Drive', 'Setup']);
+    expect(links.map(link => link.textContent)).toEqual(['Exercises', 'Races', 'Setup']);
     expect(within(nav).getByRole('link', { name: 'Setup' }).querySelector('[data-icon="gear"]')).not.toBeNull();
+    expect(within(nav).getByRole('link', { name: 'Races' }).querySelector('[data-icon="flag"]')).not.toBeNull();
     expect(within(nav).getByRole('link', { name: 'Exercises' }).querySelector('[data-icon="list"]')).not.toBeNull();
-    expect(within(nav).getByRole('link', { name: 'Drive' }).querySelector('[data-icon="drive"]')).not.toBeNull();
   });
 
   it('phone_header_shows_console_and_voice_status', async () => {
@@ -151,31 +153,29 @@ describe('shell', () => {
     expect(await screen.findByRole('link', { name: 'Console: GT7 Tutor does not answer. Check that it runs on the computer. Open Setup' })).toBeInTheDocument();
   });
 
-  it('wide_menu_has_exercises_drive_setup', async () => {
+  it('wide_menu_has_exercises_races_setup', async () => {
     exerciseApi().install();
     renderApp();
     const nav = await screen.findByRole('navigation', { name: 'Main' });
     expect(nav).toHaveAttribute('data-placement', 'top');
-    expect(within(nav).getAllByRole('link').map(link => link.textContent)).toEqual(['Exercises', 'Drive', 'Setup']);
+    expect(within(nav).getAllByRole('link').map(link => link.textContent)).toEqual(['Exercises', 'Races', 'Setup']);
+    expect(within(nav).getByRole('link', { name: 'Races' })).toHaveAttribute('href', '/races');
     expect(nav.querySelector('[data-icon]')).toBeNull();
   });
 
-  it('header_has_no_drive_button', async () => {
-    const api = exerciseApi().install();
-    renderApp();
-    await screen.findByRole('navigation', { name: 'Main' });
-    await waitFor(() => expect(api.called('GET /api/exercises')).toBe(true));
-    await act(async () => undefined);
-    expect(document.querySelector('.drive-button')).toBeNull();
-    expect(screen.getAllByRole('link', { name: /^Drive/ })).toHaveLength(1);
+  it.each(['/races', '/races/record', `/races/${RACE_ID}`, `/races/${RACE_ID}/compare`, `/races/${RACE_ID}/off-track`])('races_item_is_current_on_%s', async path => {
+    exerciseApi().on('GET /api/races', []).install();
+    renderApp({ path });
+    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    expect(within(nav).getByRole('link', { name: 'Races' })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav).getByRole('link', { name: 'Exercises' })).not.toHaveAttribute('aria-current');
   });
 
-  it('drive_item_is_current_on_drive', async () => {
+  it('exercises_item_is_current_on_the_drive_page', async () => {
     exerciseApi().install();
-    renderApp({ path: '/drive' });
+    renderApp({ path: `/exercises/${EXERCISE_ID}/drive` });
     const nav = await screen.findByRole('navigation', { name: 'Main' });
-    expect(within(nav).getByRole('link', { name: 'Drive' })).toHaveAttribute('aria-current', 'page');
-    expect(within(nav).getByRole('link', { name: 'Exercises' })).not.toHaveAttribute('aria-current');
+    expect(within(nav).getByRole('link', { name: 'Exercises' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('profile_menu_signs_out', async () => {

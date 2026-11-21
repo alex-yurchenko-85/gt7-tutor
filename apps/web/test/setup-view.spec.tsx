@@ -461,6 +461,8 @@ describe('setup sections', () => {
     renderApp({ path: '/setup#data' });
     expect(await screen.findByRole('link', { name: 'Delete history' })).toHaveAttribute('href', '/setup/delete-history');
     expect(screen.getByRole('button', { name: 'Clean up captures' })).toBeInTheDocument();
+    expect(screen.getByText('Keeps the parts that references, attempts and races use and removes the rest. You cannot undo it.')).toBeInTheDocument();
+    expect(screen.getByText('Deletes the attempts of one exercise or of all. Start over also deletes the references and the races. The exercises stay.')).toBeInTheDocument();
   });
 
   it('no_delete_button_ends_with_an_ellipsis', async () => {
@@ -531,6 +533,7 @@ describe('screen updates', () => {
     const api = setupApi()
       .on('GET /api/auth/state', () => (signedOut ? { hasUsers: true, user: null } : { hasUsers: true, user: USER }))
       .on('GET /api/exercises', [exercise({ attemptCount: 6, referenceCount: 2 }), exercise({ id: 'e0000000-0000-4000-8000-000000000002', attemptCount: 0 })])
+      .on('GET /api/races', [{ id: 'a0000000-0000-4000-8000-000000000001' }, { id: 'a0000000-0000-4000-8000-000000000002' }])
       .on('POST /api/profiles/me/delete', () => {
         if (reply.status === 200) signedOut = true;
         return reply;
@@ -548,6 +551,7 @@ describe('screen updates', () => {
     expect(await within(dialog).findByText(/2 exercises/)).toBeInTheDocument();
     expect(dialog).toHaveTextContent('2 exercises with their references');
     expect(dialog).toHaveTextContent('6 attempts with their cues and differences');
+    expect(dialog).toHaveTextContent('2 races with their laps, pit stops and places off the track');
     expect(dialog).toHaveTextContent('3 captures on this computer, 1.0 MB');
     expect(dialog).toHaveTextContent('the sign-in on every device');
     expect(dialog).toHaveTextContent('Other profiles and the settings of this computer stay. You cannot undo this.');

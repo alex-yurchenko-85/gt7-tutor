@@ -201,6 +201,19 @@ describe('track map', () => {
     expect(Number(label('finish').getAttribute('x'))).toBeGreaterThan(endX);
   });
 
+  it('lap_line_is_one_bar_across_the_line_with_its_label_beside_the_line', () => {
+    render(<TrackMap label="Map" reference={STRAIGHT} lapLine />);
+    const points = document.querySelector('.track-reference')!.getAttribute('points')!.split(' ').map(point => point.split(',').map(Number) as [number, number]);
+    const [startX, lineY] = points[0]!;
+    expect(document.querySelectorAll('.track-start')).toHaveLength(1);
+    expect(document.querySelector('.track-finish')).toBeNull();
+    expect(document.querySelector('.track-direction')).toBeNull();
+    const labels = [...document.querySelectorAll('.track-label')];
+    expect(labels.map(node => node.textContent)).toEqual(['lap line']);
+    expect(Math.abs(Number(labels[0]!.getAttribute('x')) - startX)).toBeLessThanOrEqual(24);
+    expect(Math.abs(Number(labels[0]!.getAttribute('y')) - lineY)).toBeGreaterThanOrEqual(24);
+  });
+
   it('finish_label_moves_away_when_a_mark_covers_it', () => {
     const finishAt = () => {
       const label = [...document.querySelectorAll('.track-label')].find(node => node.textContent === 'finish')!;

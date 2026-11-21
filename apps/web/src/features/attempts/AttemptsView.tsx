@@ -12,6 +12,7 @@ import { SelectionBar } from '../../app/SelectionBar.tsx';
 import { differenceText } from '../cues/cue-format.ts';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
 import { useExercise } from '../exercise/use-exercise.ts';
+import { DriveButton } from '../drive/DriveButton.tsx';
 import { DeleteAttemptsDialog } from './DeleteAttemptsDialog.tsx';
 import { RecurringDifferences } from './RecurringDifferences.tsx';
 import { TurnTag } from './TurnTag.tsx';
@@ -143,37 +144,53 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
     attempts.reload();
     exercise.reload();
   };
+  const current = exercise.data;
+  const hasAttempts = list !== undefined && list !== null && list.days.length > 0;
+  const tools = hasAttempts ? (
+    <div className="attempts-tools">
+      {selecting ? null : (
+        <button type="button" className="btn ghost inline" onClick={() => setSelecting(true)}>
+          <Icon name="select" size={16} />
+          Select
+        </button>
+      )}
+      <button type="button" className={showAborted ? 'btn ghost inline hide-aborted' : 'btn ghost inline hide-aborted hiding'} onClick={() => setShowAborted(!showAborted)}>
+        {showAborted ? 'Hide aborted' : 'Show aborted'}
+      </button>
+    </div>
+  ) : null;
   return (
     <section className={selecting ? 'selecting-page' : undefined}>
-      <ExerciseHeader exercise={exercise.data} />
+      <ExerciseHeader exercise={current} />
       <div className="wide attempts-layout">
-        {list && list.days.length > 0 ? (
-          <div className="attempts-tools">
-            {selecting ? null : (
-              <button type="button" className="btn ghost inline" onClick={() => setSelecting(true)}>
-                <Icon name="select" size={16} />
-                Select
-              </button>
-            )}
-            <button type="button" className={showAborted ? 'btn ghost inline hide-aborted' : 'btn ghost inline hide-aborted hiding'} onClick={() => setShowAborted(!showAborted)}>
-              {showAborted ? 'Hide aborted' : 'Show aborted'}
-            </button>
-          </div>
-        ) : null}
+        <div className="attempts-drive">
+          {current.activeReferenceId ? (
+            <DriveButton exerciseId={current.id} referenceId={current.activeReferenceId} />
+          ) : (
+            <p className="attempts-record">
+              Record the reference first.{' '}
+              <Link to={paths.record(current.id)} className="text-link">
+                Record
+              </Link>
+            </p>
+          )}
+        </div>
+        {wide ? null : tools}
         <div className="attempts-main">
           {list && list.days.length === 0 ? (
-            <div className="panel">
-              <p className="lede">No attempts yet. Start an attempt in Drive, then drive the exercise in the game.</p>
-              <Link to={paths.drive()} className="btn inline">
-                Open Drive
-              </Link>
+            <div className="attempts-empty">
+              <p>No attempts yet. Select Drive, then drive the exercise in the game.</p>
             </div>
           ) : null}
-          {days.map(day => (
+          {wide && hasAttempts && days.length === 0 ? <div className="attempt-day-head">{tools}</div> : null}
+          {days.map((day, index) => (
             <div key={day.date} className="attempt-day">
-              <h2>
-                {formatDay(day.date)} <span className="sub">{day.bestMs === null ? 'no complete attempt' : `best ${formatTime(day.bestMs)}`}</span>
-              </h2>
+              <div className="attempt-day-head">
+                <h2>
+                  {formatDay(day.date)} <span className="sub">{day.bestMs === null ? 'no complete attempt' : `best ${formatTime(day.bestMs)}`}</span>
+                </h2>
+                {wide && index === 0 ? tools : null}
+              </div>
               {selecting ? <QuickSelect day={day} onPick={ids => pickOnDay(day, ids)} /> : null}
               <div className="table-wrap">
                 <table aria-label={`Attempts on ${formatDay(day.date)}`}>
@@ -202,7 +219,7 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
           ))}
           {attempts.error ? <p className="error">{errorText(attempts.error)}</p> : null}
         </div>
-        <RecurringDifferences exercise={exercise.data} />
+        {hasAttempts ? <RecurringDifferences exercise={current} /> : null}
       </div>
       {selecting ? <SelectionBar count={picked.size} action={`Delete ${counted(picked.size, 'attempt')}`} onCancel={stopSelecting} onAction={() => setConfirming(true)} /> : null}
       {confirming ? (

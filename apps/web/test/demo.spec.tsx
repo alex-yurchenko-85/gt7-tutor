@@ -13,6 +13,9 @@ function withDemo(api: ApiStub, info: AppInfo = DEMO): ApiStub {
   return api.on('GET /api/app-info', info);
 }
 
+
+const DRIVE_PATH = `/exercises/${EXERCISE_ID}/drive`;
+
 function driveDemoApi(): ApiStub {
   rememberExercise();
   return withDemo(exerciseApi(exercise({ step: 3 })))
@@ -21,10 +24,10 @@ function driveDemoApi(): ApiStub {
     .install();
 }
 
-async function openDrive(voiceReady: boolean) {
-  const view = renderApp({ path: '/drive' });
-  await screen.findByRole('heading', { name: 'Drive' });
-  const socket = await openLive(view.sockets, liveState(voiceReady ? { voiceDeviceId: 'other-device', voiceReady: true } : {}));
+async function openStage() {
+  const view = renderApp({ path: DRIVE_PATH });
+  await screen.findByRole('navigation', { name: 'Main' });
+  await openLive(view.sockets, liveState({ mode: 'armed', connection: 'connected', exerciseId: EXERCISE_ID, referenceId: 'ref-demo' }));
   return view;
 }
 
@@ -46,7 +49,7 @@ function setupApi(info: AppInfo): ApiStub {
 describe('demo mode', () => {
   it('demo_label_shows_on_every_view', async () => {
     driveDemoApi();
-    renderApp({ path: '/drive' });
+    renderApp({ path: DRIVE_PATH });
     expect(await screen.findByText(DEMO_LABEL)).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole('link', { name: 'Setup' }));
     expect(screen.getByText(DEMO_LABEL)).toBeInTheDocument();
@@ -68,31 +71,11 @@ describe('demo mode', () => {
 
   it('drive_demo_text_says_what_the_demo_does', async () => {
     driveDemoApi();
-    await openDrive(false);
-    expect(
-      await screen.findByText('The demo replays a recorded attempt in real time. It takes about 40 s. This screen shows the cues, and the voice device also says them.')
-    ).toBeInTheDocument();
-  });
-
-  it('play_a_demo_attempt_selects_then_arms', async () => {
-    setViewportWidth(390);
-    const api = driveDemoApi();
-    await openDrive(true);
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Play a demo attempt' }));
-    await waitFor(() => expect(api.called('POST /api/training/arm')).toBe(true));
-    const order = api.calls.map(call => `${call.method} ${call.path}`).filter(route => route === 'POST /api/demo/attempt' || route === 'POST /api/training/arm');
-    expect(order).toEqual(['POST /api/demo/attempt', 'POST /api/training/arm']);
-    expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: EXERCISE_ID });
-  });
-
-  it('play_a_demo_attempt_arms_at_once_without_a_voice_device', async () => {
-    setViewportWidth(390);
-    const api = driveDemoApi();
-    await openDrive(false);
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Play a demo attempt' }));
-    await waitFor(() => expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: EXERCISE_ID }));
-    expect(api.called('POST /api/demo/attempt')).toBe(true);
-    expect(screen.queryByText(/^No device plays the voice\./)).not.toBeInTheDocument();
+    await openStage();
+    const help = await screen.findByText('The demo replays a recorded attempt in real time.');
+    expect(screen.getByText(/^It takes about 40 s\. This screen shows the cues, and the voice device also says them\. First cue after the start: /)).toHaveClass('race-note');
+    expect(help.closest('.drive-stage')).not.toBeNull();
+    expect(screen.queryByText(/GT7 Tutor finds the start and the finish/)).toBeNull();
   });
 
   it('setup_has_no_console_edit_and_no_catalogue_update_in_demo', async () => {
@@ -131,19 +114,24 @@ describe('demo mode', () => {
   it('drive_outside_demo_mode_has_no_demo_attempt', async () => {
     setViewportWidth(390);
     rememberExercise();
-    withDemo(exerciseApi(exercise({ step: 3 })), { demo: null, consoleRequired: true }).install();
-    await openDrive(true);
-    expect(screen.getByRole('button', { name: 'Start an attempt' })).toBeInTheDocument();
+    const api = withDemo(exerciseApi(exercise({ step: 3 })), { demo: null, consoleRequired: true })
+      .on('POST /api/training/arm', { status: 201, body: ARMED })
+      .install();
+    const view = renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
+    await openLive(view.sockets, liveState({ voiceDeviceId: 'other-device', voiceReady: true }));
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Drive' }));
+    await waitFor(() => expect(api.called('POST /api/training/arm')).toBe(true));
+    expect(api.called('POST /api/demo/attempt')).toBe(false);
     expect(screen.queryByRole('button', { name: 'Play a demo attempt' })).not.toBeInTheDocument();
   });
 
   it('drive_in_demo_does_not_ask_for_the_console_after_the_replay', async () => {
     setViewportWidth(390);
     driveDemoApi();
-    const view = renderApp({ path: '/drive' });
-    await screen.findByRole('heading', { name: 'Drive' });
-    const socket = await openLive(view.sockets, liveState({ mode: 'armed', connection: 'disconnected', exerciseId: EXERCISE_ID }));
-    expect(await screen.findByText('The demo attempt has ended. Select Stop training, then Play a demo attempt again.')).toBeInTheDocument();
+    const view = renderApp({ path: DRIVE_PATH });
+    await screen.findByRole('navigation', { name: 'Main' });
+    await openLive(view.sockets, liveState({ mode: 'armed', connection: 'disconnected', exerciseId: EXERCISE_ID }));
+    expect(await screen.findByText('The demo attempt has ended. Select Stop training, then select Drive.')).toBeInTheDocument();
     expect(screen.queryByText(/Check that GT7 is running/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Check the console address/)).not.toBeInTheDocument();
   });

@@ -57,4 +57,33 @@ describe('api client', () => {
     new ApiStub().on('GET /api/references/r1/path', { status: 500, body: {} }).install();
     await expect(api.referenceTrace('r1')).rejects.toThrow('Something went wrong in GT7 Tutor (status 500). Reload the page. If it happens again, attach the log of this start to an issue.');
   });
+
+  it('race_functions_call_the_race_endpoints', async () => {
+    const stub = new ApiStub()
+      .on('GET /api/races', [])
+      .on('GET /api/races/r1', { id: 'r1' })
+      .on('POST /api/races/record', { captureId: 'c1' })
+      .on('POST /api/races/record/stop', { raceId: null })
+      .on('POST /api/races/record/close', { ok: true })
+      .on('PATCH /api/races/r1', { id: 'r1', trackName: 'Tsukuba' })
+      .on('POST /api/races/delete', { deleted: 2 })
+      .on('GET /api/races/r1/compare', (_body: unknown, url: URL) => ({ search: url.search }))
+      .on('GET /api/races/r1/speed', { gridM: 2 })
+      .on('GET /api/races/r1/off-track', { gridM: 4 })
+      .install();
+    expect(await api.races()).toEqual([]);
+    expect(await api.race('r1')).toEqual({ id: 'r1' });
+    expect(await api.recordRace()).toEqual({ captureId: 'c1' });
+    expect(await api.stopRace()).toEqual({ raceId: null });
+    expect(await api.closeRaceRecord()).toEqual({ ok: true });
+    expect(await api.renameRace('r1', 'Tsukuba')).toEqual({ id: 'r1', trackName: 'Tsukuba' });
+    expect(await api.deleteRaces(['r1', 'r2'])).toEqual({ deleted: 2 });
+    expect(await api.raceCompare('r1', 5)).toEqual({ search: '?lap=5' });
+    expect(await api.raceCompare('r1', 5, 2)).toEqual({ search: '?lap=5&with=2' });
+    expect(await api.raceSpeed('r1')).toEqual({ gridM: 2 });
+    expect(await api.raceOffTrack('r1')).toEqual({ gridM: 4 });
+    expect(stub.calls.find(call => call.method === 'PATCH')!.body).toEqual({ trackName: 'Tsukuba' });
+    expect(stub.calls.find(call => call.path === '/api/races/delete')!.body).toEqual({ ids: ['r1', 'r2'] });
+  });
 });
+

@@ -1,18 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { nextTitle, orderedFamilies, primaryAction } from '../src/features/exercises/next-step.ts';
-import { exerciseAtStep, EXERCISE_ID } from './fixtures.ts';
+import { nextTitle, orderedFamilies } from '../src/features/exercises/next-step.ts';
 
 describe('next step', () => {
   it('next_title_by_step', () => {
     expect(nextTitle(1)).toBe('Next: record the reference');
     expect(nextTitle(2)).toBe('Next: drive attempts');
     expect(nextTitle(3)).toBe('Next: review your attempts');
-  });
-
-  it('primary_action_by_step', () => {
-    expect(primaryAction(exerciseAtStep(1))).toEqual({ label: 'Record the reference', to: `/exercises/${EXERCISE_ID}/record` });
-    expect(primaryAction(exerciseAtStep(2))).toEqual({ label: 'Start an attempt', to: '/drive' });
-    expect(primaryAction(exerciseAtStep(3))).toEqual({ label: 'Open the attempts', to: `/exercises/${EXERCISE_ID}/attempts` });
   });
 
   it('families_follow_the_game_order', () => {

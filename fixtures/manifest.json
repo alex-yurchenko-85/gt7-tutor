@@ -120,6 +120,66 @@
       "rows": 2626,
       "peerIp": "0.0.0.0",
       "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. Autódromo de Interlagos, Circuit Experience sector 2. Demonstration with a wait of 15 s."
+    },
+    {
+      "name": "race-finish",
+      "file": "race-finish.ndjson",
+      "source": "2026-11-20T16-21-23-993Z-player",
+      "range": {
+        "first": 24700,
+        "last": 25641
+      },
+      "rows": 942,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. High Speed Ring, Lexus RC F Gr.4. A race of 5 laps, rolling start, 20 cars. Lap 5 to 6 at the finish, then the car driven by the game."
+    },
+    {
+      "name": "race-grid-start",
+      "file": "race-grid-start.ndjson",
+      "source": "2026-11-20T16-21-23-993Z-player",
+      "range": {
+        "first": 600,
+        "last": 1200
+      },
+      "rows": 601,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. High Speed Ring, Lexus RC F Gr.4. A race of 5 laps, rolling start, 20 cars. Scene before the grid, the grid, the rolling start run-up and lap 0 to 1."
+    },
+    {
+      "name": "race-lap-line",
+      "file": "race-lap-line.ndjson",
+      "source": "2026-11-20T16-21-23-993Z-player",
+      "range": {
+        "first": 5950,
+        "last": 6250
+      },
+      "rows": 301,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. High Speed Ring, Lexus RC F Gr.4. A race of 5 laps, rolling start, 20 cars. Lap 1 to 2 with the last lap 83 585 ms."
+    },
+    {
+      "name": "race-off-track",
+      "file": "race-off-track.ndjson",
+      "source": "2026-11-20T16-36-03-005Z-player",
+      "range": {
+        "first": 32000,
+        "last": 32700
+      },
+      "rows": 701,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. A race of 7 laps, BAC Mono '16 (car ID 3409 by the catalogue). Lap 4, the car leaves the track twice within one second: one off-track moment of about 3.7 s, four wheels off at the peak, lowest speed about 40 km/h."
+    },
+    {
+      "name": "race-pit-stop",
+      "file": "race-pit-stop.ndjson",
+      "source": "2026-11-20T16-36-03-005Z-player",
+      "range": {
+        "first": 17900,
+        "last": 20400
+      },
+      "rows": 2501,
+      "peerIp": "0.0.0.0",
+      "note": "Raw GT7 telemetry recorded by the project author on their own PS5. Console address removed. A race of 7 laps, BAC Mono '16 (car ID 3409 by the catalogue). Pit entry, the cut to the pit box, refuel 38 to 100, the cut to the pit exit."
     }
   ]
 }

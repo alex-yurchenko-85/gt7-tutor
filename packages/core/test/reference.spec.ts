@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activeTimesMs, buildReference, pointAt, ReferencePathError } from '../src/reference.ts';
+import { activeTimesMs, buildReference, nearestSM, pointAt, ReferencePathError } from '../src/reference.ts';
 import { interlagosReference } from './paths.ts';
 import { drive, straightLine, syntheticSample } from './synthetic.ts';
 
@@ -59,6 +59,13 @@ describe('buildReference', () => {
     expect(middle.position.x).toBeCloseTo(10.5, 6);
     expect(pointAt(path, -3).sM).toBe(0);
     expect(pointAt(path, 1000).sM).toBeCloseTo(path.lengthM, 9);
+  });
+
+  it('nearest_s_m_gives_the_distance_of_the_nearest_path_point', () => {
+    const path = buildReference(drive(straightLine({ fromX: 0, toX: 30, speedMps: 10 })));
+    expect(nearestSM(path, { x: 12.4, y: 0, z: 3 })).toBe(12);
+    expect(nearestSM(path, { x: -50, y: 0, z: 0 })).toBe(0);
+    expect(nearestSM(path, { x: 500, y: 0, z: 0 })).toBe(path.points.at(-1)!.sM);
   });
 
   it('reference_rejects_bad_input', () => {

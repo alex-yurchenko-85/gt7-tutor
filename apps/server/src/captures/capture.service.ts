@@ -10,7 +10,7 @@ import {
   type OnModuleInit
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RawWriter, SampleStream, type Datagram, type OpenStream, type TelemetrySource } from '@gt7/capture';
+import { RawWriter, SampleStream, type Datagram, type OpenStream, type RawWriteResult, type TelemetrySource } from '@gt7/capture';
 import type { CaptureInfo, CapturePurpose, ReceptionCheck, Sample } from '@gt7/contracts';
 import { decode } from '@gt7/core';
 import type { Knex } from 'knex';
@@ -24,7 +24,7 @@ import { TELEMETRY_SOURCE_FACTORY, type TelemetrySourceFactory } from './telemet
 
 export type SampleListener = (sample: Sample) => void;
 
-export type CaptureRequest = { userId: string; exerciseId: string; purpose: CapturePurpose };
+export type CaptureRequest = { userId: string; exerciseId: string | null; purpose: CapturePurpose };
 
 const RECEPTION_CHECK_MS = 2000;
 const RECEPTION_ENOUGH_PACKETS = 30;
@@ -36,7 +36,7 @@ export type CaptureReservation = { readonly token: symbol };
 type ActiveCapture = {
   id: string;
   userId: string;
-  exerciseId: string;
+  exerciseId: string | null;
   purpose: CapturePurpose;
   lastReceivedMono: number;
   source: TelemetrySource;
@@ -59,8 +59,8 @@ export function captureInfo(row: CaptureRow, activeId: string | null): CaptureIn
   };
 }
 
-function fileStamp(date: Date): string {
-  return date.toISOString().replace(/[:.]/g, '-');
+export function rawFilePath(startedAt: Date, purpose: string, id: string): string {
+  return join('raw', `${startedAt.toISOString().replace(/[:.]/g, '-')}-${purpose}-${id.slice(0, 8)}.ndjson`);
 }
 
 @Injectable()
@@ -71,6 +71,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
   private readonly listeners = new Set<SampleListener>();
   private current: ActiveCapture | null = null;
   private reservation: CaptureReservation | null = null;
+  private readonly kept = new Set<string>();
 
   constructor(
     @Inject(KNEX) private readonly db: Knex,
@@ -102,6 +103,15 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     return this.current?.id ?? null;
   }
 
+  keep(captureId: string): () => void {
+    this.kept.add(captureId);
+    return () => this.kept.delete(captureId);
+  }
+
+  inUse(captureId: string): boolean {
+    return captureId === this.activeCaptureId || this.kept.has(captureId);
+  }
+
   get busy(): boolean {
     return this.current !== null || this.reservation !== null;
   }
@@ -110,7 +120,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     return join(this.dataDir, row.raw_path);
   }
 
-  get activeCapture(): { id: string; userId: string; exerciseId: string; purpose: CapturePurpose } | null {
+  get activeCapture(): { id: string; userId: string; exerciseId: string | null; purpose: CapturePurpose } | null {
     const current = this.current;
     return current ? { id: current.id, userId: current.userId, exerciseId: current.exerciseId, purpose: current.purpose } : null;
   }
@@ -152,7 +162,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     if (this.reservation === reservation) this.reservation = null;
   }
 
-  async begin(request: CaptureRequest): Promise<CaptureInfo> {
+  async begin(request: CaptureRequest & { exerciseId: string }): Promise<CaptureInfo> {
     await ownedExercise(this.db, request.userId, request.exerciseId);
     return this.beginReserved(request, this.reserve());
   }
@@ -173,6 +183,12 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     } finally {
       this.release(reservation);
     }
+  }
+
+  async stopByRequest(userId: string, id: string): Promise<CaptureInfo> {
+    const row = await ownedCapture(this.db, userId, id);
+    if (row.purpose === 'race') throw conflict('not-active', 'Stop a race recording on its own screen.');
+    return this.stop(userId, id);
   }
 
   async stop(userId: string, id: string): Promise<CaptureInfo> {
@@ -221,7 +237,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
     const ps5Ip = await this.consoleAddress();
     const id = randomUUID();
     const startedAt = new Date();
-    const rawPath = join('raw', `${fileStamp(startedAt)}-${request.purpose}-${id.slice(0, 8)}.ndjson`);
+    const rawPath = rawFilePath(startedAt, request.purpose, id);
     await mkdir(join(this.dataDir, 'raw'), { recursive: true });
     const [row] = await this.db<CaptureRow>('captures')
       .insert({
@@ -276,13 +292,21 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
   }
 
   private async finish(active: ActiveCapture): Promise<CaptureRow> {
-    await active.source.stop();
-    const result = await active.writer.close();
-    if (this.current === active) this.current = null;
+    const stopFailure = await active.source.stop().then(
+      () => null,
+      (error: unknown) => error
+    );
+    let result: RawWriteResult;
+    try {
+      result = await active.writer.close();
+    } finally {
+      if (this.current === active) this.current = null;
+    }
     const [row] = await this.db<CaptureRow>('captures')
       .where({ id: active.id })
       .update({ ended_at: this.db.fn.now(), packets: result.packets, complete: result.complete, error_reason: result.reason })
       .returning('*');
+    if (stopFailure !== null) throw stopFailure;
     return row!;
   }
 

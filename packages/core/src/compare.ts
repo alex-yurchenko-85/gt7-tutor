@@ -30,10 +30,10 @@ type TracePoint = { sM: number; t: number; v: number; th: number; br: number; x:
 
 const EVENT_STEP_M = 1;
 
-function attemptTrace(samples: Sample[], path: ReferencePath, config: CoreConfig): (TracePoint | null)[] {
+function attemptTrace(samples: Sample[], path: ReferencePath, config: CoreConfig, startSM: number | undefined): (TracePoint | null)[] {
   const times = activeTimesMs(samples);
   const driven = samples.map((sample, index) => ({ sample, timeMs: times[index]! })).filter(entry => isDriven(entry.sample));
-  const matcher = new Matcher(path, config);
+  const matcher = new Matcher(path, config, startSM);
   return driven.map(({ sample, timeMs }) => {
     const match = matcher.step(sample);
     if (!match) return null;
@@ -117,9 +117,9 @@ function contiguousRuns(points: (TracePoint | null)[]): EventPoint[][] {
   return runs;
 }
 
-export function buildReview(attempt: Sample[], reference: ReferenceAnalysis, config: CoreConfig): Review {
+export function buildReview(attempt: Sample[], reference: ReferenceAnalysis, config: CoreConfig, startSM?: number): Review {
   const { path } = reference;
-  const trace = attemptTrace(attempt, path, config);
+  const trace = attemptTrace(attempt, path, config, startSM);
   const tolerance = config.match.sectionEndToleranceM;
   const grid = resample(trace, config.reviewGridM, path.lengthM, tolerance, config.reviewMaxBridgeM);
   const detail = resample(trace, EVENT_STEP_M, path.lengthM, tolerance, config.reviewMaxBridgeM);
