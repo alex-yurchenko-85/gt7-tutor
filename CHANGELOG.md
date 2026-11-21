@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.10.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.9.1...v1.10.0) (2026-11-21)
+
+### Features
+
+* record a race and review it lap by lap ([47217c5](https://github.com/alex-yurchenko-85/gt7-tutor/commit/47217c5a77bebc920f1bde9c65e5af2455cca8b5))
+
 ## [1.9.1](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.9.0...v1.9.1) (2026-11-20)
 
 ### Bug Fixes
