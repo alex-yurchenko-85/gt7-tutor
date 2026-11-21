@@ -15,7 +15,7 @@ import { paths, useRouter } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
 import { telemetryStatus, voiceState, voiceStatus, type Status } from '../../app/status.ts';
 import { AttemptSummary } from '../attempt-summary/AttemptSummary.tsx';
-import { CLIPS_TEXT } from '../../voice/VoicePlayer.ts';
+import { clipsText } from '../../voice/VoicePlayer.ts';
 import { useVoiceClaim } from '../../voice/use-voice-claim.ts';
 import { connectionProblem, cueNote, cueWords, guidanceText, shownOnDrive } from './cue-display.ts';
 import { SeenCues } from './seen-cues.ts';
@@ -23,13 +23,9 @@ import { useMissedStart } from './missed-start.ts';
 import { ARM_SETTLE_MS, forgetStartedTraining, startedTraining } from './start-drive.ts';
 import { type ReferenceData, useReferenceData } from './use-reference-data.ts';
 import './drive.css';
+import { clipText, cuePhrase, t } from '../../app/i18n.ts';
 
 const CUE_VISIBLE_MS = 3000;
-
-const READY_LEAD = 'Open the exercise in GT7 and drive.';
-const READY_NOTE = 'GT7 Tutor finds the start and the finish. You can look at the TV now.';
-const DEMO_LEAD = 'The demo replays a recorded attempt in real time.';
-const DEMO_NOTE = 'It takes about 40 s. This screen shows the cues, and the voice device also says them.';
 
 function useTicker(running: boolean, everyMs: number): number {
   const [now, setNow] = useState(() => Date.now());
@@ -54,9 +50,9 @@ type CueContent = { word: ReactNode; note: string | null; tone: 'cue' | 'armed' 
 function cueContent(state: LiveState, problem: string | null, fresh: LiveCue | null, reference: ReferenceData | null): CueContent {
   const idle = (text: string): CueContent => ({ word: text, note: null, tone: 'idle' });
   if (problem) return idle('');
-  if (state.mode === 'armed') return { word: 'READY', note: null, tone: 'armed' };
-  if (state.mode === 'paused') return idle('Paused. Cues stop until you continue.');
-  if (state.mode === 'finished') return idle('Finished.');
+  if (state.mode === 'armed') return { word: t('drive.stage.ready'), note: null, tone: 'armed' };
+  if (state.mode === 'paused') return idle(t('drive.stage.paused'));
+  if (state.mode === 'finished') return idle(t('drive.stage.finished'));
   const guidance = guidanceText(state.guidance);
   if (guidance) return idle(guidance);
   if (!fresh || !shownOnDrive(fresh)) return idle('');
@@ -78,14 +74,16 @@ function sentence(text: string): string {
 }
 
 function readyText(demo: boolean, reference: ReferenceData | null, problem: string | null): { lead: string; note: string } {
-  const first = problem ? null : reference?.spoken[0]?.phrase;
-  const firstCue = first ? ` First cue after the start: ${sentence(first)}` : '';
-  return demo ? { lead: DEMO_LEAD, note: `${DEMO_NOTE}${firstCue}` } : { lead: READY_LEAD, note: `${READY_NOTE}${firstCue}` };
+  const spokenFirst = problem ? undefined : reference?.spoken[0];
+  const first = spokenFirst ? cuePhrase(spokenFirst) : null;
+  const lead = demo ? t('drive.demo.lead') : t('drive.ready.lead');
+  if (!first) return { lead, note: demo ? t('drive.demo.note') : t('drive.ready.note') };
+  return { lead, note: t(demo ? 'drive.demo.note-first-cue' : 'drive.ready.note-first-cue', { cue: sentence(first) }) };
 }
 
 function nextText(state: LiveState, problem: string | null): string | null {
   if (problem || !state.nextCue || state.sM === null) return null;
-  return `Next: ${state.nextCue.text}, in ${Math.round(state.nextCue.inM)} m`;
+  return t('drive.stage.next', { cue: clipText(state.nextCue.clip), metres: Math.round(state.nextCue.inM) });
 }
 
 function StageText({ state, problem, reference }: { state: LiveState; problem: string | null; reference: ReferenceData | null }) {
@@ -96,7 +94,7 @@ function StageText({ state, problem, reference }: { state: LiveState; problem: s
   const text = ready ? readyText(demo, reference, problem) : { lead: nextText(state, problem), note: content.note };
   return (
     <div className={ready ? 'stage-text' : 'stage-text running'}>
-      <div className={`cue ${content.tone}${ready ? '' : ' running'}`} role="status" aria-label="Current cue" aria-live="assertive">
+      <div className={`cue ${content.tone}${ready ? '' : ' running'}`} role="status" aria-label={t('drive.stage.current-cue')} aria-live="assertive">
         <div className="cue-word">{content.word}</div>
       </div>
       {text.lead || !ready ? <p className="race-lead">{text.lead}</p> : null}
@@ -108,9 +106,9 @@ function StageText({ state, problem, reference }: { state: LiveState; problem: s
 
 function LiveNumbers({ state, live, reference }: { state: LiveState; live: boolean; reference: ReferenceData | null }) {
   const values = [
-    { value: !live || state.speedMps === null ? '–' : String(Math.round(state.speedMps * KPH_PER_MPS)), caption: 'km/h', tone: '' },
-    { value: !live || state.sM === null ? '–' : String(Math.round(state.sM)), caption: reference ? `m of ${Math.round(reference.trace.lengthM)}` : 'm from the start', tone: '' },
-    { value: !live || state.gapMs === null ? '–' : signedSeconds(state.gapMs, 1), caption: 's to reference', tone: 'gap' }
+    { value: !live || state.speedMps === null ? '–' : String(Math.round(state.speedMps * KPH_PER_MPS)), caption: t('drive.stage.kph'), tone: '' },
+    { value: !live || state.sM === null ? '–' : String(Math.round(state.sM)), caption: reference ? t('drive.stage.of-length', { length: Math.round(reference.trace.lengthM) }) : t('drive.stage.from-start'), tone: '' },
+    { value: !live || state.gapMs === null ? '–' : signedSeconds(state.gapMs, 1), caption: t('drive.stage.to-reference'), tone: 'gap' }
   ];
   return (
     <div className="race-stats live-numbers">
@@ -142,10 +140,10 @@ function StageVoice({ state }: { state: LiveState }) {
   const where = voiceState(state, deviceId);
   if (where === 'here' || where === 'elsewhere') return null;
   return (
-    <div className="stage-voice" role="group" aria-label="Voice">
-      <p className="race-note">No device plays the voice.</p>
+    <div className="stage-voice" role="group" aria-label={t('drive.voice.group')}>
+      <p className="race-note">{t('drive.voice.none')}</p>
       <button className="stage-button" type="button" onClick={() => void voice.claim()} disabled={voice.busy}>
-        Use this device for voice
+        {t('drive.voice.use')}
       </button>
       {voice.problem ? (
         <p className="stage-alert" role="alert">
@@ -160,11 +158,11 @@ function MissedStart({ onDismiss }: { onDismiss(): void }) {
   const titleId = useId();
   return (
     <div className="missed-start" role="alert" aria-labelledby={titleId}>
-      <h2 id={titleId}>The attempt did not start</h2>
-      <p>The exercise was already running when you selected Drive. Restart the exercise in the game.</p>
+      <h2 id={titleId}>{t('drive.missed.title')}</h2>
+      <p>{t('drive.missed.text')}</p>
       <div className="missed-actions">
         <button type="button" className="stage-button primary" onClick={onDismiss}>
-          OK
+          {t('drive.missed.ok')}
         </button>
       </div>
     </div>
@@ -197,13 +195,13 @@ function Stage({ state, exercise, reference, finishedAttempt, clipsFailed, onDri
       <div className="stage-top">
         <div className="stage-title">
           <p className="race-status-word stage-status-row">
-            <StageStatus status={telemetry} label="Telemetry" />
-            <StageStatus status={voice} label="Voice" />
+            <StageStatus status={telemetry} label={t('drive.stage.telemetry')} />
+            <StageStatus status={voice} label={t('drive.stage.voice')} />
           </p>
-          <p className="race-status-sub">{state.attemptNumber === null ? exercise.name : `Attempt ${state.attemptNumber} · ${exercise.name}`}</p>
+          <p className="race-status-sub">{state.attemptNumber === null ? exercise.name : t('drive.stage.attempt', { number: state.attemptNumber, name: exercise.name })}</p>
         </div>
         <button type="button" className="stage-button" onClick={onStop}>
-          Stop training
+          {t('drive.stage.stop')}
         </button>
       </div>
       <div className="stage-left">
@@ -224,12 +222,12 @@ function Stage({ state, exercise, reference, finishedAttempt, clipsFailed, onDri
         ) : null}
         {clipsFailed && state.voiceDeviceId === deviceId ? (
           <p className="stage-alert" role="alert">
-            {CLIPS_TEXT}
+            {clipsText()}
           </p>
         ) : null}
         {!state.recordingComplete ? (
           <p className="stage-alert" role="alert">
-            The recording is incomplete{state.storageError ? `: ${state.storageError}` : ''}. Coaching continues.
+            {state.storageError ? t('drive.stage.incomplete-error', { error: state.storageError }) : t('drive.stage.incomplete')}
           </p>
         ) : null}
         {missedStart.missed ? <MissedStart onDismiss={missedStart.dismiss} /> : null}
@@ -237,7 +235,7 @@ function Stage({ state, exercise, reference, finishedAttempt, clipsFailed, onDri
       {reference ? (
         <div className="stage-map">
           <TrackMap
-            label="Your position on the reference line, with the turns"
+            label={t('drive.stage.map')}
             reference={reference.trace}
             marks={marks}
             cursorSM={live ? state.sM : null}
@@ -294,7 +292,7 @@ function DriveExercise({ exercise }: { exercise: Exercise }) {
   const newAttempt = state?.mode === 'finished' && state.lastAttemptId && state.lastAttemptId !== earlierAttempt ? state.lastAttemptId : null;
   const finishedAttempt = newAttempt !== dismissed ? newAttempt : null;
 
-  if (!state) return <p className="sub">Connecting to GT7 Tutor…</p>;
+  if (!state) return <p className="sub">{t('drive.connecting')}</p>;
   if (!armed) return null;
   return (
     <>
@@ -324,6 +322,6 @@ export function DriveView({ exerciseId }: { exerciseId: string }) {
     if (loadedId) rememberExercise(user.id, loadedId);
   }, [user.id, loadedId]);
   if (exercise.error) return <LoadProblem error={exercise.error} kind="exercise" />;
-  if (!exercise.data) return <p className="sub">Reading the exercise…</p>;
+  if (!exercise.data) return <p className="sub">{t('drive.reading')}</p>;
   return <DriveExercise exercise={exercise.data} />;
 }

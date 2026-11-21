@@ -4,8 +4,9 @@ import { api } from '../../api/client.ts';
 import { deletionErrorText } from '../../app/busy.ts';
 import { ConfirmDialog } from '../../app/ConfirmDialog.tsx';
 import { formatTime } from '../../app/format.ts';
-import { counted } from '../../app/plural.ts';
 import { useTrainingGate } from '../../app/use-training.ts';
+import { t } from '../../app/i18n.ts';
+import { Rich } from '../../app/rich-text.tsx';
 
 function bestOf(attempts: AttemptSummary[]): number | null {
   const times = attempts.filter(attempt => attempt.completion === 'complete' && attempt.timeMs !== null).map(attempt => attempt.timeMs!);
@@ -35,11 +36,11 @@ export function DeleteAttemptsDialog({ selected, all, onKeep, onDeleted }: Delet
   const bestLine =
     before === null && after === null ? null : before === after ? (
       <li>
-        Your best stays <b>{formatTime(before)}</b>.
+        <Rich k="exercises.attempts.best-stays" parts={{ time: <b>{formatTime(before)}</b> }} />
       </li>
     ) : (
       <li>
-        Your best: <b>{formatTime(before)}</b> → <b>{formatTime(after)}</b>
+        <Rich k="exercises.attempts.best-changes" parts={{ before: <b>{formatTime(before)}</b>, after: <b>{formatTime(after)}</b> }} />
       </li>
     );
 
@@ -58,9 +59,9 @@ export function DeleteAttemptsDialog({ selected, all, onKeep, onDeleted }: Delet
 
   return (
     <ConfirmDialog
-      title={one ? `Delete attempt ${numbers}?` : `Delete ${selected.length} attempts?`}
-      keepLabel={one ? 'Keep it' : 'Keep them'}
-      confirmLabel={gate.label(one ? 'Delete attempt' : `Delete ${counted(selected.length, 'attempt')}`)}
+      title={one ? t('exercises.attempts.delete-one-title', { number: numbers }) : t('exercises.attempts.delete-many-title', { count: selected.length })}
+      keepLabel={one ? t('exercises.attempts.keep-it') : t('exercises.attempts.keep-them')}
+      confirmLabel={gate.label(one ? t('exercises.attempts.delete-one') : t('exercises.attempts.delete-selected', { count: selected.length }))}
       working={working}
       confirmDisabled={gate.blocked}
       notice={gate.notice}
@@ -68,11 +69,11 @@ export function DeleteAttemptsDialog({ selected, all, onKeep, onDeleted }: Delet
       onKeep={onKeep}
       onConfirm={confirm}
     >
-      <p>{one ? `Attempt ${numbers}, with its cues and differences.` : `Attempts ${numbers}, with their cues and differences.`}</p>
+      <p>{one ? t('exercises.attempts.goes-one', { numbers }) : t('exercises.attempts.goes-many', { numbers })}</p>
       <ul>
         {bestLine}
-        <li>Recurring differences are counted again from the attempts that stay.</li>
-        <li>The references stay. The raw captures stay until you clean them up in Setup.</li>
+        <li>{t('exercises.attempts.recounted')}</li>
+        <li>{t('exercises.attempts.stays')}</li>
       </ul>
     </ConfirmDialog>
   );

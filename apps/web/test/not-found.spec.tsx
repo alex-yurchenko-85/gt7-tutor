@@ -38,7 +38,7 @@ describe('not found', () => {
 
   it('missing_exercise_shows_exercise_not_found', async () => {
     const missing = 'e0000000-0000-4000-8000-0000000000ff';
-    exerciseApi().on(`GET /api/exercises/${missing}`, { status: 404, body: { message: 'Exercise not found' } }).install();
+    exerciseApi().on(`GET /api/exercises/${missing}`, { status: 404, body: { code: 'exercise-not-found' } }).install();
     renderApp({ path: `/exercises/${missing}` });
     expect(await screen.findByRole('heading', { level: 1, name: 'This exercise is not here' })).toBeInTheDocument();
   });
@@ -46,8 +46,8 @@ describe('not found', () => {
   it('deleted_attempt_shows_attempt_not_found', async () => {
     rememberExercise();
     exerciseApi()
-      .on(`GET /api/attempts/${DELETED_ATTEMPT}`, { status: 404, body: { message: 'Attempt not found' } })
-      .on(`GET /api/attempts/${DELETED_ATTEMPT}/review`, { status: 404, body: { message: 'Attempt not found' } })
+      .on(`GET /api/attempts/${DELETED_ATTEMPT}`, { status: 404, body: { code: 'attempt-not-found' } })
+      .on(`GET /api/attempts/${DELETED_ATTEMPT}/review`, { status: 404, body: { code: 'attempt-not-found' } })
       .install();
     renderApp({ path: `/attempts/${DELETED_ATTEMPT}/review` });
     expect(await screen.findByRole('heading', { level: 1, name: 'This attempt is not here' })).toBeInTheDocument();

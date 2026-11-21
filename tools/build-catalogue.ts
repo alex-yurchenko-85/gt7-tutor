@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { diffCatalogue, fetchCatalogue, slug, validateCatalogue } from '@gt7/catalogue';
-import type { Catalogue } from '@gt7/contracts';
+import { ENGLISH, translate, type Catalogue } from '@gt7/contracts';
 
 const catalogueDir = resolve('content/catalogue');
 const cataloguePath = join(catalogueDir, 'catalogue.json');
@@ -60,7 +60,7 @@ async function main(): Promise<void> {
     console.log(`Added: ${diff.added.length}`, diff.added.map(entry => entry.id));
     console.log(`Removed: ${diff.removed.length}`, diff.removed.map(entry => entry.id));
     console.log(`Changed: ${diff.changed.length}`, diff.changed.map(change => `${change.id} (${change.fields.join(', ')})`));
-    if (diff.rejected) console.log(`Warning, the application would reject this update: ${diff.rejected}`);
+    if (diff.rejected) console.log(`Warning, the application would reject this update: ${translate(ENGLISH, 'errors.rejected', diff.rejected)}`);
   } else console.log('No committed catalogue. All entries are new.');
 
   mkdirSync(catalogueDir, { recursive: true });

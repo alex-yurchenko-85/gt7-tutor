@@ -2,6 +2,7 @@ import type { KeyboardEvent, PointerEvent } from 'react';
 import { WIDTH, percent, rounded } from './geometry.ts';
 import { usePlotWidth } from './use-plot-width.ts';
 import './charts.css';
+import { t } from '../app/i18n.ts';
 
 type RaceTimePoint = { tMs: number; value: number };
 
@@ -92,7 +93,7 @@ export function RaceTimeChart({ label, raceMs, firstLap, lapEnds, pitStops, poin
     ...ticks.filter(tick => !bold.some(value => value === tick || Math.abs(toY(value) - toY(tick)) < BOLD_CLEARANCE_PX)).map(tick => ({ value: tick, bold: false })),
     ...bold.filter((value, index) => bold.indexOf(value) === index).map(value => ({ value, bold: true }))
   ];
-  const pitLabels: AxisLabel[] = pitStops.map((pit, index) => ({ key: `pit-${pit.fromMs}`, text: `P${index + 1}`, at: (pit.fromMs + pit.toMs) / 2 / span, pit: true }));
+  const pitLabels: AxisLabel[] = pitStops.map((pit, index) => ({ key: `pit-${pit.fromMs}`, text: t('charts.pit.badge', { number: index + 1 }), at: (pit.fromMs + pit.toMs) / 2 / span, pit: true }));
   const lapLabels: AxisLabel[] = lapStarts
     .map((start, index) => ({ key: `lap-${start}`, text: String(firstLap + index), at: (start + (lapEnds[index]! - start) / 2) / span, pit: false }))
     .filter((lap, index) => index === 0 || Number(lap.text) % every === 0)
@@ -150,7 +151,7 @@ export function RaceTimeChart({ label, raceMs, firstLap, lapEnds, pitStops, poin
         </div>
       </div>
       <div className="race-chart-laps" aria-hidden="true">
-        <b className="axis-name">lap</b>
+        <b className="axis-name">{t('charts.race.lap-axis')}</b>
         <div>
           {[...lapLabels, ...pitLabels].map(item => (
             <span key={item.key} className={item.pit ? 'axis-pit' : undefined} style={{ left: percent(item.at) }}>

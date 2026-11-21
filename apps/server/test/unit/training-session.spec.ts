@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { readSamples } from '@gt7/capture';
-import type { Sample } from '@gt7/contracts';
+import { ENGLISH, type Sample } from '@gt7/contracts';
 import { DEFAULT_CONFIG, analyseReference, estimatedPhraseMs, replayCoach, type Cue, type ReferenceAnalysis } from '@gt7/core';
 import { TrainingSession, type AttemptRecord, type TrainingEffects } from '../../src/training/training-session.js';
 import { fixturePath } from '../../../../tools/testing/fixture-path.js';
+
+const englishPhraseMs = (clip: string) => estimatedPhraseMs(ENGLISH, clip);
 
 const DEMONSTRATION = { first: 457, last: 1422 };
 const DEMONSTRATION_TIMER_MS = 16082;
@@ -72,7 +74,7 @@ describe('TrainingSession', () => {
       {
         ...recordingEffects([]),
         deviceDelayMs: () => 60,
-        phraseMs: estimatedPhraseMs,
+        phraseMs: englishPhraseMs,
         sendCue: (cue: Cue) =>
           sent.push({ id: cue.id, kind: cue.kind, clip: cue.clip, followClip: cue.followClip, rawIndex: current!.rawIndex, decidedMonoMs: Math.round(cue.decidedMonoMs) }) > 0
       },
@@ -82,7 +84,7 @@ describe('TrainingSession', () => {
       current = sample;
       session.onSample(sample);
     }
-    const trace = replayCoach(samples, analysis, DEFAULT_CONFIG, { ...settings, deviceDelayMs: 60, phraseMs: estimatedPhraseMs });
+    const trace = replayCoach(samples, analysis, DEFAULT_CONFIG, { ...settings, deviceDelayMs: 60, phraseMs: englishPhraseMs });
     expect(sent.length).toBeGreaterThan(4);
     expect(trace.suppressed.some(item => item.eventKey === 'throttle@411' && item.why === 'muted')).toBe(true);
     expect(trace.cues.some(cue => cue.id === '1:throttle@411')).toBe(false);
@@ -112,7 +114,7 @@ describe('TrainingSession', () => {
       {
         ...recordingEffects([]),
         deviceDelayMs: () => 60,
-        phraseMs: estimatedPhraseMs,
+        phraseMs: englishPhraseMs,
         nextGeneration: () => ++generation,
         sendCue: (cue: Cue) => sentIds.push(cue.id) > 0
       },

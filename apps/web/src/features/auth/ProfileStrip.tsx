@@ -2,6 +2,7 @@ import { useEffect, useRef, type KeyboardEvent } from 'react';
 import type { ProfileCard } from '@gt7/contracts';
 import { IconButton } from '../../app/IconButton.tsx';
 import { useWideLayout } from '../../app/layout.ts';
+import { t } from '../../app/i18n.ts';
 
 const AVATAR_COLORS = ['#14181f', '#1f6fd1', '#b3141d', '#1d7a3a', '#6b3fa0', '#a35a00', '#00727a'];
 
@@ -52,7 +53,7 @@ export function ProfileStrip({ profiles, selected, onSelect }: ProfileStripProps
   };
 
   const group = (
-    <div ref={strip} role="radiogroup" aria-label="Profiles" className="profile-strip">
+    <div ref={strip} role="radiogroup" aria-label={t('auth.strip.label')} className="profile-strip">
       {profiles.map((profile, index) => (
         <button
           key={profile.name}
@@ -80,9 +81,9 @@ export function ProfileStrip({ profiles, selected, onSelect }: ProfileStripProps
   if (!wide) return group;
   return (
     <div className="profile-strip-row">
-      <IconButton icon="chevron-left" label="Previous profiles" onClick={() => page(-1)} />
+      <IconButton icon="chevron-left" label={t('auth.strip.previous')} onClick={() => page(-1)} />
       {group}
-      <IconButton icon="chevron-right" label="Next profiles" onClick={() => page(1)} />
+      <IconButton icon="chevron-right" label={t('auth.strip.next')} onClick={() => page(1)} />
     </div>
   );
 }

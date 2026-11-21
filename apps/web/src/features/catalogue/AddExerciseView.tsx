@@ -8,13 +8,15 @@ import { Icon } from '../../app/icons.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
-import { counted } from '../../app/plural.ts';
 import { orderedFamilies } from '../exercises/next-step.ts';
 import './catalogue.css';
+import { listText, t } from '../../app/i18n.ts';
 
 type Filters = { family: string; q: string; collection: string; track: string };
 
-const NO_FILTERS: Filters = { family: 'All', q: '', collection: '', track: '' };
+const ALL = '';
+
+const NO_FILTERS: Filters = { family: ALL, q: '', collection: '', track: '' };
 
 const MINUTE_MS = 60000;
 
@@ -22,7 +24,7 @@ function matches(entry: CatalogueListEntry, filters: Filters): boolean {
   const q = filters.q.trim().toLowerCase();
   const text = [entry.code, entry.name, entry.track, entry.car, entry.collection, entry.family].filter(Boolean).join(' ').toLowerCase();
   return (
-    (filters.family === 'All' || entry.family === filters.family) &&
+    (filters.family === ALL || entry.family === filters.family) &&
     (!filters.collection || entry.collection === filters.collection) &&
     (!filters.track || entry.track === filters.track) &&
     (!q || text.includes(q))
@@ -38,12 +40,12 @@ function targetTime(ms: number): string {
 }
 
 function targetsText(entry: CatalogueListEntry): string {
-  if (!entry.targets) return 'Not listed';
-  return `Gold ${targetTime(entry.targets.goldMs)} · Silver ${targetTime(entry.targets.silverMs)} · Bronze ${targetTime(entry.targets.bronzeMs)}`;
+  if (!entry.targets) return t('exercises.add.not-listed');
+  return t('exercises.add.targets', { gold: targetTime(entry.targets.goldMs), silver: targetTime(entry.targets.silverMs), bronze: targetTime(entry.targets.bronzeMs) });
 }
 
 function sourcesText(sources: CatalogueSource[]): string {
-  return `Sources: ${sources.map(source => `${source.name} (${source.licence})`).join(' and ')}.`;
+  return t('exercises.add.sources', { sources: listText(sources.map(source => t('exercises.add.source', { name: source.name, licence: source.licence })), 'conjunction') });
 }
 
 function useOpenExercise() {
@@ -61,8 +63,8 @@ function EntryAction({ entry, onProblem }: { entry: CatalogueListEntry; onProble
   const [busy, setBusy] = useState(false);
   if (entry.exerciseId) {
     return (
-      <Link to={paths.exercise(entry.exerciseId)} className="add-action added" label={`Added · open ${entry.name}`}>
-        Added · open
+      <Link to={paths.exercise(entry.exerciseId)} className="add-action added" label={t('exercises.add.added-label', { name: entry.name })}>
+        {t('exercises.add.added')}
       </Link>
     );
   }
@@ -77,8 +79,8 @@ function EntryAction({ entry, onProblem }: { entry: CatalogueListEntry; onProble
     }
   };
   return (
-    <button type="button" className="add-action" aria-label={`Add ${entry.name}`} disabled={busy} onClick={() => void add()}>
-      Add
+    <button type="button" className="add-action" aria-label={t('exercises.add.add-label', { name: entry.name })} disabled={busy} onClick={() => void add()}>
+      {t('exercises.add.add')}
     </button>
   );
 }
@@ -93,7 +95,7 @@ function EntryRow({ entry, onProblem }: { entry: CatalogueListEntry; onProblem(p
         </span>
       </td>
       <td>
-        {entry.track ?? 'Track not tagged'}
+        {entry.track ?? t('exercises.add.no-track')}
         {entry.car ? <span className="sub entry-car">{entry.car}</span> : null}
       </td>
       <td className="entry-targets">{targetsText(entry)}</td>
@@ -112,7 +114,7 @@ function OwnExercise() {
   const create = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim() || !family.trim()) {
-      setProblem('Enter an activity and a name.');
+      setProblem(t('exercises.add.own-empty'));
       return;
     }
     try {
@@ -122,19 +124,19 @@ function OwnExercise() {
     }
   };
   return (
-    <form className="panel own-exercise" onSubmit={create} aria-label="Your own exercise" noValidate>
-      <h2>Your own exercise</h2>
-      <p className="sub">For an exercise that the catalogue does not list, such as a Time Trial on one layout.</p>
+    <form className="panel own-exercise" onSubmit={create} aria-label={t('exercises.add.own-label')} noValidate>
+      <h2>{t('exercises.add.own-label')}</h2>
+      <p className="sub">{t('exercises.add.own-text')}</p>
       <div className="field-pair">
         <div className="field">
-          <label htmlFor="own-family">Activity</label>
+          <label htmlFor="own-family">{t('exercises.add.activity')}</label>
           <input id="own-family" value={family} onChange={event => setFamily(event.target.value)} />
         </div>
         <div className="field">
-          <label htmlFor="own-name">Name</label>
+          <label htmlFor="own-name">{t('exercises.add.name')}</label>
           <input id="own-name" value={name} onChange={event => setName(event.target.value)} />
         </div>
-        <IconButton icon="check" label="Create exercise" type="submit" />
+        <IconButton icon="check" label={t('exercises.add.create')} type="submit" />
       </div>
       {problem ? (
         <p className="error" role="alert">
@@ -152,48 +154,48 @@ export function AddExerciseView() {
   const [problem, setProblem] = useState<string | null>(null);
   const all = useMemo(() => entries.data ?? [], [entries.data]);
   const families = useMemo(() => orderedFamilies(all.map(entry => entry.family)), [all]);
-  const pool = useMemo(() => all.filter(entry => filters.family === 'All' || entry.family === filters.family), [all, filters.family]);
+  const pool = useMemo(() => all.filter(entry => filters.family === ALL || entry.family === filters.family), [all, filters.family]);
   const rows = useMemo(() => all.filter(entry => matches(entry, filters)), [all, filters]);
   const set = (change: Partial<Filters>) => setFilters(current => ({ ...current, ...change }));
 
   if (entries.error) return <p className="error">{errorText(entries.error)}</p>;
   return (
     <section className="add-exercise" aria-labelledby="add-exercise-title">
-      <nav className="breadcrumb" aria-label="Breadcrumb">
-        <Link to={paths.exercises()}>Exercises</Link> / Add
+      <nav className="breadcrumb" aria-label={t('common.breadcrumb')}>
+        <Link to={paths.exercises()}>{t('exercises.breadcrumb.exercises')}</Link> / {t('exercises.add.breadcrumb')}
       </nav>
-      <h1 id="add-exercise-title">Add an exercise</h1>
-      <p className="lede">{counted(all.length, 'exercise')} from the catalogue. Find the one that the game shows, then add it to your exercises.</p>
+      <h1 id="add-exercise-title">{t('exercises.add.title')}</h1>
+      <p className="lede">{t('exercises.add.lede', { count: all.length })}</p>
       <div className="add-filters">
         <label className="search-field">
           <Icon name="search" size={18} />
-          <span className="visually-hidden">Search</span>
+          <span className="visually-hidden">{t('exercises.add.search')}</span>
           <input
             type="search"
             value={filters.q}
-            placeholder="Name, track, car or code, for example B-3"
+            placeholder={t('exercises.add.search-hint')}
             onChange={event => set({ q: event.target.value })}
           />
         </label>
         <div className="catalogue-selects">
-          <select className="input" aria-label="Collection" value={filters.collection} onChange={event => set({ collection: event.target.value })}>
-            <option value="">All collections</option>
+          <select className="input" aria-label={t('exercises.add.collection')} value={filters.collection} onChange={event => set({ collection: event.target.value })}>
+            <option value="">{t('exercises.add.all-collections')}</option>
             {unique(pool.map(entry => entry.collection)).map(value => (
               <option key={value}>{value}</option>
             ))}
           </select>
-          <select className="input" aria-label="Track" value={filters.track} onChange={event => set({ track: event.target.value })}>
-            <option value="">All tracks</option>
+          <select className="input" aria-label={t('exercises.add.track')} value={filters.track} onChange={event => set({ track: event.target.value })}>
+            <option value="">{t('exercises.add.all-tracks')}</option>
             {unique(pool.map(entry => entry.track)).map(value => (
               <option key={value}>{value}</option>
             ))}
           </select>
         </div>
         <span className="sub catalogue-count" aria-live="polite">
-          {entries.loading && !entries.data ? 'Reading the catalogue…' : `${rows.length} shown`}
+          {entries.loading && !entries.data ? t('exercises.add.reading') : t('exercises.add.shown', { count: rows.length })}
         </span>
-        <div className="filters" role="group" aria-label="Family">
-          {['All', ...families].map(family => (
+        <div className="filters" role="group" aria-label={t('exercises.add.family')}>
+          {[ALL, ...families].map(family => (
             <button
               key={family}
               type="button"
@@ -201,7 +203,7 @@ export function AddExerciseView() {
               aria-pressed={filters.family === family}
               onClick={() => set({ family, collection: '', track: '' })}
             >
-              {family}
+              {family === ALL ? t('exercises.add.all') : family}
             </button>
           ))}
         </div>
@@ -213,14 +215,14 @@ export function AddExerciseView() {
       ) : null}
       {!entries.data ? null : rows.length ? (
         <div className="catalogue-list">
-          <table aria-label="Catalogue exercises">
+          <table aria-label={t('exercises.add.table')}>
             <thead>
               <tr>
-                <th scope="col">Exercise</th>
-                <th scope="col">Track and car</th>
-                <th scope="col">Medal targets</th>
+                <th scope="col">{t('exercises.add.exercise')}</th>
+                <th scope="col">{t('exercises.add.track-and-car')}</th>
+                <th scope="col">{t('exercises.add.medal-targets')}</th>
                 <th scope="col">
-                  <span className="visually-hidden">Action</span>
+                  <span className="visually-hidden">{t('exercises.add.action')}</span>
                 </th>
               </tr>
             </thead>
@@ -233,16 +235,17 @@ export function AddExerciseView() {
         </div>
       ) : (
         <div className="panel empty">
-          <p>No exercise matches.</p>
-          <p className="sub">Check the spelling, or clear the filters.</p>
+          <p>{t('exercises.add.no-match')}</p>
+          <p className="sub">{t('exercises.add.no-match-hint')}</p>
           <button className="btn inline ghost" type="button" onClick={() => setFilters(NO_FILTERS)}>
-            Clear filters
+            {t('exercises.add.clear')}
           </button>
         </div>
       )}
       <OwnExercise />
       <p className="sub catalogue-sources">
-        {info.data ? `${sourcesText(info.data.sources)} ` : ''}A catalogue entry does not mean that GT7 Tutor supports the exercise.
+        {info.data ? `${sourcesText(info.data.sources)} ` : ''}
+        {t('exercises.add.no-support')}
       </p>
     </section>
   );

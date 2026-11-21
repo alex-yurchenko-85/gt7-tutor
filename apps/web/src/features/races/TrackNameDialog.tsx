@@ -4,6 +4,7 @@ import { api } from '../../api/client.ts';
 import { ConfirmDialog } from '../../app/ConfirmDialog.tsx';
 import { RadioGroup } from '../../app/RadioGroup.tsx';
 import { errorText } from '../../app/resource.ts';
+import { t } from '../../app/i18n.ts';
 
 const MAX_CANDIDATES = 5;
 const MAX_NAME = 80;
@@ -35,29 +36,29 @@ export function TrackNameDialog({ race, onKeep, onSaved }: TrackNameDialogProps)
 
   return (
     <ConfirmDialog
-      title="Name the track"
+      title={t('races.name.title')}
       role="dialog"
       confirmTone="primary"
-      keepLabel="Cancel"
-      confirmLabel="Save the name"
+      keepLabel={t('common.cancel')}
+      confirmLabel={t('races.name.save')}
       working={working}
       confirmDisabled={name.length === 0}
       error={error}
       onKeep={onKeep}
       onConfirm={save}
     >
-      <p id={labelId}>Track</p>
+      <p id={labelId}>{t('races.name.track')}</p>
       <RadioGroup<number>
         className="track-choices"
         labelledBy={labelId}
         value={choice}
         onChange={setChoice}
-        options={[...candidates.map((candidate, index) => ({ value: index, content: candidate })), { value: another, content: 'Another name' }]}
+        options={[...candidates.map((candidate, index) => ({ value: index, content: candidate })), { value: another, content: t('races.name.another') }]}
       />
       {choice === another ? (
         <>
           <label className="confirm-field" htmlFor={fieldId}>
-            Another name
+            {t('races.name.another')}
           </label>
           <input id={fieldId} className="confirm-input" type="text" maxLength={MAX_NAME} autoComplete="off" value={typed} onChange={event => setTyped(event.target.value)} />
         </>

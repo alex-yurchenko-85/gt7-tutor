@@ -1,5 +1,5 @@
 import { rm } from 'node:fs/promises';
-import { Inject, Injectable, Logger, ServiceUnavailableException, type BeforeApplicationShutdown } from '@nestjs/common';
+import { Inject, Injectable, Logger, type BeforeApplicationShutdown } from '@nestjs/common';
 import type { LiveRace, RecordRaceResponse, Sample, StopRaceResponse } from '@gt7/contracts';
 import { DEFAULT_CONFIG, analyseRace } from '@gt7/core';
 import type { Knex } from 'knex';
@@ -7,7 +7,7 @@ import { CaptureService } from '../captures/capture.service.js';
 import { SampleCache } from '../captures/sample-cache.js';
 import { CatalogueService } from '../catalogue/catalogue.service.js';
 import { MONO_CLOCK, type MonoClock } from '../clock/mono-clock.js';
-import { conflict } from '../http-errors.js';
+import { httpError } from '../http-errors.js';
 import { LiveHub } from '../live/live-hub.service.js';
 import type { CaptureRow } from '../ownership/owned.js';
 import { KNEX } from '../storage/knex.provider.js';
@@ -85,8 +85,8 @@ export class RaceRecorder implements BeforeApplicationShutdown {
   }
 
   async record(userId: string): Promise<RecordRaceResponse> {
-    if (this.stopping) throw new ServiceUnavailableException({ code: 'shutting-down', reason: 'The server is stopping.' });
-    if (this.recording) throw conflict('busy', 'A capture or training is already active.');
+    if (this.stopping) throw httpError(503, 'shutting-down');
+    if (this.recording) throw httpError(409, 'busy');
     const reservation = this.captures.reserve();
     const recording: Recording = {
       userId,
@@ -118,7 +118,7 @@ export class RaceRecorder implements BeforeApplicationShutdown {
   stop(userId: string): Promise<StopRaceResponse> {
     const recording = this.recording;
     if (!recording || recording.userId !== userId || recording.captureId === null) {
-      return Promise.reject(conflict('not-recording', 'No race recording runs for this profile.'));
+      return Promise.reject(httpError(409, 'not-recording'));
     }
     return this.end(recording);
   }

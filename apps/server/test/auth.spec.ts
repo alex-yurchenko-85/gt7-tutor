@@ -48,19 +48,19 @@ describe('profiles and sessions', () => {
     const cookie = await firstProfile();
     const state = await http().get('/api/auth/state').set('Cookie', cookie).expect(200);
     expect(state.body).toEqual({ hasUsers: true, user: { id: expect.any(String), name: 'Driver' } });
-    await http().post('/api/auth/first-profile').send({ name: 'Other', password: 'another password' }).expect(409);
+    expect((await http().post('/api/auth/first-profile').send({ name: 'Other', password: 'another password' }).expect(409)).body).toEqual({ code: 'profile-exists' });
   });
 
   it('profiles_need_session', async () => {
     await firstProfile();
-    await http().post('/api/profiles').send({ name: 'Second', password: 'second password' }).expect(401);
+    expect((await http().post('/api/profiles').send({ name: 'Second', password: 'second password' }).expect(401)).body).toEqual({ code: 'sign-in-required' });
   });
 
   it('signed_in_user_creates_profile', async () => {
     const cookie = await firstProfile();
     const response = await http().post('/api/profiles').set('Cookie', cookie).send({ name: 'Second', password: 'second password' }).expect(201);
     expect(response.body).toEqual({ user: { id: expect.any(String), name: 'Second' } });
-    await http().post('/api/profiles').set('Cookie', cookie).send({ name: 'Second', password: 'second password' }).expect(409);
+    expect((await http().post('/api/profiles').set('Cookie', cookie).send({ name: 'Second', password: 'second password' }).expect(409)).body).toEqual({ code: 'profile-name-taken' });
   });
 
   it('profiles_list_needs_no_session_and_shows_names_only', async () => {
@@ -97,10 +97,11 @@ describe('profiles and sessions', () => {
     await firstProfile();
     const response = await http().post('/api/auth/sign-in').send({ ...credentials, password: 'wrong password' }).expect(401);
     expect(response.headers['set-cookie']).toBeUndefined();
+    expect(response.body).toEqual({ code: 'wrong-name-or-password' });
   });
 
   it('invalid_body_is_400', async () => {
-    await http().post('/api/auth/first-profile').send({ name: '', password: 'short' }).expect(400);
+    expect((await http().post('/api/auth/first-profile').send({ name: '', password: 'short' }).expect(400)).body).toEqual({ code: 'invalid-request' });
     await http().post('/api/auth/first-profile').send({ name: 'x'.repeat(41), password: 'long enough' }).expect(400);
   });
 
@@ -109,7 +110,7 @@ describe('profiles and sessions', () => {
     for (let attempt = 0; attempt < 5; attempt++) {
       await http().post('/api/auth/sign-in').send({ ...credentials, password: 'wrong password' }).expect(401);
     }
-    await http().post('/api/auth/sign-in').send({ ...credentials, password: 'wrong password' }).expect(429);
+    expect((await http().post('/api/auth/sign-in').send({ ...credentials, password: 'wrong password' }).expect(429)).body).toEqual({ code: 'too-many-sign-ins' });
     await http().post('/api/auth/sign-in').send(credentials).expect(429);
   });
 
@@ -122,7 +123,7 @@ describe('profiles and sessions', () => {
 
   it('foreign_origin_mutation_is_rejected', async () => {
     await firstProfile();
-    await http().post('/api/auth/sign-in').set('Origin', 'http://evil.example').send(credentials).expect(403);
+    expect((await http().post('/api/auth/sign-in').set('Origin', 'http://evil.example').send(credentials).expect(403)).body).toEqual({ code: 'cross-site' });
     await http().post('/api/auth/sign-in').set('Host', 'gt7.local:3000').set('Origin', 'http://gt7.local:3000').send(credentials).expect(200);
   });
 

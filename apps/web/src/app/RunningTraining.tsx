@@ -3,15 +3,23 @@ import { errorText } from './resource.ts';
 import { useWideLayout } from './layout.ts';
 import { Link, paths, useRouter } from './router.tsx';
 import { useTraining, type Training } from './use-training.ts';
+import { t } from './i18n.ts';
+
+function runningHead(training: Training): string {
+  const name = training.exerciseName;
+  const number = training.attemptNumber;
+  if (number === null) return name ? t('app.training.bar.attempt-runs-named', { name }) : t('app.training.bar.attempt-runs');
+  return name ? t('app.training.bar.attempt-number-runs-named', { number, name }) : t('app.training.bar.attempt-number-runs', { number });
+}
 
 function barText(training: Training, wide: boolean): string {
-  const name = training.exerciseName ? `: ${training.exerciseName}` : '';
+  const name = training.exerciseName;
   if (training.running) {
-    const head = training.attemptNumber === null ? `An attempt runs${name}.` : `Attempt ${training.attemptNumber} runs${name}.`;
-    return wide ? `${head} Stop training ends it without a time.` : head;
+    const head = runningHead(training);
+    return wide ? `${head} ${t('app.training.bar.running-hint')}` : head;
   }
-  const head = `The training is on${name}.`;
-  return wide ? `${head} Restart the exercise in GT7 to drive the next attempt.` : head;
+  const head = name ? t('app.training.bar.on-named', { name }) : t('app.training.bar.on');
+  return wide ? `${head} ${t('app.training.bar.on-hint')}` : head;
 }
 
 export function RunningTraining() {
@@ -35,16 +43,16 @@ export function RunningTraining() {
   };
 
   return (
-    <div className="running-bar" role="status" aria-label="Training">
+    <div className="running-bar" role="status" aria-label={t('app.training.bar.label')}>
       <span className="running-bar-text">{barText(training, wide)}</span>
       <div className="running-bar-actions">
         {training.exerciseId ? (
           <Link to={paths.drive(training.exerciseId)} className="btn ghost inline">
-            Open Drive
+            {t('app.training.bar.open-drive')}
           </Link>
         ) : null}
         <button className="btn inline" type="button" onClick={() => void stop()} disabled={busy}>
-          Stop training
+          {t('app.training.bar.stop')}
         </button>
       </div>
       {problem ? (

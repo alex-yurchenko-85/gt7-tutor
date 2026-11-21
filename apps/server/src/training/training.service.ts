@@ -1,10 +1,10 @@
-import { Inject, Injectable, Logger, ServiceUnavailableException, type BeforeApplicationShutdown, type OnModuleInit } from '@nestjs/common';
+import { HttpException, Inject, Injectable, Logger, type BeforeApplicationShutdown, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { ArmResponse, ArmTrainingRequest, ConnectionState, CueOutcome, LiveMode } from '@gt7/contracts';
+import { ENGLISH, type ArmResponse, type ArmTrainingRequest, type ConnectionState, type CueOutcome, type LiveMode } from '@gt7/contracts';
 import { ACTIVE_GUIDANCE, DEFAULT_CONFIG, makeCue, type CoachSettings, type Cue, type Finding } from '@gt7/core';
 import type { Knex } from 'knex';
 import { CaptureService, type CaptureReservation } from '../captures/capture.service.js';
-import { conflict } from '../http-errors.js';
+import { httpError } from '../http-errors.js';
 import { dropOldest } from '../drop-oldest.js';
 import { LiveHub, type ProfileState } from '../live/live-hub.service.js';
 import { ownedExercise, type ReferenceRow } from '../ownership/owned.js';
@@ -35,8 +35,8 @@ type PendingArm = { userId: string; referenceId: string; done: Promise<ArmRespon
 
 type EndedCue = { userId: string; record: CueRecord; attemptId: string | null };
 
-function shuttingDown(): ServiceUnavailableException {
-  return new ServiceUnavailableException({ code: 'shutting-down', reason: 'The server is stopping.' });
+function shuttingDown(): HttpException {
+  return httpError(503, 'shutting-down');
 }
 
 @Injectable()
@@ -60,7 +60,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     private readonly races: RaceRecorder,
     config: ConfigService
   ) {
-    this.phraseMs = phraseDurations(config.getOrThrow<string>('AUDIO_DIR'));
+    this.phraseMs = phraseDurations(config.getOrThrow<string>('AUDIO_DIR'), ENGLISH.lang);
     this.watchdog = setInterval(() => this.watch(), WATCHDOG_INTERVAL_MS);
   }
 
@@ -85,8 +85,8 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
   async arm(userId: string, request: ArmTrainingRequest): Promise<ArmResponse> {
     if (this.stopping) throw shuttingDown();
     const exercise = await ownedExercise(this.db, userId, request.exerciseId);
-    if (this.training || this.races.busy) throw conflict('busy', 'A capture or training is already active.');
-    if (!exercise.active_reference_id) throw conflict('no-reference', 'Record and confirm a reference first.');
+    if (this.training || this.races.busy) throw httpError(409, 'busy');
+    if (!exercise.active_reference_id) throw httpError(409, 'no-reference');
     const done = this.start({
       userId,
       request,
@@ -175,7 +175,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
 
   private async beforeReferenceDelete(userId: string, referenceId: string): Promise<void> {
     const uses = [this.training?.session.snapshot, this.pendingArm].some(use => use?.userId === userId && use.referenceId === referenceId);
-    if (uses) throw conflict('reference-in-use', 'A training uses this reference. Stop the training first.');
+    if (uses) throw httpError(409, 'reference-in-training');
     await this.storing;
   }
 
@@ -213,7 +213,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
   }
 
   private ownTraining(userId: string): Training {
-    if (!this.training || this.training.userId !== userId) throw conflict('not-armed', 'No training runs for this profile.');
+    if (!this.training || this.training.userId !== userId) throw httpError(409, 'not-armed');
     return this.training;
   }
 

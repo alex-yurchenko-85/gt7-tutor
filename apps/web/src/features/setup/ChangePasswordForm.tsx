@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { api, ApiError } from '../../api/client.ts';
 import { errorText } from '../../app/resource.ts';
+import { t } from '../../app/i18n.ts';
 
 const MIN_PASSWORD_LENGTH = 8;
 
 function changeError(error: unknown): string {
-  if (error instanceof ApiError && error.status === 403) return 'The current password is not correct.';
-  if (error instanceof ApiError && error.status === 429) return 'Too many wrong passwords. Wait 15 minutes, then try again.';
+  if (error instanceof ApiError && error.status === 403) return t('setup.password.wrong');
+  if (error instanceof ApiError && error.status === 429) return t('setup.password.too-many');
   return errorText(error);
 }
 
@@ -20,11 +21,11 @@ export function ChangePasswordForm({ onChanged, onCancel }: { onChanged(): void;
     event.preventDefault();
     setProblem(null);
     if (!currentPassword) {
-      setProblem('Enter the current password.');
+      setProblem(t('setup.password.no-current'));
       return;
     }
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
-      setProblem('The new password needs at least 8 characters.');
+      setProblem(t('setup.password.short'));
       return;
     }
     setBusy(true);
@@ -41,12 +42,12 @@ export function ChangePasswordForm({ onChanged, onCancel }: { onChanged(): void;
   return (
     <form className="pref" id="change-password" aria-labelledby="change-password-title" onSubmit={submit} noValidate>
       <span className="pref-text">
-        <span id="change-password-title">Change password</span>
-        <span className="sub">Other devices signed in to this profile are signed out. This device stays signed in.</span>
+        <span id="change-password-title">{t('setup.password.title')}</span>
+        <span className="sub">{t('setup.password.text')}</span>
       </span>
       <div className="pref-control">
         <div className="field">
-          <label htmlFor="current-password">Current password</label>
+          <label htmlFor="current-password">{t('setup.password.current')}</label>
           <input
             id="current-password"
             type="password"
@@ -56,7 +57,7 @@ export function ChangePasswordForm({ onChanged, onCancel }: { onChanged(): void;
           />
         </div>
         <div className="field">
-          <label htmlFor="new-password">New password</label>
+          <label htmlFor="new-password">{t('setup.password.new')}</label>
           <input
             id="new-password"
             type="password"
@@ -66,7 +67,7 @@ export function ChangePasswordForm({ onChanged, onCancel }: { onChanged(): void;
             onChange={event => setNewPassword(event.target.value)}
           />
           <span className="sub" id="new-password-hint">
-            At least 8 characters.
+            {t('setup.profiles.password-hint')}
           </span>
         </div>
         {problem ? (
@@ -76,10 +77,10 @@ export function ChangePasswordForm({ onChanged, onCancel }: { onChanged(): void;
         ) : null}
         <div className="form-actions">
           <button className="btn" type="submit" disabled={busy}>
-            Save
+            {t('setup.password.save')}
           </button>
           <button className="btn ghost" type="button" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       </div>

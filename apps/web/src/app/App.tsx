@@ -9,6 +9,7 @@ import { errorText, useResource } from './resource.ts';
 import { RouterProvider } from './router.tsx';
 import { SessionContext, type Session } from './session.tsx';
 import { Shell } from './Shell.tsx';
+import { t } from './i18n.ts';
 
 type AppProps = { socketFactory?: SocketFactory; player?: VoicePlayer };
 
@@ -34,8 +35,8 @@ export function App({ socketFactory, player }: AppProps) {
     return (
       <div className="auth">
         <div className="panel">
-          <h1>The server did not answer</h1>
-          <p className="lede">Check that GT7 Tutor is running on the computer, then reload this page.</p>
+          <h1>{t('app.no-server.title')}</h1>
+          <p className="lede">{t('app.no-server.text')}</p>
           <p className="sub">{errorText(auth.error)}</p>
         </div>
       </div>

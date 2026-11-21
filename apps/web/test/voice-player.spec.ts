@@ -150,4 +150,63 @@ describe('voice player', () => {
     const player = failingPlayer(async () => ({ ok: false, json: async () => ({}), arrayBuffer: async () => new ArrayBuffer(0) }));
     await expect(player.preload(['brake-80'])).rejects.toThrow(CLIPS_TEXT);
   });
+
+  it('plays_the_english_clips_from_the_english_folder', async () => {
+    const urls: string[] = [];
+    const ok = audioFetch();
+    const player = failingPlayer(async url => {
+      urls.push(url);
+      return ok(url);
+    });
+    await player.preload(['hard-brake']);
+    expect(urls).toEqual(['/audio/en/manifest.json', '/audio/en/clips/hard-brake.wav']);
+  });
+
+  it('takes_a_clip_of_the_language_and_the_english_clip_where_the_language_has_none', async () => {
+    const urls: string[] = [];
+    const ru = { schemaVersion: 1, clips: { 'hard-brake': { file: 'clips/hard-brake.wav', durationMs: 900 } } };
+    const english = audioFetch();
+    const player = new VoicePlayer({
+      createContext: () => new FakeAudio(),
+      now: () => 0,
+      report: () => undefined,
+      language: 'ru',
+      fetch: async url => {
+        urls.push(url);
+        return url === '/audio/ru/manifest.json' ? { ok: true, json: async () => ru, arrayBuffer: async () => new ArrayBuffer(0) } : english(url);
+      }
+    });
+    await player.preload(['hard-brake', 'speed-85']);
+    expect(urls.filter(url => url.endsWith('.wav')).sort()).toEqual(['/audio/en/clips/speed-85.wav', '/audio/ru/clips/hard-brake.wav']);
+  });
+
+  it('a_language_without_clips_keeps_the_english_voice', async () => {
+    const urls: string[] = [];
+    const english = audioFetch();
+    const player = new VoicePlayer({
+      createContext: () => new FakeAudio(),
+      now: () => 0,
+      report: () => undefined,
+      language: 'ru',
+      fetch: async url => {
+        urls.push(url);
+        return url.startsWith('/audio/ru/') ? { ok: false, json: async () => ({}), arrayBuffer: async () => new ArrayBuffer(0) } : english(url);
+      }
+    });
+    await player.preload(['hard-brake']);
+    expect(urls.filter(url => url.endsWith('.wav'))).toEqual(['/audio/en/clips/hard-brake.wav']);
+  });
+
+  it('a_rejected_download_shows_the_one_clips_text', async () => {
+    const offline = failingPlayer(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+    await expect(offline.preload(['brake-80'])).rejects.toThrow(CLIPS_TEXT);
+    const ok = audioFetch();
+    const clipOffline = failingPlayer(async url => {
+      if (url.endsWith('manifest.json')) return ok(url);
+      throw new TypeError('Failed to fetch');
+    });
+    await expect(clipOffline.preload(['brake-80'])).rejects.toThrow(CLIPS_TEXT);
+  });
 });

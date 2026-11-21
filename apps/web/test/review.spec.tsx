@@ -591,7 +591,7 @@ describe('attempt review', () => {
   it('promote_refused_as_not_complete_shows_the_error', async () => {
     const api = reviewApi().on(`POST /api/attempts/${ATTEMPT_ID}/promote`, {
       status: 409,
-      body: { code: 'not-complete', reason: 'Only a complete attempt can become a reference.' }
+      body: { code: 'not-complete' }
     });
     renderApp({ path: REVIEW_PATH });
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Use this attempt as a reference' }));
@@ -665,7 +665,7 @@ describe('attempt review', () => {
   });
 
   it('review_shows_without_the_exercise', async () => {
-    reviewApi().on(`GET /api/exercises/${EXERCISE_ID}`, { status: 500, body: { message: 'Server problem' } });
+    reviewApi().on(`GET /api/exercises/${EXERCISE_ID}`, { status: 500, body: { code: 'server-error' } });
     renderApp({ path: REVIEW_PATH });
     expect(await screen.findByRole('heading', { name: /^Attempt \d+ · / })).toBeInTheDocument();
     expect(await screen.findByRole('slider', { name: 'Speed, km/h' })).toBeInTheDocument();

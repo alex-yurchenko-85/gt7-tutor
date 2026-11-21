@@ -1,7 +1,9 @@
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { parseArgs } from 'node:util';
+import { ENGLISH, packCatalog, type LanguagePack } from '@gt7/contracts';
 import { allClipKeys, clipText } from '@gt7/core';
 
 const MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
@@ -20,8 +22,17 @@ type KokoroModule = {
 };
 
 const toolDir = resolve('tools/audio');
-const audioDir = resolve('content/audio');
+const { values } = parseArgs({ options: { lang: { type: 'string', default: ENGLISH.lang } } });
+const lang = values.lang;
+const audioDir = resolve('content/audio', lang);
 const clipDir = join(audioDir, 'clips');
+
+function packOf(language: string): LanguagePack {
+  if (language === ENGLISH.lang) return ENGLISH;
+  const path = resolve('packages/contracts/locales', language, 'voice.json');
+  if (!existsSync(path)) throw new Error(`No voice pack for ${language}: ${path} is missing`);
+  return { lang: language, messages: {}, voice: packCatalog(JSON.parse(readFileSync(path, 'utf8'))) };
+}
 
 async function loadKokoro(): Promise<KokoroModule> {
   if (!existsSync(join(toolDir, 'node_modules'))) {
@@ -86,12 +97,13 @@ function removeStaleClips(keep: Set<string>): void {
 }
 
 async function main(): Promise<void> {
+  const pack = packOf(lang);
   const { KokoroTTS } = await loadKokoro();
   const tts = await KokoroTTS.from_pretrained(MODEL_ID, { dtype: 'fp32', device: 'cpu' });
   mkdirSync(clipDir, { recursive: true });
   const clips: Record<string, { file: string; durationMs: number }> = {};
   for (const key of allClipKeys()) {
-    const text = clipText(key);
+    const text = clipText(pack, key);
     const speech = await tts.generate(text, { voice: VOICE, speed: SPEED });
     const clip = prepareClip(speech);
     const file = `clips/${key}.wav`;

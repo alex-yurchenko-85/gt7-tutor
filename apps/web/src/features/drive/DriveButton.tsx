@@ -2,21 +2,22 @@ import type { ReactNode } from 'react';
 import { ConfirmDialog } from '../../app/ConfirmDialog.tsx';
 import { useStartDrive, type DriveStart } from './start-drive.ts';
 import './drive-button.css';
+import { t } from '../../app/i18n.ts';
 
 export function StartDialog({ drive }: { drive: DriveStart }) {
   if (!drive.asking) return null;
   return (
     <ConfirmDialog
-      title={`The training of ${drive.trainingName} is on.`}
-      keepLabel="Cancel"
-      confirmLabel="Stop and start"
+      title={drive.trainingName === null ? t('drive.button.training-on-other') : t('drive.button.training-on', { name: drive.trainingName })}
+      keepLabel={t('common.cancel')}
+      confirmLabel={t('drive.button.stop-and-start')}
       confirmTone="primary"
       working={drive.busy}
       error={drive.problem}
       onKeep={drive.cancel}
       onConfirm={drive.confirm}
     >
-      <p>Stop it and start this exercise?</p>
+      <p>{t('drive.button.question')}</p>
     </ConfirmDialog>
   );
 }
@@ -49,7 +50,7 @@ export function DriveButton({ exerciseId, referenceId }: { exerciseId: string; r
   return (
     <div className="drive-action">
       <DriveAction exerciseId={exerciseId} referenceId={referenceId} className="btn yellow drive-button">
-        Drive
+        {t('drive.button')}
       </DriveAction>
     </div>
   );

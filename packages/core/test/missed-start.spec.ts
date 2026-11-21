@@ -1,4 +1,4 @@
-import type { Sample } from '@gt7/contracts';
+import { ENGLISH, type Sample } from '@gt7/contracts';
 import { describe, expect, it } from 'vitest';
 import type { CoachSettings } from '../src/coach.ts';
 import { DEFAULT_CONFIG } from '../src/config.ts';
@@ -8,9 +8,11 @@ import { TrainingRun } from '../src/training-run.ts';
 import { samplesOf, type FixtureName } from './fixtures.ts';
 import { interlagosAnalysis } from './paths.ts';
 
+const englishPhraseMs = (clip: string) => estimatedPhraseMs(ENGLISH, clip);
+
 const settings: CoachSettings = { mutedKeys: new Set(), speakTargets: false, offsetsMs: new Map(), sideCueDistanceM: null };
 
-const now = { deviceDelayMs: 60, phraseMs: estimatedPhraseMs };
+const now = { deviceDelayMs: 60, phraseMs: englishPhraseMs };
 
 type Prompts = { ranges: [number, number][]; starts: number[] };
 

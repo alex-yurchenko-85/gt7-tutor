@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import type { ProfileCredentials } from '@gt7/contracts';
 import { ApiError } from '../../api/client.ts';
+import { t } from '../../app/i18n.ts';
 
 type ProfileFormProps = {
   submitLabel: string;
@@ -34,11 +35,11 @@ export function ProfileForm({ submitLabel, passwordHint, initial, onSubmit, desc
   return (
     <form onSubmit={submit} noValidate>
       <div className="field">
-        <label htmlFor={`${id}-name`}>Name</label>
+        <label htmlFor={`${id}-name`}>{t('auth.form.name')}</label>
         <input id={`${id}-name`} autoComplete="username" value={name} maxLength={40} onChange={event => setName(event.target.value)} />
       </div>
       <div className="field">
-        <label htmlFor={`${id}-password`}>Password</label>
+        <label htmlFor={`${id}-password`}>{t('auth.form.password')}</label>
         <input
           id={`${id}-password`}
           type="password"
@@ -59,7 +60,7 @@ export function ProfileForm({ submitLabel, passwordHint, initial, onSubmit, desc
             {submitLabel}
           </button>
           <button className="btn ghost" type="button" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       ) : (
@@ -74,28 +75,28 @@ export function ProfileForm({ submitLabel, passwordHint, initial, onSubmit, desc
 export class InputProblem extends Error {}
 
 export function validateCredentials(credentials: ProfileCredentials): string | null {
-  if (!credentials.name) return 'Enter a name.';
-  if (credentials.password.length < 8) return 'The password needs at least 8 characters.';
+  if (!credentials.name) return t('auth.form.no-name');
+  if (credentials.password.length < 8) return t('auth.form.short-password');
   return null;
 }
 
 export function signInError(error: unknown): string {
   if (error instanceof InputProblem) return error.message;
   if (error instanceof ApiError) {
-    if (error.status === 401) return 'The password is wrong. Check it and try again.';
-    if (error.status === 429) return 'Too many failed sign-ins for this name. Wait 15 minutes, then try again.';
-    if (error.status === 400) return 'Enter a name and a password of at least 8 characters.';
+    if (error.status === 401) return t('auth.form.wrong-password');
+    if (error.status === 429) return t('auth.form.too-many');
+    if (error.status === 400) return t('auth.form.invalid');
     return error.message;
   }
-  return 'The server did not answer. Check that GT7 Tutor is running on the computer.';
+  return t('auth.form.no-server');
 }
 
 export function createProfileError(error: unknown): string {
   if (error instanceof InputProblem) return error.message;
   if (error instanceof ApiError) {
     if (error.status === 409) return error.message;
-    if (error.status === 400) return 'Enter a name and a password of at least 8 characters.';
+    if (error.status === 400) return t('auth.form.invalid');
     return error.message;
   }
-  return 'The server did not answer. Check that GT7 Tutor is running on the computer.';
+  return t('auth.form.no-server');
 }

@@ -15,6 +15,7 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import { ReplayFileSelection } from '../captures/telemetry-source.factory.js';
 import { CuePreviewService } from './cue-preview.service.js';
 import { TrainingService } from './training.service.js';
+import { httpError } from '../http-errors.js';
 
 @Controller()
 export class TrainingController {
@@ -44,7 +45,7 @@ export class TrainingController {
   replay(@Body({ schema: devReplaySchema }) body: DevReplayRequest): { ok: true } {
     if (!this.config.getOrThrow<boolean>('DEV_REPLAY')) throw new NotFoundException();
     const path = join(this.config.getOrThrow<string>('FIXTURES_DIR'), `${body.fixture}.ndjson`);
-    if (!existsSync(path)) throw new NotFoundException(`Fixture ${body.fixture} not found`);
+    if (!existsSync(path)) throw httpError(404, 'not-found');
     this.replayFiles.select(path);
     return { ok: true };
   }

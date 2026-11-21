@@ -147,8 +147,8 @@ describe('access', () => {
     const api = signInApi(['Driver'])
       .on('POST /api/auth/sign-in', (body: unknown) =>
         (body as { password: string }).password === 'locked out'
-          ? { status: 429, body: { statusCode: 429, message: 'Too many failed sign-in attempts. Wait 15 minutes and try again.' } }
-          : { status: 401, body: { statusCode: 401, message: 'Wrong name or password.' } }
+          ? { status: 429, body: { code: 'too-many-sign-ins' } }
+          : { status: 401, body: { code: 'wrong-name-or-password' } }
       )
       .install();
     renderApp();

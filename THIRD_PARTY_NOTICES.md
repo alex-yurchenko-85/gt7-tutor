@@ -44,7 +44,7 @@ No file in this repository contains code from another GPL project.
 
 ## Voice clips
 
-- `content/audio/clips/` contains speech generated with the Kokoro-82M model and the `af_heart` voice (Apache License 2.0). `content/audio/NOTICE.md` gives the tool, the voice and the licence.
+- `content/audio/en/clips/` contains speech generated with the Kokoro-82M model and the `af_heart` voice (Apache License 2.0). `content/audio/en/NOTICE.md` gives the tool, the voice and the licence.
 - `tools/generate-audio.ts` is an independent implementation. It copies no code.
 
 ## Fonts

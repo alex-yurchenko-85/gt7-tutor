@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { KPH_PER_MPS, type RaceOffTrack, type RaceOffTrackView, type RaceRecurringPlace } from '@gt7/contracts';
 import './charts.css';
+import { groupedMetres } from '../app/format.ts';
+import { t } from '../app/i18n.ts';
 
 type OffTrackStripProps = {
   lengthM: number;
@@ -15,23 +17,21 @@ type OffTrackStripProps = {
   box?: ReactNode;
 };
 
-const WHEELS: Record<RaceOffTrack['wheels'], string> = { 2: 'two wheels', 3: 'three wheels', 4: 'all four wheels' };
-
 export function tenMetres(value: number): string {
-  return `${(Math.round(value / 10) * 10).toLocaleString('en-GB')} m`;
+  return groupedMetres(Math.round(value / 10) * 10);
 }
 
 export function wheelsText(moment: RaceOffTrack): string {
-  return `${WHEELS[moment.wheels]} off for ${(moment.durationMs / 1000).toFixed(1)} s`;
+  return t(`charts.off-track.wheels-${moment.wheels}`, { seconds: (moment.durationMs / 1000).toFixed(1) });
 }
 
-export function speedsText(moment: RaceOffTrack, arrow = '→'): string {
-  return `${Math.round(moment.speedInMps * KPH_PER_MPS)} ${arrow} ${Math.round(moment.speedMinMps * KPH_PER_MPS)} km/h`;
+export function speedsText(moment: RaceOffTrack, spoken = false): string {
+  return t(spoken ? 'charts.off-track.speeds-spoken' : 'charts.off-track.speeds', { from: Math.round(moment.speedInMps * KPH_PER_MPS), to: Math.round(moment.speedMinMps * KPH_PER_MPS) });
 }
 
 export function momentLabel(moment: RaceOffTrack): string {
-  const at = moment.sM === null ? '' : `, ${tenMetres(moment.sM)}`;
-  return `Lap ${moment.lap}${at}: ${wheelsText(moment)}, ${speedsText(moment, 'to')}`;
+  const parts = { lap: moment.lap, wheels: wheelsText(moment), speeds: speedsText(moment, true) };
+  return moment.sM === null ? t('charts.off-track.moment', parts) : t('charts.off-track.moment-at', { ...parts, place: tenMetres(moment.sM) });
 }
 
 function share(value: number, lengthM: number): string {
@@ -113,7 +113,7 @@ export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, curs
             ))
           )}
           {laps.map(lap => (
-            <div key={lap} className="strip-row" role="group" aria-label={`Lap ${lap}`} data-lap={lap}>
+            <div key={lap} className="strip-row" role="group" aria-label={t('charts.off-track.row', { lap })} data-lap={lap}>
               <i className="strip-rule" aria-hidden="true" />
               {pitLane
                 .filter(range => range.lap === lap)

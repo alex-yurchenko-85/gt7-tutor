@@ -27,5 +27,5 @@ export function focusOf(latestFirst: Finding[][], corners: Corner[]): Focus | nu
 }
 
 export function focusSummary(focus: Focus | null): FocusSummary | null {
-  return focus ? { text: focus.text, turn: focus.turn, kind: focus.kind } : null;
+  return focus ? { kind: focus.kind, turn: focus.turn, clip: focus.clip } : null;
 }

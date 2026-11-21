@@ -1,5 +1,6 @@
 import type { RaceDetail, RaceDistances } from '@gt7/contracts';
 import { groupedMetres as metres } from '../../app/format.ts';
+import { t } from '../../app/i18n.ts';
 
 export type DistancePoint = RaceDistances['points'][number];
 
@@ -44,19 +45,19 @@ export function cursorFacts(race: RaceDetail, points: DistancePoint[] | null, tM
 }
 
 function placeText(facts: CursorFacts): string {
-  return facts.sM === null ? `Lap ${facts.lap}` : `Lap ${facts.lap} · ${metres(facts.sM)}`;
+  return facts.sM === null ? t('races.box.lap', { lap: facts.lap }) : t('races.box.lap-place', { lap: facts.lap, place: metres(facts.sM) });
 }
 
 export function positionBox(facts: CursorFacts): string[] {
-  return [placeText(facts), `Position ${facts.position}`, ...(facts.from === null ? [] : [`${facts.from} → ${facts.position} here`])];
+  return [placeText(facts), t('races.box.position', { position: facts.position }), ...(facts.from === null ? [] : [t('races.box.change', { from: facts.from, position: facts.position })])];
 }
 
 export function fuelBox(facts: CursorFacts): string[] {
-  return [placeText(facts), facts.fuel === null ? 'Fuel: no data' : `Fuel ${Math.round(facts.fuel)}`];
+  return [placeText(facts), facts.fuel === null ? t('races.box.no-fuel') : t('races.box.fuel', { fuel: Math.round(facts.fuel) })];
 }
 
 export function cursorSentence(facts: CursorFacts): string {
-  const place = facts.sM === null ? `lap ${facts.lap}` : `lap ${facts.lap}, ${metres(facts.sM)}`;
-  const change = facts.from === null ? '' : `, ${facts.position < facts.from ? 'up' : 'down'} from ${facts.from}`;
-  return `Cursor at ${place}: position ${facts.position}${change}.`;
+  const base = facts.sM === null ? 'races.cursor.lap' : 'races.cursor.place';
+  const change = facts.from === null ? '' : facts.position < facts.from ? '-up' : '-down';
+  return t(`${base}${change}`, { lap: facts.lap, place: facts.sM === null ? '' : metres(facts.sM), position: facts.position, from: facts.from ?? '' });
 }

@@ -77,7 +77,7 @@ describe('get ready', () => {
   });
 
   it('failed_check_does_not_block_the_next_step', async () => {
-    getReadyApi(null).on('POST /api/settings/connection/check', { status: 409, body: { code: 'busy', reason: 'A recording is running.' } });
+    getReadyApi(null).on('POST /api/settings/connection/check', { status: 409, body: { code: 'busy' } });
     renderApp();
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('PS5 address'), '192.168.1.40');

@@ -12,6 +12,8 @@ import { telemetryStatus } from '../../app/status.ts';
 import { LapCircles } from './LapCircles.tsx';
 import { RaceTrail } from './RaceTrail.tsx';
 import { positionCaption } from './race-text.ts';
+import { t } from '../../app/i18n.ts';
+import { Rich } from '../../app/rich-text.tsx';
 import '../drive/drive.css';
 import './race-record.css';
 
@@ -52,13 +54,13 @@ function lapsMs(race: LiveRace): number {
   return race.laps.reduce((total, lap) => total + lap.timeMs, 0);
 }
 
-type Stat = { value: string; caption: string; tone?: 'yellow'; fuel?: boolean };
+type Stat = { id: string; value: string; caption: string; tone?: 'yellow'; fuel?: boolean };
 
 function StatList({ stats, fuelBar, className = 'race-stats' }: { stats: Stat[]; fuelBar: number | null; className?: string }) {
   return (
     <div className={className}>
       {stats.map(stat => (
-        <div key={stat.caption} className={['race-stat', stat.tone, stat.fuel ? 'fuel' : ''].filter(Boolean).join(' ')}>
+        <div key={stat.id} className={['race-stat', stat.tone, stat.fuel ? 'fuel' : ''].filter(Boolean).join(' ')}>
           <b>{stat.value}</b>
           <span>{stat.caption}</span>
           {stat.fuel && fuelBar !== null ? (
@@ -74,7 +76,7 @@ function StatList({ stats, fuelBar, className = 'race-stats' }: { stats: Stat[];
 
 function livePosition(race: LiveRace): Stat[] {
   if (race.position < 1) return [];
-  return [{ value: `P ${race.position}`, caption: race.cars >= 1 ? `of ${race.cars}` : 'position' }];
+  return [{ id: 'position', value: t('races.stage.position', { position: race.position }), caption: race.cars >= 1 ? t('races.stage.of-cars', { cars: race.cars }) : t('races.stage.position-caption') }];
 }
 
 function positionStat(race: LiveRace): Stat[] {
@@ -82,11 +84,11 @@ function positionStat(race: LiveRace): Stat[] {
   if (race.startPosition === null || race.startPosition < 1) return livePosition(race);
   const lastLap = race.laps.at(-1)?.number ?? race.lap;
   const caption = positionCaption(race.firstRecordedLap ?? lastLap, lastLap, false);
-  return [{ value: `${race.startPosition} → ${race.position}`, caption }];
+  return [{ id: 'position', value: `${race.startPosition} → ${race.position}`, caption }];
 }
 
 function bestStat(race: LiveRace): Stat[] {
-  return race.bestLapMs === null ? [] : [{ value: formatTime(race.bestLapMs), caption: `best lap · lap ${race.bestLap}`, tone: 'yellow' }];
+  return race.bestLapMs === null ? [] : [{ id: 'best-lap', value: formatTime(race.bestLapMs), caption: t('races.stage.best-lap-number', { lap: race.bestLap ?? '' }), tone: 'yellow' }];
 }
 
 function statsOf(race: LiveRace): Stat[] {
@@ -95,62 +97,60 @@ function statsOf(race: LiveRace): Stat[] {
       return [];
     case 'grid':
       return [
-        { value: tenths(Math.max(0, race.lapTimeMs)), caption: 'this lap' },
+        { id: 'this-lap', value: tenths(Math.max(0, race.lapTimeMs)), caption: t('races.stage.this-lap') },
         ...livePosition(race),
-        { value: DASH, caption: 'last lap' },
-        { value: DASH, caption: 'best lap' },
-        ...(race.fuel > 0 ? [{ value: String(Math.round(race.fuel)), caption: 'fuel', fuel: true }] : [])
+        { id: 'last-lap', value: DASH, caption: t('races.stage.last-lap') },
+        { id: 'best-lap', value: DASH, caption: t('races.stage.best-lap') },
+        ...(race.fuel > 0 ? [{ id: 'fuel', value: String(Math.round(race.fuel)), caption: t('races.stage.fuel'), fuel: true }] : [])
       ];
     case 'joined':
-      return [{ value: tenths(race.lapTimeMs), caption: 'this lap' }, ...livePosition(race)];
+      return [{ id: 'this-lap', value: tenths(race.lapTimeMs), caption: t('races.stage.this-lap') }, ...livePosition(race)];
     case 'lap':
       return [
-        { value: tenths(race.lapTimeMs), caption: 'this lap' },
+        { id: 'this-lap', value: tenths(race.lapTimeMs), caption: t('races.stage.this-lap') },
         ...livePosition(race),
-        ...(race.lastLapMs === null ? [] : [{ value: formatTime(race.lastLapMs), caption: 'last lap' }]),
+        ...(race.lastLapMs === null ? [] : [{ id: 'last-lap', value: formatTime(race.lastLapMs), caption: t('races.stage.last-lap') }]),
         ...bestStat(race),
-        { value: String(Math.round(race.fuel)), caption: race.fuelLapsLeft === null ? 'fuel' : `fuel · about ${race.fuelLapsLeft.toFixed(1)} laps left`, fuel: true }
+        { id: 'fuel', value: String(Math.round(race.fuel)), caption: race.fuelLapsLeft === null ? t('races.stage.fuel') : t('races.stage.fuel-laps', { laps: race.fuelLapsLeft.toFixed(1) }), fuel: true }
       ];
     case 'finished':
       if (race.laps.length === 0) return [];
-      return [{ value: formatTime(lapsMs(race)), caption: race.firstRecordedLap === 1 ? 'race time' : 'time of the recorded laps' }, ...bestStat(race)];
+      return [{ id: 'time', value: formatTime(lapsMs(race)), caption: race.firstRecordedLap === 1 ? t('races.stage.race-time') : t('races.stage.recorded-time') }, ...bestStat(race)];
     case 'stopped':
       if (race.laps.length === 0) return [];
-      return [{ value: formatTime(lapsMs(race)), caption: 'time of the recorded laps' }, ...bestStat(race), ...positionStat(race)];
+      return [{ id: 'time', value: formatTime(lapsMs(race)), caption: t('races.stage.recorded-time') }, ...bestStat(race), ...positionStat(race)];
   }
 }
 
 function statusDot(recording: boolean, packets: boolean): { colour: 'green' | 'grey' | 'red' | 'yellow'; word: string } {
-  if (recording) return packets ? { colour: 'red', word: 'Recording' } : { colour: 'yellow', word: 'Recording \u00b7 no telemetry' };
-  return packets ? { colour: 'green', word: 'Telemetry' } : { colour: 'grey', word: 'No telemetry' };
+  if (recording) return packets ? { colour: 'red', word: t('races.stage.recording') } : { colour: 'yellow', word: t('races.stage.recording-no-telemetry') };
+  return packets ? { colour: 'green', word: t('races.stage.telemetry') } : { colour: 'grey', word: t('races.stage.no-telemetry') };
 }
 
 function Word({ race }: { race: LiveRace }) {
   switch (race.phase) {
     case 'waiting':
-      return <h1 className="race-word dim">WAITING</h1>;
+      return <h1 className="race-word dim">{t('races.stage.waiting')}</h1>;
     case 'finished':
-      if (race.position < 1) return <h1 className="race-word">FINISHED</h1>;
+      if (race.position < 1) return <h1 className="race-word">{t('races.stage.finished')}</h1>;
       return (
         <>
-          <p className="race-finished">FINISHED</p>
+          <p className="race-finished">{t('races.stage.finished')}</p>
           <h1 className="race-word yellow rise">
-            P {race.position}
             {race.cars >= 1 ? (
-              <>
-                {' '}
-                <span className="race-of">of {race.cars}</span>
-              </>
-            ) : null}
+              <Rich k="races.stage.finished-position-of" params={{ position: race.position }} parts={{ of: <span className="race-of">{t('races.stage.word-of', { total: race.cars })}</span> }} />
+            ) : (
+              t('races.stage.finished-position', { position: race.position })
+            )}
           </h1>
         </>
       );
     case 'stopped':
-      return <h1 className="race-word">RECORDING STOPPED</h1>;
+      return <h1 className="race-word">{t('races.stage.stopped')}</h1>;
     default:
       return (
         <h1 className={race.phase === 'joined' ? 'race-word dim' : 'race-word yellow'}>
-          LAP {Math.max(1, race.lap)} <span className="race-of">of {race.lapsInRace}</span>
+          <Rich k="races.stage.lap" params={{ lap: Math.max(1, race.lap) }} parts={{ of: <span className="race-of">{t('races.stage.word-of', { total: race.lapsInRace })}</span> }} />
         </h1>
       );
   }
@@ -161,39 +161,42 @@ function Kicker({ race }: { race: LiveRace }) {
     return (
       <p className="race-kicker dim">
         <span className="race-dim-dot" aria-hidden="true" />
-        The race runs already
+        {t('races.stage.joined')}
       </p>
     );
   }
   return null;
 }
 
+function finishedLines(race: LiveRace): string[] {
+  const start = race.firstRecordedLap === 1 && race.startPosition !== null && race.startPosition >= 1 ? race.startPosition : null;
+  const saved = race.savedRaceId !== null;
+  if (start === null) return saved ? [t('races.stage.finished-saved')] : [];
+  return [saved ? t('races.stage.finished-start-saved', { position: start }) : t('races.stage.finished-start', { position: start })];
+}
+
 function leadText(race: LiveRace): string[] {
   switch (race.phase) {
     case 'waiting':
       return [
-        race.unsupported ? 'This is not a race of 2 or more laps. Only a race by laps can be recorded.' : 'Start a race of 2 or more laps in the game.',
-        'The recording starts with the race and stops at the finish. You can look at the TV now.'
+        race.unsupported ? t('races.stage.unsupported') : t('races.stage.start'),
+        t('races.stage.waiting-note')
       ];
     case 'grid':
       return [];
     case 'joined':
-      return ['The recording starts at the next lap line.'];
+      return [t('races.stage.joined-note')];
     case 'lap':
       return [];
     case 'finished':
-      return [
-        [race.firstRecordedLap === 1 && race.startPosition !== null && race.startPosition >= 1 ? `You started in position ${race.startPosition}.` : null, race.savedRaceId === null ? null : 'The race is in your list.']
-          .filter(Boolean)
-          .join(' ')
-      ].filter(Boolean);
+      return finishedLines(race);
     case 'stopped':
       return [
         race.savedRaceId === null
           ? race.laps.length > 0
-            ? 'The race could not be stored. Its raw capture stays on this computer.'
-            : 'No complete lap was recorded. Nothing was saved.'
-          : `${race.laps.length} of ${race.lapsInRace} laps are in your list. The race is marked as not finished.`
+            ? t('races.stage.not-stored')
+            : t('races.stage.no-lap')
+          : t('races.stage.stopped-saved', { done: race.laps.length, count: race.lapsInRace })
       ];
   }
 }
@@ -287,8 +290,8 @@ export function RaceRecordView() {
   ) : null;
   const recording = RECORDING_PHASES.includes(race.phase);
   const dot = statusDot(recording, telemetry.tone === 'on');
-  const subline = race.phase !== 'waiting' && race.carName ? race.carName : 'Race recording';
-  const button = race.phase === 'waiting' ? 'Cancel' : ended ? 'Close' : 'Stop recording';
+  const subline = race.phase !== 'waiting' && race.carName ? race.carName : t('races.stage.race-recording');
+  const button = race.phase === 'waiting' ? t('races.stage.cancel') : ended ? t('races.stage.close') : t('races.stage.stop');
   const onButton = ended ? closeStage : () => void stop();
 
   return (
@@ -332,9 +335,9 @@ export function RaceRecordView() {
         {ended && savedRaceId !== null ? (
           <div className="race-open">
             <button type="button" className="stage-button primary race-open-button" onClick={openRace} disabled={busy}>
-              Open the race
+              {t('races.stage.open')}
             </button>
-            {race.phase === 'finished' ? <span className="race-note">It opens by itself in a moment.</span> : null}
+            {race.phase === 'finished' ? <span className="race-note">{t('races.stage.opens')}</span> : null}
           </div>
         ) : null}
         {race.phase === 'finished' && savedRaceId !== null ? (
@@ -344,7 +347,7 @@ export function RaceRecordView() {
         ) : null}
         {race.phase === 'stopped' && savedRaceId === null ? (
           <button type="button" className="stage-button" onClick={closeStage} disabled={busy}>
-            Back to Races
+            {t('races.stage.back')}
           </button>
         ) : null}
         {problem ? (

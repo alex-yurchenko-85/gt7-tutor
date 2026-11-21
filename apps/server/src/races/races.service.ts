@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { readRaw } from '@gt7/capture';
 import type {
   DeleteRacesResult,
@@ -23,7 +23,7 @@ import { reviewBody } from '../attempts/review-shapes.js';
 import { CaptureService } from '../captures/capture.service.js';
 import { SampleCache } from '../captures/sample-cache.js';
 import { dropOldest } from '../drop-oldest.js';
-import { badRequest, conflict } from '../http-errors.js';
+import { httpError } from '../http-errors.js';
 import { CatalogueService } from '../catalogue/catalogue.service.js';
 import { ownedRace, type CaptureRow, type RaceRow } from '../ownership/owned.js';
 import { KNEX } from '../storage/knex.provider.js';
@@ -78,11 +78,11 @@ async function firstRawIndex(path: string): Promise<number | null> {
 }
 
 function rawMissing() {
-  return conflict('raw-missing', 'The recording of this race is no longer on the disk.');
+  return httpError(409, 'raw-missing');
 }
 
 function noMatch() {
-  return conflict('no-match', 'These laps cannot be put on one line.');
+  return httpError(409, 'no-match');
 }
 
 function pitStop(row: EventRow, laps: LapRow[]): RacePitStop {
@@ -174,7 +174,7 @@ export class RacesService {
     const unique = [...new Set(ids)];
     const deleted = await this.db.transaction(async (trx): Promise<number> => {
       const owned = await trx('races').whereIn('id', unique).where({ user_id: userId }).pluck<string[]>('id');
-      if (owned.length !== unique.length) throw new NotFoundException('Race not found');
+      if (owned.length !== unique.length) throw httpError(404, 'race-not-found');
       return await trx('races').whereIn('id', unique).del();
     });
     this.recorder.forgetRaces(userId, unique);
@@ -187,8 +187,8 @@ export class RacesService {
     const race = await ownedRace(this.db, userId, id);
     const laps = await this.db('race_laps').where({ race_id: id }).select<{ number: number; time_ms: number }[]>('number', 'time_ms');
     const known = new Set(laps.map(lap => lap.number));
-    if (!known.has(query.lap)) throw badRequest('unknown-lap', `Lap ${query.lap} is not in this race.`);
-    if (query.with !== undefined && (!known.has(query.with) || query.with === query.lap)) throw badRequest('unknown-lap', 'Compare two different laps of this race.');
+    if (!known.has(query.lap)) throw httpError(400, 'unknown-lap', { lap: query.lap });
+    if (query.with !== undefined && (!known.has(query.with) || query.with === query.lap)) throw httpError(400, 'same-lap');
     const withLap = query.with ?? this.defaultWith(race, laps, query.lap);
     const lap = query.lap;
     return this.view(race, `compare:${lap}:${withLap}`, ({ samples, analysis }) => {
@@ -218,7 +218,7 @@ export class RacesService {
   private defaultWith(race: RaceRow, laps: { number: number; time_ms: number }[], lap: number): number {
     if (race.reference_lap !== lap) return race.reference_lap;
     const others = laps.filter(other => other.number !== lap).sort((a, b) => a.time_ms - b.time_ms || a.number - b.number);
-    if (others.length === 0) throw conflict('no-match', 'This race has no other lap to compare with.');
+    if (others.length === 0) throw httpError(409, 'no-match');
     return others[0]!.number;
   }
 

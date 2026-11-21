@@ -1,4 +1,5 @@
-import { CUE_WORDS, type CornerInfo, type LiveCue, type LiveGuidance, type LiveState, type ReferenceCue, type WordedCueKind } from '@gt7/contracts';
+import type { CornerInfo, LiveCue, LiveGuidance, LiveState, ReferenceCue, WordedCueKind } from '@gt7/contracts';
+import { t } from '../../app/i18n.ts';
 
 export type CueWords = { words: string; number: string | null };
 
@@ -7,36 +8,36 @@ export function shownOnDrive(cue: LiveCue | null): cue is LiveCue & { kind: Word
 }
 
 export function cueWords(cue: LiveCue & { kind: WordedCueKind }): CueWords {
-  return { words: CUE_WORDS[cue.kind], number: cue.targetSpeedKph === null ? null : String(cue.targetSpeedKph) };
+  return { words: t(`drive.cue.${cue.kind}`), number: cue.targetSpeedKph === null ? null : String(cue.targetSpeedKph) };
 }
 
 export function guidanceText(guidance: LiveGuidance): string | null {
   if (guidance.mode === 'active') return null;
-  if (guidance.mode === 'waiting-for-restart') return 'Guidance stopped for this attempt. Restart the attempt to get cues again.';
+  if (guidance.mode === 'waiting-for-restart') return t('drive.guidance.stopped');
   switch (guidance.reason) {
     case 'untrusted-position':
-      return 'Guidance paused: your position is too far from the reference line.';
+      return t('drive.guidance.untrusted-position');
     case 'target-incompatible':
-      return 'Guidance paused: the next target does not fit your speed here.';
+      return t('drive.guidance.target-incompatible');
     default:
-      return 'Guidance paused.';
+      return t('drive.guidance.paused');
   }
 }
 
 export function connectionProblem(state: LiveState, socketConnected: boolean, demo = false): string | null {
-  if (!socketConnected) return 'Connection to GT7 Tutor lost. Cues are not shown until it returns.';
+  if (!socketConnected) return t('drive.connection.lost');
   if (state.connection === 'disconnected') {
     return demo
-      ? 'The demo attempt has ended. Select Stop training, then select Drive.'
-      : 'No packets from the console. Check that GT7 is running and that the address in Setup is right.';
+      ? t('drive.connection.demo-ended')
+      : t('drive.connection.no-packets');
   }
-  if (state.connection === 'stale') return demo ? 'Waiting for the recorded data.' : 'Waiting for packets from the console.';
+  if (state.connection === 'stale') return demo ? t('drive.connection.demo-waiting') : t('drive.connection.waiting');
   return null;
 }
 
 
 export function spokenCues(cues: ReferenceCue[]): ReferenceCue[] {
-  return cues.filter(cue => !cue.muted && cue.phrase !== null).sort((a, b) => a.sM - b.sM);
+  return cues.filter(cue => !cue.muted && cue.phraseClips !== null).sort((a, b) => a.sM - b.sM);
 }
 
 export function cueNote(cue: LiveCue, spoken: ReferenceCue[], corners: CornerInfo[]): string | null {
@@ -44,5 +45,6 @@ export function cueNote(cue: LiveCue, spoken: ReferenceCue[], corners: CornerInf
   const reference = spoken[index];
   if (!reference) return null;
   const turn = corners.find(corner => reference.sM < corner.zoneToSM);
-  return `Cue ${index + 1} of ${spoken.length}${turn ? ` · before T${turn.number}` : ''}`;
+  const place = { number: index + 1, total: spoken.length };
+  return turn ? t('drive.cue-note-turn', { ...place, turn: turn.number }) : t('drive.cue-note', place);
 }

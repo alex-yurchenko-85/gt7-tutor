@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { CreateExerciseRequest, Exercise, ExerciseTargets, UpdateExerciseRequest } from '@gt7/contracts';
 import { nextMedal } from '@gt7/core';
 import type { Knex } from 'knex';
@@ -7,6 +7,7 @@ import { ownedExercise, type ExerciseRow } from '../ownership/owned.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { exerciseStatuses, type ExerciseStatusSummary } from './exercise-status.js';
 import { exerciseStep } from './exercise-step.js';
+import { httpError } from '../http-errors.js';
 
 type NewExercise = {
   catalogue_id: string | null;
@@ -99,7 +100,7 @@ export class ExercisesService {
 
   private fromCatalogue(catalogueId: string): NewExercise {
     const entry = this.catalogue.entry(catalogueId);
-    if (!entry) throw new NotFoundException(`Catalogue entry ${catalogueId} not found`);
+    if (!entry) throw httpError(404, 'not-found');
     return {
       catalogue_id: entry.id,
       family: entry.family,

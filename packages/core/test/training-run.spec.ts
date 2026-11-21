@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { ENGLISH } from '@gt7/contracts';
 import { replayCoach } from '../src/coach-replay.ts';
 import type { CoachSettings } from '../src/coach.ts';
 import { DEFAULT_CONFIG } from '../src/config.ts';
 import { buildCueEvents } from '../src/cue-events.ts';
-import { cueText, estimatedPhraseMs } from '../src/cue-text.ts';
+import { estimatedPhraseMs } from '../src/cue-text.ts';
 import { TrainingRun } from '../src/training-run.ts';
 import { between, samplesOf, type FixtureName } from './fixtures.ts';
 import { analysisOf, interlagosReference } from './paths.ts';
@@ -12,7 +13,7 @@ const FIXTURES: FixtureName[] = ['b1-run', 'b3-run', 'ce-clean', 'ce-off-track-e
 
 const settings: CoachSettings = { mutedKeys: new Set(['ease-off@564']), speakTargets: true, offsetsMs: new Map([['brake@291', 200]]), sideCueDistanceM: 1 };
 
-const now = { deviceDelayMs: 60, phraseMs: estimatedPhraseMs };
+const now = { deviceDelayMs: 60, phraseMs: (clip: string) => estimatedPhraseMs(ENGLISH, clip) };
 
 function counter(): () => number {
   let generation = 0;
@@ -61,8 +62,8 @@ describe('TrainingRun', () => {
         if (!step.match) continue;
         if (previousSM !== null && step.match.sM < previousSM - 50) jumpsBack += 1;
         previousSM = step.match.sM;
-        const next = reference.events.find(event => event.sM > step.match!.sM && !settings.mutedKeys.has(event.key) && cueText(event.voice));
-        expect(step.nextCue, String(sample.rawIndex)).toEqual(next ? { text: cueText(next.voice), inM: next.sM - step.match.sM } : null);
+        const next = reference.events.find(event => event.sM > step.match!.sM && !settings.mutedKeys.has(event.key));
+        expect(step.nextCue, String(sample.rawIndex)).toEqual(next ? { clip: next.voice, inM: next.sM - step.match.sM } : null);
       }
       expect(jumpsBack).toBeGreaterThanOrEqual(3);
     }

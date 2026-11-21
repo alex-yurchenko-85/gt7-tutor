@@ -1,7 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { DemoInfo } from '@gt7/contracts';
-
-export const DEMO_LABEL = 'Demo: recorded data, no console';
+import { t } from './i18n.ts';
 
 export const DemoContext = createContext<DemoInfo | null>(null);
 
@@ -14,7 +13,7 @@ export function DemoLabel() {
   if (!demo) return null;
   return (
     <p className="demo-label" role="note">
-      {DEMO_LABEL}
+      {t('app.demo.label')}
     </p>
   );
 }

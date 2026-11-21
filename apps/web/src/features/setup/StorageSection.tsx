@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { api } from '../../api/client.ts';
-import { counted } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths } from '../../app/router.tsx';
+import { t } from '../../app/i18n.ts';
 
 export function megabytes(bytes: number): string {
-  return `${(bytes / 1_000_000).toFixed(1)} MB`;
+  return t('setup.storage.megabytes', { value: (bytes / 1_000_000).toFixed(1) });
 }
 
 export function StorageSection() {
@@ -17,7 +17,7 @@ export function StorageSection() {
     setConfirming(false);
     try {
       const done = await api.cleanup();
-      setResult(`Cleaned ${counted(done.captures, 'capture')}: ${megabytes(done.bytesBefore)} before, ${megabytes(done.bytesAfter)} after.`);
+      setResult(t('setup.storage.cleaned', { count: done.captures, before: megabytes(done.bytesBefore), after: megabytes(done.bytesAfter) }));
       storage.reload();
     } catch (error) {
       setResult(errorText(error));
@@ -26,43 +26,41 @@ export function StorageSection() {
 
   return (
     <section className="panel setup-section" id="setup-data" aria-labelledby="data-title">
-      <h2 id="data-title">Data</h2>
+      <h2 id="data-title">{t('setup.storage.title')}</h2>
       {storage.data ? (
         <>
           <div className="kv">
-            <span>Your captures</span>
-            <b>
-              {megabytes(storage.data.profileRawBytes)} in {counted(storage.data.profileCaptures, 'capture')}
-            </b>
+            <span>{t('setup.storage.yours')}</span>
+            <b>{t('setup.storage.yours-size', { size: megabytes(storage.data.profileRawBytes), count: storage.data.profileCaptures })}</b>
           </div>
           <div className="kv">
-            <span>Raw captures, all profiles</span>
+            <span>{t('setup.storage.all')}</span>
             <b>{megabytes(storage.data.rawBytes)}</b>
           </div>
         </>
       ) : storage.error ? (
         <p className="error">{errorText(storage.error)}</p>
       ) : (
-        <p className="sub">Reading disk use…</p>
+        <p className="sub">{t('setup.storage.reading')}</p>
       )}
       <div className="pref narrow-controls">
         <span className="pref-text">
-          <span>Clean up captures</span>
-          <span className="sub">Keeps the parts that references, attempts and races use and removes the rest. You cannot undo it.</span>
+          <span>{t('setup.storage.cleanup')}</span>
+          <span className="sub">{t('setup.storage.cleanup-text')}</span>
         </span>
         <div className="pref-control">
           {confirming ? (
             <>
               <button className="btn" type="button" onClick={cleanup}>
-                Clean up captures
+                {t('setup.storage.cleanup')}
               </button>
               <button className="btn ghost" type="button" onClick={() => setConfirming(false)}>
-                Keep everything
+                {t('setup.storage.keep')}
               </button>
             </>
           ) : (
             <button className="btn danger" type="button" onClick={() => setConfirming(true)}>
-              Clean up captures
+              {t('setup.storage.cleanup')}
             </button>
           )}
           {result ? (
@@ -74,12 +72,12 @@ export function StorageSection() {
       </div>
       <div className="pref narrow-controls">
         <span className="pref-text">
-          <span>Delete history</span>
-          <span className="sub">Deletes the attempts of one exercise or of all. Start over also deletes the references and the races. The exercises stay.</span>
+          <span>{t('setup.storage.history')}</span>
+          <span className="sub">{t('setup.storage.history-text')}</span>
         </span>
         <div className="pref-control">
           <Link to={paths.deleteHistory()} className="btn danger">
-            Delete history
+            {t('setup.storage.history')}
           </Link>
         </div>
       </div>

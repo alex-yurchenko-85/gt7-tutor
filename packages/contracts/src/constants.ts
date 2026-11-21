@@ -17,30 +17,56 @@ export function median(values: number[]): number | null {
 }
 
 export const ERROR_CODES = [
+  'attempt-not-found',
   'busy',
-  'car-mismatch',
   'capture-active',
+  'capture-not-found',
+  'car-changed',
+  'car-mismatch',
+  'catalogue-busy',
   'console-address-missing',
+  'cross-site',
   'demo-mode',
+  'discontinuity',
+  'exercise-not-found',
+  'invalid-request',
   'no-match',
   'no-previous',
   'no-reference',
   'no-timer-run',
+  'nonfinite-field',
   'not-active',
   'not-armed',
   'not-complete',
+  'not-found',
   'not-recording',
-  'reference-active',
-  'reference-in-use',
+  'profile-exists',
+  'profile-name-taken',
+  'race-capture',
+  'race-not-found',
   'raw-missing',
+  'reference-active',
+  'reference-in-training',
+  'reference-in-use',
+  'reference-not-found',
   'rejected',
+  'same-lap',
+  'server-error',
   'shutting-down',
+  'sign-in-required',
   'source-failed',
   'stale-check',
+  'too-few-points',
+  'too-many-sign-ins',
   'unknown-lap',
   'unknown-token',
   'update-failed',
+  'wrong-name-or-password',
   'wrong-password'
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
+
+export function isErrorCode(value: unknown): value is ErrorCode {
+  return typeof value === 'string' && (ERROR_CODES as readonly string[]).includes(value);
+}

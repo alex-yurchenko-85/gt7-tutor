@@ -4,9 +4,10 @@ import { errorText } from '../../app/resource.ts';
 import { IconButton } from '../../app/IconButton.tsx';
 import { clampCorrection, delayCorrectionMs, MAX_CORRECTION_MS, MIN_CORRECTION_MS, setDelayCorrectionMs } from '../../voice/device.ts';
 import { useVoiceClaim } from '../../voice/use-voice-claim.ts';
+import { clipText, t } from '../../app/i18n.ts';
 
 function signed(ms: number): string {
-  return `${ms > 0 ? '+' : ''}${ms} ms`;
+  return t('setup.voice.correction-value', { value: `${ms > 0 ? '+' : ''}${ms}` });
 }
 
 export function VoiceSection() {
@@ -31,7 +32,7 @@ export function VoiceSection() {
   const disable = () => {
     setMovedFromOther(false);
     voice.release();
-    setMessage('The voice is off on this device. The Drive screen still shows the cues.');
+    setMessage(t('setup.voice.off-here'));
   };
 
   const runTest = async () => {
@@ -39,10 +40,10 @@ export function VoiceSection() {
     try {
       const result = await player.test();
       setTestResult(
-        `You should hear “Voice check”. The browser reports an output delay of ${result.reportedLatencyMs} ms. This is not a measurement: wireless headphones can add delay that the browser does not know. If the voice sounds late, raise the delay correction.`
+        t('setup.voice.test-result', { phrase: clipText('voice-check'), delay: result.reportedLatencyMs })
       );
     } catch (error) {
-      setTestResult(`The test did not play: ${errorText(error)}`);
+      setTestResult(t('setup.voice.test-failed', { reason: errorText(error) }));
     }
   };
 
@@ -54,18 +55,18 @@ export function VoiceSection() {
 
   return (
     <section className="panel setup-section" id="setup-voice" aria-labelledby="voice-title">
-      <h2 id="voice-title">Voice</h2>
-      <p className="sub">One device plays the cues: this device, or another one with GT7 Tutor open. A phone must stay unlocked during an attempt.</p>
+      <h2 id="voice-title">{t('setup.voice.title')}</h2>
+      <p className="sub">{t('setup.voice.text')}</p>
       <div className="pref">
         <span className="pref-text">
-          <span>Voice device</span>
+          <span>{t('setup.voice.device')}</span>
           {playing ? null : (
             <span className={`voice-state${here ? ' error' : ''}`} role="status">
               {here
-                ? 'The browser did not start the sound on this device. Select Use this device for voice again.'
+                ? t('setup.voice.not-started')
                 : holder !== null
-                  ? 'Another device plays the voice. This device stays silent.'
-                  : 'No device plays the voice.'}
+                  ? t('setup.voice.elsewhere')
+                  : t('setup.voice.none')}
             </span>
           )}
         </span>
@@ -74,22 +75,22 @@ export function VoiceSection() {
             <>
               <div className="field-pair">
                 <span className="voice-state playing" role="status">
-                  {movedFromOther ? 'This device plays the voice. The other device no longer plays cues.' : 'This device plays the voice.'}
+                  {movedFromOther ? t('setup.voice.moved') : t('setup.voice.here')}
                 </span>
-                <IconButton icon="speaker" label="Test" onClick={() => void runTest()} />
+                <IconButton icon="speaker" label={t('setup.voice.test')} onClick={() => void runTest()} />
               </div>
               <button className="btn ghost" type="button" onClick={disable}>
-                Turn voice off here
+                {t('setup.voice.turn-off')}
               </button>
             </>
           ) : (
             <>
               <button className="btn" type="button" onClick={enable}>
-                Use this device for voice
+                {t('setup.voice.use')}
               </button>
               {here ? (
                 <button className="btn ghost" type="button" onClick={disable}>
-                  Turn voice off here
+                  {t('setup.voice.turn-off')}
                 </button>
               ) : null}
             </>
@@ -109,8 +110,8 @@ export function VoiceSection() {
       </div>
       <div className="pref">
         <span className="pref-text">
-          <label htmlFor="delay-correction">Delay correction for wireless headphones</label>
-          <span className="sub">Wireless headphones add delay that the browser does not report. Cues start earlier by this amount on this device.</span>
+          <label htmlFor="delay-correction">{t('setup.voice.correction')}</label>
+          <span className="sub">{t('setup.voice.correction-text')}</span>
         </span>
         <div className="pref-control">
           <span className="correction-value">{signed(correction)}</span>

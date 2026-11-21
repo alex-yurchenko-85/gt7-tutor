@@ -1,53 +1,39 @@
+import type { MessageKey } from '@gt7/contracts';
+import { t } from './i18n.ts';
 import { errorText } from './resource.ts';
 import { isNotFound } from './ids.ts';
 import { Link, paths } from './router.tsx';
 
 export type NotFoundKind = 'page' | 'attempt' | 'exercise' | 'race';
 
-type Copy = { kicker: string; title: string; reason: string };
+type Copy = { kicker: MessageKey; title: MessageKey; reason: MessageKey };
 
 const COPY: Record<NotFoundKind, Copy> = {
-  page: {
-    kicker: 'PAGE NOT FOUND',
-    title: 'This page does not exist',
-    reason: 'The address does not match a page of GT7 Tutor. Check the link, or start from Exercises.'
-  },
-  attempt: {
-    kicker: 'ATTEMPT NOT FOUND',
-    title: 'This attempt is not here',
-    reason: 'It was deleted, it belongs to another profile, or the link is old.'
-  },
-  race: {
-    kicker: 'RACE NOT FOUND',
-    title: 'This race is not here',
-    reason: 'It was deleted, it belongs to another profile, or the link is old.'
-  },
-  exercise: {
-    kicker: 'EXERCISE NOT FOUND',
-    title: 'This exercise is not here',
-    reason: 'The link is old or incomplete, or the exercise belongs to another profile. Select it again in the catalogue.'
-  }
+  page: { kicker: 'app.not-found.page.kicker', title: 'app.not-found.page.title', reason: 'app.not-found.page.reason' },
+  attempt: { kicker: 'app.not-found.attempt.kicker', title: 'app.not-found.attempt.title', reason: 'app.not-found.attempt.reason' },
+  race: { kicker: 'app.not-found.race.kicker', title: 'app.not-found.race.title', reason: 'app.not-found.race.reason' },
+  exercise: { kicker: 'app.not-found.exercise.kicker', title: 'app.not-found.exercise.title', reason: 'app.not-found.exercise.reason' }
 };
 
 function SecondAction({ kind, exerciseId }: { kind: NotFoundKind; exerciseId: string | undefined }) {
   if (kind === 'race') {
     return (
       <Link to={paths.races()} className="btn inline ghost">
-        Open Races
+        {t('app.not-found.open-races')}
       </Link>
     );
   }
   if (kind === 'exercise') {
     return (
       <Link to={paths.addExercise()} className="btn inline ghost">
-        Open Add exercise
+        {t('app.not-found.open-add-exercise')}
       </Link>
     );
   }
   if (kind === 'attempt' && exerciseId) {
     return (
       <Link to={paths.attempts(exerciseId)} className="btn inline ghost">
-        All attempts
+        {t('app.not-found.all-attempts')}
       </Link>
     );
   }
@@ -63,17 +49,17 @@ export function NotFound({ kind, exerciseId }: { kind: NotFoundKind; exerciseId?
         <path d="M15 14l3 0 0-3" />
         <circle cx="12" cy="20" r="1" />
       </svg>
-      <p className="not-found-kicker">{copy.kicker}</p>
-      <h1 id="not-found-title">{copy.title}</h1>
-      <p className="lede">{copy.reason}</p>
+      <p className="not-found-kicker">{t(copy.kicker)}</p>
+      <h1 id="not-found-title">{t(copy.title)}</h1>
+      <p className="lede">{t(copy.reason)}</p>
       <div className="btn-row">
         <Link to={paths.exercises()} className="btn inline">
-          Open Exercises
+          {t('app.not-found.open-exercises')}
         </Link>
         <SecondAction kind={kind} exerciseId={exerciseId} />
       </div>
       <p className="sub not-found-address">
-        Address: <code>{window.location.pathname}</code>
+        {t('app.not-found.address')} <code>{window.location.pathname}</code>
       </p>
     </section>
   );

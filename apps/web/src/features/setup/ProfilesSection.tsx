@@ -5,6 +5,7 @@ import { useSession } from '../../app/session.tsx';
 import { createProfileError, InputProblem, ProfileForm, validateCredentials } from '../auth/ProfileForm.tsx';
 import { ChangePasswordForm } from './ChangePasswordForm.tsx';
 import { DeleteProfileDialog } from './DeleteProfileDialog.tsx';
+import { t } from '../../app/i18n.ts';
 
 export function ProfilesSection() {
   const { user, signOut } = useSession();
@@ -22,8 +23,8 @@ export function ProfilesSection() {
 
   return (
     <section className="panel setup-section narrow-controls" id="setup-profiles" aria-labelledby="profiles-title">
-      <h2 id="profiles-title">Profiles</h2>
-      <p className="sub">Each profile has its own exercises and attempts. One profile trains at a time, because there is one console.</p>
+      <h2 id="profiles-title">{t('setup.profiles.title')}</h2>
+      <p className="sub">{t('setup.profiles.text')}</p>
       <div className="pref" role="group" aria-label={user.name}>
         <span className="profile-row">
           <span className="profile-avatar" aria-hidden="true">
@@ -31,26 +32,26 @@ export function ProfilesSection() {
           </span>
           <span className="pref-text">
             <b>{user.name}</b>
-            <span className="sub">Signed in on this device</span>
+            <span className="sub">{t('setup.profiles.signed-in')}</span>
           </span>
         </span>
         <div className="pref-control">
           {demo ? null : (
             <button className="btn ghost" type="button" aria-expanded={changing} aria-controls="change-password" onClick={toggleChange}>
-              Change password
+              {t('setup.profiles.change-password')}
             </button>
           )}
           <button className="btn ghost" type="button" onClick={() => void signOut()}>
-            Sign out
+            {t('setup.profiles.sign-out')}
           </button>
           {demo ? null : (
             <button className="btn danger" type="button" onClick={() => setDeleting(true)}>
-              Delete profile
+              {t('setup.profiles.delete')}
             </button>
           )}
           {changed ? (
             <p className="notice" role="status">
-              Password changed.
+              {t('setup.profiles.password-changed')}
             </p>
           ) : null}
         </div>
@@ -67,21 +68,21 @@ export function ProfilesSection() {
       ) : null}
       <div className="pref">
         <span className="pref-text">
-          <span>Add a profile</span>
-          <span className="sub">A new profile signs in with its own name and password.</span>
+          <span>{t('setup.profiles.add-title')}</span>
+          <span className="sub">{t('setup.profiles.add-text')}</span>
         </span>
         <div className="pref-control">
           {adding ? (
             <ProfileForm
-              submitLabel="Add profile"
-              passwordHint="At least 8 characters."
+              submitLabel={t('setup.profiles.add-submit')}
+              passwordHint={t('setup.profiles.password-hint')}
               describeError={createProfileError}
               onCancel={() => setAdding(false)}
               onSubmit={async credentials => {
                 const problem = validateCredentials(credentials);
                 if (problem) throw new InputProblem(problem);
                 const response = await api.createProfile(credentials);
-                setCreated(`Profile ${response.user.name} is ready. Sign out to use it.`);
+                setCreated(t('setup.profiles.created', { name: response.user.name }));
                 setAdding(false);
               }}
             />
@@ -95,7 +96,7 @@ export function ProfilesSection() {
                 setAdding(true);
               }}
             >
-              + Add a profile
+              {t('setup.profiles.add-open')}
             </button>
           )}
           {created ? (

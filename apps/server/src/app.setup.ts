@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { WsAdapter } from '@nestjs/platform-ws';
 import type { NextFunction, Request, Response } from 'express';
+import { ErrorCodeFilter } from './http-errors.js';
 
 const SERVER_PATHS = ['/api', '/live', '/audio'];
 
@@ -37,6 +38,7 @@ function serveStaticFiles(app: NestExpressApplication): void {
 export function configureApp(app: INestApplication): void {
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new StandardSchemaValidationPipe());
+  app.useGlobalFilters(new ErrorCodeFilter());
   app.useWebSocketAdapter(new WsAdapter(app));
   serveStaticFiles(app as NestExpressApplication);
   app.enableShutdownHooks();

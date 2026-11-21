@@ -305,10 +305,10 @@ describe('race recording stage', () => {
 
   it('open_the_race_works_again_after_a_failed_close', async () => {
     let fail = true;
-    const api = stageApi().on('POST /api/races/record/close', () => (fail ? { status: 500, body: { reason: 'The server did not answer.' } } : { ok: true }));
+    const api = stageApi().on('POST /api/races/record/close', () => (fail ? { status: 500, body: { code: 'server-error' } } : { ok: true }));
     await openStage(liveRace({ phase: 'finished', lap: 8, position: 2, savedRaceId: RACE_ID }), 'idle');
     await userEvent.click(await screen.findByRole('button', { name: 'Open the race' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('The server did not answer.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong in GT7 Tutor (status 500).');
     fail = false;
     await userEvent.click(screen.getByRole('button', { name: 'Open the race' }));
     await waitFor(() => expect(window.location.pathname).toBe(`/races/${RACE_ID}`));
@@ -317,10 +317,10 @@ describe('race recording stage', () => {
 
   it('open_the_race_works_after_a_failed_close', async () => {
     let fail = true;
-    stageApi().on('POST /api/races/record/close', () => (fail ? { status: 500, body: { reason: 'The server did not answer.' } } : { ok: true }));
+    stageApi().on('POST /api/races/record/close', () => (fail ? { status: 500, body: { code: 'server-error' } } : { ok: true }));
     await openStage(liveRace({ phase: 'finished', lap: 8, position: 2, savedRaceId: RACE_ID }), 'idle');
     await userEvent.click(await screen.findByRole('button', { name: 'Close' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('The server did not answer.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong in GT7 Tutor (status 500).');
     fail = false;
     await userEvent.click(screen.getByRole('button', { name: 'Open the race' }));
     await waitFor(() => expect(window.location.pathname).toBe(`/races/${RACE_ID}`));
@@ -345,10 +345,10 @@ describe('race recording stage', () => {
   });
 
   it('stop_error_is_shown_on_the_stage', async () => {
-    stageApi().on('POST /api/races/record/stop', { status: 500, body: { reason: 'The race was not stored.' } });
+    stageApi().on('POST /api/races/record/stop', { status: 503, body: { code: 'shutting-down' } });
     await openStage(liveRace());
     await userEvent.click(await screen.findByRole('button', { name: 'Stop recording' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('The race was not stored.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('The server is stopping.');
   });
 
   it('runs_the_motion_only_without_reduced_motion', async () => {

@@ -7,6 +7,7 @@ import { errorText, useResource } from '../../app/resource.ts';
 import { setStateRate, stateRate } from '../../app/state-rate.ts';
 import { RadioGroup, type RadioOption } from '../../app/RadioGroup.tsx';
 import { ThemeSwitch } from '../../app/ThemeSwitch.tsx';
+import { t } from '../../app/i18n.ts';
 
 function GameVersionRow() {
   const settings = useResource(() => api.settings(), []);
@@ -23,12 +24,12 @@ function GameVersionRow() {
     setMessage(null);
     setProblem(null);
     if (!version.trim()) {
-      setProblem('Enter the game version, for example 1.65.');
+      setProblem(t('setup.preferences.version-empty'));
       return;
     }
     try {
       const result = await api.setGameVersion(version.trim());
-      setMessage(`Saved: ${result.gameVersion}. References recorded with another version are marked for a check.`);
+      setMessage(t('setup.preferences.version-saved', { version: result.gameVersion ?? '' }));
     } catch (error) {
       setProblem(errorText(error));
     }
@@ -37,9 +38,9 @@ function GameVersionRow() {
   return (
     <form className="pref" onSubmit={save} noValidate>
       <span className="pref-text">
-        <label htmlFor="game-version">GT7 version</label>
+        <label htmlFor="game-version">{t('setup.preferences.version')}</label>
         <span className="sub" id="game-version-hint">
-          Stored with each new reference.
+          {t('setup.preferences.version-hint')}
         </span>
       </span>
       <div className="pref-control">
@@ -52,7 +53,7 @@ function GameVersionRow() {
             aria-describedby="game-version-hint"
             onChange={event => setVersion(event.target.value)}
           />
-          <IconButton icon="check" label="Save the game version" primary type="submit" />
+          <IconButton icon="check" label={t('setup.preferences.version-save')} primary type="submit" />
         </div>
         {problem ? (
           <p className="error" role="alert">
@@ -69,7 +70,9 @@ function GameVersionRow() {
   );
 }
 
-const RATE_OPTIONS: RadioOption<StateRate>[] = STATE_RATES.map(rate => ({ value: rate, ariaLabel: `${rate} per second`, content: `${rate}/s` }));
+function rateOptions(): RadioOption<StateRate>[] {
+  return STATE_RATES.map(rate => ({ value: rate, ariaLabel: t('setup.preferences.rate-label', { rate }), content: t('setup.preferences.rate', { rate }) }));
+}
 
 function StateRateRow() {
   const { send } = useLiveConnection();
@@ -82,15 +85,11 @@ function StateRateRow() {
   return (
     <div className="pref">
       <span className="pref-text">
-        <span id="state-rate-title">Screen updates while driving</span>
-        <span className="sub">
-          How often this device gets the speed, the distance, the gap and the map point while you drive. Higher values move them more smoothly, but
-          use more battery and network and can make the page slower on an older phone. With the voice on this device, a busy page can also delay a
-          cue a little. The voice cues themselves are sent at once, whatever you choose.
-        </span>
+        <span id="state-rate-title">{t('setup.preferences.rate-title')}</span>
+        <span className="sub">{t('setup.preferences.rate-text')}</span>
       </span>
       <div className="pref-control">
-        <RadioGroup className="theme-switch" labelledBy="state-rate-title" options={RATE_OPTIONS} value={rate} onChange={select} />
+        <RadioGroup className="theme-switch" labelledBy="state-rate-title" options={rateOptions()} value={rate} onChange={select} />
       </div>
     </div>
   );
@@ -99,11 +98,11 @@ function StateRateRow() {
 export function PreferencesSection() {
   return (
     <section className="panel setup-section" id="setup-preferences" aria-labelledby="preferences-title">
-      <h2 id="preferences-title">Preferences</h2>
+      <h2 id="preferences-title">{t('setup.preferences.title')}</h2>
       <div className="pref">
         <span className="pref-text">
-          <span>Theme</span>
-          <span className="sub">The Drive view is always dark.</span>
+          <span>{t('setup.preferences.theme')}</span>
+          <span className="sub">{t('setup.preferences.theme-text')}</span>
         </span>
         <div className="pref-control">
           <ThemeSwitch compact={false} />

@@ -1,6 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
-import type { CapturePurpose, ReferenceOrigin } from '@gt7/contracts';
+import type { CapturePurpose, ErrorCode, ReferenceOrigin } from '@gt7/contracts';
 import type { Knex } from 'knex';
+import { httpError } from '../http-errors.js';
 
 export type ExerciseRow = {
   id: string;
@@ -85,17 +85,17 @@ export type RaceRow = {
   created_at: Date;
 };
 
-function found<T>(row: T | undefined, what: string): T {
-  if (!row) throw new NotFoundException(`${what} not found`);
+function found<T>(row: T | undefined, code: ErrorCode): T {
+  if (!row) throw httpError(404, code);
   return row;
 }
 
 export async function ownedExercise(db: Knex, userId: string, id: string): Promise<ExerciseRow> {
-  return found(await db<ExerciseRow>('exercises').where({ id, user_id: userId }).first(), 'Exercise');
+  return found(await db<ExerciseRow>('exercises').where({ id, user_id: userId }).first(), 'exercise-not-found');
 }
 
 export async function ownedCapture(db: Knex, userId: string, id: string): Promise<CaptureRow> {
-  return found(await db<CaptureRow>('captures').where({ id, user_id: userId }).first(), 'Capture');
+  return found(await db<CaptureRow>('captures').where({ id, user_id: userId }).first(), 'capture-not-found');
 }
 
 export async function ownedReference(db: Knex, userId: string, id: string): Promise<ReferenceRow> {
@@ -103,7 +103,7 @@ export async function ownedReference(db: Knex, userId: string, id: string): Prom
     .join('exercises as e', 'e.id', 'r.exercise_id')
     .where({ 'r.id': id, 'e.user_id': userId })
     .first<ReferenceRow | undefined>('r.*');
-  return found(row, 'Reference');
+  return found(row, 'reference-not-found');
 }
 
 export async function ownedAttempt(db: Knex, userId: string, id: string): Promise<AttemptRow> {
@@ -111,9 +111,9 @@ export async function ownedAttempt(db: Knex, userId: string, id: string): Promis
     .join('exercises as e', 'e.id', 'a.exercise_id')
     .where({ 'a.id': id, 'e.user_id': userId })
     .first<AttemptRow | undefined>('a.*');
-  return found(row, 'Attempt');
+  return found(row, 'attempt-not-found');
 }
 
 export async function ownedRace(db: Knex, userId: string, id: string): Promise<RaceRow> {
-  return found(await db<RaceRow>('races').where({ id, user_id: userId }).first(), 'Race');
+  return found(await db<RaceRow>('races').where({ id, user_id: userId }).first(), 'race-not-found');
 }

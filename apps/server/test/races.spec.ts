@@ -668,9 +668,9 @@ describe('race recorder', () => {
     const raceId = await recordRace(watcher, raceOf({ laps: THREE_LAPS, lapsInRace: 3 }));
     const other = await anotherProfile(app, cookie, 'Second');
     expect((await http().get('/api/races').set('Cookie', other).expect(200)).body).toEqual([]);
-    await http().get(`/api/races/${raceId}`).set('Cookie', other).expect(404);
+    expect((await http().get(`/api/races/${raceId}`).set('Cookie', other).expect(404)).body).toEqual({ code: 'race-not-found' });
     await http().patch(`/api/races/${raceId}`).set('Cookie', other).send({ trackName: 'Mine' }).expect(404);
-    await http().post('/api/races/delete').set('Cookie', other).send({ ids: [raceId] }).expect(404);
+    expect((await http().post('/api/races/delete').set('Cookie', other).send({ ids: [raceId] }).expect(404)).body).toEqual({ code: 'race-not-found' });
     await http().get(`/api/races/${crypto.randomUUID()}`).set('Cookie', cookie).expect(404);
     await http().get('/api/races/not-a-uuid').set('Cookie', cookie).expect(400);
     expect(await db('races').where({ id: raceId }).first()).toMatchObject({ track_name: null });
@@ -796,7 +796,7 @@ describe('race recorder', () => {
     const raceId = await recordRace(watcher, raceOf(BRAKE_RACE));
     const status = async (query: string) => (await http().get(`/api/races/${raceId}/compare${query}`).set('Cookie', cookie)).status;
     const unknown = await http().get(`/api/races/${raceId}/compare?lap=4`).set('Cookie', cookie).expect(400);
-    expect(unknown.body).toEqual({ code: 'unknown-lap', reason: 'Lap 4 is not in this race.' });
+    expect(unknown.body).toEqual({ code: 'unknown-lap', params: { lap: 4 } });
     expect(await status('?lap=1&with=4')).toBe(400);
     expect(await status('?lap=2&with=2')).toBe(400);
     expect(await status('?lap=0')).toBe(400);
@@ -858,7 +858,7 @@ describe('race recorder', () => {
     unlinkSync(join(dataDir, (await db('captures').where({ id: race.capture_id }).first()).raw_path as string));
     for (const route of ['compare?lap=2', 'speed', 'off-track', 'distances']) {
       const response = await http().get(`/api/races/${raceId}/${route}`).set('Cookie', cookie).expect(409);
-      expect(response.body).toEqual({ code: 'raw-missing', reason: 'The recording of this race is no longer on the disk.' });
+      expect(response.body).toEqual({ code: 'raw-missing' });
     }
     expect((await http().get(`/api/races/${raceId}`).set('Cookie', cookie).expect(200)).body).toMatchObject({ id: raceId });
   });
@@ -878,7 +878,7 @@ describe('race recorder', () => {
     const captureId = await recordWith(new ManualSource());
     await stateWhere(watcher, state => state.mode === 'race-waiting');
     const refused = await http().post(`/api/captures/${captureId}/stop`).set('Cookie', cookie).expect(409);
-    expect(refused.body).toEqual({ code: 'not-active', reason: 'Stop a race recording on its own screen.' });
+    expect(refused.body).toEqual({ code: 'race-capture' });
     expect((await http().get('/api/captures').set('Cookie', cookie).expect(200)).body[0]).toMatchObject({ id: captureId, active: true });
     expect(latest(watcher).mode).toBe('race-waiting');
     expect(await stop()).toBeNull();

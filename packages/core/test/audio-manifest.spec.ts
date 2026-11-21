@@ -7,7 +7,7 @@ import { buildCueEvents } from '../src/cue-events.ts';
 import { allClipKeys, clipsOf } from '../src/cue-text.ts';
 import { interlagosReference } from './paths.ts';
 
-const audioDir = fileURLToPath(new URL('../../../content/audio/', import.meta.url));
+const audioDir = fileURLToPath(new URL('../../../content/audio/en/', import.meta.url));
 
 type ClipEntry = { file: string; durationMs: number };
 type Manifest = { clips: Record<string, ClipEntry> };

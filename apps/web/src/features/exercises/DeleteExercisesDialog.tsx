@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { medalSchema, type Exercise } from '@gt7/contracts';
+import { medalSchema, type Exercise, type MedalName } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { deletionErrorText } from '../../app/busy.ts';
 import { ConfirmDialog } from '../../app/ConfirmDialog.tsx';
 import { announceExercisesChanged, forgetExercises } from '../../app/current-exercise.ts';
 import { formatTime } from '../../app/format.ts';
-import { counted, theirs } from '../../app/plural.ts';
 import { useSession } from '../../app/session.tsx';
 import { useTrainingGate } from '../../app/use-training.ts';
+import { t } from '../../app/i18n.ts';
+import { Rich } from '../../app/rich-text.tsx';
 
 const MEDALS = new Set<string>(medalSchema.options);
 
@@ -16,37 +17,43 @@ function hasHistory(exercise: Exercise): boolean {
 }
 
 export function historyText(exercise: Exercise): string {
-  return hasHistory(exercise) ? `${counted(exercise.attemptCount, 'attempt')}, ${counted(exercise.referenceCount, 'reference')}` : 'no attempts, no reference';
+  return hasHistory(exercise)
+    ? t('exercises.history', { attempts: t('common.count.attempt', { count: exercise.attemptCount }), references: t('common.count.reference', { count: exercise.referenceCount }) })
+    : t('exercises.history-none');
 }
 
 function catalogueText(exercises: Exercise[]): string {
-  if (exercises.every(exercise => exercise.catalogueId === null)) return 'You cannot undo it.';
-  return exercises.length === 1
-    ? 'The catalogue entry stays. You can add the exercise again from Add exercise. You cannot undo it.'
-    : 'The catalogue entries stay. You can add the exercises again from Add exercise. You cannot undo it.';
+  if (exercises.every(exercise => exercise.catalogueId === null)) return t('exercises.delete.no-undo');
+  return exercises.length === 1 ? t('exercises.delete.entry-stays') : t('exercises.delete.entries-stay');
 }
 
 function OneExercise({ exercise }: { exercise: Exercise }) {
-  if (!hasHistory(exercise)) return <p>It has no attempts and no reference yet.</p>;
+  if (!hasHistory(exercise)) return <p>{t('exercises.delete.nothing')}</p>;
   return (
     <>
-      <p>The exercise goes, with everything recorded for it:</p>
+      <p>{t('exercises.delete.goes')}</p>
       <ul>
         {exercise.attemptCount > 0 ? (
           <li>
-            <b>{counted(exercise.attemptCount, 'attempt')}</b>, with {theirs(exercise.attemptCount)} cues and differences
+            <Rich k="exercises.delete.attempts" params={{ count: exercise.attemptCount }} parts={{ attempts: <b>{t('common.count.attempt', { count: exercise.attemptCount })}</b> }} />
           </li>
         ) : null}
         {exercise.referenceCount > 0 ? (
           <li>
-            <b>{counted(exercise.referenceCount, 'reference')}</b>
-            {exercise.activeReferenceId ? ', the active one too' : ''}
+            {exercise.activeReferenceId ? (
+              <Rich k="exercises.delete.references-active" params={{ count: exercise.referenceCount }} parts={{ references: <b>{t('common.count.reference', { count: exercise.referenceCount })}</b> }} />
+            ) : (
+              <b>{t('common.count.reference', { count: exercise.referenceCount })}</b>
+            )}
           </li>
         ) : null}
         {exercise.bestMs !== null ? (
           <li>
-            your best time <b>{formatTime(exercise.bestMs)}</b>
-            {MEDALS.has(exercise.status) ? ` and the ${exercise.status} medal` : ''}
+            {MEDALS.has(exercise.status) ? (
+              <Rich k="exercises.delete.best-medal" params={{ medal: t(`exercises.medal.${exercise.status as MedalName}`) }} parts={{ time: <b>{formatTime(exercise.bestMs)}</b> }} />
+            ) : (
+              <Rich k="exercises.delete.best" parts={{ time: <b>{formatTime(exercise.bestMs)}</b> }} />
+            )}
           </li>
         ) : null}
       </ul>
@@ -68,7 +75,11 @@ function SeveralExercises({ exercises }: { exercises: Exercise[] }) {
       </ul>
       {attempts + references > 0 ? (
         <p>
-          With them go <b>{counted(attempts, 'attempt')}</b> with {theirs(attempts)} cues and differences, and <b>{counted(references, 'reference')}</b>.
+          <Rich
+            k="exercises.delete.with-them"
+            params={{ count: attempts }}
+            parts={{ attempts: <b>{t('common.count.attempt', { count: attempts })}</b>, references: <b>{t('common.count.reference', { count: references })}</b> }}
+          />
         </p>
       ) : null}
     </>
@@ -110,9 +121,9 @@ export function DeleteExercisesDialog({ exercises, currentId, onKeep, onDeleted 
 
   return (
     <ConfirmDialog
-      title={one ? `Delete ${exercises[0]!.name}?` : `Delete ${counted(exercises.length, 'exercise')}?`}
-      keepLabel={one ? 'Keep it' : 'Keep them'}
-      confirmLabel={gate.label(one ? 'Delete exercise' : `Delete ${counted(exercises.length, 'exercise')}`)}
+      title={one ? t('exercises.delete.title-one', { name: exercises[0]!.name }) : t('exercises.delete.title-many', { count: exercises.length })}
+      keepLabel={one ? t('exercises.delete.keep-it') : t('exercises.delete.keep-them')}
+      confirmLabel={gate.label(one ? t('exercises.delete.confirm-one') : t('exercises.delete.confirm-many', { count: exercises.length }))}
       working={working}
       confirmDisabled={gate.blocked}
       notice={gate.notice}
@@ -121,12 +132,12 @@ export function DeleteExercisesDialog({ exercises, currentId, onKeep, onDeleted 
       onConfirm={confirm}
     >
       {one ? <OneExercise exercise={exercises[0]!} /> : <SeveralExercises exercises={exercises} />}
-      {current ? <p>{current.name} is your current exercise. The Drive button and Continue move to another exercise.</p> : null}
+      {current ? <p>{t('exercises.delete.current', { name: current.name })}</p> : null}
       <p>{catalogueText(exercises)}</p>
       {withHistory ? (
         <label className="confirm-check">
           <input type="checkbox" checked={cleanup} onChange={event => setCleanup(event.target.checked)} />
-          Also clean up the raw captures that nothing uses afterwards
+          {t('exercises.delete.cleanup')}
         </label>
       ) : null}
     </ConfirmDialog>

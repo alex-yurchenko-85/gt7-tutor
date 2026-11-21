@@ -1,0 +1,390 @@
+{
+  "voice.hard-brake": {
+    "text": "Hard brake",
+    "note": "Spoken cue at a brake point with a hard brake."
+  },
+  "voice.brake": {
+    "text": "Brake",
+    "note": "Spoken cue at a brake point."
+  },
+  "voice.light-brake": {
+    "text": "Light brake",
+    "note": "Spoken cue at a brake point with a light brake."
+  },
+  "voice.ease-off": {
+    "text": "Lift off",
+    "note": "Spoken cue where the player lifts off the throttle."
+  },
+  "voice.throttle": {
+    "text": "Throttle on",
+    "note": "Spoken cue where the player opens the throttle."
+  },
+  "voice.full-throttle": {
+    "text": "Full throttle",
+    "note": "Spoken cue where the player opens the throttle fully."
+  },
+  "voice.keep-left": {
+    "text": "More left",
+    "note": "Spoken cue when the car is to the right of the reference line."
+  },
+  "voice.keep-right": {
+    "text": "More right",
+    "note": "Spoken cue when the car is to the left of the reference line."
+  },
+  "voice.tighter": {
+    "text": "Closer to apex",
+    "note": "Spoken cue when the car is too far outside before the apex."
+  },
+  "voice.big-stop": {
+    "text": "Big brake ahead",
+    "note": "Spoken warning before a large brake zone."
+  },
+  "voice.guidance-paused": {
+    "text": "Guidance paused",
+    "note": "Spoken when the cues stop because the car is far off the reference."
+  },
+  "voice.guidance-resumed": {
+    "text": "Guidance resumed",
+    "note": "Spoken when the cues start again."
+  },
+  "voice.voice-check": {
+    "text": "Voice check",
+    "note": "Spoken by the voice test in Setup."
+  },
+  "voice.speed-30": {
+    "text": "thirty",
+    "note": "Spoken target speed 30 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-35": {
+    "text": "thirty five",
+    "note": "Spoken target speed 35 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-40": {
+    "text": "forty",
+    "note": "Spoken target speed 40 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-45": {
+    "text": "forty five",
+    "note": "Spoken target speed 45 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-50": {
+    "text": "fifty",
+    "note": "Spoken target speed 50 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-55": {
+    "text": "fifty five",
+    "note": "Spoken target speed 55 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-60": {
+    "text": "sixty",
+    "note": "Spoken target speed 60 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-65": {
+    "text": "sixty five",
+    "note": "Spoken target speed 65 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-70": {
+    "text": "seventy",
+    "note": "Spoken target speed 70 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-75": {
+    "text": "seventy five",
+    "note": "Spoken target speed 75 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-80": {
+    "text": "eighty",
+    "note": "Spoken target speed 80 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-85": {
+    "text": "eighty five",
+    "note": "Spoken target speed 85 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-90": {
+    "text": "ninety",
+    "note": "Spoken target speed 90 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-95": {
+    "text": "ninety five",
+    "note": "Spoken target speed 95 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-100": {
+    "text": "one hundred",
+    "note": "Spoken target speed 100 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-105": {
+    "text": "one oh five",
+    "note": "Spoken target speed 105 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-110": {
+    "text": "one ten",
+    "note": "Spoken target speed 110 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-115": {
+    "text": "one fifteen",
+    "note": "Spoken target speed 115 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-120": {
+    "text": "one twenty",
+    "note": "Spoken target speed 120 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-125": {
+    "text": "one twenty five",
+    "note": "Spoken target speed 125 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-130": {
+    "text": "one thirty",
+    "note": "Spoken target speed 130 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-135": {
+    "text": "one thirty five",
+    "note": "Spoken target speed 135 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-140": {
+    "text": "one forty",
+    "note": "Spoken target speed 140 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-145": {
+    "text": "one forty five",
+    "note": "Spoken target speed 145 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-150": {
+    "text": "one fifty",
+    "note": "Spoken target speed 150 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-155": {
+    "text": "one fifty five",
+    "note": "Spoken target speed 155 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-160": {
+    "text": "one sixty",
+    "note": "Spoken target speed 160 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-165": {
+    "text": "one sixty five",
+    "note": "Spoken target speed 165 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-170": {
+    "text": "one seventy",
+    "note": "Spoken target speed 170 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-175": {
+    "text": "one seventy five",
+    "note": "Spoken target speed 175 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-180": {
+    "text": "one eighty",
+    "note": "Spoken target speed 180 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-185": {
+    "text": "one eighty five",
+    "note": "Spoken target speed 185 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-190": {
+    "text": "one ninety",
+    "note": "Spoken target speed 190 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-195": {
+    "text": "one ninety five",
+    "note": "Spoken target speed 195 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-200": {
+    "text": "two hundred",
+    "note": "Spoken target speed 200 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-205": {
+    "text": "two oh five",
+    "note": "Spoken target speed 205 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-210": {
+    "text": "two ten",
+    "note": "Spoken target speed 210 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-215": {
+    "text": "two fifteen",
+    "note": "Spoken target speed 215 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-220": {
+    "text": "two twenty",
+    "note": "Spoken target speed 220 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-225": {
+    "text": "two twenty five",
+    "note": "Spoken target speed 225 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-230": {
+    "text": "two thirty",
+    "note": "Spoken target speed 230 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-235": {
+    "text": "two thirty five",
+    "note": "Spoken target speed 235 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-240": {
+    "text": "two forty",
+    "note": "Spoken target speed 240 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-245": {
+    "text": "two forty five",
+    "note": "Spoken target speed 245 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-250": {
+    "text": "two fifty",
+    "note": "Spoken target speed 250 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-255": {
+    "text": "two fifty five",
+    "note": "Spoken target speed 255 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-260": {
+    "text": "two sixty",
+    "note": "Spoken target speed 260 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-265": {
+    "text": "two sixty five",
+    "note": "Spoken target speed 265 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-270": {
+    "text": "two seventy",
+    "note": "Spoken target speed 270 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-275": {
+    "text": "two seventy five",
+    "note": "Spoken target speed 275 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-280": {
+    "text": "two eighty",
+    "note": "Spoken target speed 280 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-285": {
+    "text": "two eighty five",
+    "note": "Spoken target speed 285 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-290": {
+    "text": "two ninety",
+    "note": "Spoken target speed 290 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-295": {
+    "text": "two ninety five",
+    "note": "Spoken target speed 295 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-300": {
+    "text": "three hundred",
+    "note": "Spoken target speed 300 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-305": {
+    "text": "three oh five",
+    "note": "Spoken target speed 305 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-310": {
+    "text": "three ten",
+    "note": "Spoken target speed 310 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-315": {
+    "text": "three fifteen",
+    "note": "Spoken target speed 315 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-320": {
+    "text": "three twenty",
+    "note": "Spoken target speed 320 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-325": {
+    "text": "three twenty five",
+    "note": "Spoken target speed 325 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-330": {
+    "text": "three thirty",
+    "note": "Spoken target speed 330 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-335": {
+    "text": "three thirty five",
+    "note": "Spoken target speed 335 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-340": {
+    "text": "three forty",
+    "note": "Spoken target speed 340 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-345": {
+    "text": "three forty five",
+    "note": "Spoken target speed 345 km/h after a brake cue. Write the number as words."
+  },
+  "voice.speed-350": {
+    "text": "three fifty",
+    "note": "Spoken target speed 350 km/h after a brake cue. Write the number as words."
+  },
+  "voice.turn-1": {
+    "text": "Turn one",
+    "note": "Spoken name of turn 1 in a focus sentence. Write the number as a word."
+  },
+  "voice.turn-2": {
+    "text": "Turn two",
+    "note": "Spoken name of turn 2 in a focus sentence. Write the number as a word."
+  },
+  "voice.turn-3": {
+    "text": "Turn three",
+    "note": "Spoken name of turn 3 in a focus sentence. Write the number as a word."
+  },
+  "voice.turn-4": {
+    "text": "Turn four",
+    "note": "Spoken name of turn 4 in a focus sentence. Write the number as a word."
+  },
+  "voice.turn-5": {
+    "text": "Turn five",
+    "note": "Spoken name of turn 5 in a focus sentence. Write the number as a word."
+  },
+  "voice.turn-6": {
+    "text": "Turn six",
+    "note": "Spoken name of turn 6 in a focus sentence. Write the number as a word."
+  },
+  "voice.turn-7": {
+    "text": "Turn seven",
+    "note": "Spoken name of turn 7 in a focus sentence. Write the number as a word."
+  },
+  "voice.turn-8": {
+    "text": "Turn eight",
+    "note": "Spoken name of turn 8 in a focus sentence. Write the number as a word."
+  },
+  "voice.turn-9": {
+    "text": "Turn nine",
+    "note": "Spoken name of turn 9 in a focus sentence. Write the number as a word."
+  },
+  "voice.turn-10": {
+    "text": "Turn ten",
+    "note": "Spoken name of turn 10 in a focus sentence. Write the number as a word."
+  },
+  "voice.turn": {
+    "text": "Turn {turn}",
+    "note": "Shown name of a turn above 10. It is not spoken. {turn} is the turn number in digits."
+  },
+  "voice.focus-action.brake-early": {
+    "text": "Brake later.",
+    "note": "Focus action when the player brakes before the reference. It follows the turn name."
+  },
+  "voice.focus-action.brake-late": {
+    "text": "Brake earlier.",
+    "note": "Focus action when the player brakes after the reference. It follows the turn name."
+  },
+  "voice.focus-action.slow-corner": {
+    "text": "Carry more speed.",
+    "note": "Focus action when the player is slower than the reference in the corner. It follows the turn name."
+  },
+  "voice.focus-action.throttle-late": {
+    "text": "Throttle earlier.",
+    "note": "Focus action when the player opens the throttle after the reference. It follows the turn name."
+  },
+  "voice.focus-action.off-line": {
+    "text": "Stay on the line.",
+    "note": "Focus action when the player leaves the reference line. It follows the turn name."
+  },
+  "voice.focus-action.wide-apex": {
+    "text": "Closer to the apex.",
+    "note": "Focus action when the player is far from the apex. It follows the turn name."
+  },
+  "voice.focus": {
+    "text": "{turn}. {action}",
+    "note": "Focus sentence after an attempt, spoken and shown. {turn} is the turn name, {action} is the focus action."
+  },
+  "voice.brake-with-target": {
+    "text": "{action}. {speed}",
+    "note": "Shown text of a brake cue with its target speed, for example in the cue list. {action} is the brake cue, {speed} is the spoken speed with a capital letter."
+  }
+}

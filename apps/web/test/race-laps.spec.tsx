@@ -232,12 +232,12 @@ describe('race page, laps tab', () => {
 
   it('name_dialog_shows_a_save_error', async () => {
     const api = await openRace();
-    api.on(`PATCH /api/races/${RACE_ID}`, { status: 500, body: { reason: 'The database does not answer.' } });
+    api.on(`PATCH /api/races/${RACE_ID}`, { status: 500, body: { code: 'server-error' } });
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Change the name' }));
     const dialog = screen.getByRole('dialog', { name: 'Name the track' });
     await user.click(within(dialog).getByRole('button', { name: 'Save the name' }));
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('The database does not answer.');
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Something went wrong in GT7 Tutor (status 500).');
   });
 
   it('phone_lap_row_has_two_lines_and_the_pit_row_is_short', async () => {
@@ -251,7 +251,7 @@ describe('race page, laps tab', () => {
   });
 
   it('shows_not_found_for_an_unknown_race', async () => {
-    signedIn(new ApiStub()).on(`GET /api/races/${RACE_ID}`, { status: 404, body: { message: 'Race not found' } }).install();
+    signedIn(new ApiStub()).on(`GET /api/races/${RACE_ID}`, { status: 404, body: { code: 'race-not-found' } }).install();
     renderApp({ path: `/races/${RACE_ID}` });
     expect(await screen.findByRole('heading', { level: 1, name: 'This race is not here' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open Races' })).toHaveAttribute('href', '/races');
@@ -367,7 +367,7 @@ describe('race page, speed of all laps', () => {
   it('says_the_recording_is_gone_and_keeps_the_table', async () => {
     signedIn(new ApiStub())
       .on(`GET /api/races/${RACE_ID}`, raceDetail())
-      .on(`GET /api/races/${RACE_ID}/speed`, { status: 409, body: { code: 'raw-missing', reason: 'The recording of this race is no longer on the disk.' } })
+      .on(`GET /api/races/${RACE_ID}/speed`, { status: 409, body: { code: 'raw-missing' } })
       .install();
     renderApp({ path: `/races/${RACE_ID}` });
     expect(await screen.findByText('The recording of this race is no longer on the disk. The lap table stays.')).toBeInTheDocument();
@@ -378,10 +378,10 @@ describe('race page, speed of all laps', () => {
   it('shows_another_error_as_it_comes', async () => {
     signedIn(new ApiStub())
       .on(`GET /api/races/${RACE_ID}`, raceDetail())
-      .on(`GET /api/races/${RACE_ID}/speed`, { status: 500, body: { reason: 'The server could not read the file.' } })
+      .on(`GET /api/races/${RACE_ID}/speed`, { status: 500, body: { code: 'server-error' } })
       .install();
     renderApp({ path: `/races/${RACE_ID}` });
-    expect(await screen.findByText('The server could not read the file.')).toBeInTheDocument();
+    expect(await screen.findByText(/Something went wrong in GT7 Tutor \(status 500\)\./)).toBeInTheDocument();
   });
 
   it('shows_the_table_while_the_speed_loads', async () => {
@@ -483,7 +483,7 @@ describe('race page, cursor on the position chart', () => {
   });
 
   it('gives_the_lap_without_metres_when_the_recording_is_gone', async () => {
-    const chart = await openCursor({ status: 409, body: { code: 'raw-missing', reason: 'The recording of this race is no longer on the disk.' } });
+    const chart = await openCursor({ status: 409, body: { code: 'raw-missing' } });
     await waitFor(() => expect(cursorLine()).toBe('Cursor at lap 1: position 20.'));
     chart.focus();
     await userEvent.setup().keyboard('{ArrowRight}{ArrowRight}');

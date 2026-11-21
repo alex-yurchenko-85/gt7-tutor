@@ -51,7 +51,8 @@ import type {
   StorageUse,
   UpdateExerciseRequest
 } from '@gt7/contracts';
-import { RECURRING_DEFAULT_LAST } from '@gt7/contracts';
+import { isErrorCode, RECURRING_DEFAULT_LAST, type Params } from '@gt7/contracts';
+import { t } from '../app/i18n.ts';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -64,13 +65,26 @@ export class ApiError extends Error {
   }
 }
 
-type ErrorBody = { code?: unknown; reason?: unknown; message?: unknown };
+type ErrorBody = { code?: unknown; params?: unknown };
+
+function paramsOf(value: unknown): Params {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string | number] => typeof entry[1] === 'string' || typeof entry[1] === 'number'));
+}
 
 function messageOf(body: ErrorBody | null, status: number): string {
-  if (typeof body?.reason === 'string') return body.reason;
-  if (typeof body?.message === 'string') return body.message;
-  if (Array.isArray(body?.message)) return body.message.join(' ');
-  return `Something went wrong in GT7 Tutor (status ${status}). Reload the page. If it happens again, attach the log of this start to an issue.`;
+  const code = body?.code;
+  if (isErrorCode(code)) return t(`errors.${code}`, { ...paramsOf(body?.params), status });
+  return t('errors.unknown', { status });
+}
+
+function parsedBody(text: string): unknown {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -79,14 +93,18 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     init.headers = { accept: 'application/json', 'content-type': 'application/json' };
     init.body = JSON.stringify(body);
   }
-  const response = await fetch(`/api${path}`, init);
+  let response: Response;
+  try {
+    response = await fetch(`/api${path}`, init);
+  } catch {
+    throw new ApiError(0, 'no-connection', t('errors.no-connection'));
+  }
   const text = await response.text();
-  const parsed: unknown = text ? JSON.parse(text) : null;
   if (!response.ok) {
-    const errorBody = parsed as ErrorBody | null;
+    const errorBody = parsedBody(text) as ErrorBody | null;
     throw new ApiError(response.status, typeof errorBody?.code === 'string' ? errorBody.code : null, messageOf(errorBody, response.status));
   }
-  return parsed as T;
+  return (text ? JSON.parse(text) : null) as T;
 }
 
 const shared = new Map<string, Promise<unknown>>();

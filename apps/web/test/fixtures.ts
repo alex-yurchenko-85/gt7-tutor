@@ -43,9 +43,9 @@ export const TRACE: ReferenceTrace = {
 };
 
 export const CUES: ReferenceCue[] = [
-  { key: 'brake@332', kind: 'brake', sM: 332, endSM: 478, targetSpeedKph: 85, phrase: 'Hard brake. Eighty five', voice: 'hard-brake', bigStop: true, muted: false, clip: 'hard-brake', followClip: 'speed-85', text: 'Hard brake' },
-  { key: 'throttle@491', kind: 'throttle', sM: 491, endSM: null, targetSpeedKph: 95, phrase: 'Full throttle', voice: 'full-throttle', bigStop: false, muted: false, clip: 'full-throttle', followClip: null, text: 'Full throttle' },
-  { key: 'ease-off@600', kind: 'ease-off', sM: 600, endSM: null, targetSpeedKph: null, phrase: 'Lift off', voice: 'ease-off', bigStop: false, muted: false, clip: 'ease-off', followClip: null, text: 'Lift off' }
+  { key: 'brake@332', kind: 'brake', sM: 332, endSM: 478, targetSpeedKph: 85, phraseClips: ['hard-brake', 'speed-85'], voice: 'hard-brake', bigStop: true, muted: false, clip: 'hard-brake', followClip: 'speed-85' },
+  { key: 'throttle@491', kind: 'throttle', sM: 491, endSM: null, targetSpeedKph: 95, phraseClips: ['full-throttle'], voice: 'full-throttle', bigStop: false, muted: false, clip: 'full-throttle', followClip: null },
+  { key: 'ease-off@600', kind: 'ease-off', sM: 600, endSM: null, targetSpeedKph: null, phraseClips: ['ease-off'], voice: 'ease-off', bigStop: false, muted: false, clip: 'ease-off', followClip: null }
 ];
 
 const FOCUS_CLIPS = ['brake-early', 'brake-late', 'slow-corner', 'throttle-late', 'off-line', 'wide-apex'].flatMap(kind => [1, 2, 3].map(turn => `focus-${kind}-${turn}`));

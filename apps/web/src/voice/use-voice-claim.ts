@@ -3,6 +3,7 @@ import { useLiveConnection, useLiveState } from '../api/live.tsx';
 import { errorText } from '../app/resource.ts';
 import { SYSTEM_CLIPS } from './clips.ts';
 import { setWantsVoice } from './device.ts';
+import { t } from '../app/i18n.ts';
 
 export type VoiceClaim = { here: boolean; ready: boolean; busy: boolean; problem: string | null; claim(): Promise<void>; release(): void };
 
@@ -20,7 +21,7 @@ export function useVoiceClaim(): VoiceClaim {
       await player.unlock();
       await player.preload(SYSTEM_CLIPS);
     } catch (error) {
-      setProblem(`The browser did not start audio: ${errorText(error)}`);
+      setProblem(t('app.voice.audio-failed', { reason: errorText(error) }));
       return;
     } finally {
       setBusy(false);

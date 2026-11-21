@@ -1,4 +1,4 @@
-import { counted } from '../../app/plural.ts';
+import { t } from '../../app/i18n.ts';
 
 type LapCount = { complete: boolean; firstLap: number; lapsDone: number; lapsInRace: number };
 
@@ -7,13 +7,13 @@ export function lastLap(race: { firstLap: number; lapsDone: number }): number {
 }
 
 export function lapsText(race: LapCount): string {
-  if (race.complete) return counted(race.lapsDone, 'lap');
-  if (race.firstLap === 1) return `${race.lapsDone} of ${race.lapsInRace} laps, not finished`;
-  return `laps ${race.firstLap} to ${lastLap(race)} of ${race.lapsInRace}, not finished`;
+  if (race.complete) return t('races.laps', { count: race.lapsDone });
+  if (race.firstLap === 1) return t('races.laps.partial', { done: race.lapsDone, count: race.lapsInRace });
+  return t('races.laps.cut', { first: race.firstLap, last: lastLap(race), count: race.lapsInRace });
 }
 
 export function positionCaption(firstLap: number, last: number, finished: boolean): string {
-  if (finished) return 'position, start to finish';
-  if (firstLap === 1) return `position, start to lap ${last}`;
-  return `position, laps ${firstLap} to ${last}`;
+  if (finished) return t('races.position.finished');
+  if (firstLap === 1) return t('races.position.to-lap', { lap: last });
+  return t('races.position.laps', { first: firstLap, last });
 }

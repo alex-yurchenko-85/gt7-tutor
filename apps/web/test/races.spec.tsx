@@ -125,9 +125,9 @@ describe('races list', () => {
   });
 
   it('races_read_error_is_shown', async () => {
-    signedIn(new ApiStub()).on('GET /api/races', { status: 500, body: { reason: 'The database does not answer.' } }).install();
+    signedIn(new ApiStub()).on('GET /api/races', { status: 500, body: { code: 'server-error' } }).install();
     renderApp({ path: '/races' });
-    expect(await screen.findByText('The database does not answer.')).toBeInTheDocument();
+    expect(await screen.findByText(/Something went wrong in GT7 Tutor \(status 500\)\./)).toBeInTheDocument();
   });
 
   it('record_a_race_starts_the_recording_and_opens_its_screen', async () => {
@@ -139,7 +139,7 @@ describe('races list', () => {
   });
 
   it('record_a_race_says_what_to_do_when_another_recording_runs', async () => {
-    racesApi().on('POST /api/races/record', { status: 409, body: { code: 'busy', reason: 'A capture or training is already active.' } });
+    racesApi().on('POST /api/races/record', { status: 409, body: { code: 'busy' } });
     renderApp({ path: '/races' });
     await userEvent.click(await screen.findByRole('button', { name: 'Record a race' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/^A recording or a training runs\. Stop it first\.$/);
@@ -147,7 +147,7 @@ describe('races list', () => {
   });
 
   it('record_a_race_shows_the_reason_of_another_error', async () => {
-    racesApi().on('POST /api/races/record', { status: 503, body: { code: 'shutting-down', reason: 'The server is stopping.' } });
+    racesApi().on('POST /api/races/record', { status: 503, body: { code: 'shutting-down' } });
     renderApp({ path: '/races' });
     await userEvent.click(await screen.findByRole('button', { name: 'Record a race' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('The server is stopping.');
@@ -215,7 +215,7 @@ describe('races list', () => {
   });
 
   it('delete_error_stays_in_the_dialog', async () => {
-    racesApi().on('POST /api/races/delete', { status: 404, body: { message: 'Race not found' } });
+    racesApi().on('POST /api/races/delete', { status: 404, body: { code: 'race-not-found' } });
     renderApp({ path: '/races' });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Select' }));

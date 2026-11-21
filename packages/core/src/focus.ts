@@ -1,10 +1,10 @@
 import type { FindingKindName, Sample } from '@gt7/contracts';
 import { DEFAULT_CONFIG, type CoreConfig } from './config.ts';
 import { cornerAt, type Corner } from './corners.ts';
-import { focusClipKey, focusText } from './cue-text.ts';
+import { focusClipKey } from './cue-text.ts';
 import { comparableSize, type Finding, type Recurring } from './findings.ts';
 
-export type Focus = { kind: FindingKindName; turn: number; text: string; clip: string | null };
+export type Focus = { kind: FindingKindName; turn: number; clip: string | null };
 
 export type BrakeReaction = { eventKey: string; reactionMs: number };
 
@@ -26,7 +26,7 @@ export function focusSentence(recurring: Recurring[], latest: Finding[], corners
   const finding = mostFrequent(recurring) ?? largest(latest);
   const corner = finding ? cornerAt(corners, finding.sM) : null;
   if (!finding || !corner) return null;
-  return { kind: finding.kind, turn: corner.number, text: focusText(finding.kind, corner.number), clip: focusClipKey(finding.kind, corner.number) };
+  return { kind: finding.kind, turn: corner.number, clip: focusClipKey(finding.kind, corner.number) };
 }
 
 function brakeOnsetsMs(samples: Sample[], onThreshold: number): number[] {

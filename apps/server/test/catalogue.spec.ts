@@ -216,9 +216,9 @@ describe('catalogue', () => {
     const cookie = await signIn();
     const check = await http().post('/api/catalogue/update/check').set('Cookie', cookie).expect(201);
     expect(check.body.diff.removed).toHaveLength(21);
-    expect(check.body.diff.rejected).toContain('21 of 100 Licence');
+    expect(check.body.diff.rejected).toEqual({ lost: 21, total: 100, family: 'Licence' });
     const apply = await http().post('/api/catalogue/update/apply').set('Cookie', cookie).send({ token: check.body.token }).expect(409);
-    expect(apply.body).toMatchObject({ code: 'rejected', reason: check.body.diff.rejected });
+    expect(apply.body).toEqual({ code: 'rejected', params: check.body.diff.rejected });
     expect((await http().get('/api/catalogue').set('Cookie', cookie).expect(200)).body.filter((entry: { family: string }) => entry.family === 'Licence')).toHaveLength(100);
   });
 
@@ -228,11 +228,11 @@ describe('catalogue', () => {
     await start(hanging, { CATALOGUE_TIMEOUT_MS: '100' });
     const cookie = await signIn();
     const timeout = await http().post('/api/catalogue/update/check').set('Cookie', cookie).expect(502);
-    expect(timeout.body).toMatchObject({ code: 'update-failed', reason: expect.stringContaining('no answer within 100 ms') });
+    expect(timeout.body).toEqual({ code: 'update-failed', params: { detail: expect.stringContaining('no answer within 100 ms') } });
 
     await start(recordedSources((page, text) => (page === 'Circuit Experience' ? 'This page has a new layout.' : text)));
     const badPage = await http().post('/api/catalogue/update/check').set('Cookie', cookie).expect(502);
-    expect(badPage.body.reason).toContain('Circuit Experience');
+    expect(badPage.body.params.detail).toContain('Circuit Experience');
     expect((await http().get('/api/catalogue').set('Cookie', cookie).expect(200)).body).toHaveLength(committed.entries.length);
     expect(existsSync(join(dataDir, 'catalogue', 'catalogue.json'))).toBe(false);
   });

@@ -29,8 +29,8 @@ describe('api client', () => {
 
   it('failed_reference_request_is_tried_again', async () => {
     let fail = true;
-    const stub = new ApiStub().on('GET /api/references/r1/path', () => (fail ? { status: 500, body: { reason: 'Busy' } } : { gridM: 2 })).install();
-    await expect(api.referenceTrace('r1')).rejects.toThrow('Busy');
+    const stub = new ApiStub().on('GET /api/references/r1/path', () => (fail ? { status: 409, body: { code: 'busy' } } : { gridM: 2 })).install();
+    await expect(api.referenceTrace('r1')).rejects.toThrow('A capture or training is already active.');
     fail = false;
     expect(await api.referenceTrace('r1')).toEqual({ gridM: 2 });
     expect(count(stub, 'GET /api/references/r1/path')).toBe(2);

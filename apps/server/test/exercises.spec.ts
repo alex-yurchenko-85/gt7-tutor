@@ -124,7 +124,7 @@ describe('exercises, captures and references', () => {
       .send({ mutedCues: ['brake@332'] })
       .expect(200);
     expect(patched.body).toMatchObject({ mutedCues: ['brake@332'] });
-    await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'no-such-entry' }).expect(404);
+    expect((await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'no-such-entry' }).expect(404)).body).toEqual({ code: 'not-found' });
     const listed = await http().get('/api/exercises').set('Cookie', cookie).expect(200);
     expect(listed.body).toHaveLength(3);
   });
@@ -280,7 +280,7 @@ describe('exercises, captures and references', () => {
         .set('Cookie', cookie)
         .send({ exerciseId, captureId, first, last })
         .expect(400);
-      expect(refused.body).toEqual({ code: 'no-timer-run', reason: 'The range does not hold the whole demonstration.' });
+      expect(refused.body).toEqual({ code: 'no-timer-run' });
     }
     expect(await db('references').where({ exercise_id: exerciseId })).toEqual([]);
   });
@@ -339,7 +339,7 @@ describe('exercises, captures and references', () => {
     const playerCapture = await capture(exerciseId, 'ce-clean', 'player');
     const aborted = await storedAttempt(exerciseId, playerCapture, demo, 'aborted');
     const refused = await http().post(`/api/attempts/${aborted}/promote`).set('Cookie', cookie).expect(409);
-    expect(refused.body).toEqual({ code: 'not-complete', reason: 'Only a complete attempt can become a reference.' });
+    expect(refused.body).toEqual({ code: 'not-complete' });
     const history = await http().get(`/api/exercises/${exerciseId}/references`).set('Cookie', cookie).expect(200);
     expect(history.body.map((item: { id: string }) => item.id)).toEqual([demo]);
   });
@@ -409,7 +409,7 @@ describe('exercises, captures and references', () => {
     const older = await reference(exerciseId, captureId);
     const active = await reference(exerciseId, captureId);
     const refused = await http().delete(`/api/references/${active}`).set('Cookie', cookie).expect(409);
-    expect(refused.body).toMatchObject({ code: 'reference-active', reason: 'Activate another reference first.' });
+    expect(refused.body).toEqual({ code: 'reference-active' });
     expect(await db('references').where({ id: active })).toHaveLength(1);
     await http().delete(`/api/references/${older}`).set('Cookie', cookie).expect(200);
   });
@@ -430,7 +430,7 @@ describe('exercises, captures and references', () => {
     } finally {
       appDb.off('query', record);
     }
-    expect(refused.body).toMatchObject({ code: 'reference-in-use', reason: 'Attempts point to this reference. It cannot be deleted.' });
+    expect(refused.body).toEqual({ code: 'reference-in-use' });
     const deleteAt = queries.findIndex(sql => sql.startsWith('delete from "references"'));
     expect(deleteAt).toBeGreaterThanOrEqual(0);
     expect(queries.slice(0, deleteAt).filter(sql => sql.includes('"attempts"'))).toEqual([]);
@@ -472,18 +472,18 @@ describe('exercises, captures and references', () => {
     expect(cues.body[0]).toMatchObject({
       kind: 'brake',
       targetSpeedKph: 115,
-      phrase: 'Hard brake. One fifteen',
+      phraseClips: ['hard-brake', 'speed-115'],
       voice: 'hard-brake',
       bigStop: true,
       muted: false,
       clip: 'hard-brake',
-      followClip: 'speed-115',
-      text: 'Hard brake'
+      followClip: 'speed-115'
     });
+    expect(cues.body[0]).not.toHaveProperty('text');
     expect(cues.body.filter((cue: { muted: boolean }) => cue.muted).map((cue: { key: string }) => cue.key)).toEqual(['throttle@411']);
     await http().patch(`/api/exercises/${exerciseId}`).set('Cookie', cookie).send({ speakTargets: false }).expect(200);
     const quiet = await http().get(`/api/references/${referenceId}/cues`).set('Cookie', cookie).expect(200);
-    expect(quiet.body[0]).toMatchObject({ phrase: 'Hard brake', targetSpeedKph: 115, clip: 'hard-brake', followClip: 'speed-115', text: 'Hard brake' });
+    expect(quiet.body[0]).toMatchObject({ phraseClips: ['hard-brake'], targetSpeedKph: 115, clip: 'hard-brake', followClip: 'speed-115' });
   });
 
   it('reference_clips_are_the_clips_of_its_analysis', async () => {
@@ -558,14 +558,14 @@ describe('exercises, captures and references', () => {
     await as(http().get(`/api/exercises/${exerciseId}`));
     await as(http().patch(`/api/exercises/${exerciseId}`).send({ mutedCues: [] }));
     await as(http().post('/api/captures').send({ exerciseId, purpose: 'demo' }));
-    await as(http().post(`/api/captures/${captureId}/stop`));
+    expect((await as(http().post(`/api/captures/${captureId}/stop`))).body).toEqual({ code: 'capture-not-found' });
     await as(http().post(`/api/exercises/${exerciseId}/reference-proposals`).send({ captureIds }));
     await as(http().post(`/api/exercises/${otherExercise}/reference-proposals`).send({ captureIds }));
     await as(http().post('/api/references').send({ exerciseId, captureId, first: 457, last: 1422 }));
     await as(http().post('/api/references').send({ exerciseId: otherExercise, captureId, first: 457, last: 1422 }));
-    await as(http().post(`/api/attempts/${attemptId}/promote`));
+    expect((await as(http().post(`/api/attempts/${attemptId}/promote`))).body).toEqual({ code: 'attempt-not-found' });
     await as(http().get(`/api/exercises/${exerciseId}/references`));
-    await as(http().post(`/api/references/${referenceId}/activate`));
+    expect((await as(http().post(`/api/references/${referenceId}/activate`))).body).toEqual({ code: 'reference-not-found' });
     await as(http().delete(`/api/references/${referenceId}`));
     await as(http().post(`/api/references/${referenceId}/check`).send({ captureId }));
     await as(http().get(`/api/references/${referenceId}/cues`));

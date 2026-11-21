@@ -81,7 +81,7 @@ describe('running training', () => {
   });
 
   it('failed_stop_shows_the_error_in_the_bar', async () => {
-    trainingApi().on('POST /api/training/disarm', { status: 500, body: { message: 'Server problem' } }).install();
+    trainingApi().on('POST /api/training/disarm', { status: 500, body: { code: 'server-error' } }).install();
     const view = renderApp({ path: REVIEW_PATH });
     await sendLiveState(view, { mode: 'armed', exerciseId: EXERCISE_ID });
     await userEvent.setup().click(within(await screen.findByRole('status', { name: 'Training' })).getByRole('button', { name: 'Stop training' }));
@@ -89,7 +89,7 @@ describe('running training', () => {
   });
 
   it('stop_treats_not_armed_as_done', async () => {
-    trainingApi().on('POST /api/training/disarm', { status: 409, body: { code: 'not-armed', message: 'No training runs for this profile.' } }).install();
+    trainingApi().on('POST /api/training/disarm', { status: 409, body: { code: 'not-armed' } }).install();
     const view = renderApp({ path: REVIEW_PATH });
     await sendLiveState(view, { mode: 'armed', exerciseId: EXERCISE_ID });
     const user = userEvent.setup();

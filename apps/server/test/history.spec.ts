@@ -94,11 +94,11 @@ describe('deleting attempts and history', () => {
     const own = await exerciseWithAttempts(1);
     const other = await anotherProfile(app!, cookie, 'Second');
     const foreign = await exerciseWithAttempts(1, other);
-    await http().post('/api/attempts/delete').set('Cookie', cookie).send({ ids: [own.attempts[0], foreign.attempts[0]] }).expect(404);
+    expect((await http().post('/api/attempts/delete').set('Cookie', cookie).send({ ids: [own.attempts[0], foreign.attempts[0]] }).expect(404)).body).toEqual({ code: 'attempt-not-found' });
     const listed = await http().get(`/api/exercises/${own.exerciseId}/attempts`).set('Cookie', cookie).expect(200);
     expect(listed.body.days.flatMap((day: { attempts: { id: string }[] }) => day.attempts.map(attempt => attempt.id))).toEqual(own.attempts);
     expect(await db('attempts').where({ id: foreign.attempts[0] })).toHaveLength(1);
-    await http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'exercise', exerciseId: foreign.exerciseId, cleanup: false }).expect(404);
+    expect((await http().post('/api/history/delete').set('Cookie', cookie).send({ scope: 'exercise', exerciseId: foreign.exerciseId, cleanup: false }).expect(404)).body).toEqual({ code: 'exercise-not-found' });
     expect(await db('attempts').where({ id: foreign.attempts[0] })).toHaveLength(1);
   });
 
@@ -235,7 +235,7 @@ describe('deleting attempts and history', () => {
     expect(response.body).toEqual({ exercises: 2, attempts: 3, references: 2, cleanup: null });
     const listed = await http().get('/api/exercises').set('Cookie', cookie).expect(200);
     expect(listed.body.map((item: { id: string }) => item.id)).toEqual([third.exerciseId]);
-    await http().get(`/api/exercises/${first.exerciseId}`).set('Cookie', cookie).expect(404);
+    expect((await http().get(`/api/exercises/${first.exerciseId}`).set('Cookie', cookie).expect(404)).body).toEqual({ code: 'exercise-not-found' });
     expect(await db('attempts').whereIn('exercise_id', [first.exerciseId, second.exerciseId])).toEqual([]);
     expect(await db('references').whereIn('exercise_id', [first.exerciseId, second.exerciseId])).toEqual([]);
     expect(await db('cue_events').whereIn('attempt_id', first.attempts)).toEqual([]);
@@ -248,7 +248,7 @@ describe('deleting attempts and history', () => {
     const own = await exerciseWithAttempts(1);
     const other = await anotherProfile(app!, cookie, 'Second');
     const foreign = await exerciseWithAttempts(1, other);
-    await http().post('/api/exercises/remove').set('Cookie', cookie).send({ ids: [own.exerciseId, foreign.exerciseId], cleanup: false }).expect(404);
+    expect((await http().post('/api/exercises/remove').set('Cookie', cookie).send({ ids: [own.exerciseId, foreign.exerciseId], cleanup: false }).expect(404)).body).toEqual({ code: 'exercise-not-found' });
     await http().post('/api/exercises/remove').set('Cookie', cookie).send({ ids: [own.exerciseId, crypto.randomUUID()], cleanup: false }).expect(404);
     expect(await db('exercises').whereIn('id', [own.exerciseId, foreign.exerciseId])).toHaveLength(2);
     expect(await db('attempts').where({ exercise_id: own.exerciseId })).toHaveLength(1);

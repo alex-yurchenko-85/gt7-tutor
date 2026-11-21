@@ -10,11 +10,11 @@ import { paths, useRouter } from '../../app/router.tsx';
 import { CompareCharts, CompareMap, Differences, type DifferencesWords, type LineComparison, type LineWords } from '../review/line-compare.tsx';
 import { differenceText, sizeText } from '../cues/cue-format.ts';
 import { raceName } from './RacesView.tsx';
-import { RAW_MISSING_TEXT, isRawMissing } from './race-errors.ts';
+import { isRawMissing, rawMissingText } from './race-errors.ts';
+import { t } from '../../app/i18n.ts';
+import { Rich } from '../../app/rich-text.tsx';
 
 const GAP_DIGITS = 3;
-const NO_MATCH_TEXT = 'These two laps do not match. Choose another lap.';
-const ONE_LAP_TEXT = 'This race has one lap. There is no other lap to compare.';
 
 function lapNumber(race: RaceDetail, value: string | null): number | null {
   if (value === null) return null;
@@ -34,22 +34,22 @@ function defaultWith(race: RaceDetail, lap: number): number | null {
 }
 
 function optionText(lap: RaceLap): string {
-  return `Lap ${lap.number} · ${formatTime(lap.timeMs)}`;
+  return t('races.compare.option', { lap: lap.number, time: formatTime(lap.timeMs) });
 }
 
 function describeAgainst(withLap: number): (difference: Difference) => string {
-  return difference => (difference.kind === 'off-line' ? `Up to ${sizeText(difference.size, difference.unit)} from the line of lap ${withLap}` : differenceText(difference));
+  return difference => (difference.kind === 'off-line' ? t('races.compare.off-line', { size: sizeText(difference.size, difference.unit), lap: withLap }) : differenceText(difference));
 }
 
 function timeNote(race: RaceDetail, lap: number, withLap: number): string | null {
   const compared = race.laps.find(item => item.number === lap);
   const other = race.laps.find(item => item.number === withLap);
   const outLap = compared?.pitOut || other?.pitOut;
-  if ((compared?.pitIn || other?.pitIn) && outLap) return 'The curve starts at the pit exit. The rest of the gap is in the pit lane.';
-  if (compared?.pitIn || other?.pitIn) return 'The rest of the gap is in the pit lane.';
-  if (compared?.pitOut && other?.pitOut) return `This lap and lap ${withLap} start in the pit lane. The curve starts at the pit exit.`;
-  if (compared?.pitOut) return 'This lap starts in the pit lane. The curve starts at the pit exit.';
-  if (other?.pitOut) return `Lap ${withLap} starts in the pit lane. The curve starts at the pit exit.`;
+  if ((compared?.pitIn || other?.pitIn) && outLap) return t('races.compare.pit-in-out');
+  if (compared?.pitIn || other?.pitIn) return t('races.compare.pit-in');
+  if (compared?.pitOut && other?.pitOut) return t('races.compare.both-out', { lap: withLap });
+  if (compared?.pitOut) return t('races.compare.this-out');
+  if (other?.pitOut) return t('races.compare.other-out', { lap: withLap });
   return null;
 }
 
@@ -58,43 +58,43 @@ function lapWords(race: RaceDetail, lap: number, withLap: number): LineWords {
   const pit = race.laps.some(item => (item.number === lap || item.number === withLap) && (item.pitIn || item.pitOut));
   const metres = groupedMetres;
   return {
-    referenceName: `lap ${withLap}`,
-    youName: `lap ${lap}`,
-    referenceLegend: `lap ${withLap}${withLap === race.bestLap ? ', best' : ''}`,
-    youLegend: `lap ${lap}`,
-    timeLabel: `Time lost to lap ${withLap}, s`,
+    referenceName: t('races.compare.lap-name', { lap: withLap }),
+    youName: t('races.compare.lap-name', { lap }),
+    referenceLegend: withLap === race.bestLap ? t('races.compare.best-legend', { lap: withLap }) : t('races.compare.lap-name', { lap: withLap }),
+    youLegend: t('races.compare.lap-name', { lap }),
+    timeLabel: t('races.compare.time-label', { lap: withLap }),
     fields: {
-      speed: { title: 'Speed', unit: 'km/h' },
-      throttle: { title: 'Throttle', unit: null },
-      brake: { title: 'Brake', unit: null },
-      time: { title: `Time lost to lap ${withLap}`, unit: 's' }
+      speed: { title: t('races.compare.speed'), unit: t('races.compare.kph') },
+      throttle: { title: t('races.compare.throttle'), unit: null },
+      brake: { title: t('races.compare.brake'), unit: null },
+      time: { title: t('races.compare.time', { lap: withLap }), unit: t('races.compare.seconds') }
     },
     ...(note === null ? {} : { timeNote: note }),
-    mapTitle: `Map of the line of lap ${withLap} and the line of lap ${lap}`,
+    mapTitle: t('races.compare.map', { with: withLap, lap }),
     mapTitleHidden: true,
-    mapLabel: `Map of the line of lap ${withLap} and the line of lap ${lap}`,
-    mapNotes: pit ? ['A gap in the line is the pit lane.'] : [],
-    sideLabel: `The side distance of lap ${lap} is drawn ${SIDE_FACTOR} times larger.`,
-    sideNote: `The line of lap ${lap} is drawn ${SIDE_FACTOR} times farther from the line of lap ${withLap} than it was, so that a difference of 1 m shows. The labels give the true distance at the largest point of each turn.`,
-    dialogLabel: `Line of lap ${withLap} and line of lap ${lap} of ${raceName(race)}`,
-    dialogHint: `Select a difference to find it on lap ${lap}.`,
-    dialogLine: `Line of lap ${withLap}`,
-    hint: 'Move the pointer or a finger across a chart, or focus a chart and use the arrow keys. The map point shows the same place.',
+    mapLabel: t('races.compare.map', { with: withLap, lap }),
+    mapNotes: pit ? [t('races.compare.map-pit')] : [],
+    sideLabel: t('races.compare.side-label', { lap, factor: SIDE_FACTOR }),
+    sideNote: t('races.compare.side-note', { lap, with: withLap, factor: SIDE_FACTOR }),
+    dialogLabel: t('races.compare.dialog-label', { with: withLap, lap, race: raceName(race) }),
+    dialogHint: t('races.compare.dialog-hint', { lap }),
+    dialogLine: t('races.compare.dialog-line', { with: withLap }),
+    hint: t('races.compare.hint'),
     metres,
-    cursorText: (cursorSM, lengthM) => `Cursor at ${metres(cursorSM)} of ${metres(lengthM)}.`,
+    cursorText: (cursorSM, lengthM) => t('races.cursor', { place: metres(cursorSM), length: metres(lengthM) }),
     describe: describeAgainst(withLap)
   };
 }
 
 function differencesWords(withLap: number): DifferencesWords {
   return {
-    intro: () => `Turns in the order of the lap. Time lost is measured from telemetry. Lap ${withLap} is one of your laps, not the best possible line.`,
-    none: 'No differences above the limits between these two laps.',
-    emptyTurn: 'No difference',
+    intro: () => t('races.compare.intro', { lap: withLap }),
+    none: t('races.compare.none'),
+    emptyTurn: t('races.compare.no-difference'),
     orderSwitch: false,
     neutralSmall: true,
     allTurns: true,
-    wholeLabel: 'Whole lap',
+    wholeLabel: t('races.compare.whole'),
     describe: describeAgainst(withLap)
   };
 }
@@ -102,21 +102,21 @@ function differencesWords(withLap: number): DifferencesWords {
 function CompareHeading({ lap, withLap }: { lap: RaceLap; withLap: RaceLap }) {
   const gapMs = lap.timeMs - withLap.timeMs;
   const seconds = (Math.abs(gapMs) / 1000).toFixed(GAP_DIGITS);
+  const other = <span className="race-nowrap">{t('races.compare.lap-name', { lap: withLap.number })}</span>;
   return (
     <div className="race-compare-title">
       <h2>
         {gapMs === 0 ? (
-          <>
-            {`Lap ${lap.number} has the same time as `}
-            <span className="race-nowrap">{`lap ${withLap.number}.`}</span>
-          </>
+          <Rich k="races.compare.same" params={{ lap: lap.number }} parts={{ with: other }} />
         ) : (
-          <>
-            {`Lap ${lap.number} is `}
-            <span className={gapMs > 0 ? 'race-gap-word slower' : 'race-gap-word faster'}>{`${seconds} s ${gapMs > 0 ? 'slower' : 'faster'}`}</span>
-            {' than '}
-            <span className="race-nowrap">{`lap ${withLap.number}`}</span>
-          </>
+          <Rich
+            k="races.compare.gap"
+            params={{ lap: lap.number }}
+            parts={{
+              gap: <span className={gapMs > 0 ? 'race-gap-word slower' : 'race-gap-word faster'}>{t(gapMs > 0 ? 'races.compare.slower' : 'races.compare.faster', { seconds })}</span>,
+              with: other
+            }}
+          />
         )}
       </h2>
     </div>
@@ -129,7 +129,7 @@ function LapSelects({ race, lap, withLap }: { race: RaceDetail; lap: number; wit
     <div className="race-compare-selects">
       <div className="field">
         <label htmlFor="race-compare-lap" className="visually-hidden">
-          Lap
+          {t('races.compare.lap')}
         </label>
         <select id="race-compare-lap" value={lap} onChange={event => navigate(paths.raceCompare(race.id, Number(event.target.value), withLap))}>
           {race.laps
@@ -143,7 +143,7 @@ function LapSelects({ race, lap, withLap }: { race: RaceDetail; lap: number; wit
       </div>
       <div className="field">
         <label htmlFor="race-compare-with" className="visually-hidden">
-          Compare with
+          {t('races.compare.with')}
         </label>
         <select id="race-compare-with" value={withLap} onChange={event => navigate(paths.raceCompare(race.id, lap, Number(event.target.value)))}>
           {race.laps
@@ -160,8 +160,8 @@ function LapSelects({ race, lap, withLap }: { race: RaceDetail; lap: number; wit
 }
 
 function errorMessage(error: Error): string {
-  if (isRawMissing(error)) return RAW_MISSING_TEXT;
-  if (error instanceof ApiError && error.code === 'no-match') return NO_MATCH_TEXT;
+  if (isRawMissing(error)) return rawMissingText();
+  if (error instanceof ApiError && error.code === 'no-match') return t('races.compare.no-match');
   return errorText(error);
 }
 
@@ -208,7 +208,7 @@ export function CompareTab({ race }: { race: RaceDetail }) {
   const askedWith = lapNumber(race, search.get('with'));
   const withParam = askedWith !== null && askedWith !== lap ? askedWith : undefined;
   const compare = useResource(() => (lap === null ? Promise.resolve(null) : api.raceCompare(race.id, lap, withParam)), [race.id, lap, withParam]);
-  if (race.laps.length < 2 || lap === null) return <p className="lede race-compare-none">{ONE_LAP_TEXT}</p>;
+  if (race.laps.length < 2 || lap === null) return <p className="lede race-compare-none">{t('races.compare.one-lap')}</p>;
   const withLap = compare.data?.lap === lap ? compare.data.withLap : (withParam ?? defaultWith(race, lap));
   const lapRow = race.laps.find(item => item.number === lap)!;
   const withRow = race.laps.find(item => item.number === withLap) ?? null;
@@ -226,7 +226,7 @@ export function CompareTab({ race }: { race: RaceDetail }) {
       ) : compare.data && compare.data.lap === lap && withRow ? (
         <CompareBody key={`${lap}-${withRow.number}`} race={race} comparison={compare.data} lap={lap} withLap={withRow.number} />
       ) : (
-        <p className="sub">Comparing the two laps…</p>
+        <p className="sub">{t('races.compare.comparing')}</p>
       )}
     </section>
   );

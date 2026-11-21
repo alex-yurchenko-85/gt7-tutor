@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { CuePreview, PreviewCue, PreviewDrop, PreviewDropReason, Sample } from '@gt7/contracts';
+import { ENGLISH, type CuePreview, type PreviewCue, type PreviewDrop, type PreviewDropReason, type Sample } from '@gt7/contracts';
 import { DEFAULT_CONFIG, activeTimesMs, replayCoach, type CoachTrace, type ReferencePath, type SuppressReason } from '@gt7/core';
 import type { Knex } from 'knex';
 import { LiveHub } from '../live/live-hub.service.js';
@@ -53,7 +53,7 @@ export class CuePreviewService {
     private readonly hub: LiveHub,
     config: ConfigService
   ) {
-    this.phraseMs = phraseDurations(config.getOrThrow<string>('AUDIO_DIR'));
+    this.phraseMs = phraseDurations(config.getOrThrow<string>('AUDIO_DIR'), ENGLISH.lang);
   }
 
   async preview(userId: string, referenceId: string): Promise<CuePreview> {

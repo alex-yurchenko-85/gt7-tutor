@@ -106,6 +106,9 @@ describe('cue list', () => {
     await userEvent.setup().click(toggle);
     await waitFor(() => expect(api.calls.find(call => call.method === 'PATCH')?.body).toEqual({ speakTargets: false }));
     await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'false'));
+    const first = screen.getByRole('listitem', { name: 'Cue 1' });
+    expect(within(first).getByText('Hard brake')).toBeInTheDocument();
+    expect(within(first).getByRole('button', { name: 'Hear Hard brake' })).toBeInTheDocument();
   });
 
   it('side_cue_distance_control_saves_the_value', async () => {
@@ -346,7 +349,7 @@ describe('cues not spoken', () => {
 
   it('a_failed_preview_shows_no_tag_and_no_error', async () => {
     exerciseApi()
-      .on(PREVIEW, { status: 500, body: { code: 'internal', reason: 'down' } })
+      .on(PREVIEW, { status: 500, body: { code: 'internal' } })
       .install();
     renderApp({ path: CUES_PATH });
     await screen.findByRole('listitem', { name: 'Cue 2' });

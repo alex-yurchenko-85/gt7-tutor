@@ -31,6 +31,7 @@ GT7 Tutor is a self-hosted voice tutor for Gran Turismo 7 on PS5.
 You drive with a DualSense controller and watch the game on your TV, as usual.
 A computer on your home network receives the telemetry of the PS5 and runs GT7 Tutor.
 A browser on that computer or on a phone shows the interface and plays short English voice cues.
+The interface and the voice are in English only. Language packs for other languages are welcome: see [Add a language](CONTRIBUTING.md#add-a-language).
 GT7 Tutor needs no account and no cloud service, and it does not see the game picture.
 It is an unofficial fan project (see [Licences](#licences)).
 
@@ -71,7 +72,7 @@ For developers, [docs/protocol.md](docs/protocol.md#game-timer) gives the detail
 
 - A computer with macOS or Linux. Windows is not supported.
 - Docker Desktop (or Docker Engine on Linux), which runs the database.
-- Node.js 26 or later. Install it with the installer from <https://nodejs.org/en/download>. You do not need pnpm or Homebrew.
+- Node.js 26 or later. Install it with the installer from <https://nodejs.org/en/download>.
 - A current browser on that computer or on a phone on the same home network.
 - For training: a PS5 with Gran Turismo 7 on the same home network. The demo needs no PS5.
 
@@ -225,14 +226,6 @@ Read the log before you attach it. It can contain addresses on your home network
 
 The [user guide](docs/user-guide/README.md#common-problems) covers problems inside the application, for example an attempt that does not start.
 
-## Security
-
-Each profile has a password.
-The password keeps other people on your home network out of your profile.
-GT7 Tutor uses plain HTTP on the home network.
-It does not protect against an attacker on the same network.
-Do not make GT7 Tutor reachable from the internet.
-
 ## Documentation
 
 - [User guide](docs/user-guide/README.md): every screen, from the first profile to the review, with screenshots.
@@ -253,7 +246,8 @@ pnpm replay --file <raw capture .ndjson>
 pnpm race:import --file <raw capture .ndjson> --profile <profile name>
 pnpm evaluate-coach --attempt ce-slow --reference demo-a --first 457 --last 1422
 pnpm catalogue:build --record fixtures/catalogue-sources   # network, rewrites the catalogue
-pnpm audio:generate        # network, about 400 MB, rewrites the voice clips
+pnpm audio:generate --lang en   # network, about 400 MB, rewrites the voice clips in content/audio/en/
+pnpm locale:check <language code>   # checks a language pack in packages/contracts/locales/
 ```
 
 Always pass `--ip` with the current console address.
@@ -280,22 +274,6 @@ Always pass `--ip` with the current console address.
 | Pit stop | A stop in the pit lane between an in-lap and an out-lap |
 | Off the track | A moment with two or more wheels on a surface that is not the track or a kerb |
 | Recurring place | A place of the track with off-track moments in 3 or more laps of one race |
-
-## Files and dependencies
-
-`apps/server` is the NestJS server. `apps/web` is the React interface.
-`packages/` holds the core logic, the shared contracts, the capture code and the catalogue builder.
-`content/` holds the catalogue file (`content/catalogue/`) and the voice clips (`content/audio/`).
-`apps/server/db/migrations/` holds the database migrations. Each schema change is a new migration file.
-`start.sh` and `tools/start/` hold the start script. `tools/setup/` holds `pnpm db:reset`.
-`fixtures/` holds short recorded captures for tests and for `./start.sh --demo`, and short cuts of two recorded races for the race tests. They do not contain the console address.
-`tools/` holds the capture, replay and evaluation commands.
-`docs/` holds the user guide and the technical documents.
-The landing page at gt7tutor.app lives in <https://github.com/alex-yurchenko-85/gt7-tutor-site>. `.github/assets/` holds the logo files of this README.
-PostgreSQL stores metadata, attempts and statistics. Raw capture files remain the source of truth for telemetry.
-
-The production stack is TypeScript, NestJS, React, PostgreSQL and Knex with `pg`.
-The project ignores `data/`, `.demo/`, dependencies and `.env` files in Git.
 
 ## Support the project
 

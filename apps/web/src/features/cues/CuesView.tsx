@@ -22,7 +22,6 @@ import { IconButton } from '../../app/IconButton.tsx';
 import { useWideLayout } from '../../app/layout.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { formatTime } from '../../app/format.ts';
-import { counted } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths } from '../../app/router.tsx';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
@@ -36,6 +35,8 @@ import {
 import { notSpokenSummary, notSpokenText, previewClips, previewPositionM } from './preview-timeline.ts';
 import { useCuePreviewRun, usePreviewElapsed, type CuePreviewRun } from './use-cue-preview-run.ts';
 import './cues.css';
+import { clipText, phraseText, t } from '../../app/i18n.ts';
+import { Rich } from '../../app/rich-text.tsx';
 
 const OFFSET_SAVE_DELAY_MS = 500;
 
@@ -75,8 +76,8 @@ function OffsetSlider({ number, offsetMs, onChange }: OffsetSliderProps) {
   return (
     <span className="offset">
       <span className="offset-head">
-        <span className="offset-label">Timing</span>
-        <output role="status" aria-label={`Timing of cue ${number}`} className={offsetMs === 0 ? 'zero' : undefined}>
+        <span className="offset-label">{t('exercises.cues.timing')}</span>
+        <output role="status" aria-label={t('exercises.cues.timing-of', { number })} className={offsetMs === 0 ? 'zero' : undefined}>
           {text}
         </output>
       </span>
@@ -88,14 +89,14 @@ function OffsetSlider({ number, offsetMs, onChange }: OffsetSliderProps) {
           step={CUE_OFFSET_STEP_MS}
           value={-offsetMs}
           style={range}
-          aria-label={`Move cue ${number} earlier or later`}
+          aria-label={t('exercises.cues.move', { number })}
           aria-valuetext={text}
           onChange={event => onChange(-Number(event.target.value))}
         />
       </span>
       <span className="offset-ends" aria-hidden="true">
-        <span>1 s earlier</span>
-        <span>0.5 s later</span>
+        <span>{t('exercises.cues.earliest')}</span>
+        <span>{t('exercises.cues.latest')}</span>
       </span>
     </span>
   );
@@ -103,6 +104,7 @@ function OffsetSlider({ number, offsetMs, onChange }: OffsetSliderProps) {
 
 type CueRowProps = {
   cue: ReferenceCue;
+  phrase: string;
   number: number;
   muted: boolean;
   offsetMs: number;
@@ -115,20 +117,20 @@ type CueRowProps = {
   onHear(): void;
 };
 
-function CueRow({ cue, number, muted, offsetMs, recurring, reaction, notSpoken, speaking, onToggle, onOffset, onHear }: CueRowProps) {
+function CueRow({ cue, phrase, number, muted, offsetMs, recurring, reaction, notSpoken, speaking, onToggle, onOffset, onHear }: CueRowProps) {
   const flagged = recurring.length > 0 && !muted;
   return (
-    <li className={`note${flagged ? ' warn' : ''}${muted ? ' off' : ''}`} aria-label={`Cue ${number}`}>
+    <li className={`note${flagged ? ' warn' : ''}${muted ? ' off' : ''}`} aria-label={t('exercises.cues.cue', { number })}>
       <span className="n">{number}</span>
       <span className="distance">
-        <b>{Math.round(cue.sM)}</b> m
+        <Rich k="app.unit.metres" parts={{ value: <b>{Math.round(cue.sM)}</b> }} />
       </span>
       <span className="kind">
         <Glyph kind={cue.kind} />
       </span>
       <span className="phrase">
-        <b>{cue.phrase ?? 'No voice cue'}</b>
-        {speaking ? <span className="tag ink">Speaking</span> : null}
+        <b>{phrase}</b>
+        {speaking ? <span className="tag ink">{t('exercises.cues.speaking')}</span> : null}
         {notSpoken !== null ? (
           <span className="tag outline">
             <svg className="dots" viewBox="0 0 24 24" aria-hidden="true">
@@ -136,34 +138,34 @@ function CueRow({ cue, number, muted, offsetMs, recurring, reaction, notSpoken, 
               <circle cx="12" cy="12" r="2.2" />
               <circle cx="19" cy="12" r="2.2" />
             </svg>
-            Not spoken
+            {t('exercises.cues.not-spoken')}
           </span>
         ) : null}
-        {cue.bigStop ? <small>Big brake ahead first, about 2 s before this point</small> : null}
+        {cue.bigStop ? <small>{t('exercises.cues.big-stop')}</small> : null}
         {notSpoken !== null ? <small className="not-spoken">{notSpoken}</small> : null}
         {reaction ? (
           <small className="reaction">
-            You start to brake {reactionText(reaction.medianMs)} here ({attemptsText(reaction.count)})
+            {t('exercises.cues.reaction', { reaction: reactionText(reaction.medianMs), attempts: attemptsText(reaction.count) })}
           </small>
         ) : null}
         {recurring.map(item => (
           <em key={item.kind}>{recurringText(item)}</em>
         ))}
       </span>
-      <span className="target" aria-label="Target speed">
+      <span className="target" aria-label={t('exercises.cues.target')}>
         {cue.targetSpeedKph === null ? (
           '–'
         ) : (
           <>
-            <b>{cue.targetSpeedKph}</b> km/h
-            {cue.kind === 'brake' ? <small>lowest speed</small> : null}
+            <Rich k="app.unit.kph" parts={{ value: <b>{cue.targetSpeedKph}</b> }} />
+            {cue.kind === 'brake' ? <small>{t('exercises.cues.lowest')}</small> : null}
           </>
         )}
       </span>
       <span className="act">
         <span className="pair">
-          <IconButton icon="play" label={`Hear ${cue.phrase ?? 'cue'}`} onClick={onHear} disabled={!cue.phrase} />
-          <IconButton icon={muted ? 'speaker-off' : 'speaker'} label={`${muted ? 'Unmute' : 'Mute'} cue ${number}`} primary={muted} pressed={muted} onClick={onToggle} />
+          <IconButton icon="play" label={t('exercises.cues.hear', { phrase })} onClick={onHear} />
+          <IconButton icon={muted ? 'speaker-off' : 'speaker'} label={t(muted ? 'exercises.cues.unmute' : 'exercises.cues.mute', { number })} primary={muted} pressed={muted} onClick={onToggle} />
         </span>
         <OffsetSlider number={number} offsetMs={offsetMs} onChange={onOffset} />
       </span>
@@ -173,28 +175,35 @@ function CueRow({ cue, number, muted, offsetMs, recurring, reaction, notSpoken, 
 
 function TurnRow({ corner }: { corner: CornerInfo }) {
   return (
-    <li className="note turn" aria-label={`Turn ${corner.number}`}>
-      <span className="n">T{corner.number}</span>
+    <li className="note turn" aria-label={t('charts.turn.title', { turn: corner.number })}>
+      <span className="n">{t('charts.turn.badge', { turn: corner.number })}</span>
       <span className="distance">
-        <b>{Math.round(corner.turnInSM)}</b> m
+        <Rich k="app.unit.metres" parts={{ value: <b>{Math.round(corner.turnInSM)}</b> }} />
       </span>
       <span className="kind">
         <Glyph kind="turn" />
       </span>
       <span className="phrase">
-        <b>Turn {corner.number}</b>
-        <small>
-          Turn-in {Math.round(corner.turnInSM)} m. Apex {Math.round(corner.apexSM)} m. Radius {Math.round(corner.radiusM)} m. Not spoken.
-        </small>
+        <b>{t('charts.turn.title', { turn: corner.number })}</b>
+        <small>{t('exercises.cues.turn-in', { turnIn: Math.round(corner.turnInSM), apex: Math.round(corner.apexSM), radius: Math.round(corner.radiusM) })}</small>
       </span>
       <span className="target">
-        <b>{Math.round(corner.apexSpeedMps * KPH_PER_MPS)}</b> km/h at the apex
+        <Rich k="exercises.cues.apex-speed" parts={{ speed: <b>{Math.round(corner.apexSpeedMps * KPH_PER_MPS)}</b> }} />
       </span>
     </li>
   );
 }
 
 type Row = { sM: number; cue: ReferenceCue; number: number } | { sM: number; corner: CornerInfo };
+
+function spokenClips(cue: ReferenceCue, speakTargets: boolean): string[] {
+  return speakTargets && cue.followClip ? [cue.clip, cue.followClip] : [cue.clip];
+}
+
+function phraseOfKey(cues: ReferenceCue[], key: string, speakTargets: boolean): string | null {
+  const cue = cues.find(item => item.key === key);
+  return cue ? phraseText(spokenClips(cue, speakTargets)) : null;
+}
 
 function roadbookRows(cues: ReferenceCue[], corners: CornerInfo[]): Row[] {
   const rows: Row[] = [
@@ -213,16 +222,16 @@ type SpeakSwitchProps = { on: boolean; onChange(next: boolean): void };
 function SpeakTargetsSwitch({ on, onChange }: SpeakSwitchProps) {
   return (
     <div className="speak-switch">
-      <button type="button" role="switch" aria-checked={on} aria-label="Speak target speeds" onClick={() => onChange(!on)}>
+      <button type="button" role="switch" aria-checked={on} aria-label={t('exercises.cues.speak-targets')} onClick={() => onChange(!on)}>
         <span className="track" aria-hidden="true">
           <span className="knob" />
         </span>
-        <span>Speak target speeds</span>
+        <span>{t('exercises.cues.speak-targets')}</span>
       </button>
       <p className="sub">
         {on
-          ? 'After a brake phrase, the voice says the lowest speed of the reference in that place, for example “Hard brake. Eighty five”.'
-          : 'The voice says the action only. The screen still shows the target speeds.'}
+          ? t('exercises.cues.speak-on', { example: phraseText(['hard-brake', 'speed-85']) })
+          : t('exercises.cues.speak-off')}
       </p>
     </div>
   );
@@ -242,19 +251,19 @@ function SideCueDistance({ distanceM, onChange }: SideDistanceProps) {
           value={distanceM === null ? SIDE_CUES_OFF : String(distanceM)}
           onChange={event => onChange(event.target.value === SIDE_CUES_OFF ? null : Number(event.target.value))}
         >
-          <option value={SIDE_CUES_OFF}>Off</option>
+          <option value={SIDE_CUES_OFF}>{t('exercises.cues.side-off')}</option>
           {SIDE_CUE_DISTANCES_M.map(value => (
             <option key={value} value={String(value)}>
-              {value} m
+              {t('app.unit.metres', { value })}
             </option>
           ))}
         </select>
-        <label htmlFor="side-cue-distance">Side cue distance</label>
+        <label htmlFor="side-cue-distance">{t('exercises.cues.side-distance')}</label>
       </div>
       <p className="sub">
         {distanceM === null
-          ? 'The voice does not say “More left” or “More right”.'
-          : `The voice says “More left” or “More right” when the car stays more than ${distanceM} m from the reference line.`}
+          ? t('exercises.cues.side-none', { left: clipText('keep-left'), right: clipText('keep-right') })
+          : t('exercises.cues.side-on', { left: clipText('keep-left'), right: clipText('keep-right'), distance: distanceM })}
       </p>
     </div>
   );
@@ -264,7 +273,7 @@ type PreviewStatusProps = { run: CuePreviewRun; phraseOf(key: string): string | 
 
 function PreviewStatus({ run, phraseOf, numberOf }: PreviewStatusProps) {
   const elapsedMs = usePreviewElapsed(run);
-  if (!run.preview) return <p className="sub preview-note">Preview plays the cues on this device in the time of the reference.</p>;
+  if (!run.preview) return <p className="sub preview-note">{t('exercises.cues.preview-note')}</p>;
   const { timeMs } = run.preview;
   const share = timeMs > 0 ? Math.min(1, elapsedMs / timeMs) : 0;
   const key = run.speaking?.rowKey ?? null;
@@ -274,10 +283,10 @@ function PreviewStatus({ run, phraseOf, numberOf }: PreviewStatusProps) {
       <span className="preview-bar" aria-hidden="true">
         <i style={{ width: `${share * 100}%` }} />
       </span>
-      <span className="preview-time">{`${formatTime(elapsedMs, 1)} of ${formatTime(timeMs, 1)}, measured`}</span>
+      <span className="preview-time">{t('exercises.cues.preview-time', { elapsed: formatTime(elapsedMs, 1), total: formatTime(timeMs, 1) })}</span>
       {key !== null && phrase !== null ? (
         <p className="preview-now">
-          <span>The voice says:</span> <b>{phrase}</b> (cue {numberOf(key)})
+          <span>{t('exercises.cues.voice-says')}</span> <b>{phrase}</b> {t('exercises.cues.cue-number', { number: numberOf(key) ?? '' })}
         </p>
       ) : null}
     </div>
@@ -327,7 +336,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
   );
 
   if (data.error) return <p className="error">{errorText(data.error)}</p>;
-  if (!data.data) return <p className="sub">Reading the cues…</p>;
+  if (!data.data) return <p className="sub">{t('exercises.cues.reading')}</p>;
   const [cues, trace, recurring, corners, reactions] = data.data;
 
   const save = async (body: Parameters<typeof api.updateExercise>[1], reloadPreview = true) => {
@@ -404,24 +413,23 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
   };
   const notSpoken = new Map(dropped.map(drop => [drop.rowKey, notSpokenText(drop, numberOf)]));
   const hear = (cue: ReferenceCue) => {
-    const clips = speakTargets && cue.followClip ? [cue.clip, cue.followClip] : [cue.clip];
-    player.preview(...clips).catch((error: unknown) => setProblem(`The phrase did not play: ${errorText(error)}`));
+    player.preview(...spokenClips(cue, speakTargets)).catch((error: unknown) => setProblem(t('exercises.cues.play-failed', { reason: errorText(error) })));
   };
 
   const map = (
-    <MapPanel title={`Reference line, ${Math.round(trace.lengthM)} m`} legend={['reference', 'turn', 'cue', 'muted', 'not-spoken']}
+    <MapPanel title={t('exercises.cues.map-title', { metres: Math.round(trace.lengthM) })} legend={['reference', 'turn', 'cue', 'muted', 'not-spoken']}
       viewIcon={!wide}
       actions={
         run.preview ? (
-          <IconButton icon="stop" label="Stop the preview" primary onClick={run.stop} />
+          <IconButton icon="stop" label={t('exercises.cues.stop-preview')} primary onClick={run.stop} />
         ) : (
-          <IconButton icon="play" label="Preview the cues" onClick={() => void startPreview()} disabled={!preview.data || preview.loading || saving > 0} />
+          <IconButton icon="play" label={t('exercises.cues.start-preview')} onClick={() => void startPreview()} disabled={!preview.data || preview.loading || saving > 0} />
         )
       }
-      below={<PreviewStatus run={run} phraseOf={key => cues.find(cue => cue.key === key)?.phrase ?? null} numberOf={numberOf} />} notes={['Select a number to mute that cue']} onView={() => setViewing(true)}>
+      below={<PreviewStatus run={run} phraseOf={key => phraseOfKey(cues, key, speakTargets)} numberOf={numberOf} />} notes={[t('exercises.cues.map-note')]} onView={() => setViewing(true)}>
       <PreviewMap
         run={run}
-        label="Reference line with the voice cues and the turns. Select a number to mute or unmute that cue"
+        label={t('exercises.cues.map-label')}
         reference={trace}
         marks={[
           ...cornerMarks(corners),
@@ -431,7 +439,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
             muted: muted.includes(cue.key),
             notSpoken: notSpoken.has(cue.key),
             speaking: run.speaking?.rowKey === cue.key,
-            title: `${muted.includes(cue.key) ? 'Unmute' : 'Mute'} cue ${index + 1}`,
+            title: t(muted.includes(cue.key) ? 'exercises.cues.unmute' : 'exercises.cues.mute', { number: index + 1 }),
             onSelect: () => toggle(cue.key)
           }))
         ]}
@@ -444,8 +452,8 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
         reference={trace}
         corners={corners}
         items={cueItems(cues, cue => muted.includes(cue.key))}
-        listTitle="Voice cues"
-        listHint="Select a cue to find it on the line."
+        listTitle={t('exercises.cues.list-title')}
+        listHint={t('exercises.cues.list-hint')}
       />
     </MapPanel>
   );
@@ -459,8 +467,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
           <SideCueDistance distanceM={sideDistanceM} onChange={changeSideDistance} />
         </div>
         <p className="sub cues-intro">
-          {counted(cues.length, 'cue')} and {counted(corners.length, 'turn')} found in the reference. Distance is from the section start. A muted cue is not spoken, and its
-          decision is still recorded. Timing moves one cue earlier or later in steps of 0.1 s.
+          {t('exercises.cues.intro', { cues: t('common.count.cue', { count: cues.length }), turns: t('common.count.turn', { count: corners.length }) })}
           {dropped.length > 0 ? ` ${notSpokenSummary(dropped.length)}` : null}
         </p>
         {problem ? (
@@ -474,6 +481,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
               <CueRow
                 key={row.cue.key}
                 cue={row.cue}
+                phrase={phraseText(spokenClips(row.cue, speakTargets))}
                 number={row.number}
                 muted={muted.includes(row.cue.key)}
                 offsetMs={offsets[row.cue.key] ?? 0}
@@ -491,9 +499,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
           )}
         </ol>
         <p className="sub" style={{ marginTop: 12 }}>
-          Yellow rows mark places where a difference from the reference repeats in your recent attempts.
-          Target speeds round down to 5 km/h. Turns are found from the bend of the reference line; the voice says “Closer to apex” only when you run wide
-          before an apex.
+          {t('exercises.cues.footer', { tighter: clipText('tighter') })}
         </p>
       </div>
       {wide ? map : null}
@@ -504,7 +510,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
 export function CuesView({ exerciseId }: { exerciseId: string }) {
   const exercise = useExercise(exerciseId);
   if (exercise.error) return <LoadProblem error={exercise.error} kind="exercise" />;
-  if (!exercise.data) return <p className="sub">Reading the exercise…</p>;
+  if (!exercise.data) return <p className="sub">{t('exercises.reading-exercise')}</p>;
   return (
     <section>
       <ExerciseHeader exercise={exercise.data} />
@@ -512,9 +518,9 @@ export function CuesView({ exerciseId }: { exerciseId: string }) {
         <CueList exercise={exercise.data} referenceId={exercise.data.activeReferenceId} />
       ) : (
         <div className="panel">
-          <p className="lede">The cues come from the reference. This exercise has no reference yet.</p>
+          <p className="lede">{t('exercises.cues.no-reference')}</p>
           <Link to={paths.record(exercise.data.id)} className="btn inline">
-            Record the reference
+            {t('exercises.cues.record')}
           </Link>
         </div>
       )}

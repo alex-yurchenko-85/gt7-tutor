@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
+import type { MessageKey } from '@gt7/contracts';
 import { Icon } from '../app/icons.tsx';
 import './charts.css';
+import { t } from '../app/i18n.ts';
 
 export type LegendKey = 'reference' | 'you' | 'turn' | 'cue' | 'muted' | 'not-spoken';
 
@@ -19,13 +21,13 @@ export type MapPanelProps = {
   extraLegend?: { mark: string; text: string }[];
 };
 
-const LEGEND: { key: LegendKey; mark: string; text: string }[] = [
-  { key: 'reference', mark: 'ref', text: 'reference line' },
-  { key: 'you', mark: 'you', text: 'you' },
-  { key: 'turn', mark: 'turn', text: 'turn' },
-  { key: 'cue', mark: 'cue', text: 'voice cue' },
-  { key: 'muted', mark: 'cue muted', text: 'muted cue' },
-  { key: 'not-spoken', mark: 'cue not-spoken', text: 'cue not spoken' }
+const LEGEND: { key: LegendKey; mark: string; text: MessageKey }[] = [
+  { key: 'reference', mark: 'ref', text: 'charts.legend.reference' },
+  { key: 'you', mark: 'you', text: 'charts.legend.you' },
+  { key: 'turn', mark: 'turn', text: 'charts.legend.turn' },
+  { key: 'cue', mark: 'cue', text: 'charts.legend.cue' },
+  { key: 'muted', mark: 'cue muted', text: 'charts.legend.muted' },
+  { key: 'not-spoken', mark: 'cue not-spoken', text: 'charts.legend.not-spoken' }
 ];
 
 export function MapPanel({ title, hideTitle = false, legend, far = null, notes = [], actions, onView, children, below, viewIcon = false, legendTexts = {}, extraLegend = [] }: MapPanelProps) {
@@ -34,9 +36,9 @@ export function MapPanel({ title, hideTitle = false, legend, far = null, notes =
       <div className={hideTitle ? 'map-panel-head no-title' : 'map-panel-head'}>
         {hideTitle ? null : <h2>{title}</h2>}
         {actions ? <div className="map-panel-actions">{actions}</div> : null}
-        <button type="button" className={`icon-button${viewIcon ? ' icon-only' : ''}`} aria-label="View the map in full screen" onClick={onView}>
+        <button type="button" className={`icon-button${viewIcon ? ' icon-only' : ''}`} aria-label={t('charts.map.view-label')} onClick={onView}>
           <Icon name="expand" size={16} />
-          {viewIcon ? null : 'View'}
+          {viewIcon ? null : t('charts.map.view')}
         </button>
       </div>
       {children}
@@ -45,7 +47,7 @@ export function MapPanel({ title, hideTitle = false, legend, far = null, notes =
         {LEGEND.filter(item => legend.includes(item.key)).map(item => (
           <span key={item.key}>
             <i className={item.mark} />
-            {legendTexts[item.key] ?? item.text}
+            {legendTexts[item.key] ?? t(item.text)}
           </span>
         ))}
         {extraLegend.map(item => (

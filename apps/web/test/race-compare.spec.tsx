@@ -175,7 +175,7 @@ describe('race page, compare tab', () => {
     ['raw-missing', 'The recording of this race is no longer on the disk. The lap table stays.'],
     ['no-match', 'These two laps do not match. Choose another lap.']
   ])('shows_the_%s_text_and_keeps_the_selects', async (code, text) => {
-    await openCompare('?lap=5&with=2', ringDetail(), () => ({ status: 409, body: { code, reason: 'Server text.' } }));
+    await openCompare('?lap=5&with=2', ringDetail(), () => ({ status: 409, body: { code } }));
     expect(await screen.findByText(text)).toBeInTheDocument();
     expect(await screen.findByRole('combobox', { name: 'Lap' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Compare with' })).toBeInTheDocument();

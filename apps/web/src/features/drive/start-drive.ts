@@ -5,6 +5,7 @@ import { useDemo } from '../../app/demo.tsx';
 import { errorText } from '../../app/resource.ts';
 import { paths, useRouter } from '../../app/router.tsx';
 import { stopTraining, useTraining } from '../../app/use-training.ts';
+import { t } from '../../app/i18n.ts';
 
 export const ARM_SETTLE_MS = 2000;
 
@@ -26,7 +27,7 @@ export type DriveStart = {
   busy: boolean;
   problem: string | null;
   asking: boolean;
-  trainingName: string;
+  trainingName: string | null;
   start(): void;
   confirm(): void;
   cancel(): void;
@@ -74,11 +75,11 @@ export function useStartDrive(exerciseId: string, referenceId: string | null): D
     busy,
     problem,
     asking,
-    trainingName: training.exerciseName ?? 'another exercise',
+    trainingName: training.exerciseName,
     start: () => {
       setProblem(null);
       if (training.on && training.exerciseId === exerciseId) return navigate(paths.drive(exerciseId));
-      if (training.running) return setProblem(training.attemptNumber === null ? 'An attempt runs. Finish it or stop the training first.' : `Attempt ${training.attemptNumber} runs. Finish it or stop the training first.`);
+      if (training.running) return setProblem(training.attemptNumber === null ? t('app.gate.attempt-runs') : t('app.gate.attempt-number-runs', { number: training.attemptNumber }));
       if (training.on) return setAsking(true);
       void begin(false);
     },

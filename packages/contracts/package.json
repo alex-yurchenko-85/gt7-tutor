@@ -8,9 +8,10 @@
       "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./locales/*": "./locales/*"
   },
-  "files": ["dist"],
+  "files": ["dist", "locales"],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.build.json --noEmit"

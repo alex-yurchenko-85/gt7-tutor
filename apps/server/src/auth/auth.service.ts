@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, HttpException, HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 import type { AuthState, ChangePasswordRequest, ProfileCard, ProfileCredentials, ProfileUser } from '@gt7/contracts';
 import type { Knex } from 'knex';
@@ -6,6 +6,7 @@ import { KNEX } from '../storage/knex.provider.js';
 import { hashPassword, verifyPassword } from './password.js';
 import { SESSION_LIFETIME_MS } from './session-cookie.js';
 import { SignInLimiter } from './sign-in-limiter.js';
+import { httpError } from '../http-errors.js';
 
 export type IssuedSession = { user: ProfileUser; token: string };
 
@@ -43,7 +44,7 @@ export class AuthService {
     const user = await this.db.transaction(async trx => {
       await trx.raw('lock table users in share row exclusive mode');
       const existing = await trx('users').first('id');
-      if (existing) throw new ConflictException('A profile already exists. Sign in instead.');
+      if (existing) throw httpError(409, 'profile-exists');
       const [created] = await trx('users').insert({ name: credentials.name, password_hash: passwordHash }).returning(['id', 'name']);
       return created as ProfileUser;
     });
@@ -56,7 +57,7 @@ export class AuthService {
       const [created] = await this.db('users').insert({ name: credentials.name, password_hash: passwordHash }).returning(['id', 'name']);
       return created as ProfileUser;
     } catch (error) {
-      if (isUniqueViolation(error)) throw new ConflictException('A profile with this name already exists.');
+      if (isUniqueViolation(error)) throw httpError(409, 'profile-name-taken');
       throw error;
     }
   }
@@ -67,7 +68,7 @@ export class AuthService {
     const valid = await verifyPassword(credentials.password, row?.password_hash ?? (await this.unknownUserHash()));
     if (!row || !valid) {
       this.limiter.recordFailure(credentials.name, address);
-      throw new UnauthorizedException('Wrong name or password.');
+      throw httpError(401, 'wrong-name-or-password');
     }
     this.limiter.clear(credentials.name, address);
     return { user: { id: row.id, name: row.name }, token: await this.issueSession(row.id) };
@@ -78,7 +79,7 @@ export class AuthService {
     const row = await this.db('users').where({ id: user.id }).first('password_hash');
     if (!(await verifyPassword(body.currentPassword, row.password_hash))) {
       this.limiter.recordFailure(user.name, address);
-      throw new ForbiddenException({ code: 'wrong-password', reason: 'The current password is not correct.' });
+      throw httpError(403, 'wrong-password');
     }
     this.limiter.clear(user.name, address);
     const passwordHash = await hashPassword(body.newPassword);
@@ -93,7 +94,7 @@ export class AuthService {
     const row = await this.db('users').where({ id: user.id }).first('password_hash');
     if (!(await verifyPassword(password, row.password_hash))) {
       this.limiter.recordFailure(user.name, address);
-      throw new ForbiddenException({ code: 'wrong-password', reason: 'The password is not correct.' });
+      throw httpError(403, 'wrong-password');
     }
     this.limiter.clear(user.name, address);
   }
@@ -114,7 +115,7 @@ export class AuthService {
 
   private refuseWhenBlocked(name: string, address: string): void {
     if (this.limiter.isBlocked(name, address)) {
-      throw new HttpException('Too many failed sign-in attempts. Wait 15 minutes and try again.', HttpStatus.TOO_MANY_REQUESTS);
+      throw httpError(429, 'too-many-sign-ins');
     }
   }
 

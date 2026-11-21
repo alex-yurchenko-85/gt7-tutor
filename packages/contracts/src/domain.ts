@@ -180,13 +180,12 @@ export type ReferenceCue = {
   sM: number;
   endSM: number | null;
   targetSpeedKph: number | null;
-  phrase: string | null;
+  phraseClips: string[] | null;
   voice: string;
   bigStop: boolean;
   muted: boolean;
   clip: string;
   followClip: string | null;
-  text: string;
 };
 
 export type CornerInfo = { number: number; turnInSM: number; apexSM: number; radiusM: number; apexSpeedMps: number; zoneFromSM: number; zoneToSM: number };
@@ -197,7 +196,7 @@ export type BrakeReactionSummary = { eventKey: string; medianMs: number; count: 
 
 export type AttemptReaction = { eventKey: string; reactionMs: number };
 
-export type FocusSummary = { text: string; turn: number; kind: FindingKindName };
+export type FocusSummary = { kind: FindingKindName; turn: number; clip: string | null };
 
 export type StorageUse = { rawBytes: number; profileRawBytes: number; profileCaptures: number };
 

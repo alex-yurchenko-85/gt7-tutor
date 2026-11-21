@@ -3,6 +3,7 @@ import { api } from '../api/client.ts';
 import { useLiveState } from '../api/live.tsx';
 import { errorText } from './resource.ts';
 import { useRouter } from './router.tsx';
+import { t } from './i18n.ts';
 
 export function RunningCapture() {
   const capturing = useLiveState(({ state }) => state?.mode === 'capturing');
@@ -26,9 +27,9 @@ export function RunningCapture() {
 
   return (
     <div className="running-bar" role="status">
-      <span>A recording is running. While it runs, you cannot record, start an attempt or check reception.</span>
+      <span>{t('app.capture.bar.text')}</span>
       <button className="btn inline" type="button" onClick={() => void stop()} disabled={busy}>
-        Stop recording
+        {t('app.capture.bar.stop')}
       </button>
       {problem ? <span className="error">{problem}</span> : null}
     </div>

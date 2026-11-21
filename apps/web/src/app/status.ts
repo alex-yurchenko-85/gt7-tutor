@@ -1,13 +1,14 @@
 import type { LiveState } from '@gt7/contracts';
+import { t } from './i18n.ts';
 
 export type Status = { tone: 'on' | 'warn' | 'off' | 'idle'; text: string };
 
 export function telemetryStatus(state: LiveState | null, connected: boolean, demo = false): Status {
-  if (!connected || !state) return { tone: 'off', text: 'GT7 Tutor does not answer. Check that it runs on the computer.' };
-  if (state.mode === 'idle') return { tone: 'idle', text: 'No telemetry now. It starts with a recording, a training or a check.' };
-  if (state.connection === 'connected') return { tone: 'on', text: 'Receiving telemetry' };
-  if (state.connection === 'stale') return { tone: 'warn', text: demo ? 'Waiting for the recorded data.' : 'Waiting for packets' };
-  return { tone: 'off', text: demo ? 'Recorded attempt ended' : 'No packets. Check the console address.' };
+  if (!connected || !state) return { tone: 'off', text: t('app.status.no-answer') };
+  if (state.mode === 'idle') return { tone: 'idle', text: t('app.status.idle') };
+  if (state.connection === 'connected') return { tone: 'on', text: t('app.status.receiving') };
+  if (state.connection === 'stale') return { tone: 'warn', text: demo ? t('app.status.waiting-recorded') : t('app.status.waiting') };
+  return { tone: 'off', text: demo ? t('app.status.recorded-ended') : t('app.status.no-packets') };
 }
 
 export type ConsoleState = 'recorded-data' | 'no-address' | 'receiving' | 'address-saved';
@@ -27,18 +28,14 @@ export function voiceState(state: LiveState | null, deviceId: string): VoiceStat
   return state.voiceReady ? 'here' : 'here-not-ready';
 }
 
-const VOICE_STATUS: Record<VoiceState, Status> = {
-  none: { tone: 'off', text: 'No device plays the voice' },
-  elsewhere: { tone: 'on', text: 'Another device plays the voice' },
-  here: { tone: 'on', text: 'This device plays the voice' },
-  'here-not-ready': { tone: 'warn', text: 'The sound did not start on this device' }
-};
+const VOICE_TONE: Record<VoiceState, Status['tone']> = { none: 'off', elsewhere: 'on', here: 'on', 'here-not-ready': 'warn' };
 
 export function voiceStatus(state: LiveState | null, deviceId: string): Status {
-  return VOICE_STATUS[voiceState(state, deviceId)];
+  const where = voiceState(state, deviceId);
+  return { tone: VOICE_TONE[where], text: t(`app.voice.${where}`) };
 }
 
 export function statusLabel(name: string, status: Status): string {
   const sentence = status.text.endsWith('.') ? status.text : `${status.text}.`;
-  return `${name}: ${sentence} Open Setup`;
+  return t('app.status.label', { name, status: sentence });
 }

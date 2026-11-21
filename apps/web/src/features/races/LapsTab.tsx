@@ -8,12 +8,12 @@ import { labelledTicks } from '../../charts/ticks.ts';
 import { useFrameCursor } from '../../charts/use-frame-cursor.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { speedRange } from './speed-range.ts';
-import { formatSeconds, formatTime, groupedMetres as metresText, signedSeconds } from '../../app/format.ts';
-import { RAW_MISSING_TEXT, isRawMissing } from './race-errors.ts';
+import { formatSeconds, formatTime, groupedMetres as metresText, signedSecondsText } from '../../app/format.ts';
+import { isRawMissing, rawMissingText } from './race-errors.ts';
 import { Icon } from '../../app/icons.tsx';
 import { useWideLayout } from '../../app/layout.ts';
-import { counted } from '../../app/plural.ts';
 import { Link, paths } from '../../app/router.tsx';
+import { t } from '../../app/i18n.ts';
 
 const GAP_DIGITS = 3;
 const POSITION_HEIGHT = 220;
@@ -24,8 +24,6 @@ const SPEED_TICK_COUNT = 4;
 const BOX_SIDE_SHARE = 0.6;
 const BOX_ROWS = 8;
 const BOX_MAX_COLUMNS = 4;
-const SPEED_LABEL = 'Speed, km/h, over the distance from the lap line';
-const SPEED_FIELD = { title: null, unit: 'km/h' };
 
 type SpeedLine = { number: number; kph: (number | null)[] };
 
@@ -43,7 +41,7 @@ function speedData(speed: RaceLapsSpeed, bestLap: number): SpeedData {
     best,
     others,
     series: [...others.map(line => ({ name: 'lap' as const, values: line.kph })), ...(best ? [{ name: 'ref' as const, values: best.kph }] : [])],
-    bands: speed.turns.map(turn => ({ fromSM: turn.fromSM, toSM: turn.toSM, label: `T${turn.turn}` })),
+    bands: speed.turns.map(turn => ({ fromSM: turn.fromSM, toSM: turn.toSM, label: t('charts.turn.badge', { turn: turn.turn }) })),
     min,
     max,
     ticks: labelledTicks(min, max, SPEED_TICK_COUNT)
@@ -58,8 +56,9 @@ function kphAt(line: SpeedLine, index: number): number | null {
 function speedReadout(data: SpeedData, index: number, cursorSM: number): string {
   const best = data.best ? kphAt(data.best, index) : null;
   const others = data.others.map(line => kphAt(line, index)).filter((value): value is number => value !== null);
-  const range = others.length === 0 ? 'no data' : Math.min(...others) === Math.max(...others) ? `${others[0]}` : `${Math.min(...others)} to ${Math.max(...others)}`;
-  return `at ${metresText(cursorSM)}: best lap ${best ?? 'no data'}, other laps ${range}`;
+  const noData = t('races.speed.no-data');
+  const range = others.length === 0 ? noData : Math.min(...others) === Math.max(...others) ? `${others[0]}` : t('races.speed.range', { min: Math.min(...others), max: Math.max(...others) });
+  return t('races.speed.readout', { place: metresText(cursorSM), best: best ?? noData, others: range });
 }
 
 function SpeedBox({ data, index, cursorSM, lengthM }: { data: SpeedData; index: number; cursorSM: number; lengthM: number }) {
@@ -74,7 +73,8 @@ function SpeedBox({ data, index, cursorSM, lengthM }: { data: SpeedData; index: 
       <ul style={{ columnCount: Math.min(BOX_MAX_COLUMNS, Math.ceil(rows.length / BOX_ROWS)) }}>
         {rows.map(({ line, best: isBest }) => {
           const value = kphAt(line, index);
-          return <li key={line.number}>{`Lap ${line.number}${isBest ? ', best' : ''}: ${value === null ? 'no data' : `${value} km/h`}`}</li>;
+          const speed = value === null ? t('races.speed.no-data') : t('app.unit.kph', { value });
+          return <li key={line.number}>{t(isBest ? 'races.speed.box-best' : 'races.speed.box-lap', { lap: line.number, speed })}</li>;
         })}
       </ul>
     </div>
@@ -99,7 +99,7 @@ function SpeedChart({ speed, bestLap, wide }: { speed: RaceLapsSpeed; bestLap: n
       <div className="charts">
         <ChannelChart
           id="race-speed"
-          label={SPEED_LABEL}
+          label={t('races.speed.label')}
           series={data.series}
           min={data.min}
           max={data.max}
@@ -114,26 +114,26 @@ function SpeedChart({ speed, bestLap, wide }: { speed: RaceLapsSpeed; bestLap: n
           bands={data.bands}
           turnLabels="fit"
           onActive={onActive}
-          field={SPEED_FIELD}
+          field={{ title: null, unit: t('races.speed.unit') }}
           overlay={wide && (pointerOver || focused) ? <SpeedBox data={data} index={index} cursorSM={cursorSM} lengthM={speed.lengthM} /> : null}
         />
       </div>
       <p className="race-legend">
         <span>
           <i className="race-mark ref" aria-hidden="true" />
-          {`best lap, lap ${bestLap}`}
+          {t('races.speed.legend-best', { lap: bestLap })}
         </span>
         <span>
           <i className="race-mark lap" aria-hidden="true" />
-          other laps
+          {t('races.speed.legend-others')}
         </span>
         <span>
           <i className="race-mark turn" aria-hidden="true" />
-          turn
+          {t('races.speed.legend-turn')}
         </span>
       </p>
-      <p className="cursor-line" aria-live="polite">{`Cursor at ${metresText(cursorSM)} of ${metresText(speed.lengthM)}.`}</p>
-      <p className="sub">Move the pointer or a finger across a chart, or focus a chart and use the arrow keys.</p>
+      <p className="cursor-line" aria-live="polite">{t('races.cursor', { place: metresText(cursorSM), length: metresText(speed.lengthM) })}</p>
+      <p className="sub">{t('races.speed.hint')}</p>
     </>
   );
 }
@@ -143,32 +143,32 @@ function SpeedSection({ race, wide }: { race: RaceDetail; wide: boolean }) {
   const bestLap = race.laps.some(lap => lap.number === race.bestLap) ? race.bestLap : race.referenceLap;
   return (
     <section className="race-speed" aria-labelledby="race-speed-title">
-      <h2 id="race-speed-title">Speed, all laps</h2>
+      <h2 id="race-speed-title">{t('races.speed.title')}</h2>
       {speed.data ? (
         <SpeedChart speed={speed.data} bestLap={bestLap} wide={wide} />
       ) : speed.error ? (
         <p className={isRawMissing(speed.error) ? 'sub race-speed-note' : 'error race-speed-note'}>
-          {isRawMissing(speed.error) ? RAW_MISSING_TEXT : errorText(speed.error)}
+          {isRawMissing(speed.error) ? rawMissingText() : errorText(speed.error)}
         </p>
       ) : (
-        <p className="sub race-speed-wait">Reading the speed of all laps…</p>
+        <p className="sub race-speed-wait">{t('races.speed.reading')}</p>
       )}
     </section>
   );
 }
 
 function gapText(lap: RaceLap, bestMs: number): string {
-  return lap.timeMs === bestMs ? '' : `${signedSeconds(lap.timeMs - bestMs, GAP_DIGITS)} s`;
+  return lap.timeMs === bestMs ? '' : signedSecondsText(lap.timeMs - bestMs, GAP_DIGITS);
 }
 
 function noteOf(lap: RaceLap): string | null {
-  if (lap.pitIn) return 'into the pit lane';
-  if (lap.pitOut) return 'out of the pit lane';
+  if (lap.pitIn) return t('races.laps.pit-in');
+  if (lap.pitOut) return t('races.laps.pit-out');
   return null;
 }
 
 function speedText(lap: RaceLap): string {
-  return `${Math.round(lap.topSpeedMps * KPH_PER_MPS)} km/h`;
+  return t('app.unit.kph', { value: Math.round(lap.topSpeedMps * KPH_PER_MPS) });
 }
 
 function positionText(lap: RaceLap): string {
@@ -179,16 +179,16 @@ function OffTrack({ lap }: { lap: RaceLap }) {
   if (lap.offAll === 0 && lap.offPart === 0) {
     return (
       <span className="race-off">
-        <span className="race-off-none">none</span>
+        <span className="race-off-none">{t('races.laps.off-none')}</span>
       </span>
     );
   }
   return (
     <span className="race-off">
-      <span className="race-off-all" role={lap.offAll > 0 ? 'img' : undefined} aria-label={lap.offAll > 0 ? `${counted(lap.offAll, 'time')} all four wheels off the track` : undefined}>
+      <span className="race-off-all" role={lap.offAll > 0 ? 'img' : undefined} aria-label={lap.offAll > 0 ? t('races.laps.off-all', { count: lap.offAll }) : undefined}>
         {lap.offAll > 0 ? lap.offAll : ''}
       </span>
-      <span className="race-off-part" role={lap.offPart > 0 ? 'img' : undefined} aria-label={lap.offPart > 0 ? `${counted(lap.offPart, 'time')} two or three wheels off` : undefined}>
+      <span className="race-off-part" role={lap.offPart > 0 ? 'img' : undefined} aria-label={lap.offPart > 0 ? t('races.laps.off-part', { count: lap.offPart }) : undefined}>
         {lap.offPart > 0 ? lap.offPart : ''}
       </span>
     </span>
@@ -201,13 +201,13 @@ function LapRow({ race, lap, wide }: { race: RaceDetail; lap: RaceLap; wide: boo
   const note = noteOf(lap);
   const link = (
     <Link to={paths.raceCompare(race.id, lap.number)} className="row-link">
-      <span className="visually-hidden">Compare lap {lap.number}</span>
+      <span className="visually-hidden">{t('races.laps.compare-lap', { lap: lap.number })}</span>
     </Link>
   );
   const time = (
     <>
       <b className="race-lap-time">{formatTime(lap.timeMs)}</b>
-      {best ? <span className="tag y best-tag">best</span> : null}
+      {best ? <span className="tag y best-tag">{t('races.laps.best')}</span> : null}
     </>
   );
   return (
@@ -251,14 +251,14 @@ function PitRow({ stop, wide, columns }: { stop: RacePitStop; wide: boolean; col
   return (
     <tr className="race-pit">
       <td colSpan={columns}>
-        <span className="visually-hidden">{`Pit stop after lap ${stop.afterLap}: ${seconds} in the pit lane, fuel ${before} to ${after}.`}</span>
+        <span className="visually-hidden">{t('races.pit.hidden', { lap: stop.afterLap, seconds, before, after })}</span>
         <span className="race-pit-line" aria-hidden="true">
           <span className="race-pit-label">
             <Icon name="fuel" size={18} />
-            PIT STOP
+            {t('races.pit.label')}
           </span>
-          <span>{wide ? `${seconds} in the pit lane` : seconds}</span>
-          <span className="race-pit-fuel">{`Fuel ${before} → ${after}`}</span>
+          <span>{wide ? t('races.pit.time', { seconds }) : seconds}</span>
+          <span className="race-pit-fuel">{t('races.pit.fuel', { before, after })}</span>
           <span className="race-pit-rule" />
         </span>
       </td>
@@ -312,12 +312,12 @@ function PositionCharts({ race, ends, bands, showFuel }: { race: RaceDetail; end
   });
   return (
     <section className="race-laps-charts" aria-labelledby="race-position-title">
-      <h2 id="race-position-title">Position in the race</h2>
+      <h2 id="race-position-title">{t('races.position.title')}</h2>
       <p className="sub race-position-cursor" aria-live="polite">
         {sentence}
       </p>
       <RaceTimeChart
-        label="Position in the race, lap by lap"
+        label={t('races.position.label')}
         raceMs={race.raceMs}
         firstLap={race.firstLap}
         lapEnds={ends}
@@ -334,9 +334,9 @@ function PositionCharts({ race, ends, bands, showFuel }: { race: RaceDetail; end
       />
       {showFuel ? (
         <>
-          <h2 className="race-fuel-title">Fuel</h2>
+          <h2 className="race-fuel-title">{t('races.fuel.title')}</h2>
           <RaceTimeChart
-            label="Fuel, lap by lap"
+            label={t('races.fuel.label')}
             raceMs={race.raceMs}
             firstLap={race.firstLap}
             lapEnds={ends}
@@ -365,21 +365,21 @@ export function LapsTab({ race }: { race: RaceDetail }) {
   return (
     <div className="race-laps">
       <section className="race-laps-table" aria-labelledby="race-laps-title">
-        <h2 id="race-laps-title">Laps</h2>
+        <h2 id="race-laps-title">{t('races.laps.title')}</h2>
         <div className="table-wrap">
-          <table aria-label="Laps">
+          <table aria-label={t('races.laps.title')}>
             <thead className={wide ? undefined : 'visually-hidden'}>
               <tr>
-                <th>Lap</th>
-                <th>Time</th>
+                <th>{t('races.laps.lap')}</th>
+                <th>{t('races.laps.time')}</th>
                 {wide ? (
                   <>
-                    <th>Gap to best</th>
-                    <th>Position</th>
-                    <th>Top speed</th>
+                    <th>{t('races.laps.gap')}</th>
+                    <th>{t('races.laps.position')}</th>
+                    <th>{t('races.laps.top-speed')}</th>
                   </>
                 ) : null}
-                <th>Off the track</th>
+                <th>{t('races.laps.off-track')}</th>
                 <th aria-hidden="true" />
               </tr>
             </thead>
@@ -397,17 +397,17 @@ export function LapsTab({ race }: { race: RaceDetail }) {
           </table>
         </div>
         <p className="sub race-laps-hint">
-          {race.referenceLap === race.bestLap ? 'Select a lap to compare it with the best lap.' : `Select a lap to compare it with lap ${race.referenceLap}, the best lap without a pit stop.`}
+          {race.referenceLap === race.bestLap ? t('races.laps.hint-best') : t('races.laps.hint-reference', { lap: race.referenceLap })}
         </p>
         {race.offTrack > 0 ? (
           <p className="race-legend">
             <span>
               <i className="race-mark all" aria-hidden="true" />
-              all four wheels off the track
+              {t('races.legend.off-all')}
             </span>
             <span>
               <i className="race-mark part" aria-hidden="true" />
-              two or three wheels off
+              {t('races.legend.off-part')}
             </span>
           </p>
         ) : null}

@@ -1,4 +1,5 @@
-import type { ClientMsg, CueOutcome, LiveCue, ServerMsg } from '@gt7/contracts';
+import { ENGLISH, type ClientMsg, type CueOutcome, type LiveCue, type ServerMsg } from '@gt7/contracts';
+import { currentLanguage, t } from '../app/i18n.ts';
 import { VOICE_CHECK_CLIP } from './clips.ts';
 
 export type VoiceSource = {
@@ -27,6 +28,7 @@ export type VoicePlayerOptions = {
   now: () => number;
   report: (message: ClientMsg) => void;
   audioBase?: string;
+  language?: string;
 };
 
 type Manifest = { clips: Record<string, { file: string; durationMs: number }> };
@@ -34,23 +36,27 @@ type Manifest = { clips: Record<string, { file: string; durationMs: number }> };
 type Playing = { sources: VoiceSource[]; cueId: string | null; generation: number };
 
 const CLOCK_SAMPLES = 30;
-export const CLIPS_TEXT = 'The voice clips did not load. Reload the page.';
+export function clipsText(): string {
+  return t('app.voice.clips-failed');
+}
 
 export type VoiceTestResult = { reportedLatencyMs: number };
 
 export class VoicePlayer {
   private context: VoiceContext | null = null;
-  private manifest: Promise<Manifest> | null = null;
+  private clipUrls: Promise<Map<string, string>> | null = null;
   private readonly buffers = new Map<string, unknown>();
   private playing: Playing | null = null;
   private newestGeneration = 0;
   private readonly clockSkews: number[] = [];
   private readonly audioBase: string;
+  private readonly language: string;
   private readonly options: VoicePlayerOptions;
 
   constructor(options: VoicePlayerOptions) {
     this.options = options;
     this.audioBase = options.audioBase ?? '/audio/';
+    this.language = options.language ?? ENGLISH.lang;
   }
 
   get ready(): boolean {
@@ -73,16 +79,16 @@ export class VoicePlayer {
   }
 
   async preload(keys: string[]): Promise<void> {
-    const manifest = await this.loadManifest();
+    const urls = await this.loadClipUrls();
     const context = this.ensureContext();
     await Promise.all(
       keys
         .filter(key => !this.buffers.has(key))
         .map(async key => {
-          const entry = manifest.clips[key];
-          if (!entry) throw new Error(CLIPS_TEXT, { cause: `No clip for ${key}` });
-          const response = await this.options.fetch(`${this.audioBase}${entry.file}`);
-          if (!response.ok) throw new Error(CLIPS_TEXT, { cause: `Clip ${key} did not load` });
+          const url = urls.get(key);
+          if (!url) throw new Error(clipsText(), { cause: `No clip for ${key}` });
+          const response = await this.download(url);
+          if (!response.ok) throw new Error(clipsText(), { cause: `Clip ${key} did not load` });
           this.buffers.set(key, await context.decodeAudioData(await response.arrayBuffer()));
         })
     );
@@ -129,18 +135,34 @@ export class VoicePlayer {
     return this.context;
   }
 
-  private loadManifest(): Promise<Manifest> {
-    this.manifest ??= this.options
-      .fetch(`${this.audioBase}manifest.json`)
-      .then(async response => {
-        if (!response.ok) throw new Error(CLIPS_TEXT, { cause: 'The clip list did not load' });
-        return (await response.json()) as Manifest;
-      })
-      .catch(error => {
-        this.manifest = null;
-        throw error;
-      });
-    return this.manifest;
+  private loadClipUrls(): Promise<Map<string, string>> {
+    this.clipUrls ??= this.clipUrlsOfLanguages().catch(error => {
+      this.clipUrls = null;
+      throw error;
+    });
+    return this.clipUrls;
+  }
+
+  private async clipUrlsOfLanguages(): Promise<Map<string, string>> {
+    const own = this.language === ENGLISH.lang ? Promise.resolve(null) : this.manifestOf(this.language).catch(() => null);
+    const [english, translated] = await Promise.all([this.manifestOf(ENGLISH.lang), own]);
+    if (!english) throw new Error(clipsText(), { cause: 'The clip list did not load' });
+    const urls = new Map(Object.entries(english.clips).map(([key, entry]) => [key, `${this.audioBase}${ENGLISH.lang}/${entry.file}`]));
+    for (const [key, entry] of Object.entries(translated?.clips ?? {})) urls.set(key, `${this.audioBase}${this.language}/${entry.file}`);
+    return urls;
+  }
+
+  private async download(url: string): ReturnType<VoicePlayerOptions['fetch']> {
+    try {
+      return await this.options.fetch(url);
+    } catch (error) {
+      throw new Error(clipsText(), { cause: error });
+    }
+  }
+
+  private async manifestOf(lang: string): Promise<Manifest | null> {
+    const response = await this.download(`${this.audioBase}${lang}/manifest.json`);
+    return response.ok ? ((await response.json()) as Manifest) : null;
   }
 
   private noteClock(serverMs: number, receivedAt: number): void {
@@ -223,6 +245,7 @@ export function browserVoicePlayer(report: (message: ClientMsg) => void): VoiceP
     createContext: () => new AudioContext({ latencyHint: 'interactive' }) as unknown as VoiceContext,
     fetch: url => fetch(url, { credentials: 'same-origin' }),
     now: () => performance.now(),
-    report
+    report,
+    language: currentLanguage()
   });
 }

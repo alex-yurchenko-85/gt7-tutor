@@ -1,5 +1,5 @@
 import type { CuePreview, PreviewCue, PreviewDrop } from '@gt7/contracts';
-import { counted } from '../../app/plural.ts';
+import { t } from '../../app/i18n.ts';
 
 export function previewPositionM(preview: CuePreview, elapsedMs: number): number {
   const times = preview.gridTimeMs;
@@ -25,16 +25,16 @@ export function cuesDue(preview: CuePreview, afterMs: number, untilMs: number): 
 export function notSpokenText(drop: PreviewDrop, numberOf: (rowKey: string) => number | null): string {
   if (drop.reason === 'voice-busy') {
     const before = drop.afterRowKey === null ? null : numberOf(drop.afterRowKey);
-    if (before === null) return 'The voice still says another phrase here.';
-    return `The voice still says cue ${before} here. Mute cue ${before} or this cue, or move cue ${before} earlier.`;
+    if (before === null) return t('exercises.preview.voice-busy');
+    return t('exercises.preview.voice-busy-cue', { number: before });
   }
-  if (drop.reason === 'too-late') return 'There is no time to say this cue here on the reference line.';
-  if (drop.reason === 'already-done') return 'The car of the reference already does this here, so the voice does not say it.';
-  return 'The voice does not say this cue on the reference line.';
+  if (drop.reason === 'too-late') return t('exercises.preview.too-late');
+  if (drop.reason === 'already-done') return t('exercises.preview.already-done');
+  return t('exercises.preview.not-said');
 }
 
 export function notSpokenSummary(count: number): string {
-  return `${counted(count, 'cue')} ${count === 1 ? 'is' : 'are'} not spoken on the reference line.`;
+  return t('exercises.preview.not-spoken', { count });
 }
 
 export function previewClips(preview: CuePreview): string[] {

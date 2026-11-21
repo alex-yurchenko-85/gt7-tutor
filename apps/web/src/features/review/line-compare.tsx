@@ -1,5 +1,5 @@
 import { Fragment, memo, useMemo, useState, type ReactNode } from 'react';
-import { KPH_PER_MPS, type AttemptReview, type Difference, type ReviewSeries, type TurnLossInfo } from '@gt7/contracts';
+import { KPH_PER_MPS, type AttemptReview, type Difference, type ReviewSeries, type TurnLossInfo, type MessageKey } from '@gt7/contracts';
 import { ChannelChart, type ChartBand, type ChartField, type ChartSeries, type ChartTick } from '../../charts/ChannelChart.tsx';
 import { labelledTicks, signedTickLabel, tickLabel, tickStep, valueTicks } from '../../charts/ticks.ts';
 import { MapDialog, type MapDialogItem } from '../../charts/MapDialog.tsx';
@@ -12,6 +12,7 @@ import { metres } from '../../app/format.ts';
 import { ON_THE_LINE_M, differenceText } from '../cues/cue-format.ts';
 import { groupByTurn, type TurnGroup, type TurnOrder } from './turn-groups.ts';
 import './review.css';
+import { listText, t } from '../../app/i18n.ts';
 
 export type LineComparison = Pick<AttemptReview, 'gridM' | 'lengthM' | 'reference' | 'attempt' | 'findings' | 'turnLosses' | 'corners'>;
 
@@ -62,18 +63,16 @@ function timeLossS(review: LineComparison): (number | null)[] {
 }
 
 function turnBands(review: LineComparison): ChartBand[] {
-  return review.corners.map(corner => ({ fromSM: corner.zoneFromSM, toSM: corner.zoneToSM, label: `T${corner.number}` }));
+  return review.corners.map(corner => ({ fromSM: corner.zoneFromSM, toSM: corner.zoneToSM, label: t('charts.turn.badge', { turn: corner.number }) }));
 }
 
 function percent(value: number | null): string {
-  return value === null ? 'no data' : `${Math.round(value * 100)}%`;
+  return value === null ? t('exercises.compare.no-data') : t('app.unit.percent', { value: Math.round(value * 100) });
 }
 
-const SHARE_TICKS: ChartTick[] = [
-  { value: 0, label: '0%' },
-  { value: 0.5, label: '50%' },
-  { value: 1, label: '100%' }
-];
+function shareTicks(): ChartTick[] {
+  return [0, 0.5, 1].map(value => ({ value, label: t('app.unit.percent', { value: value * 100 }) }));
+}
 
 const VALUE_TICK_COUNT = 3;
 
@@ -91,16 +90,16 @@ function sideTicks(limit: number): ChartTick[] {
   const inner = valueTicks(-limit, limit, VALUE_TICK_COUNT).filter(value => Math.abs(value) < limit - 1e-9);
   const step = tickStep(inner);
   return [
-    { value: limit, label: 'right' },
-    ...inner.map(value => (value === 0 ? { value, label: 'line', tone: 'ref' as const } : { value, label: tickLabel(Math.abs(value), step) })),
-    { value: -limit, label: 'left' }
+    { value: limit, label: t('exercises.compare.right') },
+    ...inner.map(value => (value === 0 ? { value, label: t('exercises.compare.line'), tone: 'ref' as const } : { value, label: tickLabel(Math.abs(value), step) })),
+    { value: -limit, label: t('exercises.compare.left') }
   ];
 }
 
 function sideText(lateral: number | null): string {
-  if (lateral === null) return 'no match here';
-  if (Math.abs(lateral) <= ON_THE_LINE_M) return 'on the line';
-  return `${Math.abs(lateral).toFixed(1)} m ${lateral > 0 ? 'right' : 'left'} of the line`;
+  if (lateral === null) return t('exercises.compare.no-match');
+  if (Math.abs(lateral) <= ON_THE_LINE_M) return t('exercises.compare.on-line');
+  return t(lateral > 0 ? 'exercises.compare.side-right' : 'exercises.compare.side-left', { metres: Math.abs(lateral).toFixed(1) });
 }
 
 function SideLegend({ words, sideCueDistanceM }: { words: LineWords; sideCueDistanceM: number | null }) {
@@ -117,7 +116,7 @@ function SideLegend({ words, sideCueDistanceM }: { words: LineWords; sideCueDist
       {sideCueDistanceM === null ? null : (
         <span>
           <i className="dash" />
-          side cue distance, {sideCueDistanceM} m
+          {t('exercises.compare.side-cue', { metres: sideCueDistanceM })}
         </span>
       )}
     </div>
@@ -143,7 +142,7 @@ function derive(review: LineComparison, words: LineWords, side: boolean, sideCue
   ];
   const sideChannel: Channel = {
     id: 'side',
-    label: 'Distance from the reference line, m',
+    label: t('exercises.compare.side-chart'),
     series: [
       { name: 'ref', values: review.attempt.lat.map(value => (value === null ? null : 0)) },
       { name: 'you', values: review.attempt.lat }
@@ -161,9 +160,9 @@ function derive(review: LineComparison, words: LineWords, side: boolean, sideCue
     loss,
     bands: turnBands(review),
     channels: [
-      { id: 'speed', label: 'Speed, km/h', series: pair(refSpeed, youSpeed), min: speedMin, max: speedMax, ticks: ticksOf(speedMin, speedMax, tickLabel), turnLabels: true },
-      { id: 'throttle', label: 'Throttle', series: pair(review.reference.th, review.attempt.th), min: 0, max: 1, ticks: SHARE_TICKS },
-      { id: 'brake', label: 'Brake', series: pair(review.reference.br, review.attempt.br), min: 0, max: 1, ticks: SHARE_TICKS },
+      { id: 'speed', label: t('exercises.compare.speed-chart'), series: pair(refSpeed, youSpeed), min: speedMin, max: speedMax, ticks: ticksOf(speedMin, speedMax, tickLabel), turnLabels: true },
+      { id: 'throttle', label: t('exercises.compare.throttle-chart'), series: pair(review.reference.th, review.attempt.th), min: 0, max: 1, ticks: shareTicks() },
+      { id: 'brake', label: t('exercises.compare.brake-chart'), series: pair(review.reference.br, review.attempt.br), min: 0, max: 1, ticks: shareTicks() },
       ...(side ? [sideChannel] : []),
       { id: 'time', label: words.timeLabel, series: [{ name: 'ink', values: loss }], min: -lossLimit, max: lossLimit, ticks: ticksOf(-lossLimit, lossLimit, signedTickLabel) }
     ]
@@ -179,15 +178,15 @@ export function CompareCharts({ review, words, side, sideCueDistanceM, cursorSM,
     () => derive(review, words, side, sideCueDistanceM, wide ? SIDE_HEIGHT_WIDE : SIDE_HEIGHT_PHONE),
     [review, words, side, sideCueDistanceM, wide]
   );
-  const kph = (value: number | null) => (value === null ? 'no data' : `${Math.round(value)}`);
-  const both = (reference: string, you: string) => `${words.referenceName} ${reference}, ${words.youName} ${you}`;
+  const kph = (value: number | null) => (value === null ? t('exercises.compare.no-data') : `${Math.round(value)}`);
+  const both = (reference: string, you: string) => t('exercises.compare.both', { referenceName: words.referenceName, reference, youName: words.youName, you });
   const lossAt = at(loss, index);
   const lateral = at(review.attempt.lat, index);
   const readouts: Record<string, string> = {
     speed: both(kph(at(refSpeed, index)), kph(at(youSpeed, index))),
     throttle: both(percent(at(review.reference.th, index)), percent(at(review.attempt.th, index))),
     brake: both(percent(at(review.reference.br, index)), percent(at(review.attempt.br, index))),
-    time: lossAt === null ? 'no match here' : `${lossAt >= 0 ? '+' : ''}${lossAt.toFixed(2)} s`,
+    time: lossAt === null ? t('exercises.compare.no-match') : t('exercises.compare.loss', { value: `${lossAt >= 0 ? '+' : ''}${lossAt.toFixed(2)}` }),
     side: sideText(lateral)
   };
   const legendFor = (id: string): ReactNode => {
@@ -226,15 +225,15 @@ const SMALL_LOSS_MS = 5;
 
 function lostText(lostMs: number | null, neutralSmall: boolean): { text: string; tone: 'lost' | 'gained' | 'neutral' } | null {
   if (lostMs === null) return null;
-  if (neutralSmall && Math.abs(lostMs) < SMALL_LOSS_MS) return { text: '0.00 s', tone: 'neutral' };
+  if (neutralSmall && Math.abs(lostMs) < SMALL_LOSS_MS) return { text: t('app.unit.seconds', { value: '0.00' }), tone: 'neutral' };
   if (lostMs === 0) return null;
-  return { text: `${(Math.abs(lostMs) / 1000).toFixed(2)} s ${lostMs > 0 ? 'lost' : 'gained'}`, tone: lostMs > 0 ? 'lost' : 'gained' };
+  return { text: t(lostMs > 0 ? 'exercises.compare.lost' : 'exercises.compare.gained', { seconds: (Math.abs(lostMs) / 1000).toFixed(2) }), tone: lostMs > 0 ? 'lost' : 'gained' };
 }
 
 type TurnGroupListProps = { group: TurnGroup; selected: number | null; neutralSmall: boolean; emptyText: string | null; wholeLabel: string; describe(difference: Difference): string; onSelect(index: number): void };
 
 function TurnGroupList({ group, selected, neutralSmall, emptyText, wholeLabel, describe, onSelect }: TurnGroupListProps) {
-  const badge = group.turn === null ? wholeLabel : `T${group.turn}`;
+  const badge = group.turn === null ? wholeLabel : t('charts.turn.badge', { turn: group.turn });
   const lost = lostText(group.lostMs, neutralSmall);
   return (
     <div className="turn-group" role="group" aria-label={[badge, lost?.text].filter(Boolean).join(' · ')}>
@@ -256,23 +255,27 @@ function TurnGroupList({ group, selected, neutralSmall, emptyText, wholeLabel, d
   );
 }
 
-const ORDER_TEXT: Record<TurnOrder, string> = {
-  track: 'Turns in the order of the section.',
-  'time-lost': 'Largest time lost first.'
+const ORDER_TEXT: Record<TurnOrder, MessageKey> = {
+  track: 'exercises.compare.order-track',
+  'time-lost': 'exercises.compare.order-time'
 };
+
+function orderText(order: TurnOrder): string {
+  return t(ORDER_TEXT[order]);
+}
 
 function OrderSwitch({ order, onOrder }: { order: TurnOrder; onOrder(order: TurnOrder): void }) {
   return (
     <fieldset className="plain turn-order">
-      <legend className="visually-hidden">Order of the turns</legend>
+      <legend className="visually-hidden">{t('exercises.compare.order')}</legend>
       <div className="segmented">
         <label>
           <input type="radio" name="turn-order" checked={order === 'track'} onChange={() => onOrder('track')} />
-          Track
+          {t('exercises.compare.track')}
         </label>
         <label>
           <input type="radio" name="turn-order" checked={order === 'time-lost'} onChange={() => onOrder('time-lost')} />
-          Time lost
+          {t('exercises.compare.time-lost')}
         </label>
       </div>
     </fieldset>
@@ -281,16 +284,18 @@ function OrderSwitch({ order, onOrder }: { order: TurnOrder; onOrder(order: Turn
 
 export type DifferencesWords = { intro(order: TurnOrder): string; none: string; emptyTurn: string | null; orderSwitch: boolean; neutralSmall: boolean; allTurns: boolean; wholeLabel: string; describe(difference: Difference): string };
 
-export const REVIEW_DIFFERENCES: DifferencesWords = {
-  intro: order => `${ORDER_TEXT[order]} Time lost is measured from telemetry. Select a difference to put the cursor there. The reference is one recorded drive, not the best possible line.`,
-  none: 'No differences above the limits in this attempt.',
-  emptyTurn: null,
-  orderSwitch: true,
-  neutralSmall: false,
-  allTurns: false,
-  wholeLabel: 'Whole section',
-  describe: differenceText
-};
+export function reviewDifferences(): DifferencesWords {
+  return {
+    intro: order => t('exercises.compare.intro', { order: orderText(order) }),
+    none: t('exercises.compare.none'),
+    emptyTurn: null,
+    orderSwitch: true,
+    neutralSmall: false,
+    allTurns: false,
+    wholeLabel: t('exercises.compare.whole'),
+    describe: differenceText
+  };
+}
 
 type DifferencesProps = { findings: Difference[]; losses: TurnLossInfo[]; selected: number | null; words: DifferencesWords; onSelect(index: number): void };
 
@@ -299,7 +304,7 @@ export const Differences = memo(function Differences({ findings, losses, selecte
   const groups = groupByTurn(findings, losses, order, words.allTurns);
   return (
     <section aria-labelledby="differences-title" className="differences">
-      <h2 id="differences-title">Differences by turn</h2>
+      <h2 id="differences-title">{t('exercises.compare.title')}</h2>
       {words.orderSwitch && groups.length > 1 ? <OrderSwitch order={order} onOrder={setOrder} /> : null}
       <p className="sub">{words.intro(order)}</p>
       {findings.length === 0 ? <p className="notice">{words.none}</p> : null}
@@ -312,24 +317,36 @@ export const Differences = memo(function Differences({ findings, losses, selecte
 
 type MapScale = 'true' | 'side';
 
-function sideCallouts(review: LineComparison): TrackCallout[] {
-  return largestSideInZones(review.corners, review.attempt.lat, review.gridM).map(peak => ({
-    turn: peak.turn,
-    sM: peak.sM,
-    side: peak.lat < 0 ? -1 : 1,
-    title: `T${peak.turn} · ${Math.abs(peak.lat).toFixed(1)} m ${peak.lat < 0 ? 'left' : 'right'}`,
-    detail: `at ${metres(peak.sM)}`
-  }));
+type SideCallout = TrackCallout & { spoken: string };
+
+function sideCallouts(review: LineComparison): SideCallout[] {
+  return largestSideInZones(review.corners, review.attempt.lat, review.gridM).map(peak => {
+    const parts = { turn: t('charts.turn.badge', { turn: peak.turn }), metres: Math.abs(peak.lat).toFixed(1), side: peak.lat < 0 ? t('exercises.compare.left') : t('exercises.compare.right') };
+    return {
+      turn: peak.turn,
+      sM: peak.sM,
+      side: peak.lat < 0 ? -1 : 1,
+      title: t('exercises.compare.callout', parts),
+      spoken: t('exercises.compare.callout-spoken', parts),
+      detail: t('exercises.compare.callout-at', { place: metres(peak.sM) })
+    };
+  });
+}
+
+function mapLabelOf(words: LineWords, side: boolean, callouts: SideCallout[]): string {
+  if (!side) return words.mapLabel;
+  if (callouts.length === 0) return t('exercises.compare.map-label-side', { map: words.mapLabel, side: words.sideLabel });
+  return t('exercises.compare.map-label-callouts', { map: words.mapLabel, side: words.sideLabel, callouts: listText(callouts.map(callout => callout.spoken), 'unit') });
 }
 
 function MapSwitch({ scale, onScale }: { scale: MapScale; onScale(scale: MapScale): void }) {
   return (
-    <div className="map-switch" role="group" aria-label="Side distance on the map">
+    <div className="map-switch" role="group" aria-label={t('exercises.compare.map-switch')}>
       <button type="button" aria-pressed={scale === 'true'} onClick={() => onScale('true')}>
-        True scale
+        {t('exercises.compare.true-scale')}
       </button>
       <button type="button" aria-pressed={scale === 'side'} onClick={() => onScale('side')}>
-        Side distance × {SIDE_FACTOR}
+        {t('exercises.compare.side-scale', { factor: SIDE_FACTOR })}
       </button>
     </div>
   );
@@ -338,7 +355,7 @@ function MapSwitch({ scale, onScale }: { scale: MapScale; onScale(scale: MapScal
 function differenceItems(findings: Difference[], describe: (difference: Difference) => string, place: (value: number) => string): MapDialogItem[] {
   return findings.map(finding => ({
     key: `${finding.kind}-${finding.sM}`,
-    number: finding.turn === null ? '' : `T${finding.turn}`,
+    number: finding.turn === null ? '' : t('charts.turn.badge', { turn: finding.turn }),
     label: describe(finding),
     detail: place(finding.sM),
     sM: finding.sM,
@@ -376,20 +393,20 @@ export function CompareMap({ title, review, words, sideCueDistanceM, scaleSwitch
         sM: finding.sM,
         selected: selected === index,
         onAttempt: true,
-        title: `${metres(finding.sM)}. ${words.describe(finding)}`,
+        title: t('exercises.attempts.largest', { place: metres(finding.sM), difference: words.describe(finding) }),
         onSelect: () => onSelect(index)
       }))
     ],
     [corners, review.findings, selected, onSelect, words]
   );
-  const label = side ? `${words.mapLabel}. ${words.sideLabel}${callouts.length > 0 ? ` ${callouts.map(callout => callout.title.replace(' · ', ' ')).join(', ')}.` : ''}` : words.mapLabel;
+  const label = mapLabelOf(words, side, callouts);
   return (
     <MapPanel
       title={words.mapTitle}
       hideTitle={words.mapTitleHidden ?? false}
       legend={['reference', 'you', 'turn']}
       legendTexts={{ reference: words.referenceLegend, you: words.youLegend }}
-      far={side && sideCueDistanceM !== null ? `more than ${sideCueDistanceM} m from the line` : null}
+      far={side && sideCueDistanceM !== null ? t('exercises.compare.far', { metres: sideCueDistanceM }) : null}
       notes={words.mapNotes}
       actions={scaleSwitch ? <MapSwitch scale={scale} onScale={setScale} /> : null}
       onView={() => setViewing(true)}
@@ -407,7 +424,7 @@ export function CompareMap({ title, review, words, sideCueDistanceM, scaleSwitch
         attempt={trueAttempt}
         corners={review.corners}
         items={differenceItems(review.findings, words.describe, words.metres)}
-        listTitle="Differences"
+        listTitle={t('exercises.compare.list-title')}
         listHint={words.dialogHint}
         mapLabel={words.dialogLabel}
         lineName={words.dialogLine}

@@ -12,6 +12,15 @@ function codeOf(action: () => unknown): string | null {
   }
 }
 
+function rawIndexOf(action: () => unknown): number | null | undefined {
+  try {
+    action();
+    return undefined;
+  } catch (error) {
+    return error instanceof ReferencePathError ? error.rawIndex : undefined;
+  }
+}
+
 describe('buildReference', () => {
   it('reference_length_matches_capture', () => {
     const path = interlagosReference();
@@ -84,6 +93,8 @@ describe('buildReference', () => {
 
     const otherCar = line.map((sample, index) => (index >= 20 ? { ...sample, carId: 1 } : sample));
     expect(codeOf(() => buildReference(otherCar))).toBe('car-changed');
+    expect([broken, jumped, otherCar].map(samples => rawIndexOf(() => buildReference(samples)))).toEqual([broken[20]!.rawIndex, jumped[20]!.rawIndex, otherCar[20]!.rawIndex]);
+    expect(rawIndexOf(() => buildReference(stillCar))).toBeNull();
   });
 
   it('paused_and_repeated_start_frames_add_no_time', () => {

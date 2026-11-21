@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext } from 'react';
 import { api, ApiError } from '../api/client.ts';
 import { useLiveState } from '../api/live.tsx';
 import { TRAINING_MODES } from './current-exercise.ts';
+import { t } from './i18n.ts';
 
 export const TrainingNameContext = createContext<string | null>(null);
 
@@ -29,11 +30,12 @@ export function useTraining(): Training {
 export type TrainingGate = { notice: string | null; blocked: boolean; label(plain: string): string; before(): Promise<void> };
 
 function attemptRuns(training: Training): string {
-  return training.attemptNumber === null ? 'An attempt runs.' : `Attempt ${training.attemptNumber} runs.`;
+  return training.attemptNumber === null ? t('app.gate.attempt-runs') : t('app.gate.attempt-number-runs', { number: training.attemptNumber });
 }
 
-function trainingOf(training: Training): string {
-  return training.exerciseName ? `The training of ${training.exerciseName} is on.` : 'The training is on.';
+function trainingIsOn(training: Training, purpose: 'record' | 'delete'): string {
+  if (purpose === 'record') return training.exerciseName ? t('app.gate.record-named', { name: training.exerciseName }) : t('app.gate.record');
+  return training.exerciseName ? t('app.gate.delete-named', { name: training.exerciseName }) : t('app.gate.delete');
 }
 
 export function useTrainingGate(purpose: 'record' | 'delete'): TrainingGate {
@@ -41,12 +43,12 @@ export function useTrainingGate(purpose: 'record' | 'delete'): TrainingGate {
   const notice = !training.on
     ? null
     : training.running
-      ? `${attemptRuns(training)} Finish it or stop the training first.`
-      : `${trainingOf(training)} ${purpose === 'record' ? 'A recording needs it off.' : 'It stops when you delete.'}`;
+      ? attemptRuns(training)
+      : trainingIsOn(training, purpose);
   return {
     notice,
     blocked: training.running,
-    label: plain => (training.on && !training.running ? (purpose === 'record' ? 'Stop the training and record' : 'Stop the training and delete') : plain),
+    label: plain => (training.on && !training.running ? (purpose === 'record' ? t('app.gate.stop-and-record') : t('app.gate.stop-and-delete')) : plain),
     before: async () => {
       if (training.on) await training.stop();
     }

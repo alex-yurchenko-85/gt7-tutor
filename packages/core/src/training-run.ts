@@ -4,7 +4,7 @@ import { Coach, type CoachSettings, type CueTarget, type Suppressed } from './co
 import type { CoreConfig } from './config.ts';
 import type { Cue } from './cue-factory.ts';
 import type { ReferenceCueEvent } from './cue-events.ts';
-import { cueText } from './cue-text.ts';
+import { clipKey } from './cue-text.ts';
 import { ACTIVE_GUIDANCE } from './guidance.ts';
 import { Matcher, type Match } from './match.ts';
 import { startMissed } from './missed-start.ts';
@@ -14,7 +14,7 @@ import { gapToReferenceMs } from './timing.ts';
 
 export type RunNow = { deviceDelayMs: number; phraseMs: (clip: string) => number };
 
-export type NextCue = { text: string; inM: number };
+export type NextCue = { clip: string; inM: number };
 
 export type TrainingRunOptions = { nextGeneration: () => number };
 
@@ -31,15 +31,14 @@ export type RunStep = {
   startMissed: boolean;
 };
 
-type Upcoming = { event: ReferenceCueEvent; text: string };
+type Upcoming = { event: ReferenceCueEvent; clip: string };
 
 function nextCueCursor(events: ReferenceCueEvent[], mutedKeys: ReadonlySet<string>): StepCursor<Upcoming | null> {
   const ahead: Upcoming[] = [];
   for (const event of events) {
     if (mutedKeys.has(event.key)) continue;
-    const text = cueText(event.voice);
     const last = ahead.at(-1);
-    if (text && (!last || event.sM > last.event.sM)) ahead.push({ event, text });
+    if (!last || event.sM > last.event.sM) ahead.push({ event, clip: clipKey(event.voice) });
   }
   const steps: Step<Upcoming | null>[] = ahead.map((upcoming, index) => ({ fromM: upcoming.event.sM, value: ahead[index + 1] ?? null }));
   return new StepCursor(ahead[0] ?? null, steps);
@@ -122,6 +121,6 @@ export class TrainingRun {
   private nextCue(match: Match | null): NextCue | null {
     if (!match) return null;
     const next = this.nextCues.at(match.sM);
-    return next ? { text: next.text, inM: next.event.sM - match.sM } : null;
+    return next ? { clip: next.clip, inM: next.event.sM - match.sM } : null;
   }
 }

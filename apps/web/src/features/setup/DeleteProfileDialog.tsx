@@ -2,11 +2,12 @@ import { useId, useState } from 'react';
 import { api } from '../../api/client.ts';
 import { deletionErrorText } from '../../app/busy.ts';
 import { ConfirmDialog } from '../../app/ConfirmDialog.tsx';
-import { counted, theirs } from '../../app/plural.ts';
 import { megabytes } from './StorageSection.tsx';
 import { useResource } from '../../app/resource.ts';
 import { useSession } from '../../app/session.tsx';
 import { useTrainingGate } from '../../app/use-training.ts';
+import { t } from '../../app/i18n.ts';
+import { Rich } from '../../app/rich-text.tsx';
 
 export function DeleteProfileDialog({ onKeep }: { onKeep(): void }) {
   const { user, ended } = useSession();
@@ -36,9 +37,9 @@ export function DeleteProfileDialog({ onKeep }: { onKeep(): void }) {
 
   return (
     <ConfirmDialog
-      title={`Delete the profile ${user.name}?`}
-      keepLabel="Keep it"
-      confirmLabel={gate.label('Delete profile')}
+      title={t('setup.delete-profile.title', { name: user.name })}
+      keepLabel={t('setup.delete-profile.keep')}
+      confirmLabel={gate.label(t('setup.delete-profile.confirm'))}
       working={working}
       confirmDisabled={password.length === 0 || gate.blocked}
       notice={gate.notice}
@@ -46,31 +47,29 @@ export function DeleteProfileDialog({ onKeep }: { onKeep(): void }) {
       onKeep={onKeep}
       onConfirm={confirm}
     >
-      <p>Everything of this profile goes:</p>
+      <p>{t('setup.delete-profile.goes')}</p>
       <ul>
         <li>
-          <b>{list ? counted(list.length, 'exercise') : 'the exercises'}</b> with {theirs(list?.length ?? 0)} references
+          <Rich k="setup.delete-profile.exercises" params={{ count: list?.length ?? 0 }} parts={{ exercises: <b>{list ? t('common.count.exercise', { count: list.length }) : t('setup.delete-profile.the-exercises')}</b> }} />
         </li>
         <li>
-          <b>{attempts === null ? 'the attempts' : counted(attempts, 'attempt')}</b> with {theirs(attempts ?? 0)} cues and differences
+          <Rich k="setup.delete-profile.attempts" params={{ count: attempts ?? 0 }} parts={{ attempts: <b>{attempts === null ? t('setup.delete-profile.the-attempts') : t('common.count.attempt', { count: attempts })}</b> }} />
         </li>
         <li>
-          <b>{races.data ? counted(races.data.length, 'race') : 'the races'}</b> with {theirs(races.data?.length ?? 0)} laps, pit stops and places off the track
+          <Rich k="setup.delete-profile.races" params={{ count: races.data?.length ?? 0 }} parts={{ races: <b>{races.data ? t('common.count.race', { count: races.data.length }) : t('setup.delete-profile.the-races')}</b> }} />
         </li>
         <li>
           {storage.data ? (
-            <>
-              <b>{counted(storage.data.profileCaptures, 'capture')}</b> on this computer, {megabytes(storage.data.profileRawBytes)}
-            </>
+            <Rich k="setup.delete-profile.captures" params={{ size: megabytes(storage.data.profileRawBytes) }} parts={{ captures: <b>{t('common.count.capture', { count: storage.data.profileCaptures })}</b> }} />
           ) : (
-            'the captures of this profile on this computer'
+            t('setup.delete-profile.the-captures')
           )}
         </li>
-        <li>the sign-in on every device</li>
+        <li>{t('setup.delete-profile.sign-in')}</li>
       </ul>
-      <p>Other profiles and the settings of this computer stay. You cannot undo this.</p>
+      <p>{t('setup.delete-profile.stays')}</p>
       <label className="confirm-field" htmlFor={passwordId}>
-        Enter the password of {user.name} to confirm
+        {t('setup.delete-profile.password', { name: user.name })}
       </label>
       <input id={passwordId} className="confirm-input" type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} />
     </ConfirmDialog>

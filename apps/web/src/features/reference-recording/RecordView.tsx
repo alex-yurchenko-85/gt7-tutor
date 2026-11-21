@@ -12,6 +12,7 @@ import { Link, paths, useRouter } from '../../app/router.tsx';
 import { consoleState, type ConsoleState, type Status } from '../../app/status.ts';
 import { DriveAction } from '../drive/DriveButton.tsx';
 import { useExercise } from '../exercise/use-exercise.ts';
+import { formatLocale, t } from '../../app/i18n.ts';
 import './record.css';
 
 type Active = { capture: CaptureInfo; startedAt: number };
@@ -26,8 +27,6 @@ function useNow(running: boolean): number {
   }, [running]);
   return now;
 }
-
-const CONSOLE_MISSING = 'Enter the PS5 address in Setup first.';
 
 function recordingSeconds(active: Active, now: number): number {
   return Math.max(0, Math.floor((now - active.startedAt) / 1000));
@@ -44,23 +43,34 @@ function useRunningCapture(exerciseId: string, active: Active | null, setActive:
   }, [captures.data, active, exerciseId, setActive]);
 }
 
+type StageProblem = { text: string; setupLink: boolean };
+
+function consoleMissing(): StageProblem {
+  return { text: t('record.console-missing'), setupLink: true };
+}
+
+function stageProblem(error: unknown): StageProblem {
+  if (error instanceof ApiError && error.code === 'console-address-missing') return consoleMissing();
+  return { text: problemText(error), setupLink: false };
+}
+
 function problemText(error: unknown): string {
-  if (error instanceof ApiError && error.code === 'console-address-missing') return CONSOLE_MISSING;
-  if (error instanceof ApiError && error.code === 'busy') return 'Another recording or training runs. Stop it first.';
+  if (error instanceof ApiError && error.code === 'console-address-missing') return t('record.console-missing');
+  if (error instanceof ApiError && error.code === 'busy') return t('record.busy');
   if (error instanceof ApiError && error.code === 'no-timer-run') {
-    return 'This range does not hold the whole demonstration. Choose frames from before the start to after the end of the demonstration.';
+    return t('record.no-timer-run');
   }
   return errorText(error);
 }
 
 function runLabel(proposal: ReferenceProposal): string {
   const range = proposal.ranges[0]!;
-  return `${formatTime(proposal.timeMs)}, frames ${range.first}–${range.last}`;
+  return t('record.run-label', { time: formatTime(proposal.timeMs), first: range.first, last: range.last });
 }
 
 function foundText(proposal: ReferenceProposal): string {
   const range = proposal.ranges[0]!;
-  return `The demonstration takes ${formatTime(proposal.timeMs)} in recording 1, frames ${range.first}–${range.last}. Use it as the reference, or record once more to check that the same part repeats.`;
+  return t('record.found.text', { time: formatTime(proposal.timeMs), first: range.first, last: range.last });
 }
 
 function needsSelection(proposals: ReferenceProposal[]): boolean {
@@ -75,8 +85,8 @@ type RunChoiceProps = { proposals: ReferenceProposal[]; selected: number | null;
 
 function RunChoice({ proposals, selected, onSelect }: RunChoiceProps) {
   return (
-    <fieldset className="choice" role="radiogroup" aria-label="Demonstrations">
-      <legend>Demonstrations in recording 1</legend>
+    <fieldset className="choice" role="radiogroup" aria-label={t('record.select.label')}>
+      <legend>{t('record.select.legend')}</legend>
       {proposals.map((proposal, index) => (
         <label key={index}>
           <input type="radio" name="run" checked={selected === index} onChange={() => onSelect(index)} />
@@ -100,9 +110,9 @@ function ManualRange({ exerciseId, onCreated }: { exerciseId: string; onCreated(
     event.preventDefault();
     const firstFrame = Number(first);
     const lastFrame = Number(last);
-    if (!chosen) return setProblem('This exercise has no finished recording.');
+    if (!chosen) return setProblem(t('record.manual.no-recording'));
     if (!Number.isInteger(firstFrame) || !Number.isInteger(lastFrame) || first === '' || last === '' || firstFrame < 0 || lastFrame < firstFrame) {
-      return setProblem('Enter whole frame numbers, with the last frame not before the first.');
+      return setProblem(t('record.manual.bad-frames'));
     }
     setProblem(null);
     try {
@@ -114,27 +124,27 @@ function ManualRange({ exerciseId, onCreated }: { exerciseId: string; onCreated(
   };
 
   return (
-    <form className="panel manual" aria-label="Manual range" onSubmit={submit} noValidate>
-      <h2>Set the range by hand</h2>
-      <p className="sub">For an experienced user: select one capture and the first and last frame of the demonstration. Both frames are included.</p>
-      <p className="sub">GT7 Tutor keeps only the part of the range that holds the demonstration.</p>
+    <form className="panel manual" aria-label={t('record.manual.label')} onSubmit={submit} noValidate>
+      <h2>{t('record.manual.title')}</h2>
+      <p className="sub">{t('record.manual.text')}</p>
+      <p className="sub">{t('record.manual.keeps')}</p>
       <div className="field">
-        <label htmlFor="manual-capture">Recording</label>
+        <label htmlFor="manual-capture">{t('record.manual.recording')}</label>
         <select id="manual-capture" value={chosen} onChange={event => setCaptureId(event.target.value)}>
           {usable.map(capture => (
             <option key={capture.id} value={capture.id}>
-              {new Date(capture.startedAt).toLocaleString('en-GB')}, {capture.purpose === 'demo' ? 'demonstration' : 'own driving'}, {capture.packets} packets
+              {t(capture.purpose === 'demo' ? 'record.manual.demo-option' : 'record.manual.own-option', { date: new Date(capture.startedAt).toLocaleString(formatLocale()), count: capture.packets })}
             </option>
           ))}
         </select>
       </div>
       <div className="field-row">
         <div className="field">
-          <label htmlFor="manual-first">First frame</label>
+          <label htmlFor="manual-first">{t('record.manual.first')}</label>
           <input id="manual-first" inputMode="numeric" value={first} onChange={event => setFirst(event.target.value)} />
         </div>
         <div className="field">
-          <label htmlFor="manual-last">Last frame</label>
+          <label htmlFor="manual-last">{t('record.manual.last')}</label>
           <input id="manual-last" inputMode="numeric" value={last} onChange={event => setLast(event.target.value)} />
         </div>
       </div>
@@ -144,26 +154,17 @@ function ManualRange({ exerciseId, onCreated }: { exerciseId: string; onCreated(
         </p>
       ) : null}
       <button className="btn" type="submit">
-        Create reference
+        {t('record.manual.create')}
       </button>
     </form>
   );
 }
 
 function checkText(result: ReferenceCheckResult): string {
-  return result.matched
-    ? 'The new recording matches the reference. The reference is confirmed for this game version.'
-    : 'The new recording does not match the reference. Record a new reference.';
+  return result.matched ? t('record.check.matched') : t('record.check.not-matched');
 }
 
-const CONSOLE_CHIPS: Record<ConsoleState, Status> = {
-  'recorded-data': { tone: 'on', text: 'Console: recorded data' },
-  'no-address': { tone: 'off', text: 'Console: no address' },
-  receiving: { tone: 'on', text: 'Console: receiving telemetry' },
-  'address-saved': { tone: 'idle', text: 'Console: address saved' }
-};
-
-const IDLE_HINT = 'Then press Start recording here, and start the demonstration in the game. Stop when the demonstration has ended.';
+const CONSOLE_TONES: Record<ConsoleState, Status['tone']> = { 'recorded-data': 'on', 'no-address': 'off', receiving: 'on', 'address-saved': 'idle' };
 
 function captureSeconds(capture: CaptureInfo): number | null {
   if (!capture.endedAt) return null;
@@ -172,17 +173,17 @@ function captureSeconds(capture: CaptureInfo): number | null {
 
 function doneNote(capture: CaptureInfo): string {
   const seconds = captureSeconds(capture);
-  return seconds === null ? 'done' : `done, ${seconds} s`;
+  return seconds === null ? t('record.slot.done') : t('record.slot.done-seconds', { seconds });
 }
 
 type Slot = { note: string; state: 'done' | 'now' | null };
 
 function Slots({ slots }: { slots: Slot[] }) {
   return (
-    <ol className="record-slots" aria-label="Recordings">
+    <ol className="record-slots" aria-label={t('record.slots.label')}>
       {slots.map((slot, index) => (
         <li key={index} className={slot.state ?? undefined} aria-current={slot.state === 'now' ? 'step' : undefined}>
-          <b>Recording {index + 1}</b>
+          <b>{t('record.slot.title', { number: index + 1 })}</b>
           <span>{slot.note}</span>
         </li>
       ))}
@@ -190,14 +191,14 @@ function Slots({ slots }: { slots: Slot[] }) {
   );
 }
 
-function SetupProblem({ text }: { text: string }) {
+function SetupProblem({ problem }: { problem: StageProblem }) {
   return (
     <p className="error" role="alert">
-      {text}
-      {text === CONSOLE_MISSING ? (
+      {problem.text}
+      {problem.setupLink ? (
         <>
           {' '}
-          <Link to={paths.setup('console')}>Open Setup</Link>
+          <Link to={paths.setup('console')}>{t('record.open-setup')}</Link>
         </>
       ) : null}
     </p>
@@ -209,10 +210,8 @@ function SideNotes({ check, manualOpen, onManual }: { check: boolean; manualOpen
     <aside className="record-side">
       {check ? null : (
         <div className="panel">
-          <h2>Why one recording</h2>
-          <p>
-            GT7 Tutor finds the start and the end of the demonstration in one recording. A second recording is optional: it checks that the same part repeats.
-          </p>
+          <h2>{t('record.side.title')}</h2>
+          <p>{t('record.side.text')}</p>
         </div>
       )}
       {check || manualOpen ? null : <ManualHint onManual={onManual} />}
@@ -223,9 +222,9 @@ function SideNotes({ check, manualOpen, onManual }: { check: boolean; manualOpen
 function ManualHint({ onManual }: { onManual(): void }) {
   return (
     <p className="record-manual-hint">
-      <span>Experienced user?</span>{' '}
+      <span>{t('record.manual-hint.question')}</span>{' '}
       <button type="button" className="text-link" onClick={onManual}>
-        Set the range by hand
+        {t('record.manual-hint.link')}
       </button>
     </p>
   );
@@ -250,7 +249,7 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
   const [manual, setManual] = useState(false);
   const [busy, setBusy] = useState(false);
   const gate = useTrainingGate('record');
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem] = useState<StageProblem | null>(null);
   const [finishFailed, setFinishFailed] = useState(false);
   const now = useNow(active !== null);
   useRunningCapture(exerciseId, active, setActive);
@@ -262,7 +261,7 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
     try {
       await action();
     } catch (error) {
-      setProblem(problemText(error));
+      setProblem(stageProblem(error));
     } finally {
       setBusy(false);
     }
@@ -330,7 +329,7 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
     });
 
   if (exercise.error) return <LoadProblem error={exercise.error} kind="exercise" />;
-  if (!exercise.data) return <p className="sub">Reading the exercise…</p>;
+  if (!exercise.data) return <p className="sub">{t('record.reading')}</p>;
   const count = checkId ? 1 : 2;
   const waiting = recorded.length > 0 && (checkId ? checkResult === null : recorded.length === 1 ? proposals === null : repeats === null);
   const found = !checkId && recorded.length === 1 && proposals !== null && proposals.length > 0;
@@ -340,36 +339,35 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
   const consoleRequired = info.data?.consoleRequired ?? false;
   const ps5Ip = settings.data?.ps5Ip;
   const startBlocked = consoleRequired && ps5Ip === null;
-  const consoleChip = CONSOLE_CHIPS[consoleState(ps5Ip, state, connected, !consoleRequired)];
+  const chipState = consoleState(ps5Ip, state, connected, !consoleRequired);
+  const consoleChip: Status = { tone: CONSOLE_TONES[chipState], text: t(`record.chip.${chipState}`) };
   const seconds = active ? recordingSeconds(active, now) : null;
-  const shownProblem = problem ?? (startBlocked && recordable && !active ? CONSOLE_MISSING : null);
-  const title = checkId ? 'Check the reference' : 'Record the reference';
-  const lede = checkId
-    ? 'One recording of the demonstration shows whether the stored reference still matches the game.'
-    : 'The game shows a demonstration before every run. GT7 Tutor records it once and finds the demonstration by itself.';
+  const shownProblem = problem ?? (startBlocked && recordable && !active ? consoleMissing() : null);
+  const title = checkId ? t('record.title.check') : t('record.title.record');
+  const lede = checkId ? t('record.lede.check') : t('record.lede.record');
 
   const slots: Slot[] = Array.from({ length: count }, (_, index) => {
     const done = recorded[index];
     if (done) return { note: doneNote(done), state: 'done' };
     const state = index === recorded.length && !created && !none && !waiting ? 'now' : null;
-    if (index === 0) return { note: checkId ? 'to record' : 'needed', state };
-    return { note: created ? 'not needed' : 'optional, a check', state };
+    if (index === 0) return { note: checkId ? t('record.slot.to-record') : t('record.slot.needed'), state };
+    return { note: created ? t('record.slot.not-needed') : t('record.slot.optional'), state };
   });
 
-  const errorLine = shownProblem ? <SetupProblem text={shownProblem} /> : null;
+  const errorLine = shownProblem ? <SetupProblem problem={shownProblem} /> : null;
 
   const stageBody = (): ReactNode => {
     if (created) {
       return (
         <div className="record-message">
-          <h2 className="record-done">The reference is active</h2>
-          <p>Next: drive attempts. The Drive screen shows the cues, and a voice device also says them.</p>
+          <h2 className="record-done">{t('record.created.title')}</h2>
+          <p>{t('record.created.text')}</p>
           <div className="record-actions">
             <DriveAction exerciseId={exerciseId} referenceId={null} className="stage-button primary" problemClass="stage-alert">
-              Drive
+              {t('record.drive')}
             </DriveAction>
             <Link to={paths.cues(exerciseId)} className="stage-button">
-              Hear the cues
+              {t('record.hear-cues')}
             </Link>
           </div>
         </div>
@@ -384,21 +382,21 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
           {wide ? (
             <p className="record-line">
               <span className="record-dot" aria-hidden="true" />
-              <span>Recording, {seconds} s. Stop when the demonstration has ended.</span>
+              <span>{t('record.live.line-wide', { seconds })}</span>
             </p>
           ) : (
             <>
               <p className="record-line">
                 <span className="record-dot" aria-hidden="true" />
-                <span>Recording, {seconds} s</span>
+                <span>{t('record.live.line', { seconds })}</span>
               </p>
-              <p className="record-note">Stop when the demonstration has ended.</p>
+              <p className="record-note">{t('record.live.note')}</p>
             </>
           )}
           {errorLine}
           {wide ? (
             <button className="stage-button light" type="button" onClick={() => void stop()} disabled={busy}>
-              Stop recording {number}
+              {t('record.stop', { number })}
             </button>
           ) : null}
         </div>
@@ -407,11 +405,11 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
     if (waiting) {
       return (
         <div className="record-message">
-          <h2>The recording is done</h2>
+          <h2>{t('record.done.title')}</h2>
           {errorLine}
           {finishFailed ? (
             <button className="stage-button primary" type="button" onClick={() => void retry()} disabled={busy}>
-              Try again
+              {t('record.try-again')}
             </button>
           ) : null}
         </div>
@@ -420,13 +418,13 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
     if (checkId && checkResult) {
       return (
         <div className="record-message">
-          <h2>The recording is done</h2>
+          <h2>{t('record.done.title')}</h2>
           <p className={`notice${checkResult.matched ? '' : ' bad'}`} role="status">
             {checkText(checkResult)}
           </p>
           <div className="record-actions">
             <DriveAction exerciseId={exerciseId} referenceId={null} className="stage-button primary" problemClass="stage-alert">
-              Drive
+              {t('record.drive')}
             </DriveAction>
           </div>
         </div>
@@ -435,12 +433,10 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
     if (none) {
       return (
         <div className="record-message">
-          <h2>No complete demonstration found</h2>
-          <p>
-            Recording 1 does not hold the whole demonstration. Record again and let the demonstration play to the end, or set the range by hand.
-          </p>
+          <h2>{t('record.none.title')}</h2>
+          <p>{t('record.none.text')}</p>
           <button className="stage-button primary" type="button" onClick={recordAgain}>
-            Record again
+            {t('record.again')}
           </button>
         </div>
       );
@@ -449,18 +445,18 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
       const repeated = repeats.some(candidate => sameRun(candidate, chosen));
       return (
         <div className="record-message">
-          <h2>The demonstration is found</h2>
+          <h2>{t('record.found.title')}</h2>
           <p className={`notice${repeated ? '' : ' bad'}`} role="status">
-            {repeated ? 'The same part repeats in both recordings.' : 'The recordings do not show the same part. Use recording 1, or record again.'}
+            {repeated ? t('record.repeats.same') : t('record.repeats.different')}
           </p>
           {errorLine}
           <div className="record-actions">
             <button className="stage-button primary" type="button" onClick={() => void createFromChosen()} disabled={busy}>
-              Use this as the reference
+              {t('record.use')}
             </button>
             {repeated ? null : (
               <button className="stage-button" type="button" onClick={recordAgain}>
-                Record again
+                {t('record.again')}
               </button>
             )}
           </div>
@@ -471,10 +467,10 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
       const choose = needsSelection(proposals);
       return (
         <div className="record-message">
-          <h2>{choose ? 'Select the demonstration' : 'The demonstration is found'}</h2>
+          <h2>{choose ? t('record.select.title') : t('record.found.title')}</h2>
           {choose ? (
             <>
-              <p>Recording 1 holds more than one demonstration. Select one. Use it as the reference, or record once more to check that the same part repeats.</p>
+              <p>{t('record.select.text')}</p>
               <RunChoice proposals={proposals} selected={selected} onSelect={setSelected} />
             </>
           ) : (
@@ -483,10 +479,10 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
           {errorLine}
           <div className="record-actions">
             <button className="stage-button primary" type="button" onClick={() => void createFromChosen()} disabled={busy || chosen === null}>
-              Use this as the reference
+              {t('record.use')}
             </button>
             <button className="stage-button" type="button" onClick={() => setChecking(true)} disabled={busy || chosen === null}>
-              Record again to check
+              {t('record.again-check')}
             </button>
           </div>
         </div>
@@ -494,13 +490,13 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
     }
     return (
       <div className="record-message">
-        <h2>{wide ? 'In GT7, open the exercise and stay on the screen before the demonstration.' : 'Open the exercise in GT7 and stay on the screen before the demonstration.'}</h2>
-        <p>{IDLE_HINT}</p>
+        <h2>{wide ? t('record.idle.title-wide') : t('record.idle.title')}</h2>
+        <p>{t('record.idle.hint')}</p>
         {errorLine}
         {gate.notice ? <p className="notice">{gate.notice}</p> : null}
         {wide ? (
           <button className="stage-button primary" type="button" onClick={() => void start()} disabled={busy || startBlocked || gate.blocked}>
-            {gate.label('Start recording')}
+            {gate.label(t('record.start'))}
           </button>
         ) : null}
       </div>
@@ -511,14 +507,14 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
     if (active) {
       return (
         <button className="stage-button light wide" type="button" onClick={() => void stop()} disabled={busy}>
-          Stop recording {number}
+          {t('record.stop', { number })}
         </button>
       );
     }
     if (!recordable) return null;
     return (
       <button className="stage-button primary wide" type="button" onClick={() => void start()} disabled={busy || startBlocked || gate.blocked}>
-        {gate.label('Start recording')}
+        {gate.label(t('record.start'))}
       </button>
     );
   };
@@ -530,17 +526,17 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
           <div className="record-top">
             <div>
               <p>
-                {checkId ? 'Check' : 'Reference'} · {exercise.data.name}
+                {t(checkId ? 'record.phone.check' : 'record.phone.reference', { name: exercise.data.name })}
               </p>
-              <ul className="record-dots" aria-label="Readiness">
+              <ul className="record-dots" aria-label={t('record.readiness')}>
                 <li title={consoleChip.text}>
                   <span className={`dot ${consoleChip.tone}`} aria-hidden="true" />
-                  {consoleRequired ? 'Telemetry' : 'Recorded data'}
+                  {consoleRequired ? t('record.telemetry') : t('record.recorded-data')}
                 </li>
               </ul>
             </div>
             <Link to={paths.exercise(exerciseId)} className="stage-button">
-              Close
+              {t('common.close')}
             </Link>
           </div>
           <Slots slots={slots} />
@@ -558,8 +554,8 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
 
   return (
     <section className="record">
-      <nav className="breadcrumb" aria-label="Breadcrumb">
-        <Link to={paths.exercises()}>Exercises</Link> / <Link to={paths.exercise(exerciseId)}>{exercise.data.name}</Link> / Reference
+      <nav className="breadcrumb" aria-label={t('common.breadcrumb')}>
+        <Link to={paths.exercises()}>{t('record.breadcrumb.exercises')}</Link> / <Link to={paths.exercise(exerciseId)}>{exercise.data.name}</Link> / {t('record.breadcrumb.reference')}
       </nav>
       <h1>{title}</h1>
       <p className="lede">{lede}</p>
@@ -569,7 +565,7 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
           <div className="record-body">{stageBody()}</div>
           {active ? (
             <button type="button" className="text-link record-cancel" onClick={() => void cancel()} disabled={busy}>
-              Cancel this recording
+              {t('record.cancel')}
             </button>
           ) : null}
         </div>

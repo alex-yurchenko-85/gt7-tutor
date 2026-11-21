@@ -1,4 +1,4 @@
-import type { Catalogue, CatalogueDiff, CatalogueEntry } from '@gt7/contracts';
+import type { Catalogue, CatalogueDiff, CatalogueEntry, CatalogueRejection } from '@gt7/contracts';
 
 export const MAX_FAMILY_LOSS = 0.2;
 
@@ -13,12 +13,12 @@ function familyCounts(entries: CatalogueEntry[]): Map<string, number> {
   return counts;
 }
 
-export function rejectionReason(current: Catalogue, next: Catalogue): string | null {
+export function rejectionOf(current: Catalogue, next: Catalogue): CatalogueRejection | null {
   const nextCounts = familyCounts(next.entries);
   for (const [family, count] of familyCounts(current.entries)) {
     const lost = count - (nextCounts.get(family) ?? 0);
     if (lost / count > MAX_FAMILY_LOSS) {
-      return `The update would remove ${lost} of ${count} ${family} entries. The source format may have changed.`;
+      return { lost, total: count, family };
     }
   }
   return null;
@@ -38,5 +38,5 @@ export function diffCatalogue(current: Catalogue, next: Catalogue): CatalogueDif
     }
   }
   const removed = current.entries.filter(entry => !nextIds.has(entry.id));
-  return { added, removed, changed, rejected: rejectionReason(current, next) };
+  return { added, removed, changed, rejected: rejectionOf(current, next) };
 }

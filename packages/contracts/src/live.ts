@@ -21,21 +21,6 @@ export type LiveCueKind = CueKind | 'guidance-paused' | 'guidance-resumed' | 'fo
 
 export type WordedCueKind = Exclude<LiveCueKind, 'focus'>;
 
-export const CUE_WORDS: Record<WordedCueKind, string> = {
-  'hard-brake': 'Hard brake',
-  brake: 'Brake',
-  'light-brake': 'Light brake',
-  'ease-off': 'Lift off',
-  throttle: 'Throttle on',
-  'full-throttle': 'Full throttle',
-  'keep-left': 'More left',
-  'keep-right': 'More right',
-  tighter: 'Closer to apex',
-  'big-stop': 'Big brake ahead',
-  'guidance-paused': 'Guidance paused',
-  'guidance-resumed': 'Guidance resumed'
-};
-
 export type LiveCue = {
   id: string;
   eventKey: string;
@@ -74,7 +59,7 @@ export type LiveState = {
   sM: number | null;
   speedMps: number | null;
   lastCue: LiveCue | null;
-  nextCue: { text: string; inM: number } | null;
+  nextCue: { clip: string; inM: number } | null;
   lastAttemptId: string | null;
   referenceId: string | null;
   gapMs: number | null;

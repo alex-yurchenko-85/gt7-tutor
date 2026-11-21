@@ -6,7 +6,6 @@ import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Icon } from '../../app/icons.tsx';
 import { useWideLayout } from '../../app/layout.ts';
-import { counted } from '../../app/plural.ts';
 import { Link, paths } from '../../app/router.tsx';
 import { SelectionBar } from '../../app/SelectionBar.tsx';
 import { differenceText } from '../cues/cue-format.ts';
@@ -17,6 +16,7 @@ import { DeleteAttemptsDialog } from './DeleteAttemptsDialog.tsx';
 import { RecurringDifferences } from './RecurringDifferences.tsx';
 import { TurnTag } from './TurnTag.tsx';
 import './attempts.css';
+import { t } from '../../app/i18n.ts';
 
 type Selection = { picked: ReadonlySet<string>; toggle(id: string): void };
 
@@ -34,18 +34,18 @@ function AttemptRow({ attempt, bestMs, selection, wide }: { attempt: AttemptSumm
   const largestLine = largest ? (
     <>
       <TurnTag turn={largest.turn} muted={!complete} />
-      {`${metres(largest.sM)}. ${differenceText(largest)}`}
+      {t('exercises.attempts.largest', { place: metres(largest.sM), difference: differenceText(largest) })}
     </>
   ) : null;
   const classes = [rowClass(isBest, complete, picked, selection !== null), selection ? 'selectable' : 'linked'].filter(Boolean).join(' ');
   return (
-    <tr aria-label={`Attempt ${attempt.number}`} className={classes} onClick={selection ? () => selection.toggle(attempt.id) : undefined}>
+    <tr aria-label={t('exercises.attempts.row', { number: attempt.number })} className={classes} onClick={selection ? () => selection.toggle(attempt.id) : undefined}>
       {selection ? (
         <td className="pick-cell">
           <input
             type="checkbox"
             className="pick-box"
-            aria-label={`Select attempt ${attempt.number}`}
+            aria-label={t('exercises.attempts.select-one', { number: attempt.number })}
             checked={picked}
             onClick={event => event.stopPropagation()}
             onChange={() => selection.toggle(attempt.id)}
@@ -59,20 +59,20 @@ function AttemptRow({ attempt, bestMs, selection, wide }: { attempt: AttemptSumm
         {complete ? (
           <>
             <b className="attempt-time">{formatTime(attempt.timeMs)}</b>
-            {isBest ? <span className="tag y best-tag">best</span> : null}
+            {isBest ? <span className="tag y best-tag">{t('exercises.attempts.best')}</span> : null}
           </>
         ) : (
           <>
-            <b className="attempt-time">No time</b>
+            <b className="attempt-time">{t('exercises.attempts.no-time')}</b>
             <br />
-            <span className="sub">aborted{attempt.reason ? `, ${abortReasonText(attempt.reason)}` : ''}</span>
+            <span className="sub">{attempt.reason ? t('exercises.attempts.aborted-reason', { reason: abortReasonText(attempt.reason) }) : t('exercises.attempts.aborted')}</span>
           </>
         )}
         {wide ? null : gap ? <span className="phone-gap">{gap}</span> : null}
         {wide || !largestLine ? null : <span className="phone-difference">{largestLine}</span>}
         {selection ? null : (
           <Link to={paths.review(attempt.id)} className="row-link">
-            <span className="visually-hidden">Review attempt {attempt.number}</span>
+            <span className="visually-hidden">{t('exercises.attempts.review', { number: attempt.number })}</span>
           </Link>
         )}
       </td>
@@ -86,14 +86,14 @@ function AttemptRow({ attempt, bestMs, selection, wide }: { attempt: AttemptSumm
 function QuickSelect({ day, onPick }: { day: AttemptDay; onPick(ids: string[]): void }) {
   const aborted = day.attempts.filter(attempt => attempt.completion !== 'complete');
   const choices: { label: string; attempts: AttemptSummary[] }[] = [
-    { label: `Aborted (${aborted.length})`, attempts: aborted },
-    { label: `All on this day (${day.attempts.length})`, attempts: day.attempts },
-    { label: 'None', attempts: [] }
+    { label: t('exercises.attempts.quick-aborted', { count: aborted.length }), attempts: aborted },
+    { label: t('exercises.attempts.quick-day', { count: day.attempts.length }), attempts: day.attempts },
+    { label: t('exercises.attempts.quick-none'), attempts: [] }
   ];
   return (
-    <div className="quick-select" role="group" aria-label={`Select on ${formatDay(day.date)}`}>
+    <div className="quick-select" role="group" aria-label={t('exercises.attempts.quick-label', { day: formatDay(day.date) })}>
       <span className="sub" aria-hidden="true">
-        Select:
+        {t('exercises.attempts.select-label')}
       </span>
       {choices.map(choice => (
         <button key={choice.label} type="button" className="chip-button" onClick={() => onPick(choice.attempts.map(attempt => attempt.id))}>
@@ -113,7 +113,7 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
   const [confirming, setConfirming] = useState(false);
   const wide = useWideLayout();
   if (exercise.error) return <LoadProblem error={exercise.error} kind="exercise" />;
-  if (!exercise.data) return <p className="sub">Reading the exercise…</p>;
+  if (!exercise.data) return <p className="sub">{t('exercises.reading-exercise')}</p>;
   const list = attempts.data;
   const all = (list?.days ?? []).flatMap(day => day.attempts);
   const days = (list?.days ?? [])
@@ -151,11 +151,11 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
       {selecting ? null : (
         <button type="button" className="btn ghost inline" onClick={() => setSelecting(true)}>
           <Icon name="select" size={16} />
-          Select
+          {t('exercises.attempts.select')}
         </button>
       )}
       <button type="button" className={showAborted ? 'btn ghost inline hide-aborted' : 'btn ghost inline hide-aborted hiding'} onClick={() => setShowAborted(!showAborted)}>
-        {showAborted ? 'Hide aborted' : 'Show aborted'}
+        {showAborted ? t('exercises.attempts.hide-aborted') : t('exercises.attempts.show-aborted')}
       </button>
     </div>
   ) : null;
@@ -168,9 +168,9 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
             <DriveButton exerciseId={current.id} referenceId={current.activeReferenceId} />
           ) : (
             <p className="attempts-record">
-              Record the reference first.{' '}
+              {t('exercises.attempts.record-first')}{' '}
               <Link to={paths.record(current.id)} className="text-link">
-                Record
+                {t('exercises.attempts.record')}
               </Link>
             </p>
           )}
@@ -179,7 +179,7 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
         <div className="attempts-main">
           {list && list.days.length === 0 ? (
             <div className="attempts-empty">
-              <p>No attempts yet. Select Drive, then drive the exercise in the game.</p>
+              <p>{t('exercises.attempts.empty')}</p>
             </div>
           ) : null}
           {wide && hasAttempts && days.length === 0 ? <div className="attempt-day-head">{tools}</div> : null}
@@ -187,24 +187,24 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
             <div key={day.date} className="attempt-day">
               <div className="attempt-day-head">
                 <h2>
-                  {formatDay(day.date)} <span className="sub">{day.bestMs === null ? 'no complete attempt' : `best ${formatTime(day.bestMs)}`}</span>
+                  {formatDay(day.date)} <span className="sub">{day.bestMs === null ? t('exercises.attempts.day-none') : t('exercises.attempts.day-best', { time: formatTime(day.bestMs) })}</span>
                 </h2>
                 {wide && index === 0 ? tools : null}
               </div>
               {selecting ? <QuickSelect day={day} onPick={ids => pickOnDay(day, ids)} /> : null}
               <div className="table-wrap">
-                <table aria-label={`Attempts on ${formatDay(day.date)}`}>
+                <table aria-label={t('exercises.attempts.table', { day: formatDay(day.date) })}>
                   <thead>
                     <tr>
                       {selecting ? (
                         <th>
-                          <span className="visually-hidden">Selected</span>
+                          <span className="visually-hidden">{t('exercises.attempts.selected')}</span>
                         </th>
                       ) : null}
-                      <th>#</th>
-                      <th>Time from the game</th>
-                      {wide ? <th>Gap to best</th> : null}
-                      {wide ? <th>Largest difference</th> : null}
+                      <th>{t('exercises.attempts.number')}</th>
+                      <th>{t('exercises.attempts.time')}</th>
+                      {wide ? <th>{t('exercises.attempts.gap')}</th> : null}
+                      {wide ? <th>{t('exercises.attempts.difference')}</th> : null}
                       <th aria-hidden="true" />
                     </tr>
                   </thead>
@@ -221,7 +221,7 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
         </div>
         {hasAttempts ? <RecurringDifferences exercise={current} /> : null}
       </div>
-      {selecting ? <SelectionBar count={picked.size} action={`Delete ${counted(picked.size, 'attempt')}`} onCancel={stopSelecting} onAction={() => setConfirming(true)} /> : null}
+      {selecting ? <SelectionBar count={picked.size} action={t('exercises.attempts.delete-selected', { count: picked.size })} onCancel={stopSelecting} onAction={() => setConfirming(true)} /> : null}
       {confirming ? (
         <DeleteAttemptsDialog selected={all.filter(attempt => picked.has(attempt.id))} all={all} onKeep={() => setConfirming(false)} onDeleted={deleted} />
       ) : null}

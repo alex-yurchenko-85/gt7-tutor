@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   eventKeyPlace,
   type AttemptReaction,
@@ -31,6 +31,7 @@ import { KNEX } from '../storage/knex.provider.js';
 import { FINDING_COLUMNS, saveComparison, toFinding, type FindingRow } from './finding-rows.js';
 import { localDate } from './local-date.js';
 import { reviewBody, withTurn } from './review-shapes.js';
+import { httpError } from '../http-errors.js';
 
 export function attemptTimeMs(row: Pick<AttemptRow, 'completion' | 'game_ms'>): number | null {
   return row.completion === 'complete' ? row.game_ms : null;
@@ -179,7 +180,7 @@ export class AttemptsService {
 
   private async referenceFor(attempt: AttemptRow, referenceId: string): Promise<ReferenceRow> {
     const reference = await this.db<ReferenceRow>('references').where({ id: referenceId, exercise_id: attempt.exercise_id }).first();
-    if (!reference) throw new NotFoundException('Reference not found');
+    if (!reference) throw httpError(404, 'reference-not-found');
     return reference;
   }
 

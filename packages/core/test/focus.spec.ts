@@ -35,18 +35,17 @@ describe('focus sentence', () => {
     expect(focusSentence(recurringOnes, latest, corners)).toEqual({
       kind: 'throttle-late',
       turn: 3,
-      text: 'Turn three. Throttle earlier.',
       clip: 'focus-throttle-late-3'
     });
   });
 
   it('focus_without_recurring_uses_the_largest_finding', () => {
     const latest = [finding('off-line', 120, 3), finding('brake-late', 210, 14)];
-    expect(focusSentence([], latest, corners)).toMatchObject({ kind: 'brake-late', turn: 2, text: 'Turn two. Brake earlier.' });
+    expect(focusSentence([], latest, corners)).toMatchObject({ kind: 'brake-late', turn: 2 });
 
     const review = buildReview(between(samplesOf('ce-pause'), 11564, 13309), interlagosAnalysis(), DEFAULT_CONFIG);
     const focus = focusSentence([], findDifferences(review, DEFAULT_CONFIG), review.corners);
-    expect(focus).toEqual({ kind: 'brake-early', turn: 1, text: 'Turn one. Brake later.', clip: 'focus-brake-early-1' });
+    expect(focus).toEqual({ kind: 'brake-early', turn: 1, clip: 'focus-brake-early-1' });
   });
 
   it('focus_counts_one_kmh_of_a_slow_corner_as_one_metre', () => {
@@ -74,7 +73,6 @@ describe('focus sentence', () => {
     expect(focusSentence([], [finding('slow-corner', 1120, kph(12))], eleven)).toEqual({
       kind: 'slow-corner',
       turn: 11,
-      text: 'Turn 11. Carry more speed.',
       clip: null
     });
   });

@@ -86,7 +86,7 @@ function shownKey(view: SessionView): string {
   const speed = view.speedMps === null ? '' : Math.round(view.speedMps * KPH_PER_MPS);
   const place = view.sM === null ? '' : Math.round(view.sM);
   const gap = view.gapMs === null ? '' : Math.round(view.gapMs / GAP_STEP_MS) || 0;
-  const next = nextCue === null ? '' : `${nextCue.text}@${Math.round(nextCue.inM)}`;
+  const next = nextCue === null ? '' : `${nextCue.clip}@${Math.round(nextCue.inM)}`;
   return [view.mode, view.generation, view.attemptNumber, guidance.mode, guidance.reason, speed, place, gap, next, view.lastCue?.id, view.startMissed].join('|');
 }
 

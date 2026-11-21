@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import type { LiveState, Settings } from '@gt7/contracts';
+import type { LiveState, MessageKey, Settings } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { useLiveState } from '../../api/live.tsx';
 import { useDemo } from '../../app/demo.tsx';
@@ -15,14 +15,15 @@ import { defaultSection } from './readiness.ts';
 import { StorageSection } from './StorageSection.tsx';
 import { VoiceSection } from './VoiceSection.tsx';
 import './setup.css';
+import { t } from '../../app/i18n.ts';
 
-const SECTIONS: { id: SetupSection; label: string }[] = [
-  { id: 'console', label: 'Console' },
-  { id: 'voice', label: 'Voice' },
-  { id: 'profiles', label: 'Profiles' },
-  { id: 'preferences', label: 'Preferences' },
-  { id: 'catalogue', label: 'Catalogue' },
-  { id: 'data', label: 'Data' }
+const SECTIONS: { id: SetupSection; label: MessageKey }[] = [
+  { id: 'console', label: 'setup.nav.console' },
+  { id: 'voice', label: 'setup.nav.voice' },
+  { id: 'profiles', label: 'setup.nav.profiles' },
+  { id: 'preferences', label: 'setup.nav.preferences' },
+  { id: 'catalogue', label: 'setup.nav.catalogue' },
+  { id: 'data', label: 'setup.nav.data' }
 ];
 
 function isSection(value: string): value is SetupSection {
@@ -65,14 +66,14 @@ export function SetupView() {
 
   return (
     <section className="setup" aria-labelledby="setup-title">
-      <h1 id="setup-title">Setup</h1>
+      <h1 id="setup-title">{t('setup.title')}</h1>
       {wide ? (
         <>
           <div className="setup-layout">
-            <nav className="setup-nav" aria-label="Setup sections">
+            <nav className="setup-nav" aria-label={t('setup.nav.label')}>
               {listed.map(section => (
                 <Link key={section.id} to={paths.setup(section.id)} current={section.id === shown} className="setup-nav-link">
-                  {section.label}
+                  {t(section.label)}
                 </Link>
               ))}
             </nav>
@@ -81,8 +82,8 @@ export function SetupView() {
         </>
       ) : deleting ? (
         <>
-          <nav className="breadcrumb" aria-label="Breadcrumb">
-            <Link to={paths.setup()}>Setup</Link> / <Link to={paths.setup('data')}>Data</Link> / Delete history
+          <nav className="breadcrumb" aria-label={t('common.breadcrumb')}>
+            <Link to={paths.setup()}>{t('setup.title')}</Link> / <Link to={paths.setup('data')}>{t('setup.nav.data')}</Link> / {t('setup.breadcrumb.delete-history')}
           </nav>
           <DeleteHistoryView />
         </>

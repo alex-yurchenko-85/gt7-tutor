@@ -287,7 +287,7 @@ describe('exercises home', () => {
   });
 
   it('remove_busy_shows_message', async () => {
-    homeApi().on('POST /api/exercises/remove', { status: 409, body: { code: 'busy', reason: 'Busy.' } });
+    homeApi().on('POST /api/exercises/remove', { status: 409, body: { code: 'busy' } });
     renderApp();
     const mine = await screen.findByRole('region', { name: /My exercises/ });
     await userEvent.click(within(mine).getByRole('button', { name: 'Select' }));

@@ -1,4 +1,4 @@
-import type { LiveGuidance, Sample } from '@gt7/contracts';
+import { ENGLISH, type LiveGuidance, type Sample } from '@gt7/contracts';
 import type { Cue } from '../src/cue-factory.ts';
 import { Coach, type CoachInput, type CoachSettings, type CueTarget, type Suppressed } from '../src/coach.ts';
 import { DEFAULT_CONFIG, DEFAULT_SIDE_CUE_DISTANCE_M, type CoreConfig } from '../src/config.ts';
@@ -8,6 +8,8 @@ import { Matcher, type Match } from '../src/match.ts';
 import type { ReferencePath } from '../src/reference.ts';
 import { analysisOf, profiledPath } from './paths.ts';
 import { FRAME_MS, syntheticSample } from './synthetic.ts';
+
+const englishPhraseMs = (clip: string) => estimatedPhraseMs(ENGLISH, clip);
 
 const MAX_LATERAL_STEP_M = 0.1;
 
@@ -106,7 +108,7 @@ export function runCoach(path: ReferencePath, events: ReferenceCueEvent[], sampl
       nowMonoMs: sample.receivedMonoMs,
       generation: options.generation ?? 1,
       deviceDelayMs: options.deviceDelayMs ?? 60,
-      phraseMs: estimatedPhraseMs
+      phraseMs: englishPhraseMs
     };
     const output = coach.step(options.input ? options.input(base, index) : base);
     if (output.cue && output.target) run.cues.push({ cue: output.cue, target: output.target, sM: match?.sM ?? null, index });

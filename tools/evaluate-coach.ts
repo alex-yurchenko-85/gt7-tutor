@@ -1,14 +1,14 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import type { Sample } from '@gt7/contracts';
+import { ENGLISH, type Sample } from '@gt7/contracts';
 import { readSamples } from '@gt7/capture';
 import {
   analyseReference,
   DEFAULT_CONFIG,
   DEFAULT_SIDE_CUE_DISTANCE_M,
+  clipText,
   estimatedPhraseMs,
-  cueText,
   replayCoach
 } from '@gt7/core';
 
@@ -60,7 +60,7 @@ async function main() {
   const { path, events } = analysis;
   const trace = replayCoach(await samplesOf(options.attempt), analysis, DEFAULT_CONFIG, {
     deviceDelayMs: options.deviceDelayMs,
-    phraseMs: estimatedPhraseMs,
+    phraseMs: clip => estimatedPhraseMs(ENGLISH, clip),
     mutedKeys: new Set(),
     speakTargets: true,
     offsetsMs: new Map(),
@@ -73,7 +73,7 @@ async function main() {
     phraseDurations: 'estimatedPhraseMs',
     speakTargets: true,
     sideCueDistanceM: options.sideCueDistanceM,
-    events: events.map(event => ({ ...event, text: cueText(event.voice) })),
+    events: events.map(event => ({ ...event, text: clipText(ENGLISH, event.voice) })),
     trace
   };
   const text = `${JSON.stringify(report, null, 2)}\n`;

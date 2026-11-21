@@ -290,7 +290,7 @@ describe('attempts', () => {
   it('busy_conflict_shows_message', async () => {
     exerciseApi()
       .on(LIST_ROUTE, ATTEMPT_LIST)
-      .on('POST /api/attempts/delete', { status: 409, body: { code: 'busy', reason: 'Stop the training or the recording first.' } })
+      .on('POST /api/attempts/delete', { status: 409, body: { code: 'busy' } })
       .install();
     renderApp({ path: ATTEMPTS_PATH });
     await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
@@ -330,7 +330,7 @@ describe('attempts', () => {
   });
 
   it('delete_does_not_happen_when_the_stop_fails', async () => {
-    const api = exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).on('POST /api/training/disarm', { status: 500, body: { message: 'Server problem' } }).install();
+    const api = exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).on('POST /api/training/disarm', { status: 500, body: { code: 'server-error' } }).install();
     const view = renderApp({ path: ATTEMPTS_PATH });
     await sendLiveState(view, { mode: 'armed', exerciseId: EXERCISE_ID });
     const user = userEvent.setup();

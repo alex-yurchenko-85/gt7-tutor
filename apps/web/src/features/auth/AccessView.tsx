@@ -7,6 +7,7 @@ import { Logo } from '../../app/Logo.tsx';
 import { useResource } from '../../app/resource.ts';
 import { createProfileError, InputProblem, ProfileForm, signInError, validateCredentials } from './ProfileForm.tsx';
 import { ProfileStrip } from './ProfileStrip.tsx';
+import { t } from '../../app/i18n.ts';
 
 async function checked(credentials: ProfileCredentials, send: (credentials: ProfileCredentials) => Promise<unknown>): Promise<void> {
   const problem = validateCredentials(credentials);
@@ -17,10 +18,10 @@ async function checked(credentials: ProfileCredentials, send: (credentials: Prof
 function AccessScreen({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="access">
-      <section className="access-brand" aria-label="GT7 Tutor">
+      <section className="access-brand" aria-label={t('auth.brand.label')}>
         <Logo height={96} />
-        <p className="access-tagline">Short voice cues while you drive the exercises of Gran Turismo 7.</p>
-        <p className="access-note">Runs on your home network. Your data stays on this computer.</p>
+        <p className="access-tagline">{t('auth.brand.tagline')}</p>
+        <p className="access-note">{t('auth.brand.note')}</p>
       </section>
       <section className="access-main" aria-labelledby="access-title">
         <div className="access-card">
@@ -35,14 +36,11 @@ function AccessScreen({ title, children }: { title: string; children: ReactNode 
 
 export function FirstProfileView({ onSignedIn }: { onSignedIn(): void }) {
   return (
-    <AccessScreen title="Create the first profile">
-      <p className="lede">
-        GT7 Tutor keeps your exercises, references and attempts in a profile on this computer. The password keeps other people on your home
-        network out of it.
-      </p>
+    <AccessScreen title={t('auth.first.title')}>
+      <p className="lede">{t('auth.first.text')}</p>
       <ProfileForm
-        submitLabel="Create profile"
-        passwordHint="At least 8 characters."
+        submitLabel={t('auth.first.submit')}
+        passwordHint={t('auth.first.password-hint')}
         describeError={createProfileError}
         onSubmit={async credentials => {
           await checked(credentials, api.createFirstProfile);
@@ -57,11 +55,11 @@ function DemoCredentials({ profileName, password }: { profileName: string; passw
   return (
     <dl className="demo-credentials">
       <div>
-        <dt>Profile</dt>
+        <dt>{t('auth.demo.profile')}</dt>
         <dd>{profileName}</dd>
       </div>
       <div>
-        <dt>Password</dt>
+        <dt>{t('auth.demo.password')}</dt>
         <dd>{password}</dd>
       </div>
     </dl>
@@ -92,7 +90,7 @@ function PasswordForm({ name, initialPassword, onSignedIn }: { name: string; ini
     <form className="access-form" onSubmit={submit} noValidate>
       <input type="text" name="username" autoComplete="username" value={name} readOnly hidden />
       <div className="field">
-        <label htmlFor={`${id}-password`}>Password for {name}</label>
+        <label htmlFor={`${id}-password`}>{t('auth.sign-in.password-for', { name })}</label>
         <input id={`${id}-password`} type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} />
       </div>
       {error ? (
@@ -101,7 +99,7 @@ function PasswordForm({ name, initialPassword, onSignedIn }: { name: string; ini
         </p>
       ) : null}
       <button className="btn" type="submit" disabled={busy}>
-        Sign in
+        {t('auth.sign-in.submit')}
       </button>
     </form>
   );
@@ -123,7 +121,7 @@ function ProfileChoice({ onSignedIn }: { onSignedIn(): void }) {
       </p>
     );
   }
-  if (!profiles.data) return <p className="sub">Reading the profiles…</p>;
+  if (!profiles.data) return <p className="sub">{t('auth.sign-in.reading')}</p>;
   return (
     <>
       <ProfileStrip profiles={list} selected={selected} onSelect={setPicked} />
@@ -135,7 +133,7 @@ function ProfileChoice({ onSignedIn }: { onSignedIn(): void }) {
           onSignedIn={onSignedIn}
         />
       ) : (
-        <p className="access-choose">Select a profile to sign in.</p>
+        <p className="access-choose">{t('auth.sign-in.choose')}</p>
       )}
     </>
   );
@@ -145,19 +143,19 @@ export function SignInView({ onSignedIn }: { onSignedIn(): void }) {
   const demo = useDemo();
   const wide = useWideLayout();
   return (
-    <AccessScreen title="Who is driving?">
+    <AccessScreen title={t('auth.sign-in.title')}>
       {demo ? (
         <>
-          <p className="lede">This demo has one profile. Its password is filled in for you.</p>
+          <p className="lede">{t('auth.sign-in.demo')}</p>
           <DemoCredentials profileName={demo.profileName} password={demo.password} />
         </>
       ) : (
-        <p className="lede">{wide ? 'Choose your profile, then enter its password.' : 'Swipe to your profile, then enter its password.'}</p>
+        <p className="lede">{wide ? t('auth.sign-in.choose-wide') : t('auth.sign-in.choose-phone')}</p>
       )}
       <ProfileChoice onSignedIn={onSignedIn} />
       <p className="access-help">
-        Need another profile? Sign in, then add it in Setup › Profiles.
-        {wide ? ' Everyone on your home network can see these names; the passwords keep the profiles apart.' : null}
+        {t('auth.sign-in.help')}
+        {wide ? ` ${t('auth.sign-in.help-wide')}` : null}
       </p>
     </AccessScreen>
   );

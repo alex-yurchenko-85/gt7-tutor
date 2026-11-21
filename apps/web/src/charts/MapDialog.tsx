@@ -7,6 +7,7 @@ import { useScrollLock } from '../app/scroll-lock.ts';
 import { cornerMarks } from './corner-marks.ts';
 import { TrackMap, type TrackLine, type TrackMark } from './TrackMap.tsx';
 import './map-dialog.css';
+import { cuePhrase, t } from '../app/i18n.ts';
 
 export type MapDialogItem = { key: string; number: string; label: string; detail: string; sM: number; muted?: boolean; onAttempt?: boolean };
 
@@ -30,7 +31,7 @@ export type MapDialogProps = {
 export function cueItems(cues: ReferenceCue[], isMuted: (cue: ReferenceCue) => boolean = cue => cue.muted): MapDialogItem[] {
   return cues.map((cue, index) => {
     const muted = isMuted(cue);
-    return { key: cue.key, number: String(index + 1), label: cue.phrase ?? cue.kind, detail: `${Math.round(cue.sM)} m${muted ? ', muted' : ''}`, sM: cue.sM, muted };
+    return { key: cue.key, number: String(index + 1), label: cuePhrase(cue) ?? cue.kind, detail: t(muted ? 'charts.map.cue-detail-muted' : 'charts.map.cue-detail', { metres: Math.round(cue.sM) }), sM: cue.sM, muted };
   });
 }
 
@@ -45,7 +46,7 @@ function itemMark(item: MapDialogItem, selected: boolean, onSelect: () => void):
   };
 }
 
-export function MapDialog({ open, onClose, title, lengthM, reference, attempt = null, corners, items, listTitle, listHint, mapLabel, lineName = 'Reference line', lapLine = false, metresText = metres }: MapDialogProps) {
+export function MapDialog({ open, onClose, title, lengthM, reference, attempt = null, corners, items, listTitle, listHint, mapLabel, lineName, lapLine = false, metresText = metres }: MapDialogProps) {
   const wide = useWideLayout();
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -91,11 +92,11 @@ export function MapDialog({ open, onClose, title, lengthM, reference, attempt = 
       <header className="map-dialog-bar">
         <button type="button" className="map-dialog-back" onClick={onClose}>
           <Icon name="chevron-right" size={16} />
-          Back
+          {t('charts.map.back')}
         </button>
         <div className="map-dialog-title">
           <h2 id={titleId}>{title}</h2>
-          <p>{`${lineName}, ${metresText(lengthM)}.${wide ? ' Press Esc to close.' : ''}`}</p>
+          <p>{`${t('charts.map.line-length', { line: lineName ?? t('charts.map.line-name'), length: metresText(lengthM) })}${wide ? ` ${t('charts.map.close-hint')}` : ''}`}</p>
         </div>
         <div className="map-dialog-layers">
           <label>
@@ -104,13 +105,13 @@ export function MapDialog({ open, onClose, title, lengthM, reference, attempt = 
           </label>
           <label>
             <input type="checkbox" checked={showTurns} onChange={event => setShowTurns(event.target.checked)} />
-            Turns
+            {t('charts.map.turns')}
           </label>
         </div>
       </header>
       <div className="map-dialog-body">
         <div className="map-dialog-map">
-          <TrackMap label={mapLabel ?? (attempt ? `Reference line and your line of ${title}` : `Reference line of ${title}`)} reference={reference} attempt={attempt} marks={marks} lapLine={lapLine} dark />
+          <TrackMap label={mapLabel ?? (attempt ? t('charts.map.reference-and-yours', { title }) : t('charts.map.reference-of', { title }))} reference={reference} attempt={attempt} marks={marks} lapLine={lapLine} dark />
         </div>
         <aside className="map-dialog-cues" aria-labelledby={`${titleId}-cues`}>
           <h3 id={`${titleId}-cues`}>{listTitle}</h3>

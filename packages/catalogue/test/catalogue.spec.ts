@@ -161,7 +161,7 @@ describe('catalogue sources', () => {
 
     const dropped = new Set(licences.slice(0, 21).map(entry => entry.id));
     const shrunk = { ...current, entries: current.entries.filter(entry => !dropped.has(entry.id)) };
-    expect(diffCatalogue(current, shrunk).rejected).toContain('21 of 100 Licence');
+    expect(diffCatalogue(current, shrunk).rejected).toEqual({ lost: 21, total: 100, family: 'Licence' });
     const twenty = new Set(licences.slice(0, 20).map(entry => entry.id));
     expect(diffCatalogue(current, { ...current, entries: current.entries.filter(entry => !twenty.has(entry.id)) }).rejected).toBeNull();
   });

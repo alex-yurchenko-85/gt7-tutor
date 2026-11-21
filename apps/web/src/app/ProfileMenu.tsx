@@ -3,6 +3,7 @@ import { Icon } from './icons.tsx';
 import { Link, paths } from './router.tsx';
 import { useSession } from './session.tsx';
 import { ThemeSwitch } from './ThemeSwitch.tsx';
+import { t } from './i18n.ts';
 
 function menuItems(menu: HTMLElement | null): HTMLElement[] {
   return menu ? [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')] : [];
@@ -55,7 +56,7 @@ export function ProfileMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        aria-label={`Profile ${user.name}`}
+        aria-label={t('app.profile.button', { name: user.name })}
         onClick={() => setOpen(value => !value)}
       >
         <span className="profile-initial" aria-hidden="true">
@@ -65,26 +66,26 @@ export function ProfileMenu() {
         <Icon name="chevron-down" size={14} />
       </button>
       {open ? (
-        <div ref={menu} id={menuId} className="profile-popup" role="menu" aria-label={`Profile ${user.name}`}>
+        <div ref={menu} id={menuId} className="profile-popup" role="menu" aria-label={t('app.profile.button', { name: user.name })}>
           <div className="profile-head">
             <b>{user.name}</b>
-            <span>Signed in on this device</span>
+            <span>{t('app.profile.signed-in')}</span>
           </div>
           <Link to={paths.setup('profiles')} className="menu-item" role="menuitem" onNavigate={() => setOpen(false)}>
             <Icon name="profiles" size={18} />
-            Manage profiles
+            {t('app.profile.manage')}
           </Link>
           <Link to={paths.setup('voice')} className="menu-item" role="menuitem" onNavigate={() => setOpen(false)}>
             <Icon name="speaker" size={18} />
-            Voice on this device
+            {t('app.profile.voice')}
           </Link>
           <div className="menu-theme">
-            <span>Theme</span>
+            <span>{t('app.profile.theme')}</span>
             <ThemeSwitch compact />
           </div>
           <button type="button" className="menu-item strong" role="menuitem" onClick={() => void signOut()}>
             <Icon name="sign-out" size={18} />
-            Sign out
+            {t('app.profile.sign-out')}
           </button>
         </div>
       ) : null}

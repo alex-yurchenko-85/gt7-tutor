@@ -104,12 +104,12 @@ describe('drive button', () => {
   });
 
   it('arm_failure_shows_under_the_button', async () => {
-    startApi().on('POST /api/training/arm', { status: 409, body: { code: 'no-console', message: 'Set the console address first.' } }).install();
+    startApi().on('POST /api/training/arm', { status: 409, body: { code: 'no-reference' } }).install();
     const view = renderApp({ path: ATTEMPTS_PATH });
     await openLive(view.sockets, liveState());
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Drive' }));
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Set the console address first.');
+    expect(alert).toHaveTextContent('Record and confirm a reference first.');
     expect(driveButton().compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(window.location.pathname).toBe(ATTEMPTS_PATH);
   });
@@ -166,7 +166,7 @@ describe('drive button', () => {
   it('failed_stop_shows_in_the_dialog', async () => {
     const api = startApi()
       .on('GET /api/exercises', [exercise(), OTHER])
-      .on('POST /api/training/disarm', { status: 500, body: { message: 'Server problem' } })
+      .on('POST /api/training/disarm', { status: 500, body: { code: 'server-error' } })
       .install();
     const view = renderApp({ path: ATTEMPTS_PATH });
     await openLive(view.sockets, liveState({ connection: 'connected', mode: 'armed', exerciseId: OTHER.id, referenceId: 'ref-demo' }));
@@ -174,7 +174,7 @@ describe('drive button', () => {
     await user.click(await screen.findByRole('button', { name: 'Drive' }));
     const dialog = await screen.findByRole('alertdialog');
     await user.click(within(dialog).getByRole('button', { name: 'Stop and start' }));
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Server problem');
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Something went wrong in GT7 Tutor (status 500).');
     expect(api.called('POST /api/training/arm')).toBe(false);
   });
 });

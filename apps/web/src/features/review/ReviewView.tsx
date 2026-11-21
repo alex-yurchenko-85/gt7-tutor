@@ -3,7 +3,7 @@ import { WIDE_APEX_M, eventKeyPlace, type AttemptReaction, type AttemptReview, t
 import { api } from '../../api/client.ts';
 import { SIDE_FACTOR } from '../../charts/geometry.ts';
 import { useWideLayout } from '../../app/layout.ts';
-import { abortReasonText, formatDateTime, formatDay, formatTime, metres, signedSeconds } from '../../app/format.ts';
+import { abortReasonText, formatDateTime, formatDay, formatTime, metres, signedSecondsText } from '../../app/format.ts';
 import { rememberedExerciseId } from '../../app/current-exercise.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
@@ -14,30 +14,30 @@ import { apexPlaceText, apexSpeedText, differenceText, reactionText } from '../c
 import { DeleteAttemptsDialog } from '../attempts/DeleteAttemptsDialog.tsx';
 import { DriveButton } from '../drive/DriveButton.tsx';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
-import { CompareCharts, CompareMap, Differences, REVIEW_DIFFERENCES, type LineWords } from './line-compare.tsx';
+import { CompareCharts, CompareMap, Differences, reviewDifferences, type LineWords } from './line-compare.tsx';
 import './review.css';
+import { t } from '../../app/i18n.ts';
 
 function referenceName(reference: ReferenceInfo): string {
-  return `${reference.origin === 'demo' ? 'Demonstration' : 'Your attempt'}, ${formatDay(reference.createdAt)}${reference.active ? ', active' : ''}`;
+  const name = reference.origin === 'demo' ? t('exercises.references.demo') : t('exercises.references.own');
+  return t(reference.active ? 'exercises.review.reference-name-active' : 'exercises.review.reference-name', { name, date: formatDay(reference.createdAt) });
 }
 
 const Corners = memo(function Corners({ corners }: { corners: CornerReview[] }) {
   if (corners.length === 0) return null;
   return (
     <section aria-labelledby="corners-title" className="corners">
-      <h2 id="corners-title">Corners</h2>
-      <p className="sub">Your line at each apex, measured from the reference line. Inside and outside follow the bend of the reference.</p>
+      <h2 id="corners-title">{t('exercises.review.corners')}</h2>
+      <p className="sub">{t('exercises.review.corners-text')}</p>
       <ol className="corner-list">
         {corners.map(corner => {
           const outside = corner.outsideM !== null && corner.outsideM > WIDE_APEX_M;
           return (
             <li key={corner.number} className={outside ? 'wide' : undefined}>
-              <b>Turn {corner.number}</b>
+              <b>{t('charts.turn.title', { turn: corner.number })}</b>
               <span>
                 <span className="place">{apexPlaceText(corner.outsideM)}</span>
-                <small>
-                  Apex {metres(corner.apexSM)}. {apexSpeedText(corner)}
-                </small>
+                <small>{t('exercises.review.apex', { place: metres(corner.apexSM), speed: apexSpeedText(corner) })}</small>
               </span>
             </li>
           );
@@ -51,15 +51,15 @@ const Reactions = memo(function Reactions({ reactions }: { reactions: AttemptRea
   if (reactions.length === 0) return null;
   return (
     <section aria-labelledby="reaction-title" className="reactions">
-      <h2 id="reaction-title">Brake reaction</h2>
+      <h2 id="reaction-title">{t('exercises.review.reaction')}</h2>
       <ul>
         {reactions.map(reaction => (
           <li key={reaction.eventKey}>
-            {metres(eventKeyPlace(reaction.eventKey) ?? 0)}: you started to brake {reactionText(reaction.reactionMs)}
+            {t('exercises.review.reaction-item', { place: metres(eventKeyPlace(reaction.eventKey) ?? 0), reaction: reactionText(reaction.reactionMs) })}
           </li>
         ))}
       </ul>
-      <p className="sub">Measured from the start of the spoken phrase to brake pressure above 10%. Move a cue in the cue list if it comes too late.</p>
+      <p className="sub">{t('exercises.review.reaction-text')}</p>
     </section>
   );
 });
@@ -72,7 +72,7 @@ function AttemptFacts({ attempt }: { attempt: AttemptSummary }) {
     setProblem(null);
     try {
       await api.promoteAttempt(attempt.id);
-      setMessage('This attempt is now the active reference. The demonstration stays in the reference history.');
+      setMessage(t('exercises.review.promoted'));
     } catch (error) {
       setProblem(errorText(error));
     }
@@ -80,17 +80,15 @@ function AttemptFacts({ attempt }: { attempt: AttemptSummary }) {
   return (
     <div className="facts">
       <div className="kv">
-        <span>Source</span>
-        <b>
-          frames {attempt.first}–{attempt.last}
-        </b>
+        <span>{t('exercises.review.source')}</span>
+        <b>{t('exercises.review.frames', { first: attempt.first, last: attempt.last })}</b>
       </div>
       {promotable ? (
         <button className="btn ghost" type="button" onClick={() => void promote()}>
-          Use this attempt as a reference
+          {t('exercises.review.promote')}
         </button>
       ) : (
-        <p className="sub">Only a complete attempt can become a reference.</p>
+        <p className="sub">{t('exercises.review.not-promotable')}</p>
       )}
       <DeleteThisAttempt attempt={attempt} />
       {problem ? (
@@ -107,25 +105,23 @@ function AttemptFacts({ attempt }: { attempt: AttemptSummary }) {
   );
 }
 
-const MAP_LABEL = 'Map of the reference line and your line';
-
 function reviewWords(title: string): LineWords {
   return {
-    referenceName: 'reference',
-    youName: 'you',
-    referenceLegend: 'reference line',
-    youLegend: 'you',
-    timeLabel: 'Time lost to the reference, s',
-    mapTitle: 'Your line',
-    mapLabel: MAP_LABEL,
-    mapNotes: ['A gap in your line is a place without a match'],
-    sideLabel: `The side distance of your line is drawn ${SIDE_FACTOR} times larger.`,
-    sideNote: `Your line is drawn ${SIDE_FACTOR} times farther from the reference line than it was, so that a difference of 1 m shows. The labels give the true distance at the largest point of each turn.`,
-    dialogLabel: `Reference line and your line of ${title}`,
-    dialogHint: 'Select a difference to find it on your line.',
-    dialogLine: 'Reference line',
-    hint: 'Move the pointer or a finger across a chart, or focus a chart and use the arrow keys. The map point shows the same place.',
-    cursorText: (cursorSM, lengthM) => `Cursor at ${Math.round(cursorSM)} m of ${Math.round(lengthM)} m`,
+    referenceName: t('exercises.review.reference'),
+    youName: t('exercises.review.you'),
+    referenceLegend: t('exercises.review.reference-legend'),
+    youLegend: t('exercises.review.you-legend'),
+    timeLabel: t('exercises.review.time-label'),
+    mapTitle: t('exercises.review.map-title'),
+    mapLabel: t('exercises.review.map-label'),
+    mapNotes: [t('exercises.review.map-note')],
+    sideLabel: t('exercises.review.side-label', { factor: SIDE_FACTOR }),
+    sideNote: t('exercises.review.side-note', { factor: SIDE_FACTOR }),
+    dialogLabel: t('exercises.review.dialog-label', { title }),
+    dialogHint: t('exercises.review.dialog-hint'),
+    dialogLine: t('exercises.review.dialog-line'),
+    hint: t('exercises.review.hint'),
+    cursorText: (cursorSM, lengthM) => t('exercises.review.cursor', { place: Math.round(cursorSM), length: Math.round(lengthM) }),
     metres,
     describe: differenceText
   };
@@ -147,23 +143,23 @@ function ReviewBody({ title, attempt, review, references, sideCueDistanceM, acti
   );
   const switchReference = (referenceId: string) => navigate(paths.review(attempt.id, referenceId === attempt.referenceId ? undefined : referenceId));
   const words = useMemo(() => reviewWords(title), [title]);
+  const differencesWords = useMemo(reviewDifferences, []);
   const map = <CompareMap title={title} review={review} words={words} sideCueDistanceM={sideCueDistanceM} scaleSwitch cursorSM={cursorSM} selected={selected} onSelect={select} />;
   const charts = <CompareCharts review={review} words={words} side sideCueDistanceM={sideCueDistanceM} cursorSM={cursorSM} onCursor={setCursorNow} onScrub={scrub} />;
   const differences = (
     <>
-      <Differences findings={review.findings} losses={review.turnLosses} selected={selected} words={REVIEW_DIFFERENCES} onSelect={select} />
+      <Differences findings={review.findings} losses={review.turnLosses} selected={selected} words={differencesWords} onSelect={select} />
       <Corners corners={review.corners} />
       <Reactions reactions={review.reactions} />
     </>
   );
   const chooser = (
     <div className="field">
-      <label htmlFor="compare-with">Compare with</label>
+      <label htmlFor="compare-with">{t('exercises.review.compare-with')}</label>
       <select id="compare-with" value={review.referenceId} onChange={event => switchReference(event.target.value)}>
         {references.map(reference => (
           <option key={reference.id} value={reference.id}>
-            {referenceName(reference)}
-            {reference.id === attempt.referenceId ? ' (used for this attempt)' : ''}
+            {reference.id === attempt.referenceId ? t('exercises.review.reference-used', { name: referenceName(reference) }) : referenceName(reference)}
           </option>
         ))}
       </select>
@@ -199,26 +195,30 @@ function ReviewBody({ title, attempt, review, references, sideCueDistanceM, acti
   );
 }
 
+function ledeText(attempt: AttemptSummary, complete: boolean, gap: boolean): string {
+  const date = formatDateTime(attempt.startedAt);
+  if (complete) return t(gap ? 'exercises.review.lede-complete-gap' : 'exercises.review.lede-complete', { date });
+  return attempt.reason ? t('exercises.review.lede-not-finished-reason', { date, reason: abortReasonText(attempt.reason) }) : t('exercises.review.lede-not-finished', { date });
+}
+
 function AttemptHeading({ attempt, review }: { attempt: AttemptSummary; review: AttemptReview | null }) {
   const complete = attempt.completion === 'complete';
   const gapMs = complete && review ? attempt.timeMs - review.referenceTimeMs : null;
-  const time = complete ? formatTime(attempt.timeMs) : 'No time';
+  const time = complete ? formatTime(attempt.timeMs) : t('exercises.review.no-time');
   return (
     <div className="review-title">
       <div className="review-title-text">
         <h2>
-          Attempt {attempt.number} · {time}
+          {t('exercises.review.title', { number: attempt.number, time })}
           {gapMs === null ? null : (
             <>
               {' '}
-              <span className={gapMs > 0 ? 'review-gap slower' : 'review-gap'}>{signedSeconds(gapMs)} s</span>
+              <span className={gapMs > 0 ? 'review-gap slower' : 'review-gap'}>{signedSecondsText(gapMs)}</span>
             </>
           )}
         </h2>
         <p className="lede">
-          {formatDateTime(attempt.startedAt)}.{' '}
-          {complete ? 'Times from the game.' : `The attempt did not finish${attempt.reason ? ` (${abortReasonText(attempt.reason)})` : ''}.`}
-          {gapMs === null ? '' : ' Gap to the compared reference.'}
+          {ledeText(attempt, complete, gapMs !== null)}
         </p>
       </div>
     </div>
@@ -232,7 +232,7 @@ function DeleteThisAttempt({ attempt }: { attempt: AttemptSummary }) {
   return (
     <>
       <button className="btn danger" type="button" onClick={() => setConfirming(true)}>
-        Delete attempt
+        {t('exercises.review.delete')}
       </button>
       {confirming ? (
         <DeleteAttemptsDialog
@@ -258,13 +258,13 @@ export function ReviewView({ attemptId }: { attemptId: string }) {
   const error = attempt.error ?? review.error;
   const remembered = rememberedExerciseId(user.id);
   if (error) return <LoadProblem error={error} kind="attempt" {...(remembered ? { exerciseId: remembered } : {})} />;
-  if (!attempt.data) return <p className="sub">Reading the attempt…</p>;
+  if (!attempt.data) return <p className="sub">{t('exercises.summary.reading')}</p>;
   const data = attempt.data;
   return (
     <section>
       {exercise.data ? <ExerciseHeader exercise={exercise.data} current="attempts" /> : null}
       <AttemptHeading attempt={data} review={review.data ?? null} />
-      {review.data && !exercise.loading ? <ReviewBody key={review.data.referenceId} title={exercise.data?.name ?? `Attempt ${data.number}`} attempt={data} review={review.data} references={references.data ?? []} sideCueDistanceM={exercise.data?.sideCueDistanceM ?? null} activeReferenceId={exercise.data?.activeReferenceId ?? null} /> : <p className="sub">Comparing with the reference…</p>}
+      {review.data && !exercise.loading ? <ReviewBody key={review.data.referenceId} title={exercise.data?.name ?? t('exercises.review.fallback-title', { number: data.number })} attempt={data} review={review.data} references={references.data ?? []} sideCueDistanceM={exercise.data?.sideCueDistanceM ?? null} activeReferenceId={exercise.data?.activeReferenceId ?? null} /> : <p className="sub">{t('exercises.review.comparing')}</p>}
     </section>
   );
 }

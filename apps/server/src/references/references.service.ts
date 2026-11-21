@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   KPH_PER_MPS,
   type CornerInfo,
@@ -19,10 +19,9 @@ import {
   buildReference,
   clipKey,
   clipsOf,
-  cueText,
   cutToTimerRun,
   demonstrationRuns,
-  eventPhrase,
+  eventClips,
   findDemoRangeCandidates,
   matchesReference,
   pointAt,
@@ -36,7 +35,7 @@ import {
   type TimerRunRange
 } from '@gt7/core';
 import type { Knex } from 'knex';
-import { badRequest, conflict } from '../http-errors.js';
+import { httpError } from '../http-errors.js';
 import { CaptureService } from '../captures/capture.service.js';
 import { SampleCache } from '../captures/sample-cache.js';
 import {
@@ -197,7 +196,7 @@ export class ReferencesService {
   async promote(userId: string, attemptId: string): Promise<ReferenceInfo> {
     const attempt = await ownedAttempt(this.db, userId, attemptId);
     if (attempt.completion !== 'complete') {
-      throw conflict('not-complete', 'Only a complete attempt can become a reference.');
+      throw httpError(409, 'not-complete');
     }
     const exercise = await ownedExercise(this.db, userId, attempt.exercise_id);
     const capture = await this.finishedCapture(userId, attempt.capture_id);
@@ -226,10 +225,10 @@ export class ReferencesService {
         .whereNotIn('id', this.db('exercises').whereNotNull('active_reference_id').select('active_reference_id'))
         .delete();
     } catch (error) {
-      if (isForeignKeyViolation(error)) throw conflict('reference-in-use', 'Attempts point to this reference. It cannot be deleted.');
+      if (isForeignKeyViolation(error)) throw httpError(409, 'reference-in-use');
       throw error;
     }
-    if (deleted === 0) throw conflict('reference-active', 'Activate another reference first.');
+    if (deleted === 0) throw httpError(409, 'reference-active');
     return { ok: true };
   }
 
@@ -256,13 +255,12 @@ export class ReferencesService {
       sM: event.sM,
       endSM: event.endSM,
       targetSpeedKph: event.targetSpeedKph,
-      phrase: eventPhrase(event, exercise.speak_targets),
+      phraseClips: eventClips(event, exercise.speak_targets),
       voice: event.voice,
       bigStop: event.bigStop,
       muted: muted.has(event.key),
       clip: clipKey(event.voice),
-      followClip: targetClip(event),
-      text: cueText(event.voice)
+      followClip: targetClip(event)
     }));
   }
 
@@ -296,12 +294,12 @@ export class ReferencesService {
     try {
       buildReference(samples);
     } catch (error) {
-      if (error instanceof ReferencePathError) throw new BadRequestException({ code: error.code, message: error.message });
+      if (error instanceof ReferencePathError) throw httpError(400, error.code, error.rawIndex === null ? undefined : { rawIndex: error.rawIndex });
       throw error;
     }
     const carId = carOf(samples);
     if (source.exercise.car_id !== null && carId !== null && carId !== source.exercise.car_id) {
-      throw conflict('car-mismatch', `The range uses car ${carId}, but the exercise uses car ${source.exercise.car_id}.`);
+      throw httpError(409, 'car-mismatch', { carId, exerciseCarId: source.exercise.car_id });
     }
     const gameVersion = await this.settings.get('gameVersion');
     const id = await this.db.transaction(async trx => {
@@ -326,14 +324,14 @@ export class ReferencesService {
 
   private async timerRunOf(capture: CaptureRow, range: RawRange, session: GameTimerSession): Promise<TimerRunRange> {
     const run = cutToTimerRun(await this.samplesOf(capture), range, session);
-    if (!run) throw badRequest('no-timer-run', 'The range does not hold the whole demonstration.');
+    if (!run) throw httpError(400, 'no-timer-run');
     return run;
   }
 
   private async finishedCapture(userId: string, captureId: string): Promise<CaptureRow> {
     const capture = await ownedCapture(this.db, userId, captureId);
     if (capture.ended_at === null || this.captures.activeCaptureId === capture.id) {
-      throw conflict('capture-active', 'Stop the capture before you use it.');
+      throw httpError(409, 'capture-active');
     }
     return capture;
   }

@@ -2,20 +2,21 @@ import { useEffect } from 'react';
 import type { Exercise } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { rememberExercise } from '../../app/current-exercise.ts';
-import { formatTime, signedSeconds } from '../../app/format.ts';
+import { formatTime, signedSecondsText } from '../../app/format.ts';
 import { useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
 import { useExerciseWhere } from './use-exercise-where.ts';
 import './exercise.css';
 import './times.css';
+import { t } from '../../app/i18n.ts';
 
 type Tab = 'cues' | 'references' | 'attempts';
 
 const TABS = [
-  { name: 'cues', label: 'Cues', to: (id: string) => paths.cues(id) },
-  { name: 'references', label: 'References', to: (id: string) => paths.references(id) },
-  { name: 'attempts', label: 'Attempts', to: (id: string) => paths.attempts(id) }
+  { name: 'cues', label: 'exercises.tab.cues', to: (id: string) => paths.cues(id) },
+  { name: 'references', label: 'exercises.tab.references', to: (id: string) => paths.references(id) },
+  { name: 'attempts', label: 'exercises.tab.attempts', to: (id: string) => paths.attempts(id) }
 ] as const;
 
 function useReferenceMs(referenceId: string | null): number | null {
@@ -28,23 +29,23 @@ function TimesBand({ exercise }: { exercise: Exercise }) {
   const bestMs = exercise.bestMs;
   if (bestMs === null && referenceMs === null) return null;
   return (
-    <div className="exercise-times" role="group" aria-label="Times from the game">
+    <div className="exercise-times" role="group" aria-label={t('exercises.times.label')}>
       {bestMs !== null ? (
         <div>
           <b>{formatTime(bestMs)}</b>
-          <span>your best</span>
+          <span>{t('exercises.times.best')}</span>
         </div>
       ) : null}
       {referenceMs !== null ? (
         <div className="reference-time">
           <b>{formatTime(referenceMs)}</b>
-          <span>reference</span>
+          <span>{t('exercises.times.reference')}</span>
         </div>
       ) : null}
       {bestMs !== null && referenceMs !== null ? (
         <div className={bestMs > referenceMs ? 'gap-slower' : 'gap-faster'}>
-          <b>{signedSeconds(bestMs - referenceMs)} s</b>
-          <span>gap to the reference</span>
+          <b>{signedSecondsText(bestMs - referenceMs)}</b>
+          <span>{t('exercises.times.gap')}</span>
         </div>
       ) : null}
     </div>
@@ -60,16 +61,16 @@ export function ExerciseHeader({ exercise, title, current }: { exercise: Exercis
   return (
     <>
       <header className="exercise-header">
-        <nav className="breadcrumb" aria-label="Breadcrumb">
-          <Link to={paths.exercises()}>Exercises</Link> / {exercise.name}
+        <nav className="breadcrumb" aria-label={t('common.breadcrumb')}>
+          <Link to={paths.exercises()}>{t('exercises.breadcrumb.exercises')}</Link> / {exercise.name}
         </nav>
         <h1>{exercise.name}</h1>
         <p className="exercise-where sub">{where}</p>
         <TimesBand exercise={exercise} />
-        <nav className="exercise-tabs" aria-label="Exercise">
+        <nav className="exercise-tabs" aria-label={t('exercises.tab.label')}>
           {TABS.map(tab => (
             <Link key={tab.name} to={tab.to(exercise.id)} current={active === tab.name}>
-              {tab.label}
+              {t(tab.label)}
             </Link>
           ))}
         </nav>

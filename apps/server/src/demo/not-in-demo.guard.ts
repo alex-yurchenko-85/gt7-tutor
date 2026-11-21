@@ -1,6 +1,6 @@
 import { Injectable, type CanActivate } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { conflict } from '../http-errors.js';
+import { httpError } from '../http-errors.js';
 
 @Injectable()
 export class NotInDemoGuard implements CanActivate {
@@ -8,7 +8,7 @@ export class NotInDemoGuard implements CanActivate {
 
   canActivate(): boolean {
     if (this.config.getOrThrow<boolean>('DEMO_MODE')) {
-      throw conflict('demo-mode', 'Demo mode uses recorded data. This action is not available.');
+      throw httpError(409, 'demo-mode');
     }
     return true;
   }

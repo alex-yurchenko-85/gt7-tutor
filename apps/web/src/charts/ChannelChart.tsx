@@ -4,6 +4,7 @@ import { usePlotWidth } from './use-plot-width.ts';
 import { distanceTicks } from './ticks.ts';
 import { LABEL_ROW_STEP_PX, LABEL_TOP_PX, turnLabelPlaces } from './turn-labels.ts';
 import './charts.css';
+import { t } from '../app/i18n.ts';
 
 export type ChartSeries = { name: 'ref' | 'you' | 'ink' | 'lap'; values: (number | null)[] };
 
@@ -46,7 +47,7 @@ const DistanceAxis = memo(function DistanceAxis({ lengthM }: { lengthM: number }
       <div>
         {distanceTicks(lengthM).map(tick => (
           <span key={tick} className={tick === 0 ? 'axis-start' : undefined} style={{ left: percent(tick / lengthM) }}>
-            {tick === 0 ? '0 m' : tick}
+            {tick === 0 ? t('app.unit.metres', { value: 0 }) : tick}
           </span>
         ))}
       </div>
@@ -151,7 +152,7 @@ export function ChannelChart({ id, label, series, min, max, gridM, lengthM, curs
         aria-valuemin={0}
         aria-valuemax={Math.round(lengthM)}
         aria-valuenow={Math.round(cursorSM)}
-        aria-valuetext={`${Math.round(cursorSM)} m. ${readout}`}
+        aria-valuetext={t('charts.cursor.value', { metres: Math.round(cursorSM), readout })}
         onPointerDown={event => fromPointer(event, onCursor)}
         onPointerMove={event => {
           if (event.buttons > 0 || event.pointerType === 'mouse') fromPointer(event, onScrub);

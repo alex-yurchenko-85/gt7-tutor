@@ -229,7 +229,7 @@ describe('reference recording', () => {
       .on(`GET /api/exercises/${EXERCISE_ID}/references`, [reference({ needsCheck: true })])
       .on(`POST /api/references/${REFERENCE_ID}/check`, () =>
         ++calls === 1
-          ? { status: 500, body: { statusCode: 500, message: 'Internal server error' } }
+          ? { status: 500, body: { code: 'server-error' } }
           : { status: 201, body: { matched: true, range: { first: 10, last: 1555 }, reference: reference() } }
       );
     renderApp({ path: `/exercises/${EXERCISE_ID}/record?check=${REFERENCE_ID}` });
@@ -285,7 +285,7 @@ describe('reference recording', () => {
   it('server_refusal_without_address_shows_the_setup_link', async () => {
     recordingApi({ ps5Ip: null, consoleRequired: false }).on('POST /api/captures', {
       status: 409,
-      body: { code: 'console-address-missing', reason: 'Enter the PS5 address in Setup before a capture.' }
+      body: { code: 'console-address-missing' }
     });
     renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const user = timedUser();
@@ -352,7 +352,7 @@ describe('reference recording', () => {
   it('manual_range_explains_the_cut_and_the_refusal', async () => {
     recordingApi()
       .on('GET /api/captures', [captureInfo('cap-old', { active: false, packets: 2571, endedAt: '2026-11-16T10:01:00.000Z' })])
-      .on('POST /api/references', { status: 400, body: { code: 'no-timer-run', reason: 'The range does not hold the whole demonstration.' } });
+      .on('POST /api/references', { status: 400, body: { code: 'no-timer-run' } });
     renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Set the range by hand' }));
@@ -369,7 +369,7 @@ describe('reference recording', () => {
   it('manual_range_labels_the_recording_and_names_the_busy_refusal', async () => {
     recordingApi()
       .on('GET /api/captures', [captureInfo('cap-old', { active: false, packets: 2571, endedAt: '2026-11-16T10:01:00.000Z' })])
-      .on('POST /api/references', { status: 409, body: { code: 'busy', reason: 'Busy.' } });
+      .on('POST /api/references', { status: 409, body: { code: 'busy' } });
     renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Set the range by hand' }));
@@ -474,7 +474,7 @@ describe('reference recording', () => {
   });
 
   it('record_does_not_start_when_the_stop_fails', async () => {
-    const api = recordingApi().on('POST /api/training/disarm', { status: 500, body: { message: 'Server problem' } });
+    const api = recordingApi().on('POST /api/training/disarm', { status: 500, body: { code: 'server-error' } });
     const view = renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     await sendLiveState(view, { mode: 'finished', exerciseId: EXERCISE_ID });
     const user = timedUser();

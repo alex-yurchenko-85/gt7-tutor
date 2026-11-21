@@ -83,10 +83,10 @@ describe('setup', () => {
   });
 
   it('rejected_update_shows_reason_and_no_apply_action', async () => {
-    setupApi({ added: [], removed: [entry('licence-b-1', 'Old test')], changed: [], rejected: 'Licence would lose 60% of its entries.' });
+    setupApi({ added: [], removed: [entry('licence-b-1', 'Old test')], changed: [], rejected: { lost: 60, total: 100, family: 'Licence' } });
     renderApp({ path: '/setup#catalogue' });
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Check for updates' }));
-    expect(await screen.findByText(/Licence would lose 60% of its entries/)).toBeInTheDocument();
+    expect(await screen.findByText(/The update would remove 60 of 100 Licence entries\. The source format may have changed\./)).toBeInTheDocument();
     expect(screen.getByText(/The catalogue did not change/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Apply update' })).not.toBeInTheDocument();
   });
@@ -160,7 +160,7 @@ describe('setup fixes', () => {
   it('reception_check_without_address_shows_the_server_reason', async () => {
     setupApi().on('POST /api/settings/connection/check', {
       status: 409,
-      body: { code: 'console-address-missing', reason: 'Enter the PS5 address in Setup before a capture.' }
+      body: { code: 'console-address-missing' }
     });
     renderApp({ path: '/setup' });
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Check again' }));
@@ -368,7 +368,7 @@ describe('setup sections', () => {
     });
     expect(screen.queryByLabelText('Current password')).not.toBeInTheDocument();
 
-    reply = { status: 403, body: { code: 'wrong-password', reason: 'The current password is not correct.' } };
+    reply = { status: 403, body: { code: 'wrong-password' } };
     await user.click(screen.getByRole('button', { name: 'Change password' }));
     await user.type(screen.getByLabelText('Current password'), 'wrong password');
     await user.type(screen.getByLabelText('New password'), 'new password 2');
@@ -567,7 +567,7 @@ describe('screen updates', () => {
 
   it('delete_profile_wrong_password_shows_message', async () => {
     setViewportWidth(390);
-    deleteProfileApi({ status: 403, body: { code: 'wrong-password', reason: 'The password is not correct.' } });
+    deleteProfileApi({ status: 403, body: { code: 'wrong-password' } });
     renderApp({ path: '/setup#profiles' });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Delete profile' }));
@@ -579,7 +579,7 @@ describe('screen updates', () => {
   });
 
   it('delete_profile_busy_shows_message', async () => {
-    deleteProfileApi({ status: 409, body: { code: 'busy', reason: 'Busy.' } });
+    deleteProfileApi({ status: 409, body: { code: 'busy' } });
     renderApp({ path: '/setup#profiles' });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Delete profile' }));

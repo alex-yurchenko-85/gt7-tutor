@@ -72,11 +72,13 @@ export const catalogueSchema = z
 
 export type Catalogue = z.infer<typeof catalogueSchema>;
 
+export type CatalogueRejection = { lost: number; total: number; family: string };
+
 export type CatalogueDiff = {
   added: CatalogueEntry[];
   removed: CatalogueEntry[];
   changed: { id: string; fields: string[] }[];
-  rejected: string | null;
+  rejected: CatalogueRejection | null;
 };
 
 export const exerciseStatusSchema = z.enum(['new', 'ready', 'practising', 'bronze', 'silver', 'gold']);

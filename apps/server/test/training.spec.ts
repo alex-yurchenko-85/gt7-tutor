@@ -5,7 +5,7 @@ import knex, { type Knex } from 'knex';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { OpenStream } from '@gt7/capture';
-import type { RawDatagram, Sample, ServerMsg } from '@gt7/contracts';
+import { ENGLISH, type RawDatagram, type Sample, type ServerMsg } from '@gt7/contracts';
 import { DEFAULT_CONFIG, DEFAULT_SIDE_CUE_DISTANCE_M, analyseReference, estimatedPhraseMs, replayCoach, toSample } from '@gt7/core';
 import { RAW_STREAM_OPENER } from '../src/captures/capture.service.js';
 import { SampleCache } from '../src/captures/sample-cache.js';
@@ -18,6 +18,8 @@ import { ManualSource, TestClock, fixtureRows, listen, openLive, type LiveConnec
 import { eventually } from '../../../tools/testing/eventually.js';
 import type { FixtureReplays } from './support/replay-sources.js';
 import { firstProfile } from './support/session.js';
+
+const englishPhraseMs = (clip: string) => estimatedPhraseMs(ENGLISH, clip);
 
 type GoldenCue = { id: string; decidedMonoMs: number };
 const golden = JSON.parse(readFileSync(new URL('../../../fixtures/golden/ce-slow-cues.json', import.meta.url), 'utf8')) as {
@@ -421,7 +423,7 @@ describe('training pipeline and live protocol', () => {
     const analysis = analyseReference(fixtureSamples(await fixtureRows('demo-a'), DEMONSTRATION), DEFAULT_CONFIG);
     const replayed = replayCoach(fixtureSamples(slowRun, { first: slowRun[0]!.rawIndex, last: slowRun.at(-1)!.rawIndex }), analysis, DEFAULT_CONFIG, {
       deviceDelayMs: 60,
-      phraseMs: estimatedPhraseMs,
+      phraseMs: englishPhraseMs,
       mutedKeys: new Set(),
       speakTargets: true,
       offsetsMs: new Map([['brake@291', 1000]]),
@@ -593,7 +595,7 @@ describe('training pipeline and live protocol', () => {
     expect((await arm(new ManualSource())).status).toBe(201);
     const refused = await http().delete(`/api/references/${referenceId}`).set('Cookie', cookie);
     expect(refused.status).toBe(409);
-    expect(refused.body).toMatchObject({ code: 'reference-in-use', reason: 'A training uses this reference. Stop the training first.' });
+    expect(refused.body).toEqual({ code: 'reference-in-training' });
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
     await app.get(TrainingService).idle();
     const active = await http().delete(`/api/references/${referenceId}`).set('Cookie', cookie).expect(409);
@@ -605,7 +607,7 @@ describe('training pipeline and live protocol', () => {
     const refused = await http().delete(`/api/references/${referenceId}`).set('Cookie', cookie);
     samples.open();
     expect(refused.status).toBe(409);
-    expect(refused.body.code).toBe('reference-in-use');
+    expect(refused.body.code).toBe('reference-in-training');
     expect((await armed).status).toBe(201);
     await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
   });

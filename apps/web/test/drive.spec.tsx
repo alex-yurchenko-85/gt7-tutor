@@ -49,7 +49,7 @@ describe('drive', () => {
   it('drive_shows_one_cue_and_next_cue', async () => {
     setViewportWidth(390);
     driveApi().install();
-    await openDrive(DRIVE_PATH, driving({ lastCue: cue({ kind: 'brake', targetSpeedKph: 85 }), nextCue: { text: 'Full throttle', inM: 120 } }));
+    await openDrive(DRIVE_PATH, driving({ lastCue: cue({ kind: 'brake', targetSpeedKph: 85 }), nextCue: { clip: 'full-throttle', inM: 120 } }));
     const current = screen.getByRole('status', { name: 'Current cue' });
     expect(current).toHaveTextContent('Brake85');
     expect(screen.getAllByRole('status', { name: 'Current cue' })).toHaveLength(1);
@@ -216,7 +216,7 @@ describe('drive', () => {
   });
 
   it('drive_of_an_unknown_exercise_says_it_is_missing', async () => {
-    driveApi().on('GET /api/exercises/e0000000-0000-4000-8000-00000000000f', { status: 404, body: { code: 'not-found', reason: 'Not found.' } }).install();
+    driveApi().on('GET /api/exercises/e0000000-0000-4000-8000-00000000000f', { status: 404, body: { code: 'not-found' } }).install();
     renderApp({ path: '/exercises/e0000000-0000-4000-8000-00000000000f/drive' });
     expect(await screen.findByRole('heading', { level: 1, name: 'This exercise is not here' })).toBeInTheDocument();
     expect(window.localStorage.getItem(`gt7.currentExercise.${USER.id}`)).not.toBe('e0000000-0000-4000-8000-00000000000f');
@@ -253,8 +253,8 @@ describe('drive', () => {
   it('every_attempt_shows_the_next_cue_without_a_voice_device', async () => {
     setViewportWidth(390);
     driveApi().install();
-    await openDrive(DRIVE_PATH, driving({ voiceDeviceId: null, lastCue: null, nextCue: { text: 'Brake to eighty five', inM: 50 } }));
-    expect(screen.getByText('Next: Brake to eighty five, in 50 m')).toBeInTheDocument();
+    await openDrive(DRIVE_PATH, driving({ voiceDeviceId: null, lastCue: null, nextCue: { clip: 'brake', inM: 50 } }));
+    expect(screen.getByText('Next: Brake, in 50 m')).toBeInTheDocument();
     expect(screen.queryByText('No voice')).not.toBeInTheDocument();
   });
 });
@@ -322,7 +322,7 @@ describe('attempt summary', () => {
   it('summary_shows_the_focus_sentence', async () => {
     setViewportWidth(390);
     driveApi()
-      .on(`GET /api/attempts/${ATTEMPT_ID}`, { ...ATTEMPT, focus: { text: 'Turn one. Brake later.', turn: 1, kind: 'brake-early' } })
+      .on(`GET /api/attempts/${ATTEMPT_ID}`, { ...ATTEMPT, focus: { kind: 'brake-early', turn: 1, clip: 'focus-brake-early-1' } })
       .install();
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
     const summary = await screen.findByRole('region', { name: 'Attempt 2' });

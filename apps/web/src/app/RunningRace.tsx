@@ -4,6 +4,7 @@ import { api } from '../api/client.ts';
 import { useLiveState } from '../api/live.tsx';
 import { errorText } from './resource.ts';
 import { Link, paths, useRouter } from './router.tsx';
+import { t } from './i18n.ts';
 
 type BarRace = Pick<LiveRace, 'phase' | 'unsupported' | 'lap' | 'lapsInRace'>;
 
@@ -15,11 +16,11 @@ function barRace(race: LiveRace | null | undefined): BarRace | null {
 function barText(race: BarRace): string {
   switch (race.phase) {
     case 'waiting':
-      return race.unsupported ? 'This is not a race of 2 or more laps. Only a race by laps can be recorded.' : 'Waiting for the race. Start a race by laps in the game.';
+      return race.unsupported ? t('app.race.bar.unsupported') : t('app.race.bar.waiting');
     case 'joined':
-      return 'Recording a race · it starts at the next lap line';
+      return t('app.race.bar.joined');
     default:
-      return `Recording a race · lap ${Math.max(1, race.lap)} of ${race.lapsInRace}`;
+      return t('app.race.bar.lap', { lap: Math.max(1, race.lap), laps: race.lapsInRace });
   }
 }
 
@@ -43,14 +44,14 @@ export function RunningRace() {
   };
 
   return (
-    <div className="running-bar" role="status" aria-label="Race recording">
+    <div className="running-bar" role="status" aria-label={t('app.race.bar.label')}>
       <span className="running-bar-text">{barText(race)}</span>
       <div className="running-bar-actions">
         <Link to={paths.raceRecord()} className="btn ghost inline">
-          Open the recording
+          {t('app.race.bar.open')}
         </Link>
         <button className="btn inline" type="button" onClick={() => void stop()} disabled={busy}>
-          Stop recording
+          {t('app.race.bar.stop')}
         </button>
       </div>
       {problem ? (

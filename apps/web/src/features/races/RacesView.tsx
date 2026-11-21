@@ -6,27 +6,25 @@ import { ConfirmDialog } from '../../app/ConfirmDialog.tsx';
 import { formatDay, formatHourMinute, formatTime, localDay } from '../../app/format.ts';
 import { Icon } from '../../app/icons.tsx';
 import { useWideLayout } from '../../app/layout.ts';
-import { counted } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { SelectionBar } from '../../app/SelectionBar.tsx';
 import { lapsText } from './race-text.ts';
 import './races.css';
+import { t } from '../../app/i18n.ts';
 
 type RaceDay = { key: string; races: RaceSummary[] };
 
-const BUSY_TEXT = 'A recording or a training runs. Stop it first.';
-
 function recordErrorText(error: unknown): string {
-  return error instanceof ApiError && error.code === 'busy' ? BUSY_TEXT : errorText(error);
+  return error instanceof ApiError && error.code === 'busy' ? t('races.busy') : errorText(error);
 }
 
 export function raceName(race: RaceSummary): string {
-  return race.trackName ?? 'Race without a track name';
+  return race.trackName ?? t('races.unnamed');
 }
 
 function factsText(race: RaceSummary, wide: boolean): string {
-  const pitStops = race.pitStops > 0 ? counted(race.pitStops, 'pit stop') : null;
+  const pitStops = race.pitStops > 0 ? t('common.count.pit-stop', { count: race.pitStops }) : null;
   return [race.carName, lapsText(race), pitStops, wide ? formatHourMinute(race.startedAt) : null].filter(Boolean).join(' · ');
 }
 
@@ -56,17 +54,17 @@ function RaceRowContent({ race, wide }: { race: RaceSummary; wide: boolean }) {
         <>
           <span className="race-row-value">
             <b>{positionText(race)}</b>
-            <span>position</span>
+            <span>{t('races.list.position')}</span>
           </span>
           <span className="race-row-value">
             <b>{formatTime(race.bestLapMs)}</b>
-            <span>best lap</span>
+            <span>{t('races.list.best-lap')}</span>
           </span>
         </>
       ) : (
         <span className="race-row-value">
           <b>{formatTime(race.bestLapMs)}</b>
-          <span>position {positionText(race)}</span>
+          <span>{t('races.list.position-value', { position: positionText(race) })}</span>
         </span>
       )}
     </>
@@ -76,7 +74,6 @@ function RaceRowContent({ race, wide }: { race: RaceSummary; wide: boolean }) {
 function DeleteRacesDialog({ ids, onKeep, onDeleted }: { ids: string[]; onKeep(): void; onDeleted(): void }) {
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const one = ids.length === 1;
   const confirm = async () => {
     setWorking(true);
     setError(null);
@@ -90,15 +87,15 @@ function DeleteRacesDialog({ ids, onKeep, onDeleted }: { ids: string[]; onKeep()
   };
   return (
     <ConfirmDialog
-      title={`Delete ${counted(ids.length, 'race')}?`}
-      keepLabel={one ? 'Keep race' : 'Keep races'}
-      confirmLabel={one ? 'Delete race' : 'Delete races'}
+      title={t('races.delete.title', { count: ids.length })}
+      keepLabel={t('races.delete.keep', { count: ids.length })}
+      confirmLabel={t('races.delete.confirm', { count: ids.length })}
       working={working}
       error={error}
       onKeep={onKeep}
       onConfirm={confirm}
     >
-      <p>The laps, the pit stops and the places off the track of {one ? 'this race' : 'these races'} go. Clean up captures frees the disk space later.</p>
+      <p>{t('races.delete.text', { count: ids.length })}</p>
     </ConfirmDialog>
   );
 }
@@ -148,26 +145,26 @@ export function RacesView() {
   };
   return (
     <div className="races-home">
-      <h1 className={wide ? undefined : 'visually-hidden'}>Races</h1>
+      <h1 className={wide ? undefined : 'visually-hidden'}>{t('races.title')}</h1>
       <section className={selecting ? 'my-races selecting-page' : 'my-races'} aria-labelledby="races-title">
         <div className="my-races-head">
           <h2 id="races-title">
-            My races {list ? <span className="count">{list.length}</span> : null}
+            {t('races.my-races')} {list ? <span className="count">{list.length}</span> : null}
           </h2>
           <div className="my-races-actions">
             {list && list.length > 0 && !selecting ? (
               <button type="button" className="btn ghost inline" onClick={() => setSelecting(true)}>
                 <Icon name="select" size={16} />
-                Select
+                {t('races.select')}
               </button>
             ) : null}
             {recording ? (
               <button type="button" className="btn inline" disabled>
-                Recording…
+                {t('races.recording')}
               </button>
             ) : (
-              <button type="button" className="btn inline" aria-label="Record a race" disabled={starting} onClick={record}>
-                {wide ? 'Record a race' : 'Record'}
+              <button type="button" className="btn inline" aria-label={t('races.record-label')} disabled={starting} onClick={record}>
+                {wide ? t('races.record-wide') : t('races.record')}
               </button>
             )}
           </div>
@@ -178,11 +175,11 @@ export function RacesView() {
           </p>
         ) : null}
         {races.error ? <p className="error">{errorText(races.error)}</p> : null}
-        {!list && !races.error ? <p className="sub">Reading your races…</p> : null}
+        {!list && !races.error ? <p className="sub">{t('races.reading')}</p> : null}
         {list && list.length === 0 ? (
           <div className="panel races-empty">
-            <p className="lede">No races yet.</p>
-            <p>Select {wide ? 'Record a race' : 'Record'}, then start a race by laps in the game. The recording starts and stops with the race.</p>
+            <p className="lede">{t('races.empty.title')}</p>
+            <p>{wide ? t('races.empty.text-wide') : t('races.empty.text')}</p>
           </div>
         ) : null}
         {byDay(list ?? []).map(day => (
@@ -192,7 +189,7 @@ export function RacesView() {
               {day.races.map(race =>
                 selecting ? (
                   <label key={race.id} className={picked.has(race.id) ? 'race-row selecting picked' : 'race-row selecting'}>
-                    <input type="checkbox" className="pick-box" aria-label={`Select ${raceName(race)}`} checked={picked.has(race.id)} onChange={() => toggle(race.id)} />
+                    <input type="checkbox" className="pick-box" aria-label={t('races.select-race', { name: raceName(race) })} checked={picked.has(race.id)} onChange={() => toggle(race.id)} />
                     <RaceRowContent race={race} wide={wide} />
                   </label>
                 ) : (
@@ -205,7 +202,7 @@ export function RacesView() {
             </div>
           </div>
         ))}
-        {selecting ? <SelectionBar count={picked.size} action={`Delete ${counted(picked.size, 'race')}`} onCancel={stopSelecting} onAction={() => setConfirming(true)} /> : null}
+        {selecting ? <SelectionBar count={picked.size} action={t('races.delete-selected', { count: picked.size })} onCancel={stopSelecting} onAction={() => setConfirming(true)} /> : null}
         {confirming ? <DeleteRacesDialog ids={(list ?? []).filter(race => picked.has(race.id)).map(race => race.id)} onKeep={() => setConfirming(false)} onDeleted={deleted} /> : null}
       </section>
     </div>

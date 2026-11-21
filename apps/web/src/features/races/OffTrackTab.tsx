@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { KPH_PER_MPS, type RaceDetail, type RaceOffTrack, type RaceOffTrackView, type RaceRecurringPlace } from '@gt7/contracts';
+import { KPH_PER_MPS, type MessageKey, type Params, type RaceDetail, type RaceOffTrack, type RaceOffTrackView, type RaceRecurringPlace } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
 import { ChannelChart, type ChartBand, type ChartTick } from '../../charts/ChannelChart.tsx';
 import { groupedMetres } from '../../app/format.ts';
@@ -10,14 +10,12 @@ import { labelledTicks } from '../../charts/ticks.ts';
 import { TrackMap, type TrackLine, type TrackMark } from '../../charts/TrackMap.tsx';
 import { useFrameCursor } from '../../charts/use-frame-cursor.ts';
 import { useWideLayout } from '../../app/layout.ts';
-import { counted } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { raceName } from './RacesView.tsx';
-import { RAW_MISSING_TEXT, isRawMissing } from './race-errors.ts';
+import { isRawMissing, rawMissingText } from './race-errors.ts';
+import { t } from '../../app/i18n.ts';
+import { Rich } from '../../app/rich-text.tsx';
 
-const NO_LINE_TEXT = 'The laps of this race give no line of the track, so the places cannot be drawn.';
-const STRIP_LABEL = 'Off the track, lap by lap, over the distance from the lap line';
-const HEIGHT_FIELD = { title: 'Height of the track', unit: 'm' };
 const HEIGHT_CHART = 110;
 const SPEED_CHART = 150;
 const BOX_SIDE_SHARE = 0.6;
@@ -47,8 +45,14 @@ function otherPlaces(moments: RaceOffTrack[], places: RaceRecurringPlace[], leng
   return count > 1 && first !== undefined && last !== undefined && first + lengthM - last <= OTHER_PLACE_M ? count - 1 : count;
 }
 
-function referenceName(race: RaceDetail): string {
-  return race.referenceLap === race.bestLap ? 'the best lap' : `lap ${race.referenceLap}`;
+type ReferenceKeys = { best: MessageKey; lap: MessageKey };
+
+function referenceText(race: RaceDetail, keys: ReferenceKeys, params: Params = {}): string {
+  return race.referenceLap === race.bestLap ? t(keys.best, params) : t(keys.lap, { ...params, lap: race.referenceLap });
+}
+
+function momentText(moment: RaceOffTrack): string {
+  return t('races.off.item', { lap: moment.lap, wheels: wheelsText(moment), speeds: speedsText(moment) });
 }
 
 function at(values: number[], gridM: number, sM: number): number | null {
@@ -67,33 +71,33 @@ function placeBands(places: RaceRecurringPlace[], lengthM: number): ChartBand[] 
 function RecurringPlaces({ race, view, moments }: { race: RaceDetail; view: RaceOffTrackView | null; moments: RaceOffTrack[] }) {
   const places = view?.recurring ?? race.recurring;
   const others = otherPlaces(moments, places, view?.lengthM ?? race.lapLengthM ?? Infinity);
-  const lapName = referenceName(race);
   return (
     <section className="panel race-places" aria-labelledby="race-places-title">
-      <h2 id="race-places-title">Recurring places</h2>
-      <p className="sub">The same place in 3 or more laps.</p>
-      {places.length === 0 ? <p className="race-places-none">No place in 3 or more laps.</p> : null}
+      <h2 id="race-places-title">{t('races.off.places-title')}</h2>
+      <p className="sub">{t('races.off.places-text')}</p>
+      {places.length === 0 ? <p className="race-places-none">{t('races.off.places-none')}</p> : null}
       <ul>
         {places.map(place => {
           const speed = view ? at(view.speedMps, view.gridM, place.sM) : null;
+          const loss = Math.round(place.largestLossMps * KPH_PER_MPS);
           return (
             <li key={place.label}>
               <b className="race-place-letter">{place.label}</b>
               <span className="race-place-text">
                 <b>{tenMetres(place.sM)}.</b>{' '}
-                {place.allWheels > 0 ? `All four wheels off in ${counted(place.allWheels, 'lap')}.` : 'Two or three wheels off.'}
+                {place.allWheels > 0 ? t('races.off.place-all', { count: place.allWheels }) : t('races.off.place-part')}
                 <span className="race-place-detail">
-                  {speed === null ? '' : `${capital(lapName.replace(/^the /, ''))}: ${Math.round(speed * KPH_PER_MPS)} km/h here. `}Largest speed loss: {Math.round(place.largestLossMps * KPH_PER_MPS)} km/h.
+                  {speed === null ? t('races.off.place-detail', { loss }) : referenceText(race, { best: 'races.off.place-detail-best', lap: 'races.off.place-detail-lap' }, { speed: Math.round(speed * KPH_PER_MPS), loss })}
                 </span>
               </span>
               <span className="race-place-count">
-                {place.laps.length} of {race.laps.length}
+                {t('races.off.place-count', { laps: place.laps.length, total: race.laps.length })}
               </span>
             </li>
           );
         })}
       </ul>
-      {others > 0 ? <p className="race-places-other">{`${counted(others, 'other place')}, each in 1 or 2 laps.`}</p> : null}
+      {others > 0 ? <p className="race-places-other">{t('races.off.other-places', { count: others })}</p> : null}
     </section>
   );
 }
@@ -101,15 +105,15 @@ function RecurringPlaces({ race, view, moments }: { race: RaceDetail; view: Race
 function MomentList({ moments }: { moments: RaceOffTrack[] }) {
   const laps = [...new Set(moments.map(moment => moment.lap))];
   return (
-    <ul className="race-moment-list" aria-label="Moments by lap">
+    <ul className="race-moment-list" aria-label={t('races.off.moments-label')}>
       {laps.map(lap => (
         <li key={lap}>
-          <h3>Lap {lap}</h3>
+          <h3>{t('races.off.lap', { lap })}</h3>
           <ul>
             {moments
               .filter(moment => moment.lap === lap)
               .map((moment, index) => (
-                <li key={index}>{moment.sM === null ? `${capital(wheelsText(moment))}, ${speedsText(moment)}` : `${tenMetres(moment.sM)}: ${wheelsText(moment)}, ${speedsText(moment)}`}</li>
+                <li key={index}>{moment.sM === null ? capital(t('races.off.moment', { wheels: wheelsText(moment), speeds: speedsText(moment) })) : t('races.off.moment-at', { place: tenMetres(moment.sM), wheels: wheelsText(moment), speeds: speedsText(moment) })}</li>
               ))}
           </ul>
         </li>
@@ -127,8 +131,8 @@ function StripBox({ moment, lengthM, row, rows }: { moment: RaceOffTrack; length
       style={{ left: `${(share * 100).toFixed(2)}%`, top: `calc(26px + ${up ? row - 1 : row} * 34px)` }}
       aria-hidden="true"
     >
-      <b>{`Lap ${moment.lap} · ${tenMetres(moment.sM ?? 0)}`}</b>
-      <span>{`${capital(wheelsText(moment))}`}</span>
+      <b>{t('races.off.box-title', { lap: moment.lap, place: tenMetres(moment.sM ?? 0) })}</b>
+      <span>{capital(wheelsText(moment))}</span>
       <span>{speedsText(moment)}</span>
     </div>
   );
@@ -156,14 +160,14 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
           ? []
           : [{ sM: moment.sM, title: momentLabel(moment), variant: moment.wheels === 4 ? 'off-all' : 'off-part', selected: selected === index, onSelect: () => select(index) }]
       ),
-      ...view.recurring.map((place): TrackMark => ({ sM: place.sM, title: `Recurring place ${place.label}`, label: place.label, variant: 'place', beside: true }))
+      ...view.recurring.map((place): TrackMark => ({ sM: place.sM, title: t('races.off.place-mark', { label: place.label }), label: place.label, variant: 'place', beside: true }))
     ],
     [moments, view.recurring, selected, select]
   );
   const items = useMemo<MapDialogItem[]>(
     () =>
       moments.flatMap(moment =>
-        moment.sM === null ? [] : [{ key: `${moment.lap}-${moment.sM}`, number: String(moment.lap), label: `Lap ${moment.lap}: ${wheelsText(moment)}, ${speedsText(moment)}`, detail: tenMetres(moment.sM), sM: moment.sM }]
+        moment.sM === null ? [] : [{ key: `${moment.lap}-${moment.sM}`, number: String(moment.lap), label: momentText(moment), detail: tenMetres(moment.sM), sM: moment.sM }]
       ),
     [moments]
   );
@@ -185,25 +189,26 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
       bands: placeBands(view.recurring, view.lengthM)
     };
   }, [view]);
-  const speedField = useMemo(() => ({ title: `Speed of ${referenceName(race)}`, unit: 'km/h' }), [race]);
+  const speedField = useMemo(() => ({ title: referenceText(race, { best: 'races.off.speed-best', lap: 'races.off.speed-lap' }), unit: t('races.off.kph') }), [race]);
+  const heightField = useMemo(() => ({ title: t('races.off.height'), unit: t('races.off.metres') }), []);
   const heightAt = at(view.heightM, view.gridM, cursorSM);
   const speedAt = at(speeds, view.gridM, cursorSM);
   const chosen = selected === null ? null : (moments[selected] ?? null);
-  const facts = chosen ? `Lap ${chosen.lap}: ${wheelsText(chosen)}, ${speedsText(chosen)}` : '';
+  const facts = chosen ? momentText(chosen) : '';
   const laps = race.laps.map(lap => lap.number);
   const map = (
     <MapPanel
-      title="Places"
+      title={t('races.off.places')}
       legend={[]}
       extraLegend={[
-        { mark: 'off-all', text: 'all four wheels off the track' },
-        { mark: 'off-part', text: 'two or three wheels off' },
-        { mark: 'place', text: 'recurring place' }
+        { mark: 'off-all', text: t('races.off.legend-all') },
+        { mark: 'off-part', text: t('races.off.legend-part') },
+        { mark: 'place', text: t('races.off.legend-place') }
       ]}
       onView={() => setViewing(true)}
     >
       <div className="review-map">
-        <TrackMap label={`Map of the line of ${referenceName(race)} with ${counted(moments.length, 'moment')} off the track`} reference={line} marks={marks} cursorSM={cursorSM} plain lapLine={lapLine} />
+        <TrackMap label={referenceText(race, { best: 'races.off.map-best', lap: 'races.off.map-lap' }, { count: moments.length })} reference={line} marks={marks} cursorSM={cursorSM} plain lapLine={lapLine} />
       </div>
       <MapDialog
         open={viewing}
@@ -213,10 +218,10 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
         reference={line}
         corners={[]}
         items={items}
-        listTitle="Moments off the track"
-        listHint="Select a moment to find it on the line."
-        mapLabel={`Line of ${referenceName(race)} of ${raceName(race)} with the moments off the track`}
-        lineName={`Line of ${referenceName(race)}`}
+        listTitle={t('races.off.list-title')}
+        listHint={t('races.off.list-hint')}
+        mapLabel={referenceText(race, { best: 'races.off.dialog-best', lap: 'races.off.dialog-lap' }, { race: raceName(race) })}
+        lineName={referenceText(race, { best: 'races.off.line-best', lap: 'races.off.line-lap' })}
         lapLine={lapLine}
         metresText={groupedMetres}
       />
@@ -228,15 +233,15 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
         <div className="chart-field" role="group" aria-labelledby="race-strip-label">
           <div className="channel-label">
             <span id="race-strip-label" className="visually-hidden">
-              {STRIP_LABEL}
+              {t('races.off.strip-label')}
             </span>
             <b className="field-title" aria-hidden="true">
-              Off the track
+              {t('races.off.strip-title')}
             </b>
             <span>{wide ? facts : ''}</span>
           </div>
           <span className="field-unit" aria-hidden="true">
-            lap
+            {t('races.off.strip-unit')}
           </span>
           <OffTrackStrip
             lengthM={view.lengthM}
@@ -254,7 +259,7 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
       </div>
       <ChannelChart
         id="race-height"
-        label="Height of the track, m"
+        label={t('races.off.height-label')}
         series={heightSeries}
         min={0}
         max={heightMax}
@@ -263,15 +268,15 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
         cursorSM={cursorSM}
         onCursor={setCursorNow}
         onScrub={scrub}
-        readout={heightAt === null ? 'no data' : `${Math.round(heightAt - minHeight)} m above the lowest place`}
+        readout={heightAt === null ? t('races.speed.no-data') : t('races.off.height-readout', { metres: Math.round(heightAt - minHeight) })}
         ticks={heightTicks}
         height={HEIGHT_CHART}
         bands={bands}
-        field={HEIGHT_FIELD}
+        field={heightField}
       />
       <ChannelChart
         id="race-best-speed"
-        label={`Speed of ${referenceName(race)}, km/h`}
+        label={referenceText(race, { best: 'races.off.speed-label-best', lap: 'races.off.speed-label-lap' })}
         series={speedSeries}
         min={0}
         max={speedMax}
@@ -280,7 +285,7 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
         cursorSM={cursorSM}
         onCursor={setCursorNow}
         onScrub={scrub}
-        readout={speedAt === null ? 'no data' : `lap ${race.referenceLap}: ${Math.round(speedAt)}`}
+        readout={speedAt === null ? t('races.speed.no-data') : t('races.off.speed-readout', { lap: race.referenceLap, speed: Math.round(speedAt) })}
         ticks={speedTicks}
         height={SPEED_CHART}
         bands={bands}
@@ -289,25 +294,25 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
       <p className="race-legend">
         <span>
           <i className="race-mark all" aria-hidden="true" />
-          all four wheels
+          {t('races.off.chart-all')}
         </span>
         <span>
           <i className="race-mark part" aria-hidden="true" />
-          two or three wheels
+          {t('races.off.chart-part')}
         </span>
         <span>
           <i className="race-mark pit-lane" aria-hidden="true" />
-          pit lane
+          {t('races.off.chart-pit')}
         </span>
         <span>
           <i className="race-mark turn" aria-hidden="true" />
-          recurring place
+          {t('races.off.chart-place')}
         </span>
       </p>
       <p className="cursor-line" aria-live="polite">
-        {`Cursor at ${tenMetres(cursorSM)} of ${tenMetres(view.lengthM)}.${!wide && facts ? ` ${facts}.` : ''}`}
+        {t(!wide && facts ? 'races.off.cursor-facts' : 'races.off.cursor', { place: tenMetres(cursorSM), length: tenMetres(view.lengthM), facts })}
       </p>
-      <p className="sub">Move the pointer or a finger across a chart, or focus a chart and use the arrow keys. In the lap rows the arrow keys move from moment to moment. The map point shows the same place.</p>
+      <p className="sub">{t('races.off.hint')}</p>
     </div>
   );
   const places = <RecurringPlaces race={race} view={view} moments={moments} />;
@@ -335,7 +340,7 @@ function OffTrackHeading({ moments }: { moments: RaceOffTrack[] }) {
   const all = moments.filter(moment => moment.wheels === 4).length;
   return (
     <h2 className="race-off-title">
-      {counted(moments.length, 'moment')} off the track <span className="sub">{`${all} with all four wheels`}</span>
+      <Rich k="races.off.heading" params={{ count: moments.length }} parts={{ all: <span className="sub">{t('races.off.heading-all', { count: all })}</span> }} />
     </h2>
   );
 }
@@ -347,7 +352,7 @@ export function OffTrackTab({ race }: { race: RaceDetail }) {
   if (empty) {
     return (
       <section className="race-off-tab">
-        <h2 className="race-off-title">No moments off the track in this race.</h2>
+        <h2 className="race-off-title">{t('races.off.none')}</h2>
       </section>
     );
   }
@@ -358,7 +363,7 @@ export function OffTrackTab({ race }: { race: RaceDetail }) {
       <OffTrackHeading moments={moments} />
       {missing || noLine ? (
         <>
-          <p className="sub race-off-note">{missing ? RAW_MISSING_TEXT : NO_LINE_TEXT}</p>
+          <p className="sub race-off-note">{missing ? rawMissingText() : t('races.off.no-line')}</p>
           <MomentList moments={moments} />
         </>
       ) : view.error ? (
@@ -366,7 +371,7 @@ export function OffTrackTab({ race }: { race: RaceDetail }) {
       ) : view.data ? (
         <OffTrackBody race={race} view={view.data} moments={moments} />
       ) : (
-        <p className="sub">Reading the places off the track…</p>
+        <p className="sub">{t('races.off.reading')}</p>
       )}
     </section>
   );

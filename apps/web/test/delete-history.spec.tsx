@@ -69,7 +69,7 @@ describe('delete history', () => {
   });
 
   it('delete_history_busy_shows_message', async () => {
-    historyApi().on('POST /api/history/delete', { status: 409, body: { code: 'busy', reason: 'Stop the training or the recording first.' } });
+    historyApi().on('POST /api/history/delete', { status: 409, body: { code: 'busy' } });
     renderApp({ path: '/setup/delete-history' });
     const section = await screen.findByRole('region', { name: 'Delete history' });
     await typeName(USER.name);

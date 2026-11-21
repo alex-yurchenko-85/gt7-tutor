@@ -8,8 +8,18 @@ import './styles/base.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App.tsx';
+import { startLanguage } from './app/i18n.ts';
 import { applyTheme, storedTheme } from './app/theme.ts';
 
+function deviceStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+startLanguage(window.location.search, deviceStorage());
 applyTheme(storedTheme());
 
 createRoot(document.getElementById('root')!).render(

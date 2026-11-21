@@ -2,19 +2,13 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import {
-  Inject,
-  Injectable,
-  Logger,
-  type BeforeApplicationShutdown,
-  type OnModuleInit
-} from '@nestjs/common';
+import { Inject, Injectable, Logger, type BeforeApplicationShutdown, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RawWriter, SampleStream, type Datagram, type OpenStream, type RawWriteResult, type TelemetrySource } from '@gt7/capture';
 import type { CaptureInfo, CapturePurpose, ReceptionCheck, Sample } from '@gt7/contracts';
 import { decode } from '@gt7/core';
 import type { Knex } from 'knex';
-import { conflict } from '../http-errors.js';
+import { httpError } from '../http-errors.js';
 import { MONO_CLOCK, type MonoClock } from '../clock/mono-clock.js';
 import { ownedCapture, ownedExercise, type CaptureRow } from '../ownership/owned.js';
 import { SettingsService } from '../settings/settings.service.js';
@@ -152,7 +146,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
   }
 
   reserve(): CaptureReservation {
-    if (this.busy) throw conflict('busy', 'A capture or training is already active.');
+    if (this.busy) throw httpError(409, 'busy');
     const reservation: CaptureReservation = { token: Symbol('capture') };
     this.reservation = reservation;
     return reservation;
@@ -168,7 +162,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
   }
 
   async beginReserved(request: CaptureRequest, reservation: CaptureReservation): Promise<CaptureInfo> {
-    if (this.reservation !== reservation) throw conflict('busy', 'The capture reservation is no longer valid.');
+    if (this.reservation !== reservation) throw httpError(409, 'busy');
     try {
       return await this.open(request);
     } finally {
@@ -187,20 +181,20 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
 
   async stopByRequest(userId: string, id: string): Promise<CaptureInfo> {
     const row = await ownedCapture(this.db, userId, id);
-    if (row.purpose === 'race') throw conflict('not-active', 'Stop a race recording on its own screen.');
+    if (row.purpose === 'race') throw httpError(409, 'race-capture');
     return this.stop(userId, id);
   }
 
   async stop(userId: string, id: string): Promise<CaptureInfo> {
     const row = await ownedCapture(this.db, userId, id);
-    if (this.current?.id !== row.id) throw conflict('not-active', 'This capture is not active.');
+    if (this.current?.id !== row.id) throw httpError(409, 'not-active');
     return captureInfo(await this.finish(this.current), null);
   }
 
   private async consoleAddress(): Promise<string | null> {
     const ps5Ip = await this.settings.get('ps5Ip');
     if (this.sourceKind === 'udp' && ps5Ip === null) {
-      throw conflict('console-address-missing', 'Enter the PS5 address in Setup before a capture.');
+      throw httpError(409, 'console-address-missing');
     }
     return ps5Ip;
   }
@@ -223,7 +217,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
         if (result.packets >= RECEPTION_ENOUGH_PACKETS) finish();
       });
     } catch (error) {
-      throw conflict('source-failed', error instanceof Error ? error.message : String(error));
+      throw httpError(409, 'source-failed', { detail: error instanceof Error ? error.message : String(error) });
     }
     const timer = setTimeout(finish, RECEPTION_CHECK_MS);
     await done;
@@ -272,7 +266,7 @@ export class CaptureService implements OnModuleInit, BeforeApplicationShutdown {
       this.current = null;
       await writer.close();
       await this.db('captures').where({ id }).update({ ended_at: this.db.fn.now(), complete: false, error_reason: `source-failed: ${reason}` });
-      throw conflict('source-failed', reason);
+      throw httpError(409, 'source-failed', { detail: reason });
     }
     return captureInfo(row!, id);
   }

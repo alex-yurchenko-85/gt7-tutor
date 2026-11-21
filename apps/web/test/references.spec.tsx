@@ -83,7 +83,7 @@ describe('reference history', () => {
   it('reference_delete_error_shows_in_the_dialog', async () => {
     exerciseApi()
       .on(REFERENCES, unused)
-      .on('DELETE /api/references/ref-attempt', { status: 409, body: { code: 'busy', reason: 'Busy.' } })
+      .on('DELETE /api/references/ref-attempt', { status: 409, body: { code: 'busy' } })
       .install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/references` });
     const user = userEvent.setup();

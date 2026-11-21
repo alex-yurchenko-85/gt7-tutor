@@ -39,9 +39,9 @@ Fixed limits outside `DEFAULT_CONFIG`:
 
 | File | Limits |
 | --- | --- |
-| `cue-text.ts` | Target speeds 30 to 350 km/h, `MAX_SPOKEN_TURN` 10, `estimatedPhraseMs` |
+| `cue-text.ts` | Target speeds 30 to 350 km/h, `estimatedPhraseMs`: 200 ms + 220 ms per word |
 | `match.ts` | Minimum travel for a travel direction: 0.05 m |
-| `@gt7/contracts` | Cue offsets −500 to +1000 ms in steps of 100 ms, side cue distances 0.5 to 3 m, `WIDE_APEX_M` 2, `RECURRING_MIN_ATTEMPTS` 3 |
+| `@gt7/contracts` | Cue offsets −500 to +1000 ms in steps of 100 ms, side cue distances 0.5 to 3 m, `WIDE_APEX_M` 2, `RECURRING_MIN_ATTEMPTS` 3, `MAX_SPOKEN_TURN` 10 |
 
 ## 1. Start and finish of an attempt
 
@@ -330,11 +330,15 @@ With `a` = 0: `t = d / v`. `a` = the speed change over the last 300 ms, never ne
 - Once per excursion. The car must return within the distance first. A side cue that loses to another cue or to cooldown does not repeat in that excursion.
 - No side cue between turn-in and apex. The hold time continues, so the cue can speak after the apex.
 
-**Method: texts and clips.** `cue-text.ts` makes all cue texts and clip keys:
+**Method: texts and clips.** `cue-text.ts` makes the clip keys. The texts come from the voice pack, `packages/contracts/locales/<lang>/voice.json`. Core, the server and the API carry clip keys, not text.
 
-- Clip = phrase key, for example `hard-brake`. The keys keep the kind names: `ease-off` says `Lift off`, `big-stop` says `Big brake ahead`, `tighter` says `Closer to apex`, `keep-left` and `keep-right` say `More left` and `More right`.
-- The follow clip of a brake with a target is `speed-<km/h>`. It plays only with `Speak target speeds`.
-- `CUE_WORDS` in `@gt7/contracts` gives the shown words.
+- Clip = phrase key, for example `hard-brake`. The voice pack key is `voice.<clip>`, for example `voice.hard-brake`. The keys keep the kind names: `ease-off` says `Lift off`, `big-stop` says `Big brake ahead`, `tighter` says `Closer to apex`, `keep-left` and `keep-right` say `More left` and `More right`.
+- The follow clip of a brake with a target is `speed-<km/h>`. It plays only with `Speak target speeds`. The voice pack gives the words of each speed: `voice.speed-30` to `voice.speed-350`.
+- A focus clip is `focus-<kind>-<turn>`, up to turn 10. Its text is `voice.focus` with the turn (`voice.turn-1` to `voice.turn-10`) and the action (`voice.focus-action.<kind>`). Above turn 10, the focus has no clip, and the screen shows the turn with `voice.turn` and digits.
+- `eventClips(event, speakTargets)` gives the clips of a cue row: the clip, then the follow clip if targets are on. The next cue of the live state has its clip. The focus of an attempt has its kind, its turn and its clip.
+- The web makes the shown text from the voice pack. A brake with a target shows `voice.brake-with-target`, with the speed words after the action.
+- The Drive stage shows the words of `drive.cue.<kind>` from the message pack.
+- `clipText(pack, clip)` gives the spoken text of a clip. `estimatedPhraseMs(pack, clip)` gives the phrase time when the voice manifest has no duration for the clip.
 - `clipsOf(events, corners)` lists every clip of a reference:
   - the event clips and the follow clips.
   - `Big brake ahead` if any, `Closer to apex` if a corner exists.

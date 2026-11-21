@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useLiveListener } from '../../api/live.tsx';
+import { t } from '../../app/i18n.ts';
 import { keepTrailPoint, trailBounds, trailCoversLap, trailFit, trailSegments, withPoint, type TrailBounds, type TrailPoint } from './race-trail.ts';
 
 const SIZE = 400;
@@ -82,7 +83,7 @@ export function RaceTrail({ fadeMs }: { fadeMs: number | null }) {
   useEffect(() => () => cancel.current?.(), []);
 
   return (
-    <svg className="race-trail" viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label="The line of the last lap, brightest at the car">
+    <svg className="race-trail" viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={t('races.trail')}>
       <g ref={fit} className="race-trail-fit">
         <g ref={lines} />
         <circle ref={glow} className="race-trail-glow" r="0" />

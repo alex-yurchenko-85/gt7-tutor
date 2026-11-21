@@ -24,11 +24,13 @@ export type ReferencePathErrorCode = 'too-few-points' | 'nonfinite-field' | 'dis
 
 export class ReferencePathError extends Error {
   readonly code: ReferencePathErrorCode;
+  readonly rawIndex: number | null;
 
-  constructor(code: ReferencePathErrorCode, message: string) {
+  constructor(code: ReferencePathErrorCode, message: string, rawIndex: number | null = null) {
     super(message);
     this.name = 'ReferencePathError';
     this.code = code;
+    this.rawIndex = rawIndex;
   }
 }
 
@@ -43,7 +45,7 @@ export function isDriven(sample: Sample): boolean {
 function assertFinite(sample: Sample): void {
   const scalars = [sample.receivedMonoMs, sample.speedMps, sample.throttle, sample.brake];
   if (scalars.every(Number.isFinite) && isFiniteVec(sample.position)) return;
-  throw new ReferencePathError('nonfinite-field', `raw index ${sample.rawIndex} has a nonfinite field`);
+  throw new ReferencePathError('nonfinite-field', `raw index ${sample.rawIndex} has a nonfinite field`, sample.rawIndex);
 }
 
 const BREAK_MESSAGES: Record<PositionBreak, string> = {
@@ -55,7 +57,7 @@ function assertContinuous(samples: Sample[], config: CoreConfig): void {
   samples.forEach((current, index) => {
     const previous = samples[index - 1];
     const broken = previous ? positionBreak(previous, current, config) : null;
-    if (broken) throw new ReferencePathError(broken, `${BREAK_MESSAGES[broken]} at raw index ${current.rawIndex}`);
+    if (broken) throw new ReferencePathError(broken, `${BREAK_MESSAGES[broken]} at raw index ${current.rawIndex}`, current.rawIndex);
   });
 }
 

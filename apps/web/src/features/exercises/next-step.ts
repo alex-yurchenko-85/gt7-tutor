@@ -1,19 +1,9 @@
 import type { ExerciseStatusName, ExerciseStep } from '@gt7/contracts';
+import { t } from '../../app/i18n.ts';
 
-const NEXT_TITLE: Record<ExerciseStep, string> = {
-  1: 'Next: record the reference',
-  2: 'Next: drive attempts',
-  3: 'Next: review your attempts'
-};
-
-export const STATUS_LABEL: Record<ExerciseStatusName, string> = {
-  new: 'New',
-  ready: 'Ready',
-  practising: 'Practising',
-  bronze: 'Bronze',
-  silver: 'Silver',
-  gold: 'Gold'
-};
+export function statusLabel(status: ExerciseStatusName): string {
+  return t(`exercises.status.${status}`);
+}
 
 const FAMILY_ORDER = ['Licence', 'Circuit Experience', 'Brand Central'];
 
@@ -24,5 +14,5 @@ export function orderedFamilies(families: string[]): string[] {
 }
 
 export function nextTitle(step: ExerciseStep): string {
-  return NEXT_TITLE[step];
+  return t(`exercises.next.${step}`);
 }

@@ -15,7 +15,8 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text-summary', 'lcov'],
       include: ['src/**/*.ts'],
-      exclude: ['src/main.ts']
+      exclude: ['src/main.ts'],
+      thresholds: { statements: 92.81, branches: 77.52, functions: 95.44, lines: 95.74 }
     }
   }
 });

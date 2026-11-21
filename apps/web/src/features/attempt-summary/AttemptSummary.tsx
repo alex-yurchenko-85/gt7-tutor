@@ -4,47 +4,48 @@ import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths } from '../../app/router.tsx';
 import { differenceText } from '../cues/cue-format.ts';
 import './summary.css';
+import { focusText, t } from '../../app/i18n.ts';
 
 export function AttemptSummary({ attemptId, onDriveAgain }: { attemptId: string; onDriveAgain?: () => void }) {
   const attempt = useResource(() => api.attempt(attemptId), [attemptId]);
 
   if (attempt.error) return <p className="error">{errorText(attempt.error)}</p>;
-  if (!attempt.data) return <p className="sub">Reading the attempt…</p>;
+  if (!attempt.data) return <p className="sub">{t('exercises.summary.reading')}</p>;
   const data = attempt.data;
 
   const complete = data.completion === 'complete';
   return (
-    <section className="panel summary" aria-label={`Attempt ${data.number}`}>
-      <p className="sub">Attempt {data.number}</p>
-      <div className="summary-time">{complete ? formatTime(data.timeMs) : 'No time'}</div>
+    <section className="panel summary" aria-label={t('exercises.summary.label', { number: data.number })}>
+      <p className="sub">{t('exercises.summary.label', { number: data.number })}</p>
+      <div className="summary-time">{complete ? formatTime(data.timeMs) : t('exercises.summary.no-time')}</div>
       {!complete ? (
-        <p className="sub">The attempt did not finish{data.reason ? ` (${abortReasonText(data.reason)})` : ''}. Only complete attempts have a time.</p>
+        <p className="sub">{data.reason ? t('exercises.summary.not-finished-reason', { reason: abortReasonText(data.reason) }) : t('exercises.summary.not-finished')}</p>
       ) : (
-        <p className="sub">Time from the game.</p>
+        <p className="sub">{t('exercises.summary.from-game')}</p>
       )}
       {data.focus ? (
         <div className="summary-focus">
-          <span>Focus for the next attempt</span>
-          <b>{data.focus.text}</b>
+          <span>{t('exercises.summary.focus')}</span>
+          <b>{focusText(data.focus.kind, data.focus.turn)}</b>
         </div>
       ) : null}
       {complete ? (
         <div className="kv">
-          <span>Gap to your best</span>
-          <b>{data.gapToBestMs === null ? 'first time' : formatGap(data.gapToBestMs)}</b>
+          <span>{t('exercises.summary.gap')}</span>
+          <b>{data.gapToBestMs === null ? t('exercises.summary.first-time') : formatGap(data.gapToBestMs)}</b>
         </div>
       ) : null}
       <div className="kv">
-        <span>Largest difference</span>
-        <b>{data.largestDifference ? `${metres(data.largestDifference.sM)}. ${differenceText(data.largestDifference)}` : 'none found'}</b>
+        <span>{t('exercises.summary.largest')}</span>
+        <b>{data.largestDifference ? t('exercises.attempts.largest', { place: metres(data.largestDifference.sM), difference: differenceText(data.largestDifference) }) : t('exercises.summary.none-found')}</b>
       </div>
       <div className="summary-actions">
         <Link to={paths.review(data.id)} className="btn inline">
-          Review this attempt
+          {t('exercises.summary.review')}
         </Link>
         {onDriveAgain ? (
           <button className="btn inline ghost" type="button" onClick={onDriveAgain}>
-            Drive again
+            {t('exercises.summary.drive-again')}
           </button>
         ) : null}
       </div>

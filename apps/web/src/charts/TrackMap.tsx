@@ -1,8 +1,10 @@
 import { memo, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import type { MessageKey } from '@gt7/contracts';
 import { WIDTH, clamp, finitePoints, lineSegments, projection, rounded, zoneIndexes, type Point } from './geometry.ts';
 import { Icon } from '../app/icons.tsx';
 import { placeCallout, type Box } from './callout-place.ts';
 import './charts.css';
+import { t } from '../app/i18n.ts';
 
 export type TrackLine = { gridM: number; x: (number | null)[]; z: (number | null)[] };
 
@@ -304,15 +306,15 @@ const EndsLayer = memo(function EndsLayer({ geometry, ends, lapLine }: { geometr
         <line className="track-start" x1={barFrom[0]} y1={barFrom[1]} x2={barTo[0]} y2={barTo[1]} />
         {ends.start ? (
           <text className="track-label" x={ends.start[0]} y={ends.start[1]} textAnchor="middle" dominantBaseline="central">
-            lap line
+            {t('charts.map.lap-line')}
           </text>
         ) : null}
       </>
     );
   }
-  const labels: [string, Point | null][] = [
-    ['start', ends.start],
-    ['finish', ends.finish]
+  const labels: [MessageKey, Point | null][] = [
+    ['charts.map.start', ends.start],
+    ['charts.map.finish', ends.finish]
   ];
   return (
     <>
@@ -321,7 +323,7 @@ const EndsLayer = memo(function EndsLayer({ geometry, ends, lapLine }: { geometr
       {labels.map(([text, at]) =>
         at ? (
           <text key={text} className="track-label" x={at[0]} y={at[1]} textAnchor="middle" dominantBaseline="central">
-            {text}
+            {t(text)}
           </text>
         ) : null
       )}

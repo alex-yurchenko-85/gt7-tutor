@@ -3,10 +3,11 @@ import type { DeleteHistoryRequest, DeleteHistoryResult, Exercise } from '@gt7/c
 import { api } from '../../api/client.ts';
 import { deletionErrorText } from '../../app/busy.ts';
 import { useTrainingGate } from '../../app/use-training.ts';
-import { counted, theirs } from '../../app/plural.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { useSession } from '../../app/session.tsx';
 import { megabytes } from './StorageSection.tsx';
+import { t } from '../../app/i18n.ts';
+import { Rich } from '../../app/rich-text.tsx';
 
 type Scope = DeleteHistoryRequest['scope'];
 
@@ -17,27 +18,33 @@ function scopeTexts(exercises: Exercise[], chosen: Exercise | null, races: numbe
   const references = exercises.reduce((total, exercise) => total + exercise.referenceCount, 0);
   const withAttempts = exercises.filter(exercise => exercise.attemptCount > 0).length;
   const chosenAttempts = chosen?.attemptCount ?? 0;
+  const chosenName = chosen?.name ?? t('setup.history.the-exercise');
   return {
     exercise: {
-      title: 'Attempts of one exercise',
-      detail: 'For a fresh start on one exercise. Its references and the races stay.',
-      deletes: `${counted(chosenAttempts, 'attempt')} of ${chosen?.name ?? 'the exercise'}, with ${theirs(chosenAttempts)} cues and differences.`,
-      keeps: 'the references, the other exercises, the races, the settings.',
-      action: `Delete ${counted(chosenAttempts, 'attempt')}`
+      title: t('setup.history.exercise.title'),
+      detail: t('setup.history.exercise.detail'),
+      deletes: t('setup.history.exercise.deletes', { count: chosenAttempts, name: chosenName }),
+      keeps: t('setup.history.exercise.keeps'),
+      action: t('setup.history.exercise.action', { count: chosenAttempts })
     },
     attempts: {
-      title: 'All attempts',
-      detail: `${counted(attempts, 'attempt')} in ${counted(withAttempts, 'exercise')}. References, exercises and races stay.`,
-      deletes: `${attempts === 1 ? 'the' : 'all'} ${counted(attempts, 'attempt')} of this profile, with ${theirs(attempts)} cues and differences.`,
-      keeps: 'the exercises, the references, the races, the settings.',
-      action: 'Delete all attempts'
+      title: t('setup.history.attempts.title'),
+      detail: t('setup.history.attempts.detail', { attempts: t('common.count.attempt', { count: attempts }), exercises: t('common.count.exercise', { count: withAttempts }) }),
+      deletes: t('setup.history.attempts.deletes', { count: attempts }),
+      keeps: t('setup.history.attempts.keeps'),
+      action: t('setup.history.attempts.action')
     },
     everything: {
-      title: 'Start over',
-      detail: 'All attempts, references, exercise progress and races. The profile and its settings stay.',
-      deletes: `${counted(attempts, 'attempt')}, ${counted(references, 'reference')}, ${races === null ? 'the races' : counted(races, 'race')}, the progress of ${counted(exercises.length, 'exercise')}.`,
-      keeps: 'the profile, the password, the voice and console settings, the catalogue.',
-      action: 'Delete everything and start over'
+      title: t('setup.history.everything.title'),
+      detail: t('setup.history.everything.detail'),
+      deletes: t('setup.history.everything.deletes', {
+        attempts: t('common.count.attempt', { count: attempts }),
+        references: t('common.count.reference', { count: references }),
+        races: races === null ? t('setup.history.the-races') : t('common.count.race', { count: races }),
+        exercises: t('common.count.exercise', { count: exercises.length })
+      }),
+      keeps: t('setup.history.everything.keeps'),
+      action: t('setup.history.everything.action')
     }
   };
 }
@@ -45,14 +52,14 @@ function scopeTexts(exercises: Exercise[], chosen: Exercise | null, races: numbe
 const SCOPES: Scope[] = ['exercise', 'attempts', 'everything'];
 
 function listed(parts: string[]): string {
-  return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)!}` : parts[0]!;
+  return parts.length > 1 ? t('setup.history.list-and', { first: parts.slice(0, -1).join(', '), last: parts.at(-1)! }) : parts[0]!;
 }
 
 function doneText(result: DeleteHistoryResult): string {
-  const parts = [counted(result.attempts, 'attempt'), result.references > 0 ? counted(result.references, 'reference') : null, result.races > 0 ? counted(result.races, 'race') : null];
-  const deleted = `Deleted ${listed(parts.filter((part): part is string => part !== null))}.`;
+  const parts = [t('common.count.attempt', { count: result.attempts }), result.references > 0 ? t('common.count.reference', { count: result.references }) : null, result.races > 0 ? t('common.count.race', { count: result.races }) : null];
+  const deleted = t('setup.history.deleted', { items: listed(parts.filter((part): part is string => part !== null)) });
   if (!result.cleanup) return deleted;
-  return `${deleted} Cleaned ${counted(result.cleanup.captures, 'capture')}: ${megabytes(result.cleanup.bytesBefore)} before, ${megabytes(result.cleanup.bytesAfter)} after.`;
+  return `${deleted} ${t('setup.storage.cleaned', { count: result.cleanup.captures, before: megabytes(result.cleanup.bytesBefore), after: megabytes(result.cleanup.bytesAfter) })}`;
 }
 
 function DataSummary({ exercises }: { exercises: Exercise[] | null }) {
@@ -61,14 +68,14 @@ function DataSummary({ exercises }: { exercises: Exercise[] | null }) {
   const withAttempts = exercises?.filter(exercise => exercise.attemptCount > 0).length ?? 0;
   return (
     <section className="panel setup-section" aria-labelledby="history-data-title">
-      <h2 id="history-data-title">Data</h2>
+      <h2 id="history-data-title">{t('setup.history.data')}</h2>
       <div className="kv">
-        <span>Your captures</span>
-        <b>{storage.data ? `${megabytes(storage.data.profileRawBytes)} in ${counted(storage.data.profileCaptures, 'capture')}` : storage.error ? errorText(storage.error) : '…'}</b>
+        <span>{t('setup.storage.yours')}</span>
+        <b>{storage.data ? t('setup.storage.yours-size', { size: megabytes(storage.data.profileRawBytes), count: storage.data.profileCaptures }) : storage.error ? errorText(storage.error) : '…'}</b>
       </div>
       <div className="kv">
-        <span>Your attempts</span>
-        <b>{attempts === null ? '…' : `${attempts} in ${counted(withAttempts, 'exercise')}`}</b>
+        <span>{t('setup.history.your-attempts')}</span>
+        <b>{attempts === null ? '…' : t('setup.history.your-attempts-size', { number: attempts, exercises: t('common.count.exercise', { count: withAttempts }) })}</b>
       </div>
     </section>
   );
@@ -115,12 +122,12 @@ export function DeleteHistoryView() {
     <div className="delete-history">
       <DataSummary exercises={exercises.data} />
       <section className="panel setup-section history-danger" aria-labelledby="history-title">
-        <h2 id="history-title">Delete history</h2>
+        <h2 id="history-title">{t('setup.history.title')}</h2>
         <p className="sub">
-          This affects the profile <b className="history-name">{user.name}</b> only. It cannot be undone.
+          <Rich k="setup.history.profile-only" parts={{ name: <b className="history-name">{user.name}</b> }} />
         </p>
         <fieldset className="history-scopes">
-          <legend>What to delete</legend>
+          <legend>{t('setup.history.what')}</legend>
           {SCOPES.map(id => (
             <label key={id} className={id === scope ? 'history-scope chosen' : 'history-scope'}>
               <input type="radio" name="history-scope" checked={id === scope} disabled={id === 'exercise' && list.length === 0} onChange={() => setScope(id)} />
@@ -133,11 +140,11 @@ export function DeleteHistoryView() {
         </fieldset>
         {scope === 'exercise' ? (
           <label className="history-field">
-            Exercise
+            {t('setup.history.exercise-field')}
             <select value={chosen?.id ?? ''} onChange={event => setExerciseId(event.target.value)}>
               {list.map(exercise => (
                 <option key={exercise.id} value={exercise.id}>
-                  {exercise.name} ({counted(exercise.attemptCount, 'attempt')})
+                  {t('setup.history.exercise-option', { name: exercise.name, attempts: t('common.count.attempt', { count: exercise.attemptCount }) })}
                 </option>
               ))}
             </select>
@@ -146,21 +153,21 @@ export function DeleteHistoryView() {
         <label className="history-cleanup">
           <input type="checkbox" checked={cleanup} onChange={event => setCleanup(event.target.checked)} />
           <span>
-            Also clean up the raw captures that nothing uses afterwards
-            <span className="sub">Frees disk space. Without this, Clean up captures can do it later.</span>
+            {t('setup.history.cleanup')}
+            <span className="sub">{t('setup.history.cleanup-text')}</span>
           </span>
         </label>
         <div className="history-summary">
           <p>
-            <b>This deletes:</b> {current.deletes}
+            <b>{t('setup.history.deletes')}</b> {current.deletes}
           </p>
           <p>
-            <b>This keeps:</b> {current.keeps}
+            <b>{t('setup.history.keeps')}</b> {current.keeps}
           </p>
         </div>
         <label className="history-field" htmlFor={confirmId}>
           <span>
-            Type the profile name <code className="history-name">{user.name}</code> to confirm
+            <Rich k="setup.history.confirm" parts={{ name: <code className="history-name">{user.name}</code> }} />
           </span>
         </label>
         <input id={confirmId} className="history-confirm" type="text" autoComplete="off" value={typed} onChange={event => setTyped(event.target.value)} />

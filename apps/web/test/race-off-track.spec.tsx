@@ -184,7 +184,7 @@ describe('race page, off the track tab', () => {
   });
 
   it('lists_the_moments_by_lap_when_the_recording_is_gone', async () => {
-    await openOffTrack(detailWith(), { status: 409, body: { code: 'raw-missing', reason: 'Gone.' } });
+    await openOffTrack(detailWith(), { status: 409, body: { code: 'raw-missing' } });
     expect(await screen.findByText('The recording of this race is no longer on the disk. The lap table stays.')).toBeInTheDocument();
     const list = screen.getByRole('list', { name: 'Moments by lap' });
     expect(within(list).getAllByRole('heading', { level: 3 }).map(heading => heading.textContent)).toEqual(['Lap 1', 'Lap 2', 'Lap 3', 'Lap 4', 'Lap 6', 'Lap 7']);
@@ -194,7 +194,7 @@ describe('race page, off the track tab', () => {
 
   it('lists_the_moments_when_the_laps_give_no_line', async () => {
     const moments = [offTrackMoment(2, null, 4), offTrackMoment(5, null, 2)];
-    await openOffTrack(detailWith({ offTrack: 2, offTrackList: moments, recurring: [] }), { status: 409, body: { code: 'no-match', reason: 'No line.' } });
+    await openOffTrack(detailWith({ offTrack: 2, offTrackList: moments, recurring: [] }), { status: 409, body: { code: 'no-match' } });
     expect(await screen.findByText('The laps of this race give no line of the track, so the places cannot be drawn.')).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Moments by lap' })).toHaveTextContent('All four wheels off for 1.0 s, 104 → 64 km/h');
     expect(screen.queryByText(/no longer on the disk/)).not.toBeInTheDocument();

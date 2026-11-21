@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { ENGLISH } from '@gt7/contracts';
 import { Coach, type CoachInput } from '../src/coach.ts';
 import { replayCoach } from '../src/coach-replay.ts';
 import { DEFAULT_CONFIG, DEFAULT_SIDE_CUE_DISTANCE_M } from '../src/config.ts';
@@ -13,6 +14,8 @@ import { drive } from './synthetic.ts';
 import { findCorners, type Corner } from '../src/corners.ts';
 import type { ReferenceCueEvent } from '../src/cue-events.ts';
 import { decisionFor, event, flatPath, runCoach, settingsOf, simulate } from './coaching.ts';
+
+const englishPhraseMs = (clip: string) => estimatedPhraseMs(ENGLISH, clip);
 
 const reference = (sM: number) => (sM < 600 ? 200 : sM < 680 ? 200 - (sM - 600) * 1.25 : sM < 700 ? 100 : Math.min(200, 100 + (sM - 700) * 0.5));
 const brakePath = flatPath(2000, reference);
@@ -402,7 +405,7 @@ describe('Coach', () => {
     );
     const trace = replayCoach(slowRun, analysisOf(path, events), DEFAULT_CONFIG, {
       deviceDelayMs: 60,
-      phraseMs: estimatedPhraseMs,
+      phraseMs: englishPhraseMs,
       mutedKeys: new Set(),
       speakTargets: true,
       offsetsMs: new Map(),
@@ -414,7 +417,7 @@ describe('Coach', () => {
   it('trace_rounds_distance_to_a_centimetre_and_times_to_a_millisecond', () => {
     const trace = replayCoach(slowRun, analysisOf(path, events), DEFAULT_CONFIG, {
       deviceDelayMs: 60,
-      phraseMs: estimatedPhraseMs,
+      phraseMs: englishPhraseMs,
       mutedKeys: new Set(),
       speakTargets: true,
       offsetsMs: new Map(),
@@ -434,7 +437,7 @@ describe('Coach', () => {
     );
     const trace = replayCoach(slowRun, analysisOf(path, events), DEFAULT_CONFIG, {
       deviceDelayMs: 60,
-      phraseMs: estimatedPhraseMs,
+      phraseMs: englishPhraseMs,
       mutedKeys: new Set(),
       speakTargets: true,
       offsetsMs: new Map(),
@@ -515,7 +518,7 @@ describe('Coach', () => {
     it('big_stop_comes_about_2_s_before_the_first_brake', () => {
       const trace = replayCoach(slowRun, analysisOf(path, events), DEFAULT_CONFIG, {
         deviceDelayMs: 60,
-        phraseMs: estimatedPhraseMs,
+        phraseMs: englishPhraseMs,
         mutedKeys: new Set(),
         speakTargets: true,
         offsetsMs: new Map(),
@@ -565,7 +568,7 @@ describe('Coach', () => {
           nowMonoMs: sample.receivedMonoMs,
           generation: 0,
           deviceDelayMs: 60,
-          phraseMs: estimatedPhraseMs
+          phraseMs: englishPhraseMs
         });
         if (output.cue) cues.push(output.cue.eventKey);
         suppressed.push(...output.suppressed.map(entry => `${entry.eventKey}:${entry.why}`));

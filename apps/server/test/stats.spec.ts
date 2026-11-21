@@ -315,7 +315,7 @@ describe('attempts, review and statistics', () => {
     const attemptId = await attempt();
     await http().get(`/api/attempts/${attemptId}/review`).set('Cookie', cookie).expect(200);
     const summary = await http().get(`/api/attempts/${attemptId}`).set('Cookie', cookie).expect(200);
-    expect(summary.body.focus).toEqual({ text: 'Turn one. Brake later.', turn: 1, kind: 'brake-early' });
+    expect(summary.body.focus).toEqual({ kind: 'brake-early', turn: 1, clip: 'focus-brake-early-1' });
     const aborted = await attempt({ completion: 'aborted' });
     await http().get(`/api/attempts/${aborted}/review`).set('Cookie', cookie).expect(200);
     expect((await http().get(`/api/attempts/${aborted}`).set('Cookie', cookie).expect(200)).body.focus).toBeNull();

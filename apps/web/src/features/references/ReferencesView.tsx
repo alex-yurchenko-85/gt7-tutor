@@ -4,21 +4,21 @@ import { api } from '../../api/client.ts';
 import { deletionErrorText } from '../../app/busy.ts';
 import { ConfirmDialog } from '../../app/ConfirmDialog.tsx';
 import { formatDay } from '../../app/format.ts';
-import { counted } from '../../app/plural.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { useTrainingGate } from '../../app/use-training.ts';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
 import { useExercise } from '../exercise/use-exercise.ts';
+import { t } from '../../app/i18n.ts';
 
 function originName(reference: ReferenceInfo): string {
-  return reference.origin === 'demo' ? 'Demonstration' : 'Your attempt';
+  return reference.origin === 'demo' ? t('exercises.references.demo') : t('exercises.references.own');
 }
 
 function meta(reference: ReferenceInfo): string {
-  const version = reference.gameVersion ? `game version ${reference.gameVersion}` : 'no game version';
-  return `${formatDay(reference.createdAt)}, ${version}. Frames ${reference.first}–${reference.last}. ${counted(reference.attemptCount, 'attempt')} ${reference.attemptCount === 1 ? 'uses' : 'use'} it.`;
+  const version = reference.gameVersion ? t('exercises.references.version', { version: reference.gameVersion }) : t('exercises.references.no-version');
+  return t('exercises.references.meta', { date: formatDay(reference.createdAt), version, first: reference.first, last: reference.last, count: reference.attemptCount });
 }
 
 type RowProps = { reference: ReferenceInfo; onActivate(): void; onCheck(): void; onDelete(): void };
@@ -28,7 +28,7 @@ function ReferenceRow({ reference, onActivate, onCheck, onDelete }: RowProps) {
     <tr>
       <td>
         <b className="reference-name">{originName(reference)}</b>{' '}
-        {reference.active ? <span className="tag y">active</span> : null} {reference.needsCheck ? <span className="tag bad">Needs a check</span> : null}
+        {reference.active ? <span className="tag y">{t('exercises.references.active')}</span> : null} {reference.needsCheck ? <span className="tag bad">{t('exercises.references.needs-check')}</span> : null}
         <br />
         <span className="sub">{meta(reference)}</span>
       </td>
@@ -36,17 +36,17 @@ function ReferenceRow({ reference, onActivate, onCheck, onDelete }: RowProps) {
         <div className="btn-row">
           {reference.active ? null : (
             <button className="btn inline ghost" type="button" onClick={onActivate}>
-              {reference.origin === 'demo' ? 'Return to the demonstration' : 'Make active'}
+              {reference.origin === 'demo' ? t('exercises.references.return') : t('exercises.references.make-active')}
             </button>
           )}
           {reference.needsCheck ? (
             <button className="btn inline" type="button" onClick={onCheck}>
-              Check with one recording
+              {t('exercises.references.check')}
             </button>
           ) : null}
           {reference.attemptCount === 0 && !reference.active ? (
             <button className="btn inline danger" type="button" onClick={onDelete}>
-              Delete
+              {t('common.delete')}
             </button>
           ) : null}
         </div>
@@ -73,9 +73,9 @@ function DeleteReferenceDialog({ reference, onKeep, onDeleted }: { reference: Re
   };
   return (
     <ConfirmDialog
-      title="Delete this reference?"
-      keepLabel="Keep it"
-      confirmLabel={gate.label('Delete reference')}
+      title={t('exercises.references.delete-title')}
+      keepLabel={t('exercises.references.keep')}
+      confirmLabel={gate.label(t('exercises.references.delete-confirm'))}
       working={working}
       confirmDisabled={gate.blocked}
       notice={gate.notice}
@@ -84,11 +84,11 @@ function DeleteReferenceDialog({ reference, onKeep, onDeleted }: { reference: Re
       onConfirm={confirm}
     >
       <p>
-        {originName(reference)}, {formatDay(reference.createdAt)}. No attempt uses it.
+        {t('exercises.references.delete-what', { name: originName(reference), date: formatDay(reference.createdAt) })}
       </p>
       <ul>
-        <li>The active reference does not change.</li>
-        <li>You cannot undo it.</li>
+        <li>{t('exercises.references.active-stays')}</li>
+        <li>{t('exercises.references.no-undo')}</li>
       </ul>
     </ConfirmDialog>
   );
@@ -113,15 +113,12 @@ export function ReferencesView({ exerciseId }: { exerciseId: string }) {
   };
 
   if (exercise.error) return <LoadProblem error={exercise.error} kind="exercise" />;
-  if (!exercise.data) return <p className="sub">Reading the exercise…</p>;
+  if (!exercise.data) return <p className="sub">{t('exercises.reading-exercise')}</p>;
   const list = [...(references.data ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <section>
-      <ExerciseHeader exercise={exercise.data} title="Reference history" />
-      <p className="lede">
-        A reference is never overwritten. A new one joins the history, and you can make any of them active. Each attempt remembers the reference it was
-        driven against.
-      </p>
+      <ExerciseHeader exercise={exercise.data} title={t('exercises.references.title')} />
+      <p className="lede">{t('exercises.references.text')}</p>
       {problem ? (
         <p className="error" role="alert">
           {problem}
@@ -129,11 +126,11 @@ export function ReferencesView({ exerciseId }: { exerciseId: string }) {
       ) : null}
       {list.length ? (
         <div className="table-wrap">
-          <table aria-label="References">
+          <table aria-label={t('exercises.references.table')}>
             <thead>
               <tr>
-                <th>Reference</th>
-                <th>Actions</th>
+                <th>{t('exercises.references.column')}</th>
+                <th>{t('exercises.references.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -150,13 +147,13 @@ export function ReferencesView({ exerciseId }: { exerciseId: string }) {
           </table>
         </div>
       ) : references.data ? (
-        <p className="sub">No reference yet.</p>
+        <p className="sub">{t('exercises.references.none')}</p>
       ) : null}
       <Link to={paths.record(exerciseId)} className="btn inline ghost" >
-        Record a new reference
+        {t('exercises.references.record')}
       </Link>
       <p className="sub" style={{ marginTop: 10 }}>
-        A complete attempt can become a reference from its review. A reference that attempts use cannot be deleted.
+        {t('exercises.references.help')}
       </p>
       {deleting ? (
         <DeleteReferenceDialog

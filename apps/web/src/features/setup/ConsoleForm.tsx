@@ -6,28 +6,27 @@ import { IconButton } from '../../app/IconButton.tsx';
 import { formatClock } from '../../app/format.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { telemetryStatus, type Status } from '../../app/status.ts';
-
-const FIREWALL_NOTE = 'The computer must accept UDP on port 33740. If the check finds no packets, allow the port in the firewall.';
+import { t } from '../../app/i18n.ts';
 
 export function addressProblem(value: string): string | null {
-  if (!value.trim()) return 'Enter the console address.';
+  if (!value.trim()) return t('setup.console.address-empty');
   if (connectionSettingsSchema.safeParse({ ps5Ip: value.trim() }).success) return null;
-  return 'This is not an IPv4 address. Enter four numbers from 0 to 255 with dots between them, as the PS5 shows it.';
+  return t('setup.console.address-invalid');
 }
 
 function packetsText(check: ReceptionCheck): string {
   const seconds = (check.durationMs / 1000).toFixed(1);
   if (check.packets === 0) {
-    return `No packets in ${seconds} s. Check that the PS5 is on, that GT7 is open past the title screen, and that the address is right.`;
+    return t('setup.console.no-packets', { seconds });
   }
   const undecoded = check.packets - check.decoded;
-  const receiving = `Receiving: ${check.packets} packets in ${seconds} s`;
-  return undecoded > 0 ? `${receiving}. ${undecoded} packets could not be decoded.` : receiving;
+  const receiving = t('setup.console.receiving', { count: check.packets, seconds });
+  return undecoded > 0 ? t('setup.console.receiving-undecoded', { receiving, undecoded: t('setup.console.undecoded', { count: undecoded }) }) : receiving;
 }
 
 function carText(check: ReceptionCheck, carName: string | null): string | null {
-  if (carName) return `Car: ${carName}`;
-  return check.carId !== null ? `Car ID ${check.carId}` : null;
+  if (carName) return t('setup.console.car', { name: carName });
+  return check.carId !== null ? t('setup.console.car-id', { id: check.carId }) : null;
 }
 
 type Reception = { status: Status; car: string | null; at: Date };
@@ -77,7 +76,7 @@ export function ConsoleForm({ layout, onChecked, onSaved }: ConsoleFormProps) {
     if (found) return;
     try {
       const result = await api.setConsoleAddress(address.trim());
-      setSaved(`Saved. GT7 Tutor listens for ${result.ps5Ip}.`);
+      setSaved(t('setup.console.saved', { address: result.ps5Ip ?? '' }));
       onSaved?.(result.ps5Ip ?? address.trim());
       settings.reload();
     } catch (error) {
@@ -111,10 +110,10 @@ export function ConsoleForm({ layout, onChecked, onSaved }: ConsoleFormProps) {
         <form onSubmit={save} noValidate>
           <div className="field-pair">
             <div className="field">
-              <label htmlFor="console-address">PS5 address</label>
+              <label htmlFor="console-address">{t('setup.console.address')}</label>
               {input}
             </div>
-            <IconButton icon="check" label="Save and check" primary type="submit" disabled={checking} />
+            <IconButton icon="check" label={t('setup.console.save-and-check')} primary type="submit" disabled={checking} />
           </div>
           {problemText}
         </form>
@@ -124,27 +123,27 @@ export function ConsoleForm({ layout, onChecked, onSaved }: ConsoleFormProps) {
           </p>
         ) : null}
         <p className="sub" style={{ marginTop: 10 }}>
-          {FIREWALL_NOTE}
+          {t('setup.console.firewall')}
         </p>
       </>
     );
   }
 
   const status = reception?.status ?? telemetryStatus(state, connected);
-  const caption = reception ? [reception.car, `checked ${formatClock(reception.at)}`].filter(Boolean).join(' · ') : null;
+  const caption = reception ? [reception.car, t('setup.console.checked', { time: formatClock(reception.at) })].filter(Boolean).join(' · ') : null;
   return (
     <>
       <form className="pref" onSubmit={save} noValidate>
         <span className="pref-text">
-          <label htmlFor="console-address">PS5 address</label>
+          <label htmlFor="console-address">{t('setup.console.address')}</label>
           <span className="sub" id="console-address-hint">
-            GT7 Tutor asks the console for telemetry at this address. Save also checks the reception.
+            {t('setup.console.address-hint')}
           </span>
         </span>
         <div className="pref-control">
           <div className="field-pair">
             {input}
-            <IconButton icon="check" label="Save and check" primary type="submit" disabled={checking} />
+            <IconButton icon="check" label={t('setup.console.save-and-check')} primary type="submit" disabled={checking} />
           </div>
           {problemText}
           {saved ? (
@@ -156,18 +155,18 @@ export function ConsoleForm({ layout, onChecked, onSaved }: ConsoleFormProps) {
       </form>
       <div className="pref">
         <span className="pref-text">
-          <span>Telemetry</span>
-          <span className="sub">{FIREWALL_NOTE}</span>
+          <span>{t('setup.console.telemetry')}</span>
+          <span className="sub">{t('setup.console.firewall')}</span>
         </span>
         <div className="pref-control">
           <div className="field-pair telemetry-pair">
             <span className="telemetry-status" role="status">
               <span className={`telemetry-line${status.tone === 'off' ? ' error' : ''}`}>
-                {checking ? 'Listening…' : status.text}
+                {checking ? t('setup.console.listening') : status.text}
               </span>
               {caption && !checking ? <span className="sub">{caption}</span> : null}
             </span>
-            <IconButton icon="refresh" label="Check again" onClick={() => void check()} disabled={checking} />
+            <IconButton icon="refresh" label={t('setup.console.check-again')} onClick={() => void check()} disabled={checking} />
           </div>
         </div>
       </div>

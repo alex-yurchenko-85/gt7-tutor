@@ -24,6 +24,8 @@
     "race:import": "pnpm --filter @gt7/server... run build && node --conditions=source tools/import-race.ts",
     "fixture": "node tools/make-fixture.ts",
     "evaluate-coach": "node --conditions=source tools/evaluate-coach.ts",
+    "locale:check": "node --conditions=source tools/locale.ts check",
+    "locale:new": "node --conditions=source tools/locale.ts new",
     "catalogue:build": "node --conditions=source tools/build-catalogue.ts",
     "audio:generate": "pnpm --dir tools/audio install --frozen-lockfile && node --conditions=source tools/generate-audio.ts",
     "prepare": "husky",

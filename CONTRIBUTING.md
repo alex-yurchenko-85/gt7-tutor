@@ -24,6 +24,61 @@ Send each change as a pull request on GitHub. Do not publish a changed copy unde
 4. Update the document that describes the code you changed.
 5. Open a pull request. Say what the change does and what you did not check.
 
+## Add a language
+
+GT7 Tutor shows English only. All text on the screens and all spoken text come from a language pack. You can add a language without a change to the code.
+
+### The files of a language pack
+
+- The English pack in `packages/contracts/locales/en/` is the source. `messages.json` holds the screen texts. `voice.json` holds the spoken texts.
+- Each English entry has a `text`, a `note` and sometimes a `maxChars`. The note tells where the text shows or sounds. `maxChars` is the maximum length of a text that cannot wrap, for example a button or a tab. The count includes the placeholders.
+- A pack of a different language is one flat file for each part: `{ "<key>": "<text>" }`. The folder name is the language code, for example `ru`, `de` or `pt-BR`.
+- A placeholder such as `{name}` or `{count}` gets a value from the screen. Keep each placeholder of the English text. You can move a placeholder to a different place in the sentence.
+- A key that ends with `_one` or `_other` has plural forms. Your language can have more forms, for example `_few` and `_many`. The number in `{count}` selects the form.
+- A key that is missing or empty shows the English text.
+
+### Steps
+
+1. Make the empty pack:
+
+   ```sh
+   pnpm locale:new <language code>
+   ```
+
+   The command writes `messages.json` and `voice.json` with every key and with the plural forms of your language. Each text is empty. The command does not write over a folder that exists.
+
+2. Write each text. Read the note of the English entry first. Keep game names, track names, car names and product names as they are.
+3. Check the pack:
+
+   ```sh
+   pnpm locale:check <language code>
+   ```
+
+   The command shows each problem in the pack. A problem is a missing text, a missing plural form or a wrong placeholder. A text that is too long and a key that the English pack does not have are problems too. The last line must be `0 problems`.
+
+4. Start the demo with `./start.sh --demo`. Open the address with `?lang=<language code>`, for example `http://localhost:3001/?lang=de`. Add `?lang=<language code>` to each address that you open: the language stays only for that page.
+5. Look at each screen on a computer and on a phone, in the light theme and in the dark theme. A text must not overlap, must not be cut off and must not move the page to the side. The screens are:
+   - the sign-in and Get ready,
+   - Exercises, an exercise with its tabs, Attempts, Review and Add exercise,
+   - the Drive stage of a demo attempt and the attempt summary,
+   - the Record screen,
+   - Setup with each part,
+   - Races, and a race with Laps, Compare and Off the track,
+   - the race recording stage.
+6. The address `?lang=xx` shows a pseudo-language. It makes each English text longer and puts it in brackets. Text outside brackets does not come from the pack. Use it to find long texts and missing keys.
+
+### Voice clips
+
+- A pack without clips is valid: the voice stays English.
+- The clips of a language go into `content/audio/<language code>/`, with a `manifest.json` and a `clips/` folder, as in `content/audio/en/`.
+- Each voice folder has a `NOTICE.md`. It names the voice model or the speaker and the licence of the clips.
+- The licence of the clips must allow redistribution, also for commercial use: for example Apache-2.0, MIT, CC0 or CC BY 4.0.
+- For a recorded human voice, the speaker must give permission under such a licence.
+
+### Licence of a translation
+
+A contributed text uses the licence of GT7 Tutor, GPL-3.0, as all contributions do.
+
 ## Commit messages
 
 Each commit message follows [Conventional Commits](https://www.conventionalcommits.org). A hook checks the message when you commit.

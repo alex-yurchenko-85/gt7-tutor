@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react';
+import type { MessageKey } from '@gt7/contracts';
 import { useLiveConnection, useLiveState } from '../../api/live.tsx';
 import { IconButton } from '../../app/IconButton.tsx';
+import { t } from '../../app/i18n.ts';
 import { Link, paths } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
 import { readStored, writeStored } from '../../app/storage.ts';
@@ -12,12 +14,17 @@ type StepState = 'done' | 'now' | 'later';
 
 type ConsoleState = 'missing' | 'saved' | 'silent' | 'receiving';
 
-const CONSOLE_SUMMARY: Record<ConsoleState, string | null> = {
+const CONSOLE_SUMMARY: Record<ConsoleState, MessageKey | null> = {
   missing: null,
-  saved: 'Address saved',
-  silent: 'Address saved, no telemetry yet',
-  receiving: 'Receiving telemetry'
+  saved: 'app.get-ready.console.saved',
+  silent: 'app.get-ready.console.silent',
+  receiving: 'app.get-ready.console.receiving'
 };
+
+function consoleSummary(state: ConsoleState): string | null {
+  const key = CONSOLE_SUMMARY[state];
+  return key ? t(key) : null;
+}
 
 function voiceLaterKey(userId: string): string {
   return `gt7.getReady.voiceLater.${userId}`;
@@ -54,13 +61,13 @@ function VoiceStep({ onLater }: { onLater(): void }) {
   const voice = useVoiceClaim();
   return (
     <>
-      <p>One device plays the cues: this device, or another one with GT7 Tutor open. A phone must stay unlocked during an attempt.</p>
+      <p>{t('app.get-ready.voice.text')}</p>
       <div className="ready-actions">
         <button type="button" className="btn" disabled={voice.busy} onClick={() => void voice.claim()}>
-          Use this device for voice
+          {t('app.get-ready.voice.use')}
         </button>
         <button type="button" className="btn ghost" onClick={onLater}>
-          Set up the voice later
+          {t('app.get-ready.voice.later')}
         </button>
       </div>
       {voice.problem ? (
@@ -80,12 +87,12 @@ function VoiceTest() {
     try {
       await player.test();
     } catch {
-      setProblem('The test did not play. Select Use this device for voice in Setup.');
+      setProblem(t('app.get-ready.voice.test-failed'));
     }
   };
   return (
     <>
-      <IconButton icon="speaker" label="Test" onClick={() => void run()} />
+      <IconButton icon="speaker" label={t('app.get-ready.voice.test')} onClick={() => void run()} />
       {problem ? (
         <p className="error ready-step-problem" role="alert">
           {problem}
@@ -119,51 +126,48 @@ export function GetReady({ ps5Ip, exerciseCount }: { ps5Ip: string | null; exerc
     setVoiceLater(true);
   };
 
-  const voiceSummary = voiceHere ? 'This device' : voiceElsewhere ? 'Another device' : voiceLater ? 'Later' : null;
+  const voiceSummary = voiceHere ? t('app.get-ready.voice.this-device') : voiceElsewhere ? t('app.get-ready.voice.another-device') : voiceLater ? t('app.get-ready.voice.later-summary') : null;
 
   return (
     <section className="get-ready" aria-labelledby="get-ready-title">
-      <p className="sub get-ready-welcome">Welcome, {user.name}</p>
-      <h1 id="get-ready-title">Get ready to train</h1>
-      <p className="lede">Three things, once. GT7 Tutor needs the console for telemetry and a device that plays the voice. Then pick your first exercise.</p>
+      <p className="sub get-ready-welcome">{t('app.get-ready.welcome', { name: user.name })}</p>
+      <h1 id="get-ready-title">{t('app.get-ready.title')}</h1>
+      <p className="lede">{t('app.get-ready.text')}</p>
       <div className="ready-progress">
-        <div className="ready-bar" role="progressbar" aria-label="Ready" aria-valuemin={0} aria-valuemax={3} aria-valuenow={readyCount}>
+        <div className="ready-bar" role="progressbar" aria-label={t('app.get-ready.progress-label')} aria-valuemin={0} aria-valuemax={3} aria-valuenow={readyCount}>
           <span style={{ width: `${(readyCount / 3) * 100}%` }} />
         </div>
-        <b>{readyCount} of 3 ready</b>
+        <b>{t('app.get-ready.progress', { done: readyCount })}</b>
       </div>
-      <ol className="ready-steps" aria-label="Three steps">
+      <ol className="ready-steps" aria-label={t('app.get-ready.steps-label')}>
         <Step
           number={1}
-          title="Connect the console"
+          title={t('app.get-ready.console.title')}
           state={stateOf(1, consoleDone)}
-          summary={CONSOLE_SUMMARY[consoleState]}
+          summary={consoleSummary(consoleState)}
         >
-          <p>On the PS5: Settings, Network, View Connection Status, IPv4 Address. Start GT7 so that the console sends telemetry.</p>
+          <p>{t('app.get-ready.console.text')}</p>
           <ConsoleForm layout="inline" onChecked={receiving => setConsoleState(receiving ? 'receiving' : 'silent')} />
         </Step>
         <Step
           number={2}
-          title="Choose the device for the voice"
+          title={t('app.get-ready.voice.title')}
           state={stateOf(2, voiceDone)}
           summary={voiceSummary}
           action={voiceHere ? <VoiceTest /> : null}
         >
           <VoiceStep onLater={later} />
         </Step>
-        <Step number={3} title="Pick your first exercise" state={stateOf(3, exerciseDone)} summary={exerciseDone ? 'Done' : null}>
-          <p>
-            A licence test, a Circuit Experience sector or a Brand Central exercise. GT7 Tutor then leads you through three steps: reference, attempts,
-            review.
-          </p>
+        <Step number={3} title={t('app.get-ready.exercise.title')} state={stateOf(3, exerciseDone)} summary={exerciseDone ? t('app.get-ready.exercise.done') : null}>
+          <p>{t('app.get-ready.exercise.text')}</p>
           <div className="ready-actions">
             <Link to={paths.addExercise()} className="btn yellow">
-              Add an exercise
+              {t('app.get-ready.exercise.add')}
             </Link>
           </div>
         </Step>
       </ol>
-      <p className="sub">You can change all of this later in Setup. This page goes away when the three steps are done.</p>
+      <p className="sub">{t('app.get-ready.footer')}</p>
     </section>
   );
 }

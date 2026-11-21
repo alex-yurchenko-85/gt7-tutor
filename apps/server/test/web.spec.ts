@@ -130,10 +130,12 @@ describe('web interface and reception check', () => {
 
   it('serves_the_audio_manifest_and_clips', async () => {
     await start();
-    const manifest = await http().get('/audio/manifest.json').expect(200);
-    expect(manifest.body.clips.brake.file).toBe('clips/brake.wav');
-    const clip = await http().get('/audio/clips/brake.wav').expect(200);
+    const manifest = await http().get('/audio/en/manifest.json').expect(200);
+    expect(manifest.body.clips['hard-brake'].file).toBe('clips/hard-brake.wav');
+    const clip = await http().get('/audio/en/clips/hard-brake.wav').expect(200);
     expect(clip.headers['content-type']).toMatch(/audio\/(wav|wave|x-wav)/);
+    await http().get('/audio/clips/hard-brake.wav').expect(404);
+    await http().get('/audio/manifest.json').expect(404);
   });
 
   it('reception_check_counts_packets_and_reports_the_car', async () => {

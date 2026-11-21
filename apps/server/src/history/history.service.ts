@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type {
   DeleteAttemptsResult,
   DeleteHistoryRequest,
@@ -10,7 +10,7 @@ import type {
   RemoveExercisesResult
 } from '@gt7/contracts';
 import type { Knex } from 'knex';
-import { conflict } from '../http-errors.js';
+import { httpError } from '../http-errors.js';
 import { AuthService } from '../auth/auth.service.js';
 import { StorageService } from '../captures/storage.service.js';
 import { ownedExercise } from '../ownership/owned.js';
@@ -50,7 +50,7 @@ export class HistoryService {
     await this.waitUntilIdle(userId);
     const unique = [...new Set(ids)];
     const deleted = await this.db.transaction(async (trx): Promise<number> => {
-      if ((await ownedAttemptCount(trx, userId, unique)) !== unique.length) throw new NotFoundException('Attempt not found');
+      if ((await ownedAttemptCount(trx, userId, unique)) !== unique.length) throw httpError(404, 'attempt-not-found');
       return await trx('attempts').whereIn('id', unique).del();
     });
     return { deleted };
@@ -77,7 +77,7 @@ export class HistoryService {
     const ids = [...new Set(request.ids)];
     const counts = await this.db.transaction(async trx => {
       const owned = await trx('exercises').whereIn('id', ids).where({ user_id: userId }).pluck<string[]>('id');
-      if (owned.length !== ids.length) throw new NotFoundException('Exercise not found');
+      if (owned.length !== ids.length) throw httpError(404, 'exercise-not-found');
       const counts = await countExerciseRows(trx, ids);
       await trx('exercises').whereIn('id', ids).del();
       return counts;
@@ -102,7 +102,7 @@ export class HistoryService {
   }
 
   private async waitUntilIdle(userId: string): Promise<void> {
-    if (this.training.busyFor(userId)) throw conflict('busy', 'Stop the training or the recording first.');
+    if (this.training.busyFor(userId)) throw httpError(409, 'busy');
     await this.training.idle();
   }
 }

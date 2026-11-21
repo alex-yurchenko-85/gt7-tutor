@@ -20,6 +20,7 @@ export default defineConfig({
         'apps/web/src/**/*.{ts,tsx}',
         'tools/setup/**/*.ts',
         'tools/start/**/*.ts',
+        'tools/locale.ts',
         'apps/server/src/auth/{password,session-cookie,sign-in-limiter}.ts',
         'apps/server/src/{drop-oldest,http-errors}.ts',
         'apps/server/src/exercises/exercise-step.ts',
@@ -28,7 +29,8 @@ export default defineConfig({
         'apps/server/src/races/live-race.ts',
         'apps/server/src/training/training-session.ts'
       ],
-      exclude: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.d.ts', 'apps/web/src/main.tsx', 'tools/start/start.ts']
+      exclude: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.d.ts', 'apps/web/src/main.tsx', 'tools/start/start.ts'],
+      thresholds: { statements: 90.66, branches: 84.74, functions: 90.76, lines: 93.02 }
     },
     projects: [
       {
@@ -37,7 +39,7 @@ export default defineConfig({
       },
       {
         extends: true,
-        test: { name: 'tools', include: ['tools/setup/**/*.spec.ts', 'tools/start/**/*.spec.ts', 'tools/testing/**/*.spec.ts'] }
+        test: { name: 'tools', include: ['tools/setup/**/*.spec.ts', 'tools/start/**/*.spec.ts', 'tools/testing/**/*.spec.ts', 'tools/locale.spec.ts'] }
       },
       {
         extends: true,
