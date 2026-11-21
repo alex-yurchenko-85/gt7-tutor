@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.11.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.10.0...v1.11.0) (2026-11-21)
+
+### Features
+
+* take every text from a language pack and let players add a language ([2de0956](https://github.com/alex-yurchenko-85/gt7-tutor/commit/2de0956021ae6c1d041f275b9bef0e3bd05c929d))
+
 # [1.10.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.9.1...v1.10.0) (2026-11-21)
 
 ### Features
