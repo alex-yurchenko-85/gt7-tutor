@@ -44,7 +44,7 @@ export function RunningRace() {
   };
 
   return (
-    <div className="running-bar" role="status" aria-label={t('app.race.bar.label')}>
+    <div className="running-bar" role="status">
       <span className="running-bar-text">{barText(race)}</span>
       <div className="running-bar-actions">
         <Link to={paths.raceRecord()} className="btn ghost inline">

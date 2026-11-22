@@ -12,7 +12,7 @@ export function DemoLabel() {
   const demo = useDemo();
   if (!demo) return null;
   return (
-    <p className="demo-label" role="note">
+    <p className="demo-label">
       {t('app.demo.label')}
     </p>
   );

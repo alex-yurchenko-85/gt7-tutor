@@ -19,7 +19,6 @@ export function TrackNameDialog({ race, onKeep, onSaved }: TrackNameDialogProps)
   const [typed, setTyped] = useState(known < 0 && race.trackName !== null ? race.trackName : '');
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const labelId = useId();
   const fieldId = useId();
   const name = (choice === another ? typed : candidates[choice]!).trim();
 
@@ -47,10 +46,9 @@ export function TrackNameDialog({ race, onKeep, onSaved }: TrackNameDialogProps)
       onKeep={onKeep}
       onConfirm={save}
     >
-      <p id={labelId}>{t('races.name.track')}</p>
+      <p>{t('races.name.track')}</p>
       <RadioGroup<number>
         className="track-choices"
-        labelledBy={labelId}
         value={choice}
         onChange={setChoice}
         options={[...candidates.map((candidate, index) => ({ value: index, content: candidate })), { value: another, content: t('races.name.another') }]}

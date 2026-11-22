@@ -110,11 +110,11 @@ describe('i18n', () => {
 
   it('lets_a_long_pseudo_padding_break', () => {
     const pseudo = pseudoPack();
-    const text = translate(pseudo, 'races.off.hint');
+    const text = translate(pseudo, 'races.empty.text-wide');
     expect(text).toContain('\u200B');
     expect(text).not.toMatch(/·{11}/);
     expect(text.split('\u200B').every(part => part.length > 0)).toBe(true);
-    expect(translate(ENGLISH, 'races.off.hint')).not.toContain('\u200B');
+    expect(translate(ENGLISH, 'races.empty.text-wide')).not.toContain('\u200B');
   });
 
   it('english_source_is_valid', () => {

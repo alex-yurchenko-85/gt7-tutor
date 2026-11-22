@@ -1,3 +1,4 @@
+import { els } from './support.tsx';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { RaceRecurringPlace } from '@gt7/contracts';
@@ -26,7 +27,7 @@ function strip(overrides: { recurring?: RaceRecurringPlace[]; selected?: number 
 }
 
 function rows(): HTMLElement[] {
-  return screen.getAllByRole('group').filter(group => group.hasAttribute('data-lap'));
+  return els('.strip-row');
 }
 
 describe('off-track strip', () => {
@@ -34,9 +35,9 @@ describe('off-track strip', () => {
     strip();
     expect(rows().map(row => row.getAttribute('data-lap'))).toEqual(['1', '2', '3', '4', '5', '6', '7']);
     const lap3 = rows()[2]!;
-    expect(within(lap3).getAllByRole('button').map(button => button.getAttribute('aria-label'))).toEqual([
-      'Lap 3, 2,910 m: all four wheels off for 1.0 s, 104 to 64 km/h',
-      'Lap 3, 3,190 m: three wheels off for 1.0 s, 104 to 64 km/h'
+    expect(within(lap3).getAllByRole('button').map(button => button.getAttribute('title'))).toEqual([
+      'Lap 3, 2,910 m: all 4 wheels off for 1.0 s, 104 to 64 km/h',
+      'Lap 3, 3,190 m: 3 wheels off for 1.0 s, 104 to 64 km/h'
     ]);
     expect(within(lap3).getAllByRole('button')[0]).toHaveClass('all');
     expect(within(lap3).getAllByRole('button')[1]).toHaveClass('part');

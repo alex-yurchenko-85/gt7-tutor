@@ -20,8 +20,8 @@ export function RecurringDifferences({ exercise }: { exercise: Exercise }) {
       ? t('exercises.recurring.lead', { of: items[0]!.of })
       : t('exercises.recurring.lead-empty');
   return (
-    <section className="panel recurring-differences attempts-recurring" aria-labelledby="recurring-title">
-      <h2 id="recurring-title">{t('exercises.recurring.title')}</h2>
+    <section className="panel recurring-differences attempts-recurring">
+      <h2>{t('exercises.recurring.title')}</h2>
       <p className="sub">{lead}</p>
       {!enough ? (
         <p className="notice">

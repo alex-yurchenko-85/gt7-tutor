@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Icon } from './icons.tsx';
 import { Link, paths } from './router.tsx';
 import { useSession } from './session.tsx';
@@ -15,7 +15,6 @@ export function ProfileMenu() {
   const container = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
-  const menuId = useId();
 
   const close = (returnFocus: boolean) => {
     setOpen(false);
@@ -53,20 +52,17 @@ export function ProfileMenu() {
         ref={button}
         type="button"
         className="profile-button"
-        aria-haspopup="menu"
         aria-expanded={open}
-        aria-controls={open ? menuId : undefined}
-        aria-label={t('app.profile.button', { name: user.name })}
         onClick={() => setOpen(value => !value)}
       >
-        <span className="profile-initial" aria-hidden="true">
+        <span className="profile-initial">
           {user.name.slice(0, 1).toUpperCase()}
         </span>
         <span className="profile-name">{user.name}</span>
         <Icon name="chevron-down" size={14} />
       </button>
       {open ? (
-        <div ref={menu} id={menuId} className="profile-popup" role="menu" aria-label={t('app.profile.button', { name: user.name })}>
+        <div ref={menu} className="profile-popup" role="menu">
           <div className="profile-head">
             <b>{user.name}</b>
             <span>{t('app.profile.signed-in')}</span>

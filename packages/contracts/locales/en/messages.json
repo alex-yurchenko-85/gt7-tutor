@@ -354,7 +354,7 @@
   },
   "app.status.label": {
     "text": "{name}: {status} Open Setup",
-    "note": "Accessible name of a status chip that opens Setup. {name} is Console or Voice, {status} is the status sentence with a full stop."
+    "note": "Tooltip of a status chip that opens Setup. {name} is Console or Voice, {status} is the status sentence with a full stop."
   },
   "app.not-found.page.kicker": {
     "text": "PAGE NOT FOUND",
@@ -447,10 +447,6 @@
     "note": "Main menu item and bottom tab that opens Setup.",
     "maxChars": 14
   },
-  "app.nav.label": {
-    "text": "Main",
-    "note": "Accessible name of the main menu."
-  },
   "app.status.console": {
     "text": "Console",
     "note": "Header link with the telemetry status of the console. It opens Setup, Console.",
@@ -469,10 +465,6 @@
     "text": "Demo",
     "note": "Small mark of the demo on the full-screen Drive and Record stages.",
     "maxChars": 10
-  },
-  "app.profile.button": {
-    "text": "Profile {name}",
-    "note": "Accessible name of the profile button and its menu. {name} is the profile name."
   },
   "app.profile.signed-in": {
     "text": "Signed in on this device",
@@ -531,10 +523,6 @@
     "text": "Stop the training and delete",
     "note": "Button that stops the training, then deletes.",
     "maxChars": 32
-  },
-  "app.training.bar.label": {
-    "text": "Training",
-    "note": "Accessible name of the bar that shows a running training."
   },
   "app.training.bar.attempt-runs": {
     "text": "An attempt runs.",
@@ -595,15 +583,7 @@
   },
   "app.theme.choice": {
     "text": "{theme} theme",
-    "note": "Accessible name of a theme choice in the compact switch. {theme} is System, Light or Dark."
-  },
-  "app.theme.label": {
-    "text": "Theme",
-    "note": "Accessible name of the theme switch."
-  },
-  "app.race.bar.label": {
-    "text": "Race recording",
-    "note": "Accessible name of the bar that shows a race recording."
+    "note": "Tooltip of a theme choice in the compact switch. {theme} is System, Light or Dark."
   },
   "app.race.bar.unsupported": {
     "text": "This is not a race of 2 or more laps. Only a race by laps can be recorded.",
@@ -639,10 +619,6 @@
     "text": "Check that GT7 Tutor is running on the computer, then reload this page.",
     "note": "Text when the first request to the server fails."
   },
-  "app.selection.label": {
-    "text": "Selection",
-    "note": "Accessible name of the selection bar."
-  },
   "app.selection.count": {
     "text": "{count} selected",
     "note": "Number of selected items in the selection bar."
@@ -675,7 +651,7 @@
   },
   "charts.turn.title": {
     "text": "Turn {turn}",
-    "note": "Accessible name of a turn mark. {turn} is the turn number."
+    "note": "Name of a turn in a list and tooltip of a turn mark on the map. {turn} is the turn number."
   },
   "charts.legend.reference": {
     "text": "reference line",
@@ -714,7 +690,7 @@
   },
   "charts.map.view-label": {
     "text": "View the map in full screen",
-    "note": "Accessible name of the button that opens the map in full screen."
+    "note": "Tooltip of the View button of a map when the button shows only the icon. The button opens the map in full screen."
   },
   "charts.map.back": {
     "text": "Back",
@@ -737,14 +713,6 @@
   "charts.map.close-hint": {
     "text": "Press Esc to close.",
     "note": "Hint on a wide screen after the line length of the full-screen map."
-  },
-  "charts.map.reference-and-yours": {
-    "text": "Reference line and your line of {title}",
-    "note": "Accessible name of the full-screen map with two lines. {title} is the map title."
-  },
-  "charts.map.reference-of": {
-    "text": "Reference line of {title}",
-    "note": "Accessible name of the full-screen map with the reference line. {title} is the map title."
   },
   "charts.map.cue-detail": {
     "text": "{metres} m",
@@ -769,26 +737,22 @@
     "note": "Map label at the end of the reference line.",
     "maxChars": 12
   },
-  "charts.cursor.value": {
-    "text": "{metres} m. {readout}",
-    "note": "Spoken value of the chart cursor. {metres} is the distance from the start, {readout} the values at the cursor."
-  },
   "charts.pit.badge": {
     "text": "P{number}",
     "note": "Short mark of a pit stop on the race time axis. {number} is the pit stop number.",
     "maxChars": 10
   },
   "charts.off-track.wheels-2": {
-    "text": "two wheels off for {seconds} s",
-    "note": "Off-track moment: two wheels left the track. {seconds} is the time with one decimal. Lower case: it can follow a comma."
+    "text": "2 wheels off for {seconds} s",
+    "note": "Off-track moment: 2 wheels left the track. {seconds} is the time with one decimal. Lower case: it can follow a comma."
   },
   "charts.off-track.wheels-3": {
-    "text": "three wheels off for {seconds} s",
-    "note": "Off-track moment: three wheels left the track. {seconds} is the time with one decimal. Lower case: it can follow a comma."
+    "text": "3 wheels off for {seconds} s",
+    "note": "Off-track moment: 3 wheels left the track. {seconds} is the time with one decimal. Lower case: it can follow a comma."
   },
   "charts.off-track.wheels-4": {
-    "text": "all four wheels off for {seconds} s",
-    "note": "Off-track moment: all four wheels left the track. {seconds} is the time with one decimal. Lower case: it can follow a comma."
+    "text": "all 4 wheels off for {seconds} s",
+    "note": "Off-track moment: all 4 wheels left the track. {seconds} is the time with one decimal. Lower case: it can follow a comma."
   },
   "charts.off-track.speeds": {
     "text": "{from} → {to} km/h",
@@ -796,15 +760,15 @@
   },
   "charts.off-track.speeds-spoken": {
     "text": "{from} to {to} km/h",
-    "note": "Spoken form of the speeds of an off-track moment, for a screen reader."
+    "note": "Speeds of an off-track moment in the tooltip of the moment. {from} and {to} are the speeds."
   },
   "charts.off-track.moment": {
     "text": "Lap {lap}: {wheels}, {speeds}",
-    "note": "Accessible name of an off-track moment without a place. {wheels} and {speeds} are the texts above."
+    "note": "Tooltip of an off-track moment without a place. {wheels} and {speeds} are the texts above."
   },
   "charts.off-track.moment-at": {
     "text": "Lap {lap}, {place}: {wheels}, {speeds}",
-    "note": "Accessible name of an off-track moment. {place} is the distance from the lap line."
+    "note": "Tooltip of an off-track moment. {place} is the distance from the lap line."
   },
   "auth.form.name": {
     "text": "Name",
@@ -839,10 +803,6 @@
   "auth.form.no-server": {
     "text": "The server did not answer. Check that GT7 Tutor is running on the computer.",
     "note": "Error when the sign-in request fails for an unknown reason."
-  },
-  "auth.brand.label": {
-    "text": "GT7 Tutor",
-    "note": "Accessible name of the brand part of the sign-in screen. Keep the product name."
   },
   "auth.brand.tagline": {
     "text": "Short voice cues while you drive the exercises of Gran Turismo 7.",
@@ -920,10 +880,6 @@
     "text": "Everyone on your home network can see these names; the passwords keep the profiles apart.",
     "note": "Second sentence of the help on a wide screen."
   },
-  "auth.strip.label": {
-    "text": "Profiles",
-    "note": "Accessible name of the row of profiles on the sign-in screen."
-  },
   "auth.strip.previous": {
     "text": "Previous profiles",
     "note": "Button that scrolls the row of profiles back."
@@ -967,7 +923,7 @@
   },
   "app.get-ready.voice.test": {
     "text": "Test",
-    "note": "Accessible name of the button that plays the voice test."
+    "note": "Tooltip of the icon button that plays the voice test."
   },
   "app.get-ready.voice.this-device": {
     "text": "This device",
@@ -996,17 +952,9 @@
     "text": "Three things, once. GT7 Tutor needs the console for telemetry and a device that plays the voice. Then pick your first exercise.",
     "note": "Text under the title of Get ready."
   },
-  "app.get-ready.progress-label": {
-    "text": "Ready",
-    "note": "Accessible name of the progress bar of Get ready."
-  },
   "app.get-ready.progress": {
     "text": "{done} of 3 ready",
     "note": "Progress of Get ready. {done} is the number of done steps."
-  },
-  "app.get-ready.steps-label": {
-    "text": "Three steps",
-    "note": "Accessible name of the list of steps of Get ready."
   },
   "app.get-ready.console.title": {
     "text": "Connect the console",
@@ -1175,10 +1123,6 @@
     "text": "Setup",
     "note": "Title of the Setup screen."
   },
-  "setup.nav.label": {
-    "text": "Setup sections",
-    "note": "Accessible name of the list of Setup sections."
-  },
   "setup.breadcrumb.delete-history": {
     "text": "Delete history",
     "note": "Last part of the path at the top of Delete history on a phone."
@@ -1238,7 +1182,7 @@
   },
   "setup.console.save-and-check": {
     "text": "Save and check",
-    "note": "Accessible name of the button that saves the address and checks the reception."
+    "note": "Tooltip of the icon button that saves the address and checks the reception."
   },
   "setup.console.address-hint": {
     "text": "GT7 Tutor asks the console for telemetry at this address. Save also checks the reception.",
@@ -1255,7 +1199,7 @@
   },
   "setup.console.check-again": {
     "text": "Check again",
-    "note": "Accessible name of the button that runs the reception check again."
+    "note": "Tooltip of the icon button that runs the reception check again."
   },
   "setup.profiles.title": {
     "text": "Profiles",
@@ -1373,16 +1317,12 @@
   },
   "setup.preferences.version-save": {
     "text": "Save the game version",
-    "note": "Accessible name of the button that saves the game version."
+    "note": "Tooltip of the icon button that saves the game version."
   },
   "setup.preferences.rate": {
     "text": "{rate}/s",
     "note": "Choice of the screen update rate, for example 30/s. {rate} is the number of updates in each second.",
     "maxChars": 12
-  },
-  "setup.preferences.rate-label": {
-    "text": "{rate} per second",
-    "note": "Accessible name of a screen update rate. {rate} is the number of updates in each second."
   },
   "setup.preferences.rate-title": {
     "text": "Screen updates while driving",
@@ -1453,7 +1393,7 @@
   },
   "setup.voice.test": {
     "text": "Test",
-    "note": "Accessible name of the button that plays the voice test."
+    "note": "Tooltip of the icon button that plays the voice test."
   },
   "setup.voice.turn-off": {
     "text": "Turn voice off here",
@@ -1798,10 +1738,6 @@
     "text": "The sources match the catalogue. There is nothing to update.",
     "note": "Result of a catalogue check without differences."
   },
-  "setup.catalogue.differences": {
-    "text": "Catalogue differences",
-    "note": "Accessible name of the list of catalogue differences."
-  },
   "setup.catalogue.review": {
     "text": "Review the differences. Nothing changes until you apply the update.",
     "note": "Help above the list of catalogue differences."
@@ -1879,7 +1815,7 @@
   },
   "setup.catalogue.check": {
     "text": "Check for updates",
-    "note": "Accessible name of the button that checks the sources for an update."
+    "note": "Tooltip of the icon button that checks the sources for an update."
   },
   "setup.catalogue.problem": {
     "text": "{problem} The catalogue did not change.",
@@ -2107,14 +2043,6 @@
     "note": "Link on the Continue card that opens the attempts of the exercise.",
     "maxChars": 14
   },
-  "exercises.home.select-one": {
-    "text": "Select {name}",
-    "note": "Accessible name of the checkbox of an exercise in selection mode. {name} is the exercise name."
-  },
-  "exercises.home.quick-select": {
-    "text": "Quick select",
-    "note": "Accessible name of the group of quick selection buttons."
-  },
   "exercises.home.select-label": {
     "text": "Select:",
     "note": "Label before the quick selection buttons.",
@@ -2140,10 +2068,6 @@
     "note": "Button that starts the selection mode.",
     "maxChars": 12
   },
-  "exercises.home.add-label": {
-    "text": "Add exercise",
-    "note": "Accessible name of the add button."
-  },
   "exercises.home.add-wide": {
     "text": "+ Add exercise",
     "note": "Add button on a wide screen. The plus sign is part of the label.",
@@ -2157,10 +2081,6 @@
   "exercises.home.mine": {
     "text": "My exercises",
     "note": "Title of the list of exercises."
-  },
-  "exercises.home.filter": {
-    "text": "Filter",
-    "note": "Accessible name of the family filter."
   },
   "exercises.home.empty": {
     "text": "No exercise yet. Add one from the catalogue.",
@@ -2182,7 +2102,7 @@
   },
   "exercises.home.title": {
     "text": "Exercises",
-    "note": "Title of the Exercises screen. A phone hides it for the eye and keeps it for a screen reader."
+    "note": "Title of the Exercises screen. Only a wide screen shows it."
   },
   "exercises.tab.cues": {
     "text": "Cues",
@@ -2198,14 +2118,6 @@
     "text": "Attempts",
     "note": "Exercise tab with the attempts.",
     "maxChars": 12
-  },
-  "exercises.tab.label": {
-    "text": "Exercise",
-    "note": "Accessible name of the exercise tabs."
-  },
-  "exercises.times.label": {
-    "text": "Times from the game",
-    "note": "Accessible name of the band of times under the exercise name."
   },
   "exercises.times.best": {
     "text": "your best",
@@ -2313,10 +2225,6 @@
   "exercises.references.text": {
     "text": "A reference is never overwritten. A new one joins the history, and you can make any of them active. Each attempt remembers the reference it was driven against.",
     "note": "Text under the title of the References tab."
-  },
-  "exercises.references.table": {
-    "text": "References",
-    "note": "Accessible name of the table of references."
   },
   "exercises.references.column": {
     "text": "Reference",
@@ -2450,14 +2358,6 @@
     "text": "{place}. {difference}",
     "note": "Largest difference of an attempt. {place} is the distance from the start, {difference} the difference sentence."
   },
-  "exercises.attempts.row": {
-    "text": "Attempt {number}",
-    "note": "Accessible name of a row of the attempts table. {number} is the attempt number."
-  },
-  "exercises.attempts.select-one": {
-    "text": "Select attempt {number}",
-    "note": "Accessible name of the checkbox of an attempt in selection mode."
-  },
   "exercises.attempts.best": {
     "text": "best",
     "note": "Badge of the best attempt.",
@@ -2477,10 +2377,6 @@
     "text": "aborted, {reason}",
     "note": "Line under No time of an aborted attempt. {reason} is the reason, for example left the track."
   },
-  "exercises.attempts.review": {
-    "text": "Review attempt {number}",
-    "note": "Accessible name of the link that opens the review of an attempt."
-  },
   "exercises.attempts.quick-aborted": {
     "text": "Aborted ({count})",
     "note": "Quick selection of the aborted attempts of the day. {count} is their number.",
@@ -2495,10 +2391,6 @@
     "text": "None",
     "note": "Quick selection that clears the selection of the day.",
     "maxChars": 10
-  },
-  "exercises.attempts.quick-label": {
-    "text": "Select on {day}",
-    "note": "Accessible name of the quick selection of a day. {day} is the day."
   },
   "exercises.attempts.select-label": {
     "text": "Select:",
@@ -2541,14 +2433,6 @@
     "text": "best {time}",
     "note": "Line beside a day with its best time. Lower case."
   },
-  "exercises.attempts.table": {
-    "text": "Attempts on {day}",
-    "note": "Accessible name of the attempts table of a day. {day} is the day."
-  },
-  "exercises.attempts.selected": {
-    "text": "Selected",
-    "note": "Hidden heading of the checkbox column."
-  },
   "exercises.attempts.number": {
     "text": "#",
     "note": "Column heading of the attempt number.",
@@ -2575,7 +2459,7 @@
   },
   "exercises.summary.label": {
     "text": "Attempt {number}",
-    "note": "Accessible name and first line of the attempt summary. {number} is the attempt number."
+    "note": "First line of the attempt summary. {number} is the attempt number."
   },
   "exercises.summary.no-time": {
     "text": "No time",
@@ -2637,18 +2521,10 @@
     "text": "Sources: {sources}.",
     "note": "List of catalogue sources at the end of Add exercise. {sources} is the list."
   },
-  "exercises.add.added-label": {
-    "text": "Added · open {name}",
-    "note": "Accessible name of the link to an exercise that the player already added. {name} is the exercise name."
-  },
   "exercises.add.added": {
     "text": "Added · open",
     "note": "Link of an entry that the player already added.",
     "maxChars": 16
-  },
-  "exercises.add.add-label": {
-    "text": "Add {name}",
-    "note": "Accessible name of the add button of a catalogue entry. {name} is the entry name."
   },
   "exercises.add.add": {
     "text": "Add",
@@ -2665,7 +2541,7 @@
   },
   "exercises.add.own-label": {
     "text": "Your own exercise",
-    "note": "Accessible name and title of the own exercise form."
+    "note": "Title of the own exercise form."
   },
   "exercises.add.own-text": {
     "text": "For an exercise that the catalogue does not list, such as a Time Trial on one layout.",
@@ -2683,7 +2559,7 @@
   },
   "exercises.add.create": {
     "text": "Create exercise",
-    "note": "Accessible name of the button that makes the own exercise."
+    "note": "Tooltip of the icon button that makes the own exercise."
   },
   "exercises.add.breadcrumb": {
     "text": "Add",
@@ -2702,25 +2578,13 @@
     "text": "{count} exercises from the catalogue. Find the one that the game shows, then add it to your exercises.",
     "note": "Text under the title of Add exercise. {count} is the number of catalogue entries."
   },
-  "exercises.add.search": {
-    "text": "Search",
-    "note": "Hidden label of the search field."
-  },
   "exercises.add.search-hint": {
     "text": "Name, track, car or code, for example B-3",
     "note": "Placeholder of the search field."
   },
-  "exercises.add.collection": {
-    "text": "Collection",
-    "note": "Accessible name of the collection filter."
-  },
   "exercises.add.all-collections": {
     "text": "All collections",
     "note": "First choice of the collection filter."
-  },
-  "exercises.add.track": {
-    "text": "Track",
-    "note": "Accessible name of the track filter."
   },
   "exercises.add.all-tracks": {
     "text": "All tracks",
@@ -2735,18 +2599,10 @@
     "note": "Number of catalogue entries that the filters show.",
     "maxChars": 14
   },
-  "exercises.add.family": {
-    "text": "Family",
-    "note": "Accessible name of the family filter."
-  },
   "exercises.add.all": {
     "text": "All",
     "note": "Family filter choice that shows all entries.",
     "maxChars": 20
-  },
-  "exercises.add.table": {
-    "text": "Catalogue exercises",
-    "note": "Accessible name of the catalogue table."
   },
   "exercises.add.exercise": {
     "text": "Exercise",
@@ -2762,10 +2618,6 @@
     "text": "Medal targets",
     "note": "Column heading of the catalogue table.",
     "maxChars": 20
-  },
-  "exercises.add.action": {
-    "text": "Action",
-    "note": "Hidden column heading of the add buttons."
   },
   "exercises.add.no-match": {
     "text": "No exercise matches.",
@@ -2925,14 +2777,6 @@
     "note": "Label of the timing slider of a cue.",
     "maxChars": 12
   },
-  "exercises.cues.timing-of": {
-    "text": "Timing of cue {number}",
-    "note": "Accessible name of the timing value of a cue. {number} is the cue number."
-  },
-  "exercises.cues.move": {
-    "text": "Move cue {number} earlier or later",
-    "note": "Accessible name of the timing slider of a cue. {number} is the cue number."
-  },
   "exercises.cues.earliest": {
     "text": "1 s earlier",
     "note": "Left end label of the timing slider.",
@@ -2942,10 +2786,6 @@
     "text": "0.5 s later",
     "note": "Right end label of the timing slider.",
     "maxChars": 14
-  },
-  "exercises.cues.cue": {
-    "text": "Cue {number}",
-    "note": "Accessible name of a cue row. {number} is the cue number."
   },
   "exercises.cues.speaking": {
     "text": "Speaking",
@@ -2965,10 +2805,6 @@
     "text": "You start to brake {reaction} here ({attempts})",
     "note": "Brake reaction of the player at a cue. {reaction} is the time text, {attempts} the number of attempts."
   },
-  "exercises.cues.target": {
-    "text": "Target speed",
-    "note": "Accessible name of the target speed cell."
-  },
   "exercises.cues.lowest": {
     "text": "lowest speed",
     "note": "Caption under the target speed of a brake cue.",
@@ -2976,15 +2812,15 @@
   },
   "exercises.cues.hear": {
     "text": "Hear {phrase}",
-    "note": "Accessible name of the button that plays a cue. {phrase} is the cue phrase."
+    "note": "Tooltip of the icon button that plays a cue. {phrase} is the cue phrase."
   },
   "exercises.cues.mute": {
     "text": "Mute cue {number}",
-    "note": "Accessible name of the button that mutes a cue. {number} is the cue number."
+    "note": "Tooltip of the icon button that mutes a cue. {number} is the cue number."
   },
   "exercises.cues.unmute": {
     "text": "Unmute cue {number}",
-    "note": "Accessible name of the button that unmutes a cue. {number} is the cue number."
+    "note": "Tooltip of the icon button that unmutes a cue. {number} is the cue number."
   },
   "exercises.cues.turn-in": {
     "text": "Turn-in {turnIn} m. Apex {apex} m. Radius {radius} m. Not spoken.",
@@ -3053,19 +2889,15 @@
   },
   "exercises.cues.stop-preview": {
     "text": "Stop the preview",
-    "note": "Accessible name of the button that stops the cue preview."
+    "note": "Tooltip of the icon button that stops the cue preview."
   },
   "exercises.cues.start-preview": {
     "text": "Preview the cues",
-    "note": "Accessible name of the button that starts the cue preview."
+    "note": "Tooltip of the icon button that starts the cue preview."
   },
   "exercises.cues.map-note": {
     "text": "Select a number to mute that cue",
     "note": "Note under the map of the cues."
-  },
-  "exercises.cues.map-label": {
-    "text": "Reference line with the voice cues and the turns. Select a number to mute or unmute that cue",
-    "note": "Accessible name of the map of the cues."
   },
   "exercises.cues.list-title": {
     "text": "Voice cues",
@@ -3142,17 +2974,15 @@
     "text": "Only a complete attempt can become a reference.",
     "note": "Text when the attempt did not finish."
   },
-  "exercises.review.map-label": {
-    "text": "Map of the reference line and your line",
-    "note": "Accessible name of the review map."
+  "exercises.review.box-reference": {
+    "text": "Reference: {value}",
+    "note": "Row of the box at the cursor of a Review chart for the reference line. {value} is the value at the cursor, with its unit.",
+    "maxChars": 32
   },
-  "exercises.review.reference": {
-    "text": "reference",
-    "note": "Name of the reference line inside the chart readouts. Lower case."
-  },
-  "exercises.review.you": {
-    "text": "you",
-    "note": "Name of the line of the attempt inside the chart readouts. Lower case."
+  "exercises.review.box-you": {
+    "text": "You: {value}",
+    "note": "Row of the box at the cursor of a Review chart for the attempt. {value} is the value at the cursor, with its unit.",
+    "maxChars": 32
   },
   "exercises.review.reference-legend": {
     "text": "reference line",
@@ -3176,25 +3006,9 @@
     "text": "A gap in your line is a place without a match",
     "note": "Note under the review map."
   },
-  "exercises.review.side-label": {
-    "text": "The side distance of your line is drawn {factor} times larger.",
-    "note": "Label of the larger side scale. {factor} is the scale factor."
-  },
-  "exercises.review.dialog-label": {
-    "text": "Reference line and your line of {title}",
-    "note": "Accessible name of the full-screen review map. {title} is the exercise name."
-  },
   "exercises.review.dialog-line": {
     "text": "Reference line",
     "note": "Line name in the full-screen review map."
-  },
-  "exercises.review.hint": {
-    "text": "Focus a chart and use the arrow keys to move the cursor. The map point shows the same place.",
-    "note": "Keyboard help of the charts, for a screen reader only. It is not shown on the screen."
-  },
-  "exercises.review.cursor": {
-    "text": "Cursor at {place} m of {length} m",
-    "note": "Place of the chart cursor. {place} is the distance from the start, {length} the line length."
   },
   "exercises.review.compare-with": {
     "text": "Compare with",
@@ -3283,10 +3097,6 @@
     "text": "Brake",
     "note": "Label of the brake chart."
   },
-  "exercises.compare.both": {
-    "text": "{referenceName} {reference}, {youName} {you}",
-    "note": "Chart readout of two lines. The names come from the screen, the values are at the cursor."
-  },
   "exercises.compare.loss": {
     "text": "{value} s",
     "note": "Time loss readout at the cursor. {value} has its sign and two decimals."
@@ -3300,10 +3110,6 @@
     "text": "{seconds} s gained",
     "note": "Time gained in a turn. {seconds} is the time with two decimals.",
     "maxChars": 22
-  },
-  "exercises.compare.order": {
-    "text": "Order of the turns",
-    "note": "Hidden name of the column headers that set the order of the turns."
   },
   "exercises.compare.sort-turn": {
     "text": "Turn",
@@ -3340,10 +3146,6 @@
     "text": "at {place}",
     "note": "Tip of a dot on the map, second line: the place of the dot. {place} is the distance from the start. Lower case."
   },
-  "exercises.compare.map-switch": {
-    "text": "Side distance on the map",
-    "note": "Accessible name of the map scale choice."
-  },
   "exercises.compare.true-scale": {
     "text": "True scale",
     "note": "Map scale choice: true distances.",
@@ -3376,10 +3178,6 @@
   "drive.button.question": {
     "text": "Stop it and start this exercise?",
     "note": "Text of the dialog when the player starts another exercise during a training."
-  },
-  "common.breadcrumb": {
-    "text": "Breadcrumb",
-    "note": "Accessible name of the path at the top of a screen, for example on Delete history, Add exercise and an exercise."
   },
   "drive.button.training-on-other": {
     "text": "The training of another exercise is on.",
@@ -3470,10 +3268,6 @@
     "text": "Next: {cue}, in {metres} m",
     "note": "Drive stage: line under the cue word. {cue} is the text of the next cue, {metres} the distance to it."
   },
-  "drive.stage.current-cue": {
-    "text": "Current cue",
-    "note": "Accessible name of the cue word on the Drive stage."
-  },
   "drive.stage.kph": {
     "text": "km/h",
     "note": "Drive stage: caption under the speed of the car.",
@@ -3520,14 +3314,6 @@
   "drive.stage.incomplete-error": {
     "text": "The recording is incomplete: {error}. Coaching continues.",
     "note": "Drive stage alert when the raw file of the attempt cannot be written. {error} is the storage message of the server."
-  },
-  "drive.stage.map": {
-    "text": "Your position on the reference line, with the turns",
-    "note": "Accessible name of the map on the Drive stage."
-  },
-  "drive.voice.group": {
-    "text": "Voice",
-    "note": "Accessible name of the voice part of the Drive stage before the attempt."
   },
   "drive.voice.none": {
     "text": "No device plays the voice.",
@@ -3596,10 +3382,6 @@
     "text": "Recording 1 holds more than one demonstration. Select one. Use it as the reference, or record once more to check that the same part repeats.",
     "note": "Record stage text above the choice of the demonstration."
   },
-  "record.select.label": {
-    "text": "Demonstrations",
-    "note": "Accessible name of the choice of the demonstration."
-  },
   "record.select.legend": {
     "text": "Demonstrations in recording 1",
     "note": "Title of the choice of the demonstration."
@@ -3611,10 +3393,6 @@
   "record.manual.bad-frames": {
     "text": "Enter whole frame numbers, with the last frame not before the first.",
     "note": "Alert of the manual range when the frame numbers are not correct."
-  },
-  "record.manual.label": {
-    "text": "Manual range",
-    "note": "Accessible name of the form of the manual range."
   },
   "record.manual.title": {
     "text": "Set the range by hand",
@@ -3729,10 +3507,6 @@
     "text": "optional, a check",
     "note": "Status of the slot of recording 2 before GT7 Tutor makes the reference. Lower case.",
     "maxChars": 20
-  },
-  "record.slots.label": {
-    "text": "Recordings",
-    "note": "Accessible name of the list of the recording slots."
   },
   "record.slot.title": {
     "text": "Recording {number}",
@@ -3862,10 +3636,6 @@
   "record.phone.reference": {
     "text": "Reference · {name}",
     "note": "Line at the top of the Record stage on a phone when the player records a reference. {name} is the exercise name."
-  },
-  "record.readiness": {
-    "text": "Readiness",
-    "note": "Accessible name of the readiness dot on the Record stage on a phone."
   },
   "record.telemetry": {
     "text": "Telemetry",
@@ -4005,10 +3775,6 @@
     "note": "Button text while a race recording runs.",
     "maxChars": 16
   },
-  "races.record-label": {
-    "text": "Record a race",
-    "note": "Accessible name of the button that starts a race recording."
-  },
   "races.record-wide": {
     "text": "Record a race",
     "note": "Button that starts a race recording, on a computer.",
@@ -4034,10 +3800,6 @@
   "races.empty.text": {
     "text": "Select Record, then start a race by laps in the game. The recording starts and stops with the race.",
     "note": "Races screen when the list has no race, on a phone. Record is the name of the button."
-  },
-  "races.select-race": {
-    "text": "Select {name}",
-    "note": "Accessible name of the check box of a race in the selection. {name} is the race name."
   },
   "races.delete-selected_one": {
     "text": "Delete {count} race",
@@ -4068,10 +3830,6 @@
     "text": "Golden lap",
     "note": "Tab of a race: the fastest lap from parts of the clean laps.",
     "maxChars": 14
-  },
-  "races.tabs": {
-    "text": "Race",
-    "note": "Accessible name of the tabs of a race."
   },
   "races.lap-length": {
     "text": "lap length {length}",
@@ -4132,38 +3890,6 @@
     "text": "Another name",
     "note": "Choice in the name dialog for a name that the player types. It is also the label of the text field."
   },
-  "races.circles.label": {
-    "text": "Laps",
-    "note": "Accessible name of the row of lap circles on the race recording stage."
-  },
-  "races.circles.skip": {
-    "text": "Lap {lap}, not recorded",
-    "note": "Accessible name of a lap circle before the recording started. {lap} is the lap number."
-  },
-  "races.circles.done": {
-    "text": "Lap {lap}, done",
-    "note": "Accessible name of a lap circle of a recorded lap. {lap} is the lap number."
-  },
-  "races.circles.done-best": {
-    "text": "Lap {lap}, done, best lap",
-    "note": "Accessible name of the lap circle of the best lap. {lap} is the lap number."
-  },
-  "races.circles.now": {
-    "text": "Lap {lap}, this lap",
-    "note": "Accessible name of the lap circle of the present lap. {lap} is the lap number."
-  },
-  "races.circles.todo": {
-    "text": "Lap {lap}, to come",
-    "note": "Accessible name of a lap circle of a lap that has not started. {lap} is the lap number."
-  },
-  "races.circles.pit": {
-    "text": "Pit stop after lap {lap}",
-    "note": "Accessible name of the pit stop sign between two lap circles. {lap} is the lap before the pit stop."
-  },
-  "races.circles.key": {
-    "text": "What the circles mean",
-    "note": "Accessible name of the key under the lap circles."
-  },
   "races.circles.key-skip": {
     "text": "lap not recorded",
     "note": "Key under the lap circles. Lower case."
@@ -4188,60 +3914,45 @@
     "text": "pit stop after this lap",
     "note": "Key under the lap circles. Lower case."
   },
-  "races.speed.label": {
-    "text": "Speed, km/h, over the distance from the lap line",
-    "note": "Accessible name of the speed chart of all laps."
-  },
   "races.speed.unit": {
     "text": "km/h",
     "note": "Unit at the top of the speed chart of all laps.",
     "maxChars": 8
   },
-  "races.speed.readout": {
-    "text": "at {place}: best lap {best}, other laps {others}",
-    "note": "Readout of the speed chart at the cursor, for a screen reader. {place} is the distance from the lap line. {best} is the speed of the best lap, {others} the speed or the speed range of the other laps."
-  },
   "races.speed.no-data": {
     "text": "no data",
     "note": "Value in a chart readout when a lap has no value at the cursor. Lower case."
   },
-  "races.speed.range": {
-    "text": "{min} to {max}",
-    "note": "Speed range of the other laps in the readout of the speed chart. {min} and {max} are speeds without a unit."
-  },
   "races.speed.box-lap": {
     "text": "Lap {lap}: {speed}",
-    "note": "Line of the box at the cursor of the speed chart. {lap} is the lap number, {speed} the speed with its unit."
+    "note": "Line of the box at the cursor of the speed chart. {lap} is the lap number, {speed} the speed with its unit.",
+    "maxChars": 32
   },
-  "races.speed.box-best": {
-    "text": "Lap {lap}, best: {speed}",
-    "note": "Line of the box at the cursor of the speed chart for the best lap. {lap} is the lap number, {speed} the speed with its unit."
+  "races.speed.view": {
+    "text": "View",
+    "note": "Button in the speed chart. It opens the speed chart in full screen.",
+    "maxChars": 10
   },
-  "races.speed.legend-best": {
-    "text": "best lap, lap {lap}",
-    "note": "Legend of the line of the best lap in the speed chart. {lap} is the lap number. Lower case.",
-    "maxChars": 24
+  "races.speed.full-line_one": {
+    "text": "{race}, {count} lap.",
+    "note": "Line under the title of the full-screen speed chart. {race} is the track name. {count} is the number of laps in the race data of the chart. A hidden lap counts too."
   },
-  "races.speed.legend-others": {
-    "text": "other laps",
-    "note": "Legend of the lines of the other laps in the speed chart. Lower case.",
-    "maxChars": 24
+  "races.speed.full-line_other": {
+    "text": "{race}, {count} laps.",
+    "note": "Line under the title of the full-screen speed chart. {race} is the track name. {count} is the number of laps in the race data of the chart. A hidden lap counts too."
+  },
+  "races.speed.legend-lap": {
+    "text": "Lap {lap}",
+    "note": "Button in the legend of the speed chart. A click hides or shows the line of this lap. {lap} is the lap number.",
+    "maxChars": 10
   },
   "races.speed.legend-turn": {
     "text": "turn",
     "note": "Legend of the turn bands in the speed chart. Lower case.",
     "maxChars": 24
   },
-  "races.cursor": {
-    "text": "Cursor at {place} of {length}.",
-    "note": "Line under a chart of a race. {place} is the cursor distance, {length} the lap length, both with the unit."
-  },
-  "races.speed.hint": {
-    "text": "Focus the chart and use the arrow keys to move the cursor.",
-    "note": "Keyboard help of the charts, for a screen reader only. It is not shown on the screen."
-  },
   "races.speed.title": {
-    "text": "Speed, all laps",
+    "text": "Speed",
     "note": "Title of the speed chart of all laps."
   },
   "races.speed.reading": {
@@ -4261,34 +3972,10 @@
     "note": "Off the track column of a lap with no moment off the track. Lower case.",
     "maxChars": 10
   },
-  "races.laps.off-all_one": {
-    "text": "{count} time all four wheels off the track",
-    "note": "Accessible name of the red count in the Off the track column. {count} is the number of moments."
-  },
-  "races.laps.off-all_other": {
-    "text": "{count} times all four wheels off the track",
-    "note": "Accessible name of the red count in the Off the track column. {count} is the number of moments."
-  },
-  "races.laps.off-part_one": {
-    "text": "{count} time two or three wheels off",
-    "note": "Accessible name of the yellow count in the Off the track column. {count} is the number of moments."
-  },
-  "races.laps.off-part_other": {
-    "text": "{count} times two or three wheels off",
-    "note": "Accessible name of the yellow count in the Off the track column. {count} is the number of moments."
-  },
-  "races.laps.compare-lap": {
-    "text": "Compare lap {lap}",
-    "note": "Accessible name of the link of a lap row. It opens Compare. {lap} is the lap number."
-  },
   "races.laps.best": {
     "text": "best",
     "note": "Badge after the time of the best lap.",
     "maxChars": 8
-  },
-  "races.pit.hidden": {
-    "text": "Pit stop after lap {lap}: {seconds} in the pit lane, fuel {before} to {after}.",
-    "note": "Pit stop row of the lap table, for a screen reader. {lap} is the lap before the stop, {seconds} the time with its unit, {before} and {after} the fuel in percent."
   },
   "races.pit.label": {
     "text": "PIT STOP",
@@ -4306,24 +3993,16 @@
     "maxChars": 28
   },
   "races.position.title": {
-    "text": "Position in the race",
+    "text": "Position",
     "note": "Title of the position chart."
-  },
-  "races.position.label": {
-    "text": "Position in the race, lap by lap",
-    "note": "Accessible name of the position chart."
   },
   "races.fuel.title": {
     "text": "Fuel",
     "note": "Title of the fuel chart."
   },
-  "races.fuel.label": {
-    "text": "Fuel, lap by lap",
-    "note": "Accessible name of the fuel chart."
-  },
   "races.laps.title": {
     "text": "Laps",
-    "note": "Title of the lap table. It is also the accessible name of the table."
+    "note": "Title of the lap table."
   },
   "races.laps.lap": {
     "text": "Lap",
@@ -4360,12 +4039,12 @@
     "note": "Help under the lap table when the best lap has a pit stop. {lap} is the number of the best lap without a pit stop."
   },
   "races.legend.off-all": {
-    "text": "all four wheels off the track",
+    "text": "all 4 wheels off the track",
     "note": "Legend of the red sign of a moment off the track. Lower case.",
     "maxChars": 32
   },
   "races.legend.off-part": {
-    "text": "two or three wheels off",
+    "text": "2 or 3 wheels off",
     "note": "Legend of the yellow sign of a moment off the track. Lower case.",
     "maxChars": 32
   },
@@ -4458,14 +4137,10 @@
     "note": "Name of a lap in the chart readouts and in the heading of the Compare tab. {lap} is the lap number. Lower case.",
     "maxChars": 12
   },
-  "races.compare.best-legend": {
-    "text": "lap {lap}, best",
-    "note": "Legend of the line of the lap to compare with when it is the best lap. {lap} is the lap number. Lower case.",
-    "maxChars": 18
-  },
-  "races.compare.time-label": {
-    "text": "Time lost to lap {lap}, s",
-    "note": "Accessible name of the time chart. {lap} is the lap to compare with."
+  "races.compare.box-row": {
+    "text": "Lap {lap}: {value}",
+    "note": "Row of the box at the cursor of a Compare chart. {lap} is the lap number. {value} is the value of that lap at the cursor, with its unit.",
+    "maxChars": 32
   },
   "races.compare.speed": {
     "text": "Speed",
@@ -4497,29 +4172,13 @@
     "note": "Unit of the time chart on the Compare tab.",
     "maxChars": 8
   },
-  "races.compare.map": {
-    "text": "Map of the line of lap {with} and the line of lap {lap}",
-    "note": "Title and accessible name of the map on the Compare tab. {with} is the lap to compare with, {lap} the selected lap."
-  },
   "races.compare.map-pit": {
     "text": "A gap in the line is the pit lane.",
     "note": "Note under the map on the Compare tab when a lap goes through the pit lane."
   },
-  "races.compare.side-label": {
-    "text": "The side distance of lap {lap} is drawn {factor} times larger.",
-    "note": "Line under the map on the Compare tab. {lap} is the selected lap, {factor} the scale factor."
-  },
-  "races.compare.dialog-label": {
-    "text": "Line of lap {with} and line of lap {lap} of {race}",
-    "note": "Accessible name of the full-screen map on the Compare tab. {with} is the lap to compare with, {lap} the selected lap, {race} the race name."
-  },
   "races.compare.dialog-line": {
     "text": "Line of lap {with}",
     "note": "Legend of the line in the full-screen map on the Compare tab. {with} is the lap to compare with."
-  },
-  "races.compare.hint": {
-    "text": "Focus a chart and use the arrow keys to move the cursor. The map point shows the same place.",
-    "note": "Keyboard help of the charts, for a screen reader only. It is not shown on the screen."
   },
   "races.compare.intro": {
     "text": "Lap {lap} is one of your laps, not the best possible line.",
@@ -4554,14 +4213,6 @@
     "text": "{seconds} s faster",
     "note": "Coloured part of the heading of the Compare tab when the selected lap is faster. {seconds} is the time with three decimals."
   },
-  "races.compare.lap": {
-    "text": "Lap",
-    "note": "Hidden label of the list of the selected lap."
-  },
-  "races.compare.with": {
-    "text": "Compare with",
-    "note": "Hidden label of the list of the lap to compare with."
-  },
   "races.compare.comparing": {
     "text": "Comparing the two laps…",
     "note": "Compare tab while the comparison loads."
@@ -4569,10 +4220,6 @@
   "races.off.no-line": {
     "text": "The laps of this race give no line of the track, so the places cannot be drawn.",
     "note": "Off the track tab when the laps give no line of the track."
-  },
-  "races.off.strip-label": {
-    "text": "Off the track, lap by lap, over the distance from the lap line",
-    "note": "Accessible name of the off-track strip."
   },
   "races.off.height": {
     "text": "Height of the track",
@@ -4597,16 +4244,16 @@
     "note": "Recurring places when no place is in 3 or more laps."
   },
   "races.off.place-all_one": {
-    "text": "All four wheels off in {count} lap.",
-    "note": "Fact of a recurring place. {count} is the number of laps with all four wheels off."
+    "text": "All 4 wheels off in {count} lap.",
+    "note": "Fact of a recurring place. {count} is the number of laps with all 4 wheels off."
   },
   "races.off.place-all_other": {
-    "text": "All four wheels off in {count} laps.",
-    "note": "Fact of a recurring place. {count} is the number of laps with all four wheels off."
+    "text": "All 4 wheels off in {count} laps.",
+    "note": "Fact of a recurring place. {count} is the number of laps with all 4 wheels off."
   },
   "races.off.place-part": {
-    "text": "Two or three wheels off.",
-    "note": "Fact of a recurring place when no lap had all four wheels off."
+    "text": "2 or 3 wheels off.",
+    "note": "Fact of a recurring place when no lap had all 4 wheels off."
   },
   "races.off.place-count": {
     "text": "{laps} of {total}",
@@ -4620,10 +4267,6 @@
   "races.off.other-places_other": {
     "text": "{count} other places, each in 1 or 2 laps.",
     "note": "Line under the recurring places. {count} is the number of other places off the track."
-  },
-  "races.off.moments-label": {
-    "text": "Moments by lap",
-    "note": "Accessible name of the list of the moments off the track by lap."
   },
   "races.off.lap": {
     "text": "Lap {lap}",
@@ -4643,7 +4286,7 @@
   },
   "races.off.place-mark": {
     "text": "Recurring place {label}",
-    "note": "Accessible name of the mark of a recurring place on the map. {label} is the letter of the place."
+    "note": "Tooltip of the mark of a recurring place on the map. {label} is the letter of the place."
   },
   "races.off.item": {
     "text": "Lap {lap}: {wheels}, {speeds}",
@@ -4669,12 +4312,12 @@
     "note": "Title of the map on the Off the track tab."
   },
   "races.off.legend-all": {
-    "text": "all four wheels off the track",
+    "text": "all 4 wheels off the track",
     "note": "Map legend of the red mark. Lower case.",
     "maxChars": 32
   },
   "races.off.legend-part": {
-    "text": "two or three wheels off",
+    "text": "2 or 3 wheels off",
     "note": "Map legend of the yellow mark. Lower case.",
     "maxChars": 32
   },
@@ -4683,33 +4326,9 @@
     "note": "Map legend of the mark of a recurring place. Lower case.",
     "maxChars": 32
   },
-  "races.off.map-best_one": {
-    "text": "Map of the line of the best lap with {count} moment off the track",
-    "note": "Accessible name of the map on the Off the track tab when the reference is the best lap. {count} is the number of moments."
-  },
-  "races.off.map-best_other": {
-    "text": "Map of the line of the best lap with {count} moments off the track",
-    "note": "Accessible name of the map on the Off the track tab when the reference is the best lap. {count} is the number of moments."
-  },
-  "races.off.map-lap_one": {
-    "text": "Map of the line of lap {lap} with {count} moment off the track",
-    "note": "Accessible name of the map on the Off the track tab. {lap} is the reference lap, {count} the number of moments."
-  },
-  "races.off.map-lap_other": {
-    "text": "Map of the line of lap {lap} with {count} moments off the track",
-    "note": "Accessible name of the map on the Off the track tab. {lap} is the reference lap, {count} the number of moments."
-  },
   "races.off.list-title": {
     "text": "Moments off the track",
     "note": "Title of the list in the full-screen map."
-  },
-  "races.off.dialog-best": {
-    "text": "Line of the best lap of {race} with the moments off the track",
-    "note": "Accessible name of the full-screen map when the reference is the best lap. {race} is the race name."
-  },
-  "races.off.dialog-lap": {
-    "text": "Line of lap {lap} of {race} with the moments off the track",
-    "note": "Accessible name of the full-screen map. {lap} is the reference lap, {race} the race name."
   },
   "races.off.line-best": {
     "text": "Line of the best lap",
@@ -4729,21 +4348,9 @@
     "note": "Unit of the rows of the off-track strip. Lower case.",
     "maxChars": 8
   },
-  "races.off.height-label": {
-    "text": "Height of the track, m",
-    "note": "Accessible name of the height chart."
-  },
   "races.off.height-readout": {
     "text": "{metres} m above the lowest place",
     "note": "Readout of the height chart at the cursor. {metres} is the height above the lowest place of the lap."
-  },
-  "races.off.speed-label-best": {
-    "text": "Speed of the best lap, km/h",
-    "note": "Accessible name of the speed chart on the Off the track tab when the reference is the best lap."
-  },
-  "races.off.speed-label-lap": {
-    "text": "Speed of lap {lap}, km/h",
-    "note": "Accessible name of the speed chart on the Off the track tab. {lap} is the reference lap."
   },
   "races.off.speed-readout": {
     "text": "lap {lap}: {speed}",
@@ -4767,10 +4374,6 @@
     "text": "Cursor at {place} of {length}. {facts}.",
     "note": "Line under the charts on a phone when the player selects a moment. {facts} is that moment."
   },
-  "races.off.hint": {
-    "text": "Focus a chart and use the arrow keys to move the cursor. In the lap rows, the arrow keys move from moment to moment.",
-    "note": "Keyboard help of the charts, for a screen reader only. It is not shown on the screen."
-  },
   "races.off.none": {
     "text": "No moments off the track in this race.",
     "note": "Off the track tab when the race has no moment off the track."
@@ -4782,10 +4385,6 @@
   "races.golden.reading": {
     "text": "Reading the golden lap…",
     "note": "Golden lap tab while the data loads."
-  },
-  "races.golden.band": {
-    "text": "Golden lap",
-    "note": "Hidden name of the dark band with the best lap, the golden lap and the possible gain."
   },
   "races.golden.clean-range": {
     "text": "clean laps {first} to {last}",
@@ -4904,10 +4503,6 @@
   "races.golden.map-title": {
     "text": "Where each part comes from",
     "note": "Title of the map of the golden lap."
-  },
-  "races.golden.map-label": {
-    "text": "Map of the golden lap: each part in the colour of its source lap",
-    "note": "Hidden name of the map of the golden lap."
   },
   "races.golden.legend-lap": {
     "text": "from lap {lap}",
@@ -5152,10 +4747,6 @@
     "note": "Race stage button that opens Races when the race was not stored.",
     "maxChars": 20
   },
-  "races.trail": {
-    "text": "The line of the last lap, brightest at the car",
-    "note": "Accessible name of the line drawing on the race stage."
-  },
   "races.off.place-detail": {
     "text": "Largest speed loss: {loss} km/h.",
     "note": "Detail of a recurring place. {loss} is the largest speed loss."
@@ -5177,10 +4768,6 @@
     "text": "of {total}",
     "note": "Race stage: the small text after the lap number or after the finish position. {total} is the number of laps or of cars. Lower case.",
     "maxChars": 10
-  },
-  "charts.off-track.row": {
-    "text": "Lap {lap}",
-    "note": "Accessible name of one lap row of the off-track strip. {lap} is the lap number."
   },
   "charts.race.lap-axis": {
     "text": "lap",
@@ -5222,13 +4809,5 @@
   "setup.console.receiving-undecoded": {
     "text": "{receiving}. {undecoded}",
     "note": "Result of the reception check when some packets cannot be decoded. {receiving} is the text from setup.console.receiving, {undecoded} the text from setup.console.undecoded."
-  },
-  "exercises.compare.callout-spoken": {
-    "text": "{turn} {metres} m {side}, at {place}",
-    "note": "Accessible name of a dot on the map at the largest side distance in a turn. {turn} is the turn badge, {metres} the distance, {side} left or right, {place} the distance from the start."
-  },
-  "exercises.compare.map-label-side": {
-    "text": "{map}. {side}",
-    "note": "Accessible name of the map with the larger side scale. {map} is the map name, {side} the sentence about the scale."
   }
 }

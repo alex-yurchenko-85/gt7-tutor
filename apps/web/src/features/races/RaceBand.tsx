@@ -1,10 +1,10 @@
 export type BandValue = { value: string; caption: string; tone: '' | 'yellow' };
 
-type RaceBandProps = { label: string; title: string | null; facts: string; values: BandValue[]; className?: string };
+type RaceBandProps = { title: string | null; facts: string; values: BandValue[]; className?: string };
 
-export function RaceBand({ label, title, facts, values, className }: RaceBandProps) {
+export function RaceBand({ title, facts, values, className }: RaceBandProps) {
   return (
-    <section className={className ? `race-band ${className}` : 'race-band'} aria-label={label}>
+    <section className={className ? `race-band ${className}` : 'race-band'}>
       {title === null ? null : (
         <div className="race-band-car">
           <h2>{title}</h2>

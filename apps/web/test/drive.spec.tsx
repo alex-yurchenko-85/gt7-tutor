@@ -6,7 +6,7 @@ import { useMissedStart } from '../src/features/drive/missed-start.ts';
 import { voiceDeviceId } from '../src/voice/device.ts';
 import type { VoicePlayer } from '../src/voice/VoicePlayer.ts';
 import { exercise, exerciseApi, REFERENCE_CLIPS, rememberExercise, EXERCISE_ID } from './fixtures.ts';
-import { cue, liveState, playerRig, renderApp, setViewportWidth, USER, type ApiStub, type FakeSocket, openLive } from './support.tsx';
+import { cue, liveState, playerRig, renderApp, setViewportWidth, USER, type ApiStub, type FakeSocket, openLive, maybeEl, findEl, maybeSection, el, els, findSummary, maybeIconButton } from './support.tsx';
 import { ATTEMPT_ID } from './review-fixtures.ts';
 
 const ARMED_CLIPS = REFERENCE_CLIPS;
@@ -37,7 +37,7 @@ function driving(overrides: Partial<LiveState> = {}): LiveState {
 
 async function openDrive(path = DRIVE_PATH, state: LiveState = armed(), player?: VoicePlayer) {
   const view = renderApp({ path, ...(player ? { player } : {}) });
-  await screen.findByRole('navigation', { name: 'Main' });
+  await findEl('nav.nav');
   return { ...view, socket: await openLive(view.sockets, state) };
 }
 
@@ -50,9 +50,9 @@ describe('drive', () => {
     setViewportWidth(390);
     driveApi().install();
     await openDrive(DRIVE_PATH, driving({ lastCue: cue({ kind: 'brake', targetSpeedKph: 85 }), nextCue: { clip: 'full-throttle', inM: 120 } }));
-    const current = screen.getByRole('status', { name: 'Current cue' });
+    const current = el('[role="status"].cue');
     expect(current).toHaveTextContent('Brake85');
-    expect(screen.getAllByRole('status', { name: 'Current cue' })).toHaveLength(1);
+    expect(els('[role="status"].cue')).toHaveLength(1);
     expect(screen.getByText('Next: Full throttle, in 120 m')).toHaveClass('race-lead');
     expect(document.querySelector('.next-bar')).toBeNull();
     expect(screen.getByText('142')).toBeInTheDocument();
@@ -83,8 +83,8 @@ describe('drive', () => {
     await act(async () => undefined);
     expect(screen.queryByText(/No device plays the voice/)).toBeNull();
     expect(screen.queryByText(/cues loaded/)).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Test' })).toBeNull();
-    expect(screen.queryByRole('group', { name: 'Voice' })).toBeNull();
+    expect(maybeIconButton('Test')).toBeNull();
+    expect(maybeEl('.stage-voice')).toBeNull();
   });
 
   it('voice_on_another_device_shows_nothing_on_drive', async () => {
@@ -93,7 +93,7 @@ describe('drive', () => {
     await screen.findByRole('button', { name: 'Stop training' });
     expect(screen.queryByRole('heading', { name: 'The voice is on another device' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Use this device for voice' })).toBeNull();
-    expect(screen.queryByRole('group', { name: 'Voice' })).toBeNull();
+    expect(maybeEl('.stage-voice')).toBeNull();
   });
 
   it('no_voice_shows_one_notice_with_one_button', async () => {
@@ -103,7 +103,7 @@ describe('drive', () => {
     vi.spyOn(rig.player, 'preload').mockResolvedValue(undefined);
     const view = await openDrive(DRIVE_PATH, armed({ voiceDeviceId: null }), rig.player);
     const socket = view.socket;
-    const notice = await screen.findByRole('group', { name: 'Voice' });
+    const notice = await findEl('.stage-voice');
     expect(notice).toHaveTextContent(/^No device plays the voice\.Use this device for voice$/);
     expect(notice).toHaveClass('stage-voice');
     expect(notice.closest('.drive-stage')).not.toBeNull();
@@ -114,13 +114,13 @@ describe('drive', () => {
     await userEvent.setup().click(within(notice).getByRole('button', { name: 'Use this device for voice' }));
     await waitFor(() => expect(socket.sent).toContainEqual({ type: 'claim-voice', deviceId: voiceDeviceId(), ready: true }));
     act(() => socket.receive({ type: 'state', state: armed({ seq: 2, voiceDeviceId: voiceDeviceId(), voiceReady: true }) }));
-    await waitFor(() => expect(screen.queryByRole('group', { name: 'Voice' })).toBeNull());
+    await waitFor(() => expect(maybeEl('.stage-voice')).toBeNull());
   });
 
   it('sound_not_started_shows_the_notice', async () => {
     driveApi().install();
     await openDrive(DRIVE_PATH, armed({ voiceDeviceId: voiceDeviceId(), voiceReady: false }));
-    const notice = await screen.findByRole('group', { name: 'Voice' });
+    const notice = await findEl('.stage-voice');
     expect(notice).toHaveTextContent('No device plays the voice.');
     expect(within(notice).getByRole('button', { name: 'Use this device for voice' })).toBeEnabled();
   });
@@ -131,7 +131,7 @@ describe('drive', () => {
     vi.spyOn(rig.player, 'preload').mockRejectedValue(new Error('HTTP 500'));
     await openDrive(DRIVE_PATH, armed({ voiceDeviceId: null }), rig.player);
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Use this device for voice' }));
-    expect(await within(screen.getByRole('group', { name: 'Voice' })).findByRole('alert')).toHaveTextContent('HTTP 500');
+    expect(await within(el('.stage-voice')).findByRole('alert')).toHaveTextContent('HTTP 500');
   });
   it('clip_failure_alert_goes_when_the_voice_moves_to_another_device', async () => {
     const api = driveApi().install();
@@ -155,9 +155,9 @@ describe('drive', () => {
     setViewportWidth(390);
     driveApi().install();
     const { socket } = await openDrive(DRIVE_PATH, driving({ lastCue: cue() }));
-    expect(screen.getByRole('status', { name: 'Current cue' })).toHaveTextContent('Brake');
+    expect(el('[role="status"].cue')).toHaveTextContent('Brake');
     send(socket, driving({ seq: 2, connection: 'disconnected', lastCue: cue() }));
-    expect(screen.getByRole('status', { name: 'Current cue' })).not.toHaveTextContent('Brake');
+    expect(el('[role="status"].cue')).not.toHaveTextContent('Brake');
     expect(screen.getByText(/No packets from the console/)).toBeInTheDocument();
     expect(screen.queryByText('142')).not.toBeInTheDocument();
     act(() => socket.close(1006));
@@ -182,7 +182,7 @@ describe('drive', () => {
     rememberExercise(basics.id);
     const { socket } = await openDrive(DRIVE_PATH, driving({ lastCue: cue({ kind: 'brake', targetSpeedKph: 85 }) }));
     expect(await screen.findByText('142')).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: 'Current cue' })).toHaveTextContent('Brake85');
+    expect(el('[role="status"].cue')).toHaveTextContent('Brake85');
     expect(screen.getByText(/· Yangwang Experience \/ Racing Lines$/)).toBeInTheDocument();
   });
 
@@ -211,7 +211,7 @@ describe('drive', () => {
     const api = driveApi().on('GET /api/exercises', [exercise({ step: 3 }), other]).on(`GET /api/exercises/${other.id}`, other).install();
     await openDrive(`/exercises/${other.id}/drive`, armed());
     await waitFor(() => expect(window.location.pathname).toBe(`/exercises/${other.id}/attempts`));
-    expect(screen.queryByRole('status', { name: 'Current cue' })).toBeNull();
+    expect(maybeEl('[role="status"].cue')).toBeNull();
     expect(api.called('POST /api/training/disarm')).toBe(false);
   });
 
@@ -281,7 +281,7 @@ describe('action cues on Drive', () => {
     setViewportWidth(390);
     driveApi().install();
     const { socket } = await openDrive(DRIVE_PATH, driving({ lastCue: cue({ id: 'c1', kind: 'hard-brake', targetSpeedKph: 85, clip: 'hard-brake' }) }));
-    const current = () => screen.getByRole('status', { name: 'Current cue' });
+    const current = () => el('[role="status"].cue');
     expect(current()).toHaveTextContent('Hard brake85');
     send(socket, driving({ seq: 2, lastCue: cue({ id: 'c2', kind: 'full-throttle', targetSpeedKph: 95, clip: 'full-throttle' }) }));
     expect(current()).toHaveTextContent('Full throttle95');
@@ -297,7 +297,7 @@ describe('action cues on Drive', () => {
     setViewportWidth(390);
     driveApi().install();
     await openDrive(DRIVE_PATH, driving({ lastCue: cue({ id: 'f1', kind: 'focus', eventKey: 'focus', targetSpeedKph: null, clip: 'focus-brake-early-1' }) }));
-    const current = screen.getByRole('status', { name: 'Current cue' });
+    const current = el('[role="status"].cue');
     expect(current).toHaveTextContent(/^$/);
     expect(current).toHaveClass('idle');
   });
@@ -312,7 +312,7 @@ describe('attempt summary', () => {
     setViewportWidth(390);
     summaryApi();
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
-    const summary = await screen.findByRole('region', { name: 'Attempt 2' });
+    const summary = await findSummary(2);
     expect(summary).toHaveTextContent('0:27.100');
     expect(summary).toHaveTextContent('+0.35 s');
     expect(summary).toHaveTextContent('332 m. Braked 14 m earlier');
@@ -325,7 +325,7 @@ describe('attempt summary', () => {
       .on(`GET /api/attempts/${ATTEMPT_ID}`, { ...ATTEMPT, focus: { kind: 'brake-early', turn: 1, clip: 'focus-brake-early-1' } })
       .install();
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
-    const summary = await screen.findByRole('region', { name: 'Attempt 2' });
+    const summary = await findSummary(2);
     expect(within(summary).getByText('Turn one. Brake later.')).toBeInTheDocument();
     expect(summary).toHaveTextContent('Focus for the next attempt');
     expect(within(summary).queryByText('A difference from the reference.')).toBeNull();
@@ -335,7 +335,7 @@ describe('attempt summary', () => {
   it('summary_title_is_the_attempt_number_without_voice_text', async () => {
     summaryApi();
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
-    const summary = await screen.findByRole('region', { name: 'Attempt 2' });
+    const summary = await findSummary(2);
     expect(within(summary).getByText('Attempt 2', { selector: 'p' })).toBeInTheDocument();
     expect(summary).not.toHaveTextContent(/voice/i);
   });
@@ -344,14 +344,14 @@ describe('attempt summary', () => {
     setViewportWidth(390);
     summaryApi();
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
-    const summary = await screen.findByRole('region', { name: 'Attempt 2' });
+    const summary = await findSummary(2);
     expect(summary).not.toHaveTextContent('Focus for the next attempt');
   });
 
   it('summary_labels_the_time_from_the_game', async () => {
     summaryApi();
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
-    const summary = await screen.findByRole('region', { name: 'Attempt 2' });
+    const summary = await findSummary(2);
     expect(within(summary).getByText('Time from the game.')).toBeInTheDocument();
     expect(summary).not.toHaveTextContent('Measured from telemetry');
     expect(summary).not.toHaveTextContent('official');
@@ -365,7 +365,7 @@ describe('attempt summary', () => {
       .on(`GET /api/attempts/${ATTEMPT_ID}`, { ...ATTEMPT, completion: 'aborted', reason: 'left-track', timeMs: null, gapToBestMs: null })
       .install();
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
-    const summary = await screen.findByRole('region', { name: 'Attempt 2' });
+    const summary = await findSummary(2);
     expect(summary).toHaveTextContent('No time');
     expect(within(summary).getByText('The attempt did not finish (left the track). Only complete attempts have a time.')).toBeInTheDocument();
     expect(summary).not.toHaveTextContent('Gap to your best');
@@ -374,9 +374,9 @@ describe('attempt summary', () => {
   it('summary_never_shows_the_previous_attempt_while_the_next_loads', async () => {
     summaryApi().on('GET /api/attempts/a0000000-0000-4000-8000-000000000002', () => new Promise(() => undefined));
     const { socket } = await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
-    await screen.findByRole('region', { name: 'Attempt 2' });
+    await findSummary(2);
     send(socket, driving({ seq: 2, mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000002' }));
-    await waitFor(() => expect(screen.queryByRole('region', { name: 'Attempt 2' })).not.toBeInTheDocument());
+    await waitFor(() => expect(maybeSection('Attempt 2')).not.toBeInTheDocument());
   });
 });
 
@@ -397,13 +397,13 @@ describe('drive mode', () => {
   it('drive_mode_hides_navigation_when_armed', async () => {
     setViewportWidth(390);
     driveApi().install();
-    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+    expect(maybeEl('nav.nav')).not.toBeInTheDocument();
     const view = renderApp({ path: DRIVE_PATH });
-    expect(await screen.findByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+    expect(await findEl('nav.nav')).toBeInTheDocument();
     const socket = await openLive(view.sockets, armed());
-    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+    expect(maybeEl('nav.nav')).not.toBeInTheDocument();
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
-    expect(screen.getByRole('status', { name: 'Current cue' })).toHaveTextContent('READY');
+    expect(el('[role="status"].cue')).toHaveTextContent('READY');
     expect(screen.queryByText('Waiting for the start')).toBeNull();
     expect(await screen.findByText('GT7 Tutor finds the start and the finish. You can look at the TV now. First cue after the start: Hard brake. Eighty five.')).toHaveClass('race-note');
   });
@@ -423,7 +423,7 @@ describe('drive mode', () => {
     expect(sub).toHaveTextContent(/^Yangwang Experience \/ Racing Lines$/);
     const status = document.querySelector('.stage-top .race-status-word')!;
     expect([...status.querySelectorAll('.race-dot')].map(dot => dot.className)).toEqual(['race-dot green', 'race-dot red']);
-    expect(status).toHaveTextContent('Telemetry: Receiving telemetryVoice: No device plays the voice');
+    expect(status).toHaveTextContent(/^TelemetryVoice$/);
   });
 
   it('ready_leaves_out_the_first_cue_while_no_packets_arrive', async () => {
@@ -436,9 +436,9 @@ describe('drive mode', () => {
   it('cue_reserves_two_lines_only_while_an_attempt_runs', async () => {
     driveApi().install();
     const { socket } = await openDrive(DRIVE_PATH, armed());
-    expect(screen.getByRole('status', { name: 'Current cue' })).not.toHaveClass('running');
+    expect(el('[role="status"].cue')).not.toHaveClass('running');
     send(socket, driving({ seq: 2 }));
-    expect(screen.getByRole('status', { name: 'Current cue' })).toHaveClass('running');
+    expect(el('[role="status"].cue')).toHaveClass('running');
   });
 
   it('live_values_use_the_race_values', async () => {
@@ -464,9 +464,9 @@ describe('drive mode', () => {
     setViewportWidth(390);
     driveApi().install();
     const { socket } = await openDrive(DRIVE_PATH, armed({ speedMps: 40 / KPH_PER_MPS }));
-    expect(screen.queryByRole('alert', { name: 'The attempt did not start' })).not.toBeInTheDocument();
+    expect(maybeEl('.missed-start')).not.toBeInTheDocument();
     send(socket, armed({ seq: 2, speedMps: 42 / KPH_PER_MPS, startMissed: true }));
-    const prompt = screen.getByRole('alert', { name: 'The attempt did not start' });
+    const prompt = el('.missed-start');
     expect(prompt).toHaveTextContent('The exercise was already running when you selected Drive. Restart the exercise in the game.');
     expect(within(prompt).getAllByRole('button').map(button => button.textContent)).toEqual(['OK']);
   });
@@ -484,9 +484,9 @@ describe('drive mode', () => {
     setViewportWidth(390);
     driveApi().install();
     await openDrive(DRIVE_PATH, armed({ startMissed: true }));
-    const prompt = screen.getByRole('alert', { name: 'The attempt did not start' });
+    const prompt = el('.missed-start');
     await userEvent.setup().click(within(prompt).getByRole('button', { name: 'OK' }));
-    expect(screen.queryByRole('alert', { name: 'The attempt did not start' })).not.toBeInTheDocument();
+    expect(maybeEl('.missed-start')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Start now' })).not.toBeInTheDocument();
   });
 
@@ -513,10 +513,10 @@ describe('drive mode', () => {
     setViewportWidth(390);
     driveApi().on(`GET /api/attempts/${ATTEMPT_ID}`, ATTEMPT).install();
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
-    const summary = await screen.findByRole('region', { name: 'Attempt 2' });
+    const summary = await findSummary(2);
     expect(summary.closest('.drive-stage')).not.toBeNull();
     expect(within(summary).getByRole('button', { name: 'Drive again' })).toBeInTheDocument();
-    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+    expect(maybeEl('nav.nav')).not.toBeInTheDocument();
   });
 
   it('finished_summary_waits_for_the_new_attempt', async () => {
@@ -531,20 +531,20 @@ describe('drive mode', () => {
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 20));
     });
-    expect(screen.queryByRole('region', { name: 'Attempt 2' })).not.toBeInTheDocument();
+    expect(maybeSection('Attempt 2')).not.toBeInTheDocument();
     send(socket, driving({ seq: 4, mode: 'finished', lastAttemptId: 'a0000000-0000-4000-8000-000000000002' }));
-    expect(await screen.findByRole('region', { name: 'Attempt 3' })).toBeInTheDocument();
+    expect(await findSummary(3)).toBeInTheDocument();
   });
 
   it('stop_brings_back_the_navigation', async () => {
     setViewportWidth(390);
     const api = driveApi().install();
     const { socket } = await openDrive(DRIVE_PATH, armed());
-    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+    expect(maybeEl('nav.nav')).not.toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Stop training' }));
     await waitFor(() => expect(api.called('POST /api/training/disarm')).toBe(true));
     send(socket, liveState({ seq: 2, connection: 'connected', voiceDeviceId: voiceDeviceId(), voiceReady: true }));
-    expect(await screen.findByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+    expect(await findEl('nav.nav')).toBeInTheDocument();
     await waitFor(() => expect(window.location.pathname).toBe(`/exercises/${EXERCISE_ID}/attempts`));
     expect(await screen.findByRole('button', { name: 'Drive' })).toBeInTheDocument();
   });

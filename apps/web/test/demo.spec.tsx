@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { AppInfo } from '@gt7/contracts';
 import { exercise, exerciseApi, rememberExercise, EXERCISE_ID } from './fixtures.ts';
-import { ApiStub, liveState, renderApp, setViewportWidth, signedIn, openLive } from './support.tsx';
+import { ApiStub, liveState, renderApp, setViewportWidth, signedIn, openLive, el, findEl, findIconButton, maybeIconButton } from './support.tsx';
 
 const DEMO_LABEL = 'Demo: recorded data, no console';
 const DEMO: AppInfo = { demo: { profileName: 'demo', password: 'demodemo', ready: true }, consoleRequired: false };
@@ -26,7 +26,7 @@ function driveDemoApi(): ApiStub {
 
 async function openStage() {
   const view = renderApp({ path: DRIVE_PATH });
-  await screen.findByRole('navigation', { name: 'Main' });
+  await findEl('nav.nav');
   await openLive(view.sockets, liveState({ mode: 'armed', connection: 'connected', exerciseId: EXERCISE_ID, referenceId: 'ref-demo' }));
   return view;
 }
@@ -63,7 +63,7 @@ describe('demo mode', () => {
     renderApp();
     expect(await screen.findByText(DEMO_LABEL)).toBeInTheDocument();
     expect(screen.getByText('demodemo')).toBeInTheDocument();
-    expect(await screen.findByRole('radio', { name: 'demo' })).toHaveAttribute('aria-checked', 'true');
+    expect(await screen.findByRole('radio', { name: /demo$/ })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByLabelText('Password for demo')).toHaveValue('demodemo');
     await userEvent.setup().click(screen.getByRole('button', { name: 'Sign in' }));
     await waitFor(() => expect(api.calls.find(call => call.path === '/api/auth/sign-in')?.body).toEqual({ name: 'demo', password: 'demodemo' }));
@@ -83,8 +83,8 @@ describe('demo mode', () => {
     renderApp({ path: '/setup#console' });
     expect(await screen.findByText('Demo mode uses recorded data.')).toBeInTheDocument();
     expect(screen.queryByLabelText('PS5 address')).not.toBeInTheDocument();
-    expect(within(screen.getByRole('navigation', { name: 'Setup sections' })).queryByRole('link', { name: 'Catalogue' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Check for updates' })).not.toBeInTheDocument();
+    expect(within(el('nav.setup-nav')).queryByRole('link', { name: 'Catalogue' })).not.toBeInTheDocument();
+    expect(maybeIconButton('Check for updates')).not.toBeInTheDocument();
   });
 
   it('demo_hides_change_password', async () => {
@@ -105,8 +105,8 @@ describe('demo mode', () => {
     setupApi({ demo: null, consoleRequired: true });
     renderApp({ path: '/setup' });
     expect(await screen.findByLabelText('PS5 address')).toBeInTheDocument();
-    await userEvent.setup().click(within(screen.getByRole('navigation', { name: 'Setup sections' })).getByRole('link', { name: 'Catalogue' }));
-    expect(await screen.findByRole('button', { name: 'Check for updates' })).toBeInTheDocument();
+    await userEvent.setup().click(within(el('nav.setup-nav')).getByRole('link', { name: 'Catalogue' }));
+    expect(await findIconButton('Check for updates')).toBeInTheDocument();
     expect(screen.queryByText(DEMO_LABEL)).not.toBeInTheDocument();
     expect(screen.queryByText('Demo mode uses recorded data.')).not.toBeInTheDocument();
   });
@@ -129,7 +129,7 @@ describe('demo mode', () => {
     setViewportWidth(390);
     driveDemoApi();
     const view = renderApp({ path: DRIVE_PATH });
-    await screen.findByRole('navigation', { name: 'Main' });
+    await findEl('nav.nav');
     await openLive(view.sockets, liveState({ mode: 'armed', connection: 'disconnected', exerciseId: EXERCISE_ID }));
     expect(await screen.findByText('The demo attempt has ended. Select Stop training, then select Drive.')).toBeInTheDocument();
     expect(screen.queryByText(/Check that GT7 is running/)).not.toBeInTheDocument();

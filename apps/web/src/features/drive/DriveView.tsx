@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { KPH_PER_MPS, type Exercise, type LiveCue, type LiveState } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
 import { useLiveConnection, useLiveState } from '../../api/live.tsx';
@@ -94,7 +94,7 @@ function StageText({ state, problem, reference }: { state: LiveState; problem: s
   const text = ready ? readyText(demo, reference, problem) : { lead: nextText(state, problem), note: content.note };
   return (
     <div className={ready ? 'stage-text' : 'stage-text running'}>
-      <div className={`cue ${content.tone}${ready ? '' : ' running'}`} role="status" aria-label={t('drive.stage.current-cue')} aria-live="assertive">
+      <div className={`cue ${content.tone}${ready ? '' : ' running'}`} role="status">
         <div className="cue-word">{content.word}</div>
       </div>
       {text.lead || !ready ? <p className="race-lead">{text.lead}</p> : null}
@@ -126,10 +126,9 @@ const DOT_COLOUR: Record<Status['tone'], string> = { on: ' green', warn: ' yello
 
 function StageStatus({ status, label }: { status: Status; label: string }) {
   return (
-    <span className="stage-status">
-      <span className={`race-dot${DOT_COLOUR[status.tone]}`} aria-hidden="true" />
+    <span className="stage-status" title={status.text}>
+      <span className={`race-dot${DOT_COLOUR[status.tone]}`} />
       {label}
-      <span className="visually-hidden">: {status.text}</span>
     </span>
   );
 }
@@ -140,7 +139,7 @@ function StageVoice({ state }: { state: LiveState }) {
   const where = voiceState(state, deviceId);
   if (where === 'here' || where === 'elsewhere') return null;
   return (
-    <div className="stage-voice" role="group" aria-label={t('drive.voice.group')}>
+    <div className="stage-voice">
       <p className="race-note">{t('drive.voice.none')}</p>
       <button className="stage-button" type="button" onClick={() => void voice.claim()} disabled={voice.busy}>
         {t('drive.voice.use')}
@@ -155,10 +154,9 @@ function StageVoice({ state }: { state: LiveState }) {
 }
 
 function MissedStart({ onDismiss }: { onDismiss(): void }) {
-  const titleId = useId();
   return (
-    <div className="missed-start" role="alert" aria-labelledby={titleId}>
-      <h2 id={titleId}>{t('drive.missed.title')}</h2>
+    <div className="missed-start" role="alert">
+      <h2>{t('drive.missed.title')}</h2>
       <p>{t('drive.missed.text')}</p>
       <div className="missed-actions">
         <button type="button" className="stage-button primary" onClick={onDismiss}>
@@ -235,7 +233,6 @@ function Stage({ state, exercise, reference, finishedAttempt, clipsFailed, onDri
       {reference ? (
         <div className="stage-map">
           <TrackMap
-            label={t('drive.stage.map')}
             reference={reference.trace}
             marks={marks}
             cursorSM={live ? state.sM : null}

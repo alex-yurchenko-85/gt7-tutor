@@ -43,14 +43,14 @@ function SecondAction({ kind, exerciseId }: { kind: NotFoundKind; exerciseId: st
 export function NotFound({ kind, exerciseId }: { kind: NotFoundKind; exerciseId?: string }) {
   const copy = COPY[kind];
   return (
-    <section className="not-found" aria-labelledby="not-found-title">
-      <svg className="not-found-mark" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+    <section className="not-found">
+      <svg className="not-found-mark" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
         <path d="M4 18c2-6 5-9 8-9s5 2 6 5" />
         <path d="M15 14l3 0 0-3" />
         <circle cx="12" cy="20" r="1" />
       </svg>
       <p className="not-found-kicker">{t(copy.kicker)}</p>
-      <h1 id="not-found-title">{t(copy.title)}</h1>
+      <h1>{t(copy.title)}</h1>
       <p className="lede">{t(copy.reason)}</p>
       <div className="btn-row">
         <Link to={paths.exercises()} className="btn inline">

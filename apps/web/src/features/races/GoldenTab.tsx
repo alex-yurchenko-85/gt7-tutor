@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { RaceDetail, RaceGoldenLap, RaceGoldenSector } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { formatTime, groupedNumber, signedSecondsText } from '../../app/format.ts';
 import { useWideLayout } from '../../app/layout.ts';
 import { errorText, useResource } from '../../app/resource.ts';
-import { SortHeader } from '../../app/SortHeader.tsx';
+import { SortHeader, useSort, type SortDirection } from '../../app/SortHeader.tsx';
 import { TrackMap, type TrackMark, type TrackSegment } from '../../charts/TrackMap.tsx';
 import { isRawMissing, rawMissingText } from './race-errors.ts';
 import { RaceBand, type BandValue } from './RaceBand.tsx';
@@ -19,6 +19,7 @@ const COLOURS: TrackSegment['colour'][] = ['a', 'b', 'c', 'd'];
 
 type GoldenOk = Extract<RaceGoldenLap, { state: 'ok' }>;
 type Order = 'spread' | 'turn';
+const ORDER_DIRECTIONS: Record<Order, SortDirection> = { turn: 'ascending', spread: 'descending' };
 
 function seconds(ms: number): string {
   return (ms / 1000).toFixed(3);
@@ -49,9 +50,13 @@ function turnBadge(turn: number | null): string {
   return turn === null ? '' : t('charts.turn.badge', { turn });
 }
 
-function sorted(sectors: RaceGoldenSector[], order: Order): RaceGoldenSector[] {
-  const byTurn = (a: RaceGoldenSector, b: RaceGoldenSector) => (a.turn ?? Infinity) - (b.turn ?? Infinity);
-  return [...sectors].sort(order === 'turn' ? byTurn : (a, b) => b.spreadMs - a.spreadMs || byTurn(a, b));
+function byTurn(sign: number) {
+  return (a: RaceGoldenSector, b: RaceGoldenSector) => (a.turn === null ? 1 : 0) - (b.turn === null ? 1 : 0) || sign * ((a.turn ?? 0) - (b.turn ?? 0));
+}
+
+function sorted(sectors: RaceGoldenSector[], order: Order, direction: SortDirection): RaceGoldenSector[] {
+  const sign = direction === 'ascending' ? 1 : -1;
+  return [...sectors].sort(order === 'turn' ? byTurn(sign) : (a, b) => sign * (a.spreadMs - b.spreadMs) || byTurn(1)(a, b));
 }
 
 function leftLaps(race: RaceDetail, golden: GoldenOk, sector: RaceGoldenSector): number[] {
@@ -80,24 +85,24 @@ function GoldenBand({ race, golden, wide }: { race: RaceDetail; golden: GoldenOk
     { value: signedSecondsText(golden.goldenMs - golden.bestMs, 3), caption: t('races.golden.gain'), tone: '' }
   ];
   const facts = [lapsText(race), t('common.count.car', { count: race.cars }), cleanText(golden.cleanLaps)].join(' · ');
-  return <RaceBand label={t('races.golden.band')} title={wide ? (race.carName ?? t('races.band.race')) : null} facts={facts} values={values} className="race-golden-band" />;
+  return <RaceBand title={wide ? (race.carName ?? t('races.band.race')) : null} facts={facts} values={values} className="race-golden-band" />;
 }
 
 function GoldenTable({ race, golden, wide }: { race: RaceDetail; golden: GoldenOk; wide: boolean }) {
-  const [order, setOrder] = useState<Order>('spread');
-  const rows = useMemo(() => sorted(golden.sectors, order), [golden.sectors, order]);
+  const sort = useSort(ORDER_DIRECTIONS, 'spread');
+  const rows = useMemo(() => sorted(golden.sectors, sort.column, sort.direction), [golden.sectors, sort.column, sort.direction]);
   const widest = Math.max(...golden.sectors.map(sector => sector.spreadMs), 1);
   return (
     <div className="race-golden-turns">
-      <h2 id="race-golden-turns">{t('races.golden.turns')}</h2>
-      <div role="table" aria-labelledby="race-golden-turns" className={`golden-table${wide ? ' golden-table-wide' : ''}`}>
+      <h2>{t('races.golden.turns')}</h2>
+      <div role="table" className={`golden-table${wide ? ' golden-table-wide' : ''}`}>
         <div role="row" className="golden-head">
-          <SortHeader label={t('races.golden.column-turn')} active={order === 'turn'} direction="ascending" onSort={() => setOrder('turn')} />
+          <SortHeader label={t('races.golden.column-turn')} {...sort.header('turn')} />
           {wide ? <span role="columnheader">{t('races.golden.column-part')}</span> : null}
           <span role="columnheader">{t('races.golden.column-golden')}</span>
           {wide ? <span role="columnheader">{t('races.golden.column-best')}</span> : null}
           {wide ? <span role="columnheader">{t('races.golden.column-median')}</span> : null}
-          <SortHeader label={t(wide ? 'races.golden.column-spread' : 'races.golden.column-spread-short')} active={order === 'spread'} direction="descending" onSort={() => setOrder('spread')} />
+          <SortHeader label={t(wide ? 'races.golden.column-spread' : 'races.golden.column-spread-short')} {...sort.header('spread')} />
         </div>
         {rows.map(sector => (
           <div role="row" className="golden-row" key={sector.fromM}>
@@ -112,7 +117,7 @@ function GoldenTable({ race, golden, wide }: { race: RaceDetail; golden: GoldenO
             <span role="cell" className="golden-source">
               <span className="golden-chip">
                 <b className="golden-time">{seconds(sector.ms)}</b>
-                <i className={swatchClass(lookOf(golden, sector.lap))} aria-hidden="true" />
+                <i className={swatchClass(lookOf(golden, sector.lap))} />
                 {t('races.golden.lap', { lap: sector.lap })}
               </span>
               {notesOf(race, golden, sector).map(note => (
@@ -128,7 +133,7 @@ function GoldenTable({ race, golden, wide }: { race: RaceDetail; golden: GoldenO
             ) : null}
             {wide ? <span role="cell">{seconds(sector.medianMs)}</span> : null}
             <span role="cell" className="golden-spread">
-              {wide ? <i style={{ width: `${Math.max(2, Math.round((sector.spreadMs / widest) * SPREAD_BAR_PX))}px` }} aria-hidden="true" /> : null}
+              {wide ? <i style={{ width: `${Math.max(2, Math.round((sector.spreadMs / widest) * SPREAD_BAR_PX))}px` }} /> : null}
               {t('app.unit.seconds', { value: seconds(sector.spreadMs) })}
             </span>
           </div>
@@ -149,9 +154,9 @@ function GoldenMap({ race, golden }: { race: RaceDetail; golden: GoldenOk }) {
     [golden.sectors, speed.data]
   );
   return (
-    <section className="panel race-golden-map" aria-labelledby="race-golden-map">
-      <h2 id="race-golden-map">{t('races.golden.map-title')}</h2>
-      <TrackMap label={t('races.golden.map-label')} reference={golden.line} segments={segments} marks={marks} plain lapLine />
+    <section className="panel race-golden-map">
+      <h2>{t('races.golden.map-title')}</h2>
+      <TrackMap reference={golden.line} segments={segments} marks={marks} plain lapLine />
       <div className="legend map-legend">
         {golden.sourceLaps.map(lap => (
           <span key={lap}>

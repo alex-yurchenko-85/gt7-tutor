@@ -145,10 +145,10 @@ export function RacesView() {
   };
   return (
     <div className="races-home">
-      <h1 className={wide ? undefined : 'visually-hidden'}>{t('races.title')}</h1>
-      <section className={selecting ? 'my-races selecting-page' : 'my-races'} aria-labelledby="races-title">
+      {wide ? <h1>{t('races.title')}</h1> : null}
+      <section className={selecting ? 'my-races selecting-page' : 'my-races'}>
         <div className="my-races-head">
-          <h2 id="races-title">
+          <h2>
             {t('races.my-races')} {list ? <span className="count">{list.length}</span> : null}
           </h2>
           <div className="my-races-actions">
@@ -163,7 +163,7 @@ export function RacesView() {
                 {t('races.recording')}
               </button>
             ) : (
-              <button type="button" className="btn inline" aria-label={t('races.record-label')} disabled={starting} onClick={record}>
+              <button type="button" className="btn inline" disabled={starting} onClick={record}>
                 {wide ? t('races.record-wide') : t('races.record')}
               </button>
             )}
@@ -183,13 +183,13 @@ export function RacesView() {
           </div>
         ) : null}
         {byDay(list ?? []).map(day => (
-          <div key={day.key} className="race-day" role="group" aria-labelledby={`race-day-${day.key}`}>
-            <h3 id={`race-day-${day.key}`}>{formatDay(day.key)}</h3>
+          <div key={day.key} className="race-day">
+            <h3>{formatDay(day.key)}</h3>
             <div className="race-list">
               {day.races.map(race =>
                 selecting ? (
                   <label key={race.id} className={picked.has(race.id) ? 'race-row selecting picked' : 'race-row selecting'}>
-                    <input type="checkbox" className="pick-box" aria-label={t('races.select-race', { name: raceName(race) })} checked={picked.has(race.id)} onChange={() => toggle(race.id)} />
+                    <input type="checkbox" className="pick-box" checked={picked.has(race.id)} onChange={() => toggle(race.id)} />
                     <RaceRowContent race={race} wide={wide} />
                   </label>
                 ) : (

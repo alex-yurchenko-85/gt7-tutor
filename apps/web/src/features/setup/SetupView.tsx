@@ -65,12 +65,12 @@ export function SetupView() {
   const listed = SECTIONS.filter(section => panels[section.id] !== null);
 
   return (
-    <section className="setup" aria-labelledby="setup-title">
-      <h1 id="setup-title">{t('setup.title')}</h1>
+    <section className="setup">
+      <h1>{t('setup.title')}</h1>
       {wide ? (
         <>
           <div className="setup-layout">
-            <nav className="setup-nav" aria-label={t('setup.nav.label')}>
+            <nav className="setup-nav">
               {listed.map(section => (
                 <Link key={section.id} to={paths.setup(section.id)} current={section.id === shown} className="setup-nav-link">
                   {t(section.label)}
@@ -82,7 +82,7 @@ export function SetupView() {
         </>
       ) : deleting ? (
         <>
-          <nav className="breadcrumb" aria-label={t('common.breadcrumb')}>
+          <nav className="breadcrumb">
             <Link to={paths.setup()}>{t('setup.title')}</Link> / <Link to={paths.setup('data')}>{t('setup.nav.data')}</Link> / {t('setup.breadcrumb.delete-history')}
           </nav>
           <DeleteHistoryView />

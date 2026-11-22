@@ -435,13 +435,13 @@ The review shows the header and the tabs of the exercise. Under them:
 | **Your line** | The map with the reference line (blue) and your line (orange). A circle marks a difference. The legend has the words `reference line`, `you`, `turn` and `A gap in your line is a place without a match`. A gap is a place where GT7 Tutor could not match your position. |
 | **True scale** / **Side distance × 6** | **Side distance × 6** draws your line 6 times farther from the reference line, so that a difference of 1 m shows. A dot marks the largest side distance in each turn. Put the pointer on a dot, move the focus to it with the Tab key, or touch it. A tip then shows the true distance and the place, for example `T1 · 3.5 m left` and `at 120 m`. When a dot has the focus, press Esc to close the tip. On a touch screen, touch the map away from the dots to close the tip. The legend then also has `more than <n> m from the line` for the parts beyond the **Side cue distance**. On a phone, the two buttons are in a row under the title. |
 | **View** | Opens the map in full screen, with your line in true scale and the list of the differences. Select a difference in the list to find it on your line. Press Esc or select **Back** to close. |
-| **Differences by turn** | The differences, grouped by turn, with the time lost or gained in each turn. The column headers **Turn** and **Time lost** set the order. **Turn** puts the turns in the order of the track. **Time lost** puts the turn with the largest time lost first. An arrow shows the active order. Select a difference to put the cursor there. A section without turns shows one group, **Whole section**. `No differences above the limits in this attempt.` means that GT7 Tutor found no difference. |
+| **Differences by turn** | The differences, grouped by turn, with the time lost or gained in each turn. The column headers **Turn** and **Time lost** set the order. **Turn** puts the turns in the order of the track. **Time lost** puts the turn with the largest time lost first. Select the active header again to reverse the order. An arrow shows the active order and its direction. Select a difference to put the cursor there. A section without turns shows one group, **Whole section**. `No differences above the limits in this attempt.` means that GT7 Tutor found no difference. |
 | **Corners** | Your line at each apex: on the line, or the distance inside or outside, and your speed at the apex. A section without turns has no **Corners**. |
 | **Brake reaction** | The time from the start of a spoken brake cue to your brake. A value `before the cue` means that you braked before the voice. |
-| Charts | Speed, throttle, brake, the distance from the reference line, and the time lost. Move the pointer or a finger across a chart. With a keyboard, move the focus to a chart and use the arrow keys. The map shows the same place. |
+| Charts | Speed, throttle, brake, the distance from the reference line, and the time lost. Move the pointer or a finger across a chart. With a keyboard, move the focus to a chart and use the arrow keys. A dashed line and a dot on each line mark the cursor on all charts. The map shows the same place. On the chart under the pointer, the finger or the focus, a box gives the distance, the turn and the values, for example `Reference: 110 km/h` and `You: 108 km/h`. **Time lost** has no box. It gives its value at the top right. |
 | **Compare with** | Another reference of the exercise. The review then compares the same attempt with that reference. |
 
-![The whole review page. The charts show speed, throttle, brake, the distance from the reference line and the time lost to the reference. A yellow zone marks turn 1.](images/review-charts.webp)
+![The lower part of the review page. The charts show speed, throttle, brake, the distance from the reference line and the time lost to the reference. A yellow zone marks turn 1. The cursor is at 400 m in turn 1. The box on the speed chart gives Reference: 116 km/h and You: 96 km/h. A dot marks each line on all charts.](images/review-charts.webp)
 
 Read a difference with care. `Braked 37 m later` compares your brake that is nearest to the brake of the reference, within 60 m. If you pressed the brake two times, the charts show both.
 
@@ -562,7 +562,7 @@ The list gives up to 5 circuits of the catalogue with a length near the length o
 
 **Where:** select a race in **Races**. The race opens on the **Laps** tab.
 
-![The Laps tab of a race of 7 laps. The band gives the car, the race time, the best lap and the position from 20 to 2. Below are the lap table with a pit stop row and the chart Position in the race.](images/race-laps.webp)
+![The Laps tab of a race of 7 laps. The band gives the car, the race time, the best lap and the position from 20 to 2. Below are the lap table with a pit stop row and the chart Position.](images/race-laps.webp)
 
 The header of the race shows the date and the time of the start and the lap length, for example `lap length 6,181 m`.
 
@@ -582,7 +582,7 @@ The header of the race shows the date and the time of the start and the lap leng
 | **Gap to best** | The lap time minus the time of the best lap, for example `+1.142 s` |
 | **Position** | The position at the start and at the end of the lap, for example `11 → 6` |
 | **Top speed** | The highest speed of the lap |
-| **Off the track** | The number of moments with all four wheels off the track (a red dot), and with two or three wheels off (a red ring). `none` when the lap has no moment. |
+| **Off the track** | The number of moments with all 4 wheels off the track (a red dot), and with 2 or 3 wheels off (a red ring). `none` when the lap has no moment. |
 
 A pit stop row comes between the in-lap and the out-lap, for example `PIT STOP 35.48 s in the pit lane Fuel 38 → 100`. The time is the time from the stop to the pit exit.
 
@@ -590,21 +590,31 @@ Select a lap row to compare that lap with the reference lap. See [Compare two la
 
 The **reference lap** of a race is its fastest lap that is not lap 1 and has no pit stop. Lap 1 starts on the grid, not at the lap line. Without such a lap, for example in a race of 2 laps, it is the fastest lap of the race. Usually the reference lap is the best lap. When it is another lap, the hint under the table names it, for example `Select a lap to compare it with lap 4, the best lap without a pit stop.`
 
-**Position in the race** shows your position, lap by lap, over the race time. Grey bands mark the pit stops. The labels `P1` and `P2` under the chart name the pit stops. Move the pointer or a finger across the chart. A box and the line over the chart give the lap, the distance from the lap line and the position at that time, for example `Cursor at lap 3, 1,200 m: position 8, up from 9.`
+**Position** shows your position, lap by lap, over the race time. Grey bands mark the pit stops. The labels `P1` and `P2` under the chart name the pit stops. Move the pointer or a finger across the chart. A box and the line over the chart give the lap, the distance from the lap line and the position at that time, for example `Cursor at lap 3, 1,200 m: position 8, up from 9.`
 
 **Fuel** shows the fuel, lap by lap. It shows only when the fuel changes during the race.
 
-**Speed, all laps** shows the speed of each lap over the distance from the lap line. The legend names the line of the best lap and the lines of the other laps. The turns are yellow bands. On a computer, a box at the cursor gives the speed of each lap.
+**Speed** shows the speed of each lap over the distance from the lap line. Each lap has its own colour. After 10 laps, the colours start again. The line of the best lap is thicker. The turns are yellow bands.
+
+![The chart Speed of a race of 7 laps, with View at the top right. The legend under the chart shows the laps 2, 3 and 5 in grey. The chart shows the lines of laps 1, 4, 6 and 7. The cursor is at 2,286 m in turn 6. A dot marks each line there. The box gives the speed of each lap that shows, for example Lap 4: 157 km/h.](images/race-speed.webp)
+
+Move the pointer or a finger across the chart, or move the focus to it. A dashed line and a dot on each line mark the cursor. A box at the cursor gives the distance, the turn and the speed of each lap that shows, for example `Lap 4: 157 km/h`.
+
+The legend under the chart has a button for each lap, for example **Lap 4**. Select a button to hide the line of that lap. Select it again to show the line. A hidden lap has a grey name. You can hide all laps. When you open the **Laps** tab again, all laps show.
+
+Select **View** at the top right of the chart to open the chart in full screen. The full-screen chart is dark and uses all the height of the screen. Under the title, a line gives the track and the number of laps, for example `Mount Panorama Motor Racing Circuit, 7 laps`. The full-screen chart has the same legend. A lap that you hide there stays hidden on the tab. Press Esc or select **Back** to close the full-screen chart.
+
+![The chart Speed in full screen on a dark background. The bar at the top has Back and the title Speed. Under the title is the line Mount Panorama Motor Racing Circuit, 7 laps. Press Esc to close. The laps 2, 3 and 5 are hidden. The box at 2,286 m in turn 6 gives the speed of laps 1, 4, 6 and 7.](images/race-speed-full.webp)
 
 ### Compare two laps
 
 **Where:** the **Compare** tab of the race, or a row of the lap table.
 
-![The Compare tab with the heading Lap 7 is 2.020 s slower than lap 4 and the two lap selects. Below are the map of the two lines and the differences by turn.](images/race-compare.webp)
+![The Compare tab of lap 7 and lap 4, scrolled down to the charts. The cursor is at 2,280 m in turn 6. The box on the chart Speed gives Lap 4: 155 km/h and Lap 7: 133 km/h. A dot marks each line on Speed, Throttle and Brake. At the right, the list Differences by turn scrolls inside its column, from turn 5 to turn 10.](images/race-compare.webp)
 
 The heading gives the gap of the two lap times of the game, for example `Lap 7 is 2.020 s slower than lap 4`. Use the two selects to choose the lap and the lap to compare it with. By default, the tab compares the last lap that is not the reference lap with the reference lap.
 
-The tab shows the same parts as the review of an attempt. These parts are the map with the two lines, **Differences by turn**, and the charts of speed, throttle, brake and time lost. Here the other lap takes the place of the reference. It is one of your laps, not the best possible line. See [Review an attempt](#review-an-attempt).
+The tab shows the same parts as the review of an attempt. These parts are the map with the two lines, **Differences by turn**, and the charts of speed, throttle, brake and time lost. Here the other lap takes the place of the reference. It is one of your laps, not the best possible line. The legends name the two laps, for example `lap 4` and `lap 7`. The box of the chart under the cursor gives the value of each lap, for example `Lap 4: 155 km/h` on **Speed** and `Lap 4: 100%` on **Throttle**. **Time lost** has no box. It gives its value at the top right. On a computer, **Differences by turn** stays beside the map and the charts. Scroll the list of the turns inside its column. When you select a difference on the map, the list moves to that difference. See [Review an attempt](#review-an-attempt).
 
 With an in-lap or an out-lap:
 
@@ -619,8 +629,8 @@ With an in-lap or an out-lap:
 
 ![The Off the track tab of a race with 20 moments off the track. It shows the map Places and the panel Recurring places with A and B. Below are the off-track chart lap by lap, the height of the track and the speed of the best lap.](images/race-off-track.webp)
 
-- **Places**: the map of the line of the reference lap. A red dot marks a moment with all four wheels off. A red ring marks a moment with two or three wheels off. A black circle with a letter marks a recurring place. Select a mark to put the cursor there. **View** opens the map in full screen with the list of the moments.
-- **Recurring places**: the places where you went off the track in 3 or more laps. An example row is `3,190 m. All four wheels off in 1 lap.` with the letter `A`. The row also gives the speed of the reference lap at that place and the largest speed loss. At the right, it gives the number of laps, for example `6 of 7`. Under the list: the number of other places, each in 1 or 2 laps.
+- **Places**: the map of the line of the reference lap. A red dot marks a moment with all 4 wheels off. A red ring marks a moment with 2 or 3 wheels off. A black circle with a letter marks a recurring place. Select a mark to put the cursor there. **View** opens the map in full screen with the list of the moments.
+- **Recurring places**: the places where you went off the track in 3 or more laps. An example row is `3,190 m. All 4 wheels off in 1 lap.` with the letter `A`. The row also gives the speed of the reference lap at that place and the largest speed loss. At the right, it gives the number of laps, for example `6 of 7`. Under the list: the number of other places, each in 1 or 2 laps.
 - **Off the track** (chart): one row for each lap, with a mark for each moment over the distance from the lap line. A black bar marks the pit lane. Select a mark to see the lap, the wheels and the speeds.
 - **Height of the track**: the height above the lowest place of the lap.
 - **Speed of the best lap** (or **Speed of lap <n>**): the speed of the reference lap at each place.
@@ -653,7 +663,7 @@ The dark band gives the best clean lap, the golden lap in yellow and the possibl
 | **Median** | The median time of the part in the clean laps |
 | **Spread, best to median** | The median time minus the best time, with a bar. A large spread shows a turn where your laps are not the same. You can find time there. |
 
-The table opens with the largest spread first. Select **Turn** to put the turns in the order of the track. Select **Spread, best to median** to put the largest spread first again. An arrow shows the active order. With a keyboard, move the focus to a header and push Enter or Space.
+The table opens with the largest spread first. Select **Turn** to put the turns in the order of the track. Select **Spread, best to median** to put the largest spread first again. Select the active header again to reverse the order. An arrow shows the active order and its direction. With a keyboard, move the focus to a header and push Enter or Space.
 
 A time in the **Golden lap** column can have a hint under it:
 
@@ -917,4 +927,4 @@ The session in GT7 is not a race by laps, for example a time trial, a race of 1 
 
 ### The recording of this race is no longer on the disk
 
-`The recording of this race is no longer on the disk. The lap table stays.`: the raw capture of the race is missing, for example after you deleted files in the data folder. The lap table and the band stay. **Compare**, **Speed, all laps** and the map of **Off the track** need the raw capture. Without it, **Off the track** shows the moments as a list by lap.
+`The recording of this race is no longer on the disk. The lap table stays.`: the raw capture of the race is missing, for example after you deleted files in the data folder. The lap table and the band stay. **Compare**, **Speed** and the map of **Off the track** need the raw capture. Without it, **Off the track** shows the moments as a list by lap.

@@ -25,7 +25,7 @@ export type TrackMark = {
 
 export type TrackSegment = { fromM: number; toM: number; colour: 'a' | 'b' | 'c' | 'd'; dashed?: boolean };
 
-export type TrackPeak = { turn: number; sM: number; title: string; detail: string; name: string };
+export type TrackPeak = { turn: number; sM: number; title: string; detail: string };
 
 type TrackMapProps = {
   reference: TrackLine;
@@ -38,7 +38,6 @@ type TrackMapProps = {
   dark?: boolean;
   plain?: boolean;
   lapLine?: boolean;
-  label: string;
 };
 
 function pointOn(line: TrackLine, sM: number): Point | null {
@@ -272,7 +271,7 @@ function StartMark({ shape }: { shape: StartShape }) {
   return (
     <>
       <line className="track-start" x1={barFrom[0]} y1={barFrom[1]} x2={barTo[0]} y2={barTo[1]} />
-      <g className="track-direction" aria-hidden="true">
+      <g className="track-direction">
         <line x1={tail[0]} y1={tail[1]} x2={tip[0]} y2={tip[1]} />
         <polyline points={[heads[0], tip, heads[1]].map(point => point.join(',')).join(' ')} />
       </g>
@@ -296,7 +295,7 @@ function FinishMark({ at, direction }: { at: Point; direction: Point }) {
     ))
   );
   return (
-    <g className="track-finish" transform={`translate(${at[0]} ${at[1]}) rotate(${angle})`} aria-hidden="true">
+    <g className="track-finish" transform={`translate(${at[0]} ${at[1]}) rotate(${angle})`}>
       {cells}
       <rect className="frame" x={-FINISH_HALF_PX} y={-FINISH_DEPTH_PX / 2} width={2 * FINISH_HALF_PX} height={FINISH_DEPTH_PX} />
     </g>
@@ -388,7 +387,7 @@ const LinesLayer = memo(function LinesLayer({ geometry, parts }: { geometry: Geo
 function NotSpokenBadge({ x, y }: { x: number; y: number }) {
   const dot = BADGE_RADIUS_PX / 4;
   return (
-    <g className="not-spoken-badge" transform={`translate(${x} ${y})`} aria-hidden="true">
+    <g className="not-spoken-badge" transform={`translate(${x} ${y})`}>
       <circle r={BADGE_RADIUS_PX} />
       {[-2.4, 0, 2.4].map(step => (
         <circle key={step} className="pip" cx={step * dot} cy={0} r={dot * 0.8} />
@@ -399,7 +398,7 @@ function NotSpokenBadge({ x, y }: { x: number; y: number }) {
 
 function MuteBadge({ x, y }: { x: number; y: number }) {
   return (
-    <g className="mute-badge" transform={`translate(${x} ${y})`} aria-hidden="true">
+    <g className="mute-badge" transform={`translate(${x} ${y})`}>
       <circle r={BADGE_RADIUS_PX} />
       <g transform={`translate(${-BADGE_ICON_PX / 2} ${-BADGE_ICON_PX / 2})`}>
         <Icon name="speaker-off" size={BADGE_ICON_PX} />
@@ -446,7 +445,6 @@ const MarksLayer = memo(function MarksLayer({ marks, placed }: { marks: TrackMar
             className={className}
             role="button"
             tabIndex={0}
-            aria-label={mark.title}
             onClick={mark.onSelect}
             onKeyDown={event => {
               if (event.key === 'Enter' || event.key === ' ') {
@@ -505,7 +503,7 @@ function PeakTip({ place, scale, height }: { place: PeakPlace; scale: number; he
   const box = tipBox(place.at, place.peak, scale, height, textWidth);
   const pad = TIP_PAD_PX * scale;
   return (
-    <g className="peak-tip" aria-hidden="true">
+    <g className="peak-tip">
       <rect x={box.x} y={box.y} width={box.width} height={box.height} />
       <text ref={title} className="peak-title" x={box.x + pad} y={box.y + pad + TIP_TITLE_PX * 0.8 * scale} style={{ fontSize: TIP_TITLE_PX * scale }}>
         {place.peak.title}
@@ -529,9 +527,9 @@ const PeaksLayer = memo(function PeaksLayer({ places, shown, ring, scale, onShow
         <g
           key={peak.turn}
           className={`track-peak${shown === peak.turn ? ' shown' : ''}`}
+          data-turn={peak.turn}
           role="button"
           tabIndex={0}
-          aria-label={peak.name}
           onPointerEnter={event => {
             if (event.pointerType !== 'touch') onShow(peak.turn, 'hover');
           }}
@@ -628,7 +626,7 @@ function useUnitsPerPixel(svg: RefObject<SVGSVGElement | null>, height: number, 
   return units;
 }
 
-export function TrackMap({ reference, attempt, far, peaks = NO_PEAKS, marks = NO_MARKS, segments = NO_SEGMENTS, cursorSM, dark = false, plain = false, lapLine = false, label }: TrackMapProps) {
+export function TrackMap({ reference, attempt, far, peaks = NO_PEAKS, marks = NO_MARKS, segments = NO_SEGMENTS, cursorSM, dark = false, plain = false, lapLine = false }: TrackMapProps) {
   const geometry = useMemo(() => geometryOf(reference, attempt, far), [reference, attempt, far]);
   const svg = useRef<SVGSVGElement>(null);
   const scale = useUnitsPerPixel(svg, geometry?.height ?? 1, peaks.length > 0);
@@ -674,8 +672,6 @@ export function TrackMap({ reference, attempt, far, peaks = NO_PEAKS, marks = NO
       ref={svg}
       className={`track-map${dark ? ' dark' : ''}${plain ? ' plain' : ''}`}
       viewBox={`0 0 ${WIDTH} ${height}`}
-      role={places.length > 0 ? 'group' : 'img'}
-      aria-label={label}
       onPointerDown={places.length > 0 ? onPointerDown : undefined}
       onPointerMove={places.length > 0 ? onPointerMove : undefined}
       onPointerLeave={places.length > 0 ? () => onHide('hover') : undefined}

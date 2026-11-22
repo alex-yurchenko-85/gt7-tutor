@@ -261,3 +261,119 @@ export async function sendLiveState(view: { sockets: FakeSockets }, overrides: P
     socket.receive({ type: 'state', state: liveState({ connection: 'connected', ...overrides }) });
   });
 }
+
+type Root = ParentNode | HTMLElement;
+
+export function maybeEl(selector: string, root: Root = document): HTMLElement | null {
+  return root.querySelector<HTMLElement>(selector);
+}
+
+export function el(selector: string, root: Root = document): HTMLElement {
+  const found = maybeEl(selector, root);
+  if (!found) throw new Error(`No element for ${selector}`);
+  return found;
+}
+
+export function els(selector: string, root: Root = document): HTMLElement[] {
+  return [...root.querySelectorAll<HTMLElement>(selector)];
+}
+
+export async function findEl(selector: string, root: Root = document): Promise<HTMLElement> {
+  return waitFor(() => el(selector, root));
+}
+
+function headingMatches(heading: Element, name: string | RegExp): boolean {
+  const text = heading.textContent?.trim() ?? '';
+  return typeof name === 'string' ? text === name : name.test(text);
+}
+
+export function maybeSection(name: string | RegExp, root: Root = document): HTMLElement | null {
+  const heading = [...root.querySelectorAll('h1, h2, h3')].find(item => headingMatches(item, name));
+  return heading ? (heading.closest<HTMLElement>('section, .panel, form, aside') ?? heading.parentElement) : null;
+}
+
+export function sectionOf(name: string | RegExp, root: Root = document): HTMLElement {
+  const found = maybeSection(name, root);
+  if (!found) throw new Error(`No section with the heading ${String(name)}`);
+  return found;
+}
+
+export async function findSection(name: string | RegExp, root: Root = document): Promise<HTMLElement> {
+  return waitFor(() => sectionOf(name, root));
+}
+
+export function maybeIconButton(tip: string | RegExp, root: Root = document): HTMLButtonElement | null {
+  const wrap = [...root.querySelectorAll('.icon-button-wrap')].find(item => headingMatches(item.querySelector('.icon-tip')!, tip));
+  return wrap?.querySelector('button') ?? null;
+}
+
+export function iconButton(tip: string | RegExp, root: Root = document): HTMLButtonElement {
+  const found = maybeIconButton(tip, root);
+  if (!found) throw new Error(`No icon button with the tip ${String(tip)}`);
+  return found;
+}
+
+export async function findIconButton(tip: string | RegExp, root: Root = document): Promise<HTMLButtonElement> {
+  return waitFor(() => iconButton(tip, root));
+}
+
+export async function findEls(selector: string, root: Root = document): Promise<HTMLElement[]> {
+  return waitFor(() => {
+    const found = els(selector, root);
+    if (found.length === 0) throw new Error(`No element for ${selector}`);
+    return found;
+  });
+}
+
+export function mapMark(title: string | RegExp, root: Root = document): HTMLElement {
+  const found = [...root.querySelectorAll<HTMLElement>('.track-mark')].find(mark => {
+    const text = mark.querySelector('title')?.textContent ?? '';
+    return typeof title === 'string' ? text === title : title.test(text);
+  });
+  if (!found) throw new Error(`No map mark with the title ${String(title)}`);
+  return found;
+}
+
+function maybeDialog(title: string | RegExp): HTMLElement | null {
+  const heading = [...document.querySelectorAll('dialog h2, [role="dialog"] h2, [role="alertdialog"] h2')].find(item => headingMatches(item, title));
+  return heading?.closest<HTMLElement>('dialog, [role="dialog"], [role="alertdialog"]') ?? null;
+}
+
+export function dialogOf(title: string | RegExp): HTMLElement {
+  const found = maybeDialog(title);
+  if (!found) throw new Error(`No dialog with the title ${String(title)}`);
+  return found;
+}
+
+export async function findDialog(title: string | RegExp): Promise<HTMLElement> {
+  return waitFor(() => dialogOf(title));
+}
+
+export async function findSummary(number: number): Promise<HTMLElement> {
+  return waitFor(() => {
+    const summary = el('section.summary');
+    if (!summary.textContent?.includes(`Attempt ${number}`)) throw new Error(`The summary is not of attempt ${number}`);
+    return summary;
+  });
+}
+
+export function maybeElWith(selector: string, text: string | RegExp, root: Root = document): HTMLElement | null {
+  return els(selector, root).find(item => (typeof text === 'string' ? (item.textContent ?? '').includes(text) : text.test(item.textContent ?? ''))) ?? null;
+}
+
+export function elWith(selector: string, text: string | RegExp, root: Root = document): HTMLElement {
+  const found = maybeElWith(selector, text, root);
+  if (!found) throw new Error(`No ${selector} with the text ${String(text)}`);
+  return found;
+}
+
+export async function findElWith(selector: string, text: string | RegExp, root: Root = document): Promise<HTMLElement> {
+  return waitFor(() => elWith(selector, text, root));
+}
+
+export function turnGroupName(group: Element): string {
+  const badge = group.querySelector('.turn-badge')?.textContent ?? '';
+  const lost = group.querySelector('.turn-head b')?.textContent ?? '';
+  return [badge, lost].filter(Boolean).join(' · ');
+}
+

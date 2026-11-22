@@ -37,10 +37,10 @@ function ContinueCard({ exercise, details, wide }: { exercise: Exercise; details
     ? [t('exercises.home.continue'), [exercise.family, details.collection].filter(Boolean).join(', '), details.entry?.track].filter(Boolean).join(' · ')
     : [t('exercises.home.continue'), [details.collection, details.entry?.code].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
   return (
-    <section className="continue" aria-labelledby="continue-title">
+    <section className="continue">
       <div className="continue-main">
         <p className="continue-kicker">{kicker}</p>
-        <h2 id="continue-title">
+        <h2>
           <Link to={paths.exercise(exercise.id)} className="continue-name">
             {exercise.name}
           </Link>
@@ -121,7 +121,7 @@ function ExerciseRow({ exercise, details, wide }: { exercise: Exercise; details:
 function SelectRow({ exercise, details, wide, picked, onToggle }: { exercise: Exercise; details: Details; wide: boolean; picked: boolean; onToggle(): void }) {
   return (
     <label className={picked ? 'exercise-row selecting picked' : 'exercise-row selecting'}>
-      <input type="checkbox" className="pick-box" aria-label={t('exercises.home.select-one', { name: exercise.name })} checked={picked} onChange={onToggle} />
+      <input type="checkbox" className="pick-box" checked={picked} onChange={onToggle} />
       <span className="exercise-row-name">
         <b>{exercise.name}</b>
         <span>{wide ? homeWhere(details) : historyText(exercise)}</span>
@@ -165,8 +165,8 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onDeleted }: MyExe
     onDeleted();
   };
   const quickSelect = selecting ? (
-    <div className="quick-select" role="group" aria-label={t('exercises.home.quick-select')}>
-      <span className="sub" aria-hidden="true">
+    <div className="quick-select">
+      <span className="sub">
         {t('exercises.home.select-label')}
       </span>
       <button type="button" className="chip-button" onClick={() => setPicked(new Set(withoutHistory.map(exercise => exercise.id)))}>
@@ -188,15 +188,15 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onDeleted }: MyExe
           {t('exercises.home.select')}
         </button>
       ) : null}
-      <Link to={paths.addExercise()} className="btn inline add-exercise" label={t('exercises.home.add-label')}>
+      <Link to={paths.addExercise()} className="btn inline add-exercise">
         {wide ? t('exercises.home.add-wide') : t('exercises.home.add-phone')}
       </Link>
     </div>
   );
   return (
-    <section className={selecting ? 'my-exercises selecting-page' : 'my-exercises'} aria-labelledby="mine-title">
+    <section className={selecting ? 'my-exercises selecting-page' : 'my-exercises'}>
       <div className="my-exercises-head">
-        <h2 id="mine-title">
+        <h2>
           {t('exercises.home.mine')} <span className="count">{exercises.length}</span>
         </h2>
         {actions}
@@ -204,7 +204,7 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onDeleted }: MyExe
       {wide && (families.length > 1 || quickSelect) ? (
         <div className="my-exercises-tools">
           {families.length > 1 ? (
-            <div className="family-filter" role="group" aria-label={t('exercises.home.filter')}>
+            <div className="family-filter">
               {[ALL, ...families].map(name => (
                 <button key={name} type="button" aria-pressed={family === name} onClick={() => setFamily(name)}>
                   {name === ALL ? t('exercises.home.all') : name}
@@ -220,12 +220,9 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onDeleted }: MyExe
         {shown.map(name => {
           const members = exercises.filter(exercise => exercise.family === name);
           if (members.length === 0) return null;
-          const id = `family-${name.replace(/\W+/g, '-')}`;
           return (
-            <div key={name} className="family-group" role="group" aria-labelledby={id}>
-              <h3 id={id} className={wide ? undefined : 'visually-hidden'}>
-                {name}
-              </h3>
+            <div key={name} className="family-group">
+              {wide ? <h3>{name}</h3> : null}
               {members.map(exercise =>
                 selecting ? (
                   <SelectRow
@@ -300,7 +297,7 @@ export function ExercisesHome() {
   const current = currentExercise(exercises, user.id);
   return (
     <div className="exercises-home">
-      <h1 className={wide ? undefined : 'visually-hidden'}>{t('exercises.home.title')}</h1>
+      {wide ? <h1>{t('exercises.home.title')}</h1> : null}
       {current ? <ContinueCard exercise={current} details={detailsOf(current)} wide={wide} /> : null}
       <MyExercises exercises={exercises} detailsOf={detailsOf} wide={wide} currentId={current?.id ?? null} onDeleted={data.reload} />
     </div>

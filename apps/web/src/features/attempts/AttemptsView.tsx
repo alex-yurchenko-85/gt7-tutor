@@ -39,13 +39,12 @@ function AttemptRow({ attempt, bestMs, selection, wide }: { attempt: AttemptSumm
   ) : null;
   const classes = [rowClass(isBest, complete, picked, selection !== null), selection ? 'selectable' : 'linked'].filter(Boolean).join(' ');
   return (
-    <tr aria-label={t('exercises.attempts.row', { number: attempt.number })} className={classes} onClick={selection ? () => selection.toggle(attempt.id) : undefined}>
+    <tr className={classes} data-attempt={attempt.number} onClick={selection ? () => selection.toggle(attempt.id) : undefined}>
       {selection ? (
         <td className="pick-cell">
           <input
             type="checkbox"
             className="pick-box"
-            aria-label={t('exercises.attempts.select-one', { number: attempt.number })}
             checked={picked}
             onClick={event => event.stopPropagation()}
             onChange={() => selection.toggle(attempt.id)}
@@ -71,9 +70,7 @@ function AttemptRow({ attempt, bestMs, selection, wide }: { attempt: AttemptSumm
         {wide ? null : gap ? <span className="phone-gap">{gap}</span> : null}
         {wide || !largestLine ? null : <span className="phone-difference">{largestLine}</span>}
         {selection ? null : (
-          <Link to={paths.review(attempt.id)} className="row-link">
-            <span className="visually-hidden">{t('exercises.attempts.review', { number: attempt.number })}</span>
-          </Link>
+          <Link to={paths.review(attempt.id)} className="row-link" />
         )}
       </td>
       {wide ? <td>{gap}</td> : null}
@@ -91,8 +88,8 @@ function QuickSelect({ day, onPick }: { day: AttemptDay; onPick(ids: string[]): 
     { label: t('exercises.attempts.quick-none'), attempts: [] }
   ];
   return (
-    <div className="quick-select" role="group" aria-label={t('exercises.attempts.quick-label', { day: formatDay(day.date) })}>
-      <span className="sub" aria-hidden="true">
+    <div className="quick-select">
+      <span className="sub">
         {t('exercises.attempts.select-label')}
       </span>
       {choices.map(choice => (
@@ -193,19 +190,17 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
               </div>
               {selecting ? <QuickSelect day={day} onPick={ids => pickOnDay(day, ids)} /> : null}
               <div className="table-wrap">
-                <table aria-label={t('exercises.attempts.table', { day: formatDay(day.date) })}>
+                <table>
                   <thead>
                     <tr>
                       {selecting ? (
-                        <th>
-                          <span className="visually-hidden">{t('exercises.attempts.selected')}</span>
-                        </th>
+                        <th />
                       ) : null}
                       <th>{t('exercises.attempts.number')}</th>
                       <th>{t('exercises.attempts.time')}</th>
                       {wide ? <th>{t('exercises.attempts.gap')}</th> : null}
                       {wide ? <th>{t('exercises.attempts.difference')}</th> : null}
-                      <th aria-hidden="true" />
+                      <th />
                     </tr>
                   </thead>
                   <tbody>

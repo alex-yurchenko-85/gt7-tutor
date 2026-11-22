@@ -1,11 +1,11 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { KPH_PER_MPS } from '@gt7/contracts';
 import { exercise, exerciseApi, reference, EXERCISE_ID } from './fixtures.ts';
 import { attemptSummary, review, withGap, ATTEMPT_ID, REVIEW_PATH } from './review-fixtures.ts';
 import * as chartSegments from '../src/charts/geometry.ts';
-import { renderApp, setViewportWidth, USER, type ApiStub } from './support.tsx';
+import { renderApp, setViewportWidth, USER, type ApiStub, el, maybeEl, findEl, sectionOf, maybeSection, findSection, findDialog, els, turnGroupName } from './support.tsx';
 
 vi.mock('../src/charts/geometry.ts', async importOriginal => {
   const actual = await importOriginal<typeof import('../src/charts/geometry.ts')>();
@@ -64,26 +64,26 @@ describe('attempt review', () => {
   it('review_links_cursor_between_charts_and_map', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    const speed = await screen.findByRole('slider', { name: 'Speed, km/h' });
+    const speed = await findEl('[data-chart="speed"]');
     expect(document.querySelector('.chart-field')).toBeNull();
     expect(screen.getByText('Speed, km/h')).not.toHaveClass('visually-hidden');
     const before = { chart: cursorX(), map: mapCursor() };
     speed.focus();
     await userEvent.setup().keyboard('{ArrowRight}{ArrowRight}');
-    expect(screen.getByText('Cursor at 4 m', { exact: false })).toBeInTheDocument();
+    expect(speed).toHaveAttribute('aria-valuenow', '4');
+    expect(screen.queryByText(/^Cursor at/)).not.toBeInTheDocument();
     expect(cursorX()).not.toBe(before.chart);
     expect(mapCursor()).not.toBe(before.map);
-    const brake = screen.getByRole('slider', { name: 'Brake' });
+    const brake = el('[data-chart="brake"]');
     Object.defineProperty(brake, 'getBoundingClientRect', { value: () => ({ left: 0, width: 200, top: 0, height: 50, right: 200, bottom: 50 }) });
     fireEvent.pointerDown(brake, { clientX: 100 });
-    expect(screen.getByText('Cursor at 10 m', { exact: false })).toBeInTheDocument();
-    expect(screen.getByRole('slider', { name: 'Speed, km/h' })).toHaveAttribute('aria-valuenow', '10');
+    expect(el('[data-chart="speed"]')).toHaveAttribute('aria-valuenow', '10');
   });
 
   it('review_pointer_move_renders_only_the_cursor', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    const speed = await screen.findByRole('slider', { name: 'Speed, km/h' });
+    const speed = await findEl('[data-chart="speed"]');
     Object.defineProperty(speed, 'getBoundingClientRect', { value: () => ({ left: 0, width: 200, top: 0, height: 50, right: 200, bottom: 50 }) });
     const chartCalls = vi.mocked(chartSegments.seriesSegments).mock.calls.length;
     const mapCalls = vi.mocked(chartSegments.lineSegments).mock.calls.length;
@@ -100,7 +100,7 @@ describe('attempt review', () => {
   it('review_cancels_a_pending_cursor_frame_on_unmount', async () => {
     reviewApi();
     const view = renderApp({ path: REVIEW_PATH });
-    const speed = await screen.findByRole('slider', { name: 'Speed, km/h' });
+    const speed = await findEl('[data-chart="speed"]');
     Object.defineProperty(speed, 'getBoundingClientRect', { value: () => ({ left: 0, width: 200, top: 0, height: 50, right: 200, bottom: 50 }) });
     const frames: FrameRequestCallback[] = [];
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback));
@@ -115,17 +115,17 @@ describe('attempt review', () => {
   it('selecting_a_difference_moves_the_cursor', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
-    const off = within(list).getByRole('button', { name: /16 m\. Up to 2 m from the reference line/ });
+    const list = await findSection('Differences by turn');
+    const off = within(list).getByRole('button', { name: /16 m Up to 2 m from the reference line/ });
     await userEvent.setup().click(off);
     expect(off).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('slider', { name: 'Speed, km/h' })).toHaveAttribute('aria-valuenow', '16');
+    expect(el('[data-chart="speed"]')).toHaveAttribute('aria-valuenow', '16');
   });
 
   it('unmatched_gap_breaks_the_line', async () => {
     reviewApi(withGap(review()));
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Speed, km/h' });
+    await findEl('[data-chart="speed"]');
     expect(document.querySelectorAll('.track-map [data-segment="attempt"]')).toHaveLength(2);
     expect(document.querySelectorAll('[data-chart="speed"] [data-series="you"]')).toHaveLength(2);
     expect(document.querySelectorAll('[data-chart="speed"] [data-series="ref"]')).toHaveLength(1);
@@ -155,10 +155,9 @@ describe('attempt review', () => {
   it('review_keyboard_help_is_a_description_of_the_charts_and_no_hint_texts_show', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
+    const list = await findSection('Differences by turn');
     expect(within(list).getByText('The reference is one recorded drive, not the best possible line.')).toBeInTheDocument();
     expect(document.querySelector('.charts')).not.toHaveAttribute('aria-describedby');
-    for (const slider of document.querySelectorAll('.charts [role="slider"]')) expect(slider).toHaveAccessibleDescription('Focus a chart and use the arrow keys to move the cursor. The map point shows the same place.');
     expect(screen.queryByText(/Move the pointer or a finger/)).toBeNull();
     expect(screen.queryByText(/Turns in the order|Time lost is measured|Select a difference/)).toBeNull();
   });
@@ -169,7 +168,7 @@ describe('attempt review', () => {
     renderApp({ path: REVIEW_PATH });
     const heading = await screen.findByRole('heading', { name: 'Differences by turn' });
     const map = document.querySelector('.track-map')!;
-    const speed = screen.getByRole('slider', { name: 'Speed, km/h' });
+    const speed = el('[data-chart="speed"]');
     expect(map.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(heading.compareDocumentPosition(speed) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -183,7 +182,7 @@ describe('attempt review', () => {
     ];
     reviewApi(review({ corners }));
     renderApp({ path: REVIEW_PATH });
-    const list = await screen.findByRole('region', { name: 'Corners' });
+    const list = await findSection('Corners');
     const rows = within(list).getAllByRole('listitem');
     expect(rows[0]).toHaveTextContent('Turn 1');
     expect(rows[0]).toHaveTextContent('4.8 m outside');
@@ -199,26 +198,26 @@ describe('attempt review', () => {
     const findings = [{ kind: 'slow-corner' as const, eventKey: 'brake@4', sM: 4, size: 15.6 / KPH_PER_MPS, unit: 'm/s' as const, turn: 1 }];
     reviewApi(review({ corners, findings }));
     renderApp({ path: REVIEW_PATH });
-    const list = await screen.findByRole('region', { name: 'Corners' });
+    const list = await findSection('Corners');
     expect(within(list).getAllByRole('listitem')[0]).toHaveTextContent('84 km/h at the apex, reference 89 km/h');
-    const differences = screen.getByRole('region', { name: 'Differences by turn' });
+    const differences = sectionOf('Differences by turn');
     expect(within(differences).getByRole('button', { name: /16 km\/h slower in the corner/ })).toBeInTheDocument();
   });
 
   it('review_shows_brake_reaction_of_the_attempt', async () => {
     reviewApi(review({ reactions: [{ eventKey: 'brake@10', reactionMs: 640 }] }));
     renderApp({ path: REVIEW_PATH });
-    const list = await screen.findByRole('region', { name: 'Brake reaction' });
+    const list = await findSection('Brake reaction');
     expect(list).toHaveTextContent('10 m: you started to brake 0.6 s after the cue');
   });
 
   it('review_without_corners_shows_whole_section_group', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
-    const groups = within(list).getAllByRole('group').filter(group => group.getAttribute('aria-label') !== null);
+    const list = await findSection('Differences by turn');
+    const groups = els('.turn-group', list);
     expect(groups).toHaveLength(1);
-    expect(groups[0]).toHaveAccessibleName('Whole section');
+    expect(turnGroupName(groups[0]!)).toBe('Whole section');
     expect(within(groups[0]!).getAllByRole('button')).toHaveLength(2);
     expect(document.querySelectorAll('[data-band]')).toHaveLength(0);
   });
@@ -238,27 +237,71 @@ describe('attempt review', () => {
       })
     );
     renderApp({ path: REVIEW_PATH });
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
+    const list = await findSection('Differences by turn');
     expect(within(list).queryByRole('radio')).toBeNull();
     const header = (name: string) => within(list).getByRole('button', { name }).closest('[role="columnheader"]')!;
-    const sort = within(list).getByRole('table', { name: 'Order of the turns' });
+    const sort = el('.turn-sort', list);
     expect(within(within(sort).getByRole('row')).getAllByRole('columnheader').map(cell => cell.textContent)).toEqual(['Turn', 'Time lost']);
     expect(header('Turn')).toHaveAttribute('aria-sort', 'ascending');
     expect(header('Time lost')).not.toHaveAttribute('aria-sort');
-    const turnGroups = () => within(list).getAllByRole('group').map(group => group.getAttribute('aria-label'));
+    const turnGroups = () => els('.turn-group', list).map(turnGroupName);
     expect(turnGroups()).toEqual(['T1 · 0.12 s gained', 'T2 · 0.50 s lost']);
     const user = userEvent.setup();
     await user.click(within(list).getByRole('button', { name: 'Time lost' }));
     expect(header('Time lost')).toHaveAttribute('aria-sort', 'descending');
     expect(header('Turn')).not.toHaveAttribute('aria-sort');
     expect(turnGroups()).toEqual(['T2 · 0.50 s lost', 'T1 · 0.12 s gained']);
-    const groups = within(list).getAllByRole('group');
+    const groups = els('.turn-group', list);
     expect(within(groups[0]!).getAllByRole('button')).toHaveLength(2);
-    await user.click(within(groups[1]!).getByRole('button', { name: /4 m\. Braked 2 m earlier/ }));
-    expect(screen.getByRole('slider', { name: 'Speed, km/h' })).toHaveAttribute('aria-valuenow', '4');
+    await user.click(within(groups[1]!).getByRole('button', { name: /4 m Braked 2 m earlier/ }));
+    expect(el('[data-chart="speed"]')).toHaveAttribute('aria-valuenow', '4');
     expect(document.querySelectorAll('[data-chart="speed"] [data-band]')).toHaveLength(0);
     await user.click(within(list).getByRole('button', { name: 'Turn' }));
     expect(turnGroups()).toEqual(['T1 · 0.12 s gained', 'T2 · 0.50 s lost']);
+  });
+
+  it('reverses_the_turn_order_on_a_second_click_of_the_active_header', async () => {
+    reviewApi(
+      review({
+        findings: [
+          { kind: 'brake-early', eventKey: 'brake@4', sM: 4, size: 2, unit: 'm', turn: 1 },
+          { kind: 'off-line', eventKey: null, sM: 12, size: 1.6, unit: 'm', turn: 2 },
+          { kind: 'throttle-late', eventKey: 'throttle@26', sM: 26, size: 3, unit: 'm', turn: 3 }
+        ],
+        turnLosses: [
+          { turn: 1, fromSM: 0, toSM: 10, lostMs: -120 },
+          { turn: 2, fromSM: 10, toSM: 20, lostMs: 500 },
+          { turn: 3, fromSM: 20, toSM: 30, lostMs: 200 }
+        ]
+      })
+    );
+    renderApp({ path: REVIEW_PATH });
+    const list = await findSection('Differences by turn');
+    const header = (name: string) => within(list).getByRole('button', { name }).closest('[role="columnheader"]')!;
+    const turnGroups = () => els('.turn-group', list).map(turnGroupName);
+    const user = userEvent.setup();
+    await user.click(within(list).getByRole('button', { name: 'Turn' }));
+    expect(turnGroups()).toEqual(['T3 · 0.20 s lost', 'T2 · 0.50 s lost', 'T1 · 0.12 s gained']);
+    expect(header('Turn')).toHaveAttribute('aria-sort', 'descending');
+    expect(header('Turn').querySelector('[data-arrow="descending"]')).not.toBeNull();
+    await user.click(within(list).getByRole('button', { name: 'Time lost' }));
+    expect(turnGroups()).toEqual(['T2 · 0.50 s lost', 'T3 · 0.20 s lost', 'T1 · 0.12 s gained']);
+    expect(header('Time lost')).toHaveAttribute('aria-sort', 'descending');
+    expect(header('Turn')).not.toHaveAttribute('aria-sort');
+    await user.click(within(list).getByRole('button', { name: 'Time lost' }));
+    expect(turnGroups()).toEqual(['T1 · 0.12 s gained', 'T3 · 0.20 s lost', 'T2 · 0.50 s lost']);
+    expect(header('Time lost')).toHaveAttribute('aria-sort', 'ascending');
+    expect(header('Time lost').querySelector('[data-arrow="ascending"]')).not.toBeNull();
+    await user.click(within(list).getByRole('button', { name: 'Turn' }));
+    expect(turnGroups()).toEqual(['T1 · 0.12 s gained', 'T2 · 0.50 s lost', 'T3 · 0.20 s lost']);
+    expect(header('Turn')).toHaveAttribute('aria-sort', 'ascending');
+  });
+
+  it('keeps_the_differences_of_a_review_in_the_page_flow', async () => {
+    reviewApi();
+    renderApp({ path: REVIEW_PATH });
+    const list = await findSection('Differences by turn');
+    expect(list.querySelector('.turn-groups')).not.toHaveClass('scrolls');
   });
 
   it('difference_header_shows_the_turn_and_the_time_lost', async () => {
@@ -269,8 +312,8 @@ describe('attempt review', () => {
       })
     );
     renderApp({ path: REVIEW_PATH });
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
-    expect(within(list).getByRole('group', { name: 'T1 · 0.30 s lost' })).toBeInTheDocument();
+    const list = await findSection('Differences by turn');
+    expect(els('.turn-group', list).find(group => turnGroupName(group) === 'T1 · 0.30 s lost')).toBeInTheDocument();
   });
 
   it('difference_header_has_only_the_turn_when_no_time_is_lost', async () => {
@@ -281,8 +324,8 @@ describe('attempt review', () => {
       })
     );
     renderApp({ path: REVIEW_PATH });
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
-    expect(within(list).getByRole('group', { name: 'T1' })).toBeInTheDocument();
+    const list = await findSection('Differences by turn');
+    expect(els('.turn-group', list).find(group => turnGroupName(group) === 'T1')).toBeInTheDocument();
     expect(list).not.toHaveTextContent(/346|462/);
   });
 
@@ -293,7 +336,7 @@ describe('attempt review', () => {
     ];
     reviewApi(review({ corners }));
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Speed, km/h' });
+    await findEl('[data-chart="speed"]');
     const bands = [...document.querySelectorAll('[data-chart="speed"] [data-band]')];
     expect(bands.map(band => [band.getAttribute('data-band'), band.getAttribute('x'), band.getAttribute('width')])).toEqual([
       ['T1', '80.0', '160.0'],
@@ -311,7 +354,7 @@ describe('attempt review', () => {
     ];
     reviewApi(review({ corners }));
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Speed, km/h' });
+    await findEl('[data-chart="speed"]');
     expect([...document.querySelectorAll('[data-chart="speed"] [data-band]')].map(band => band.getAttribute('data-band'))).toEqual(['T1']);
     expect([...document.querySelectorAll('[data-chart="speed"] .turn-label')].map(label => label.textContent)).toEqual(['T1']);
   });
@@ -323,7 +366,7 @@ describe('attempt review', () => {
     ];
     reviewApi(review({ corners }));
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Speed, km/h' });
+    await findEl('[data-chart="speed"]');
     const labels = [...document.querySelectorAll('[data-chart="speed"] .turn-label')];
     expect(labels.map(label => [label.textContent, (label as HTMLElement).style.left])).toEqual([
       ['T1', '20%'],
@@ -333,10 +376,20 @@ describe('attempt review', () => {
     expect(document.querySelectorAll('.turn-label')).toHaveLength(2);
   });
 
+  it('drops_a_turn_label_that_fits_in_no_row', async () => {
+    const corner = (number: number, fromSM: number, toSM: number) => ({ number, turnInSM: fromSM, apexSM: fromSM, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: fromSM, zoneToSM: toSM, outsideM: 0, speedMps: 88 / KPH_PER_MPS });
+    reviewApi(review({ corners: [corner(1, 9, 9.2), corner(2, 9.2, 9.4), corner(3, 9.4, 9.6)] }));
+    renderApp({ path: REVIEW_PATH });
+    await findEl('[data-chart="speed"]');
+    const labels = els('[data-chart="speed"] .turn-label');
+    expect(labels.map(label => label.textContent)).toEqual(['T1', 'T2']);
+    expect(labels.map(label => label.style.top)).toEqual(['4px', '18px']);
+  });
+
   it('charts_share_scales_and_the_side_chart_is_taller', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Speed, km/h' });
+    await findEl('[data-chart="speed"]');
     const charts = [...document.querySelectorAll('.channel')];
     expect(charts).toHaveLength(5);
     expect(charts.map(chart => chart.querySelector('svg')!.style.height)).toEqual(['120px', '120px', '120px', '180px', '120px']);
@@ -353,20 +406,19 @@ describe('attempt review', () => {
   it('side_distance_chart_follows_brake_and_shares_the_cursor', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Speed, km/h' });
+    await findEl('[data-chart="speed"]');
     const names = screen.getAllByRole('slider').map(slider => slider.getAttribute('data-chart'));
     expect(names).toEqual(['speed', 'throttle', 'brake', 'side', 'time']);
-    const side = screen.getByRole('slider', { name: 'Distance from the reference line, m' });
+    const side = el('[data-chart="side"]');
     Object.defineProperty(side, 'getBoundingClientRect', { value: () => ({ left: 0, width: 200, top: 0, height: 50, right: 200, bottom: 50 }) });
     fireEvent.pointerDown(side, { clientX: 100 });
-    expect(screen.getByText('Cursor at 10 m', { exact: false })).toBeInTheDocument();
     names.forEach(name => expect(document.querySelector(`[data-chart="${name}"]`)).toHaveAttribute('aria-valuenow', '10'));
   });
 
   it('charts_are_titled_in_the_designed_order', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Speed, km/h' });
+    await findEl('[data-chart="speed"]');
     const titles = [...document.querySelectorAll('.channel .channel-label span:first-child')].map(item => item.textContent);
     expect(titles).toEqual(['Speed, km/h', 'Throttle', 'Brake', 'Distance from the reference line, m', 'Time lost to the reference, s']);
   });
@@ -374,7 +426,7 @@ describe('attempt review', () => {
   it('side_distance_axis_uses_words_and_unsigned_numbers', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Distance from the reference line, m' });
+    await findEl('[data-chart="side"]');
     const labels = [...document.querySelectorAll('[data-chart="side"]')[0]!.closest('.channel')!.querySelectorAll('.y-axis span')].map(item => item.textContent);
     expect(labels[0]).toBe('right');
     expect(labels.at(-1)).toBe('left');
@@ -385,7 +437,7 @@ describe('attempt review', () => {
   it('side_distance_chart_draws_you_against_the_reference_line', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Distance from the reference line, m' });
+    await findEl('[data-chart="side"]');
     const plot = document.querySelector('[data-chart="side"]')!;
     expect(plot.querySelectorAll('[data-series="ref"]')).toHaveLength(1);
     expect(plot.querySelectorAll('[data-series="you"]')).toHaveLength(1);
@@ -396,7 +448,7 @@ describe('attempt review', () => {
   it('side_distance_legend_names_the_cue_distance', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Distance from the reference line, m' });
+    await findEl('[data-chart="side"]');
     const legend = document.querySelector('.side-legend')!;
     expect(legend).toHaveTextContent('reference line');
     expect(legend).toHaveTextContent('you');
@@ -406,7 +458,7 @@ describe('attempt review', () => {
   it('side_distance_legend_has_no_cue_entry_when_off', async () => {
     reviewApi(review(), attemptSummary(), exercise({ sideCueDistanceM: null }));
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Distance from the reference line, m' });
+    await findEl('[data-chart="side"]');
     const legend = document.querySelector('.side-legend')!;
     expect(legend).toHaveTextContent('reference line');
     expect(legend).not.toHaveTextContent('side cue distance');
@@ -417,28 +469,29 @@ describe('attempt review', () => {
     const lat = base.attempt.lat.map((_, i) => (i === 0 ? 0 : i === 1 ? 0.4 : i === 2 ? -5 : i === 3 ? 5.04 : i === 4 ? null : 1));
     reviewApi({ ...base, attempt: { ...base.attempt, lat } });
     renderApp({ path: REVIEW_PATH });
-    const side = await screen.findByRole('slider', { name: 'Distance from the reference line, m' });
+    const side = await findEl('[data-chart="side"]');
     const channel = side.closest('.channel')!;
-    const readout = () => channel.querySelector('.channel-label span:last-child')!.textContent;
+    const readout = () => [...channel.querySelectorAll('.chart-box li')].map(row => row.textContent).join(' | ');
     const user = userEvent.setup();
-    side.focus();
-    expect(readout()).toBe('on the line');
+    act(() => side.focus());
+    expect(channel.querySelector('.channel-readout')).toBeNull();
+    expect(readout()).toBe('You: on the line');
     await user.keyboard('{ArrowRight}');
-    expect(readout()).toBe('on the line');
+    expect(readout()).toBe('You: on the line');
     await user.keyboard('{ArrowRight}');
-    expect(readout()).toBe('5.0 m left of the line');
+    expect(readout()).toBe('You: 5.0 m left of the line');
     await user.keyboard('{ArrowRight}');
-    expect(readout()).toBe('5.0 m right of the line');
+    expect(readout()).toBe('You: 5.0 m right of the line');
     await user.keyboard('{ArrowRight}');
-    expect(readout()).toBe('no match here');
+    expect(readout()).toBe('You: no match here');
     await user.keyboard('{ArrowRight}');
-    expect(readout()).toBe('1.0 m right of the line');
+    expect(readout()).toBe('You: 1.0 m right of the line');
   });
 
   it('side_distance_chart_marks_the_side_cue_distance', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Distance from the reference line, m' });
+    await findEl('[data-chart="side"]');
     await waitFor(() => expect(document.querySelectorAll('[data-chart="side"] .chart-threshold')).toHaveLength(2));
     expect(document.querySelectorAll('[data-chart="speed"] .chart-threshold')).toHaveLength(0);
     const ys = [...document.querySelectorAll('[data-chart="side"] .chart-threshold')].map(line => Number(line.getAttribute('y1')));
@@ -449,32 +502,32 @@ describe('attempt review', () => {
   it('off_has_no_threshold_marks', async () => {
     reviewApi(sideReview(), attemptSummary(), exercise({ sideCueDistanceM: null }));
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Distance from the reference line, m' });
+    await findEl('[data-chart="side"]');
     expect(document.querySelectorAll('.chart-threshold')).toHaveLength(0);
     expect(document.querySelectorAll('[data-chart="side"] [data-series="you"]')).toHaveLength(1);
     await userEvent.setup().click(screen.getByRole('button', { name: 'Side distance × 6' }));
     expect(document.querySelectorAll('.track-map [data-segment="attempt"]')).toHaveLength(1);
     expect(document.querySelectorAll('.track-map .track-far')).toHaveLength(0);
-    expect([...document.querySelectorAll('.track-map .track-peak')].map(dot => dot.getAttribute('aria-label'))).toEqual(['T1 5.0 m left, at 6 m', 'T2 1.2 m right, at 14 m']);
+    expect([...document.querySelectorAll('.track-map .track-peak')].map(dot => dot.getAttribute('data-turn'))).toEqual(['1', '2']);
     expect(document.querySelector('.map-legend')).not.toHaveTextContent('from the line');
   });
 
   it('map_switch_starts_at_true_scale', async () => {
     reviewApi(sideReview());
     renderApp({ path: REVIEW_PATH });
-    const group = await screen.findByRole('group', { name: 'Side distance on the map' });
+    const group = await findEl('.map-switch');
     expect(within(group).getByRole('button', { name: 'True scale' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(group).getByRole('button', { name: 'Side distance × 6' })).toHaveAttribute('aria-pressed', 'false');
     expect(document.querySelectorAll('.track-map .track-far')).toHaveLength(0);
     expect(document.querySelectorAll('.track-map .track-peak')).toHaveLength(0);
     expect(screen.queryByText(/drawn 6 times farther/)).not.toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Map of the reference line and your line' })).toBeInTheDocument();
+    expect(el('section.map-panel .track-map')).toBeInTheDocument();
   });
 
   it('map_side_distance_six_times_draws_your_line_from_the_reference_line', async () => {
     reviewApi(sideReview());
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('group', { name: 'Side distance on the map' });
+    await findEl('.map-switch');
     const ys = () => attemptYs().map(y => y - referenceY());
     const before = ys();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Side distance × 6' }));
@@ -486,13 +539,13 @@ describe('attempt review', () => {
     expect(after[0]).toBeGreaterThan(0);
     expect(after[3]).toBeLessThan(0);
     expect(before[0]! / before[3]!).toBeCloseTo(-0.2, 1);
-    expect(screen.getByRole('group', { name: 'Map of the reference line and your line. The side distance of your line is drawn 6 times larger.' })).toBeInTheDocument();
+    expect(el('section.map-panel .track-map')).toBeInTheDocument();
   });
 
   it('map_side_distance_marks_the_parts_beyond_the_side_cue_distance', async () => {
     reviewApi(sideReview());
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('group', { name: 'Side distance on the map' });
+    await findEl('.map-switch');
     await userEvent.setup().click(screen.getByRole('button', { name: 'Side distance × 6' }));
     const far = [...document.querySelectorAll('.track-map .track-far')];
     expect(far).toHaveLength(1);
@@ -505,12 +558,12 @@ describe('attempt review', () => {
   it('map_side_distance_gives_one_dot_per_turn_zone_with_a_tip', async () => {
     reviewApi(sideReview());
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('group', { name: 'Side distance on the map' });
+    await findEl('.map-switch');
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Side distance × 6' }));
     expect(document.querySelectorAll('.track-map .track-peak')).toHaveLength(2);
     expect(document.querySelector('.peak-tip')).toBeNull();
-    await user.hover(screen.getByRole('button', { name: 'T2 1.2 m right, at 14 m' }));
+    await user.hover(el('.track-peak[data-turn="2"]'));
     expect([...document.querySelectorAll('.peak-tip text')].map(text => text.textContent)).toEqual(['T2 · 1.2 m right', 'at 14 m']);
     await user.click(screen.getByRole('button', { name: 'True scale' }));
     expect(document.querySelectorAll('.track-map .track-peak')).toHaveLength(0);
@@ -519,11 +572,11 @@ describe('attempt review', () => {
   it('map_switch_is_not_stored', async () => {
     reviewApi(sideReview());
     const view = renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('group', { name: 'Side distance on the map' });
+    await findEl('.map-switch');
     await userEvent.setup().click(screen.getByRole('button', { name: 'Side distance × 6' }));
     view.unmount();
     renderApp({ path: REVIEW_PATH });
-    const group = await screen.findByRole('group', { name: 'Side distance on the map' });
+    const group = await findEl('.map-switch');
     expect(within(group).getByRole('button', { name: 'True scale' })).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -531,7 +584,7 @@ describe('attempt review', () => {
     setViewportWidth(390);
     reviewApi(sideReview());
     renderApp({ path: REVIEW_PATH });
-    const group = await screen.findByRole('group', { name: 'Side distance on the map' });
+    const group = await findEl('.map-switch');
     const map = document.querySelector('.track-map')!;
     expect(group.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(group.closest('.map-panel-actions')).not.toBeNull();
@@ -540,15 +593,32 @@ describe('attempt review', () => {
   it('time_lost_readout_has_no_distance', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    const time = await screen.findByRole('slider', { name: 'Time lost to the reference, s' });
-    expect(time.closest('.channel')!.querySelector('.channel-label span:last-child')!.textContent).toMatch(/^[+-]?\d\.\d\d s$/);
+    const time = await findEl('[data-chart="time"]');
+    expect(time.closest('.channel')!.querySelector('.channel-readout')!.textContent).toMatch(/^[+-]?\d\.\d\d s$/);
+    fireEvent.pointerEnter(time);
+    expect(document.querySelector('.chart-box')).toBeNull();
+    expect(time.querySelector('.chart-cursor')).not.toBeNull();
+  });
+
+  it('shows_the_reference_and_your_values_in_the_box_of_the_focused_chart', async () => {
+    reviewApi();
+    renderApp({ path: REVIEW_PATH });
+    const speed = await findEl('[data-chart="speed"]');
+    for (const name of ['speed', 'throttle', 'brake']) expect(el(`[data-chart="${name}"]`).closest('.channel')!.querySelector('.channel-readout'), name).toBeNull();
+    act(() => speed.focus());
+    const rows = [...document.querySelectorAll('.chart-box li')].map(row => row.textContent);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatch(/^Reference: \d+ km\/h$/);
+    expect(rows[1]).toMatch(/^You: \d+ km\/h$/);
+    expect(speed.querySelector('.chart-box')).not.toBeNull();
+    expect(document.querySelectorAll('.chart-box')).toHaveLength(1);
   });
 
   it('side_distance_chart_is_140_px_on_a_phone', async () => {
     setViewportWidth(390);
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    await screen.findByRole('slider', { name: 'Distance from the reference line, m' });
+    await findEl('[data-chart="side"]');
     const heights = [...document.querySelectorAll('.channel svg')].map(svg => (svg as SVGElement).style.height);
     expect(heights).toEqual(['120px', '120px', '120px', '140px', '120px']);
   });
@@ -569,7 +639,7 @@ describe('attempt review', () => {
     renderApp({ path: REVIEW_PATH });
     expect(await screen.findByRole('heading', { level: 2, name: 'Attempt 1 · 0:27.100 +1.63 s' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'All attempts' })).toBeNull();
-    const crumbs = await screen.findByRole('navigation', { name: 'Breadcrumb' });
+    const crumbs = await findEl('nav.breadcrumb');
     expect(crumbs).toHaveTextContent('Exercises / Yangwang Experience / Racing Lines');
     expect(within(crumbs).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
   });
@@ -635,7 +705,7 @@ describe('attempt review', () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
     await screen.findByRole('heading', { name: 'Differences by turn' });
-    expect(screen.queryByRole('region', { name: 'Brake reaction' })).not.toBeInTheDocument();
+    expect(maybeSection('Brake reaction')).not.toBeInTheDocument();
   });
 
   it('review_delete_attempt_confirms_and_returns_to_attempts', async () => {
@@ -652,7 +722,7 @@ describe('attempt review', () => {
     expect(promote.nextElementSibling).toBe(remove);
     expect(screen.queryByText('Removes the attempt with its cues and differences.')).not.toBeInTheDocument();
     await userEvent.click(remove);
-    const dialog = await screen.findByRole('alertdialog', { name: 'Delete attempt 1?' });
+    const dialog = await findDialog('Delete attempt 1?');
     expect(await within(dialog).findByText(/Your best:/)).toHaveTextContent('Your best: 0:27.100 → no time');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete attempt' }));
     await waitFor(() => expect(window.location.pathname).toBe(`/exercises/${EXERCISE_ID}/attempts`));
@@ -669,13 +739,13 @@ describe('attempt review', () => {
   it('review_keeps_the_exercise_tabs', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
-    const tabs = await screen.findByRole('navigation', { name: 'Exercise' });
+    const tabs = await findEl('nav.exercise-tabs');
     expect(within(tabs).getByRole('link', { name: /^Attempts/ })).toHaveAttribute('aria-current', 'page');
     expect(within(tabs).getByRole('link', { name: 'Cues' })).toHaveAttribute('href', expect.stringMatching(/\/cues$/));
     expect(screen.queryByRole('link', { name: 'All attempts' })).toBeNull();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(exercise().name);
     expect(screen.getByRole('heading', { level: 2, name: /^Attempt \d+ · / })).toBeInTheDocument();
-    const crumb = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    const crumb = el('nav.breadcrumb');
     expect(crumb).toHaveTextContent(`Exercises / ${exercise().name}`);
   });
 
@@ -683,9 +753,9 @@ describe('attempt review', () => {
     reviewApi().on(`GET /api/exercises/${EXERCISE_ID}`, { status: 500, body: { code: 'server-error' } });
     renderApp({ path: REVIEW_PATH });
     expect(await screen.findByRole('heading', { name: /^Attempt \d+ · / })).toBeInTheDocument();
-    expect(await screen.findByRole('slider', { name: 'Speed, km/h' })).toBeInTheDocument();
+    expect(await findEl('[data-chart="speed"]')).toBeInTheDocument();
     expect(document.querySelector('.track-map')).not.toBeNull();
-    expect(screen.queryByRole('navigation', { name: 'Exercise' })).toBeNull();
+    expect(maybeEl('nav.exercise-tabs')).toBeNull();
     expect(screen.getByRole('button', { name: 'Drive' })).toBeInTheDocument();
   });
 
@@ -713,14 +783,14 @@ describe('attempt review', () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
     const user = userEvent.setup();
-    const panel = await screen.findByRole('region', { name: 'Your line' });
+    const panel = await findSection('Your line');
     const buttons = within(panel).getAllByRole('button').filter(button => !button.closest('svg'));
     expect(buttons.map(button => button.textContent)).toEqual(['True scale', `Side distance × 6`, 'View']);
     expect([...panel.querySelectorAll('.legend span')].map(span => span.textContent)).toEqual(['reference line', 'you', 'turn', 'A gap in your line is a place without a match']);
-    await user.click(within(panel).getByRole('button', { name: 'View the map in full screen' }));
+    await user.click(within(panel).getByRole('button', { name: 'View' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('checkbox', { name: 'Differences' })).toBeChecked();
-    const list = within(dialog).getByRole('complementary', { name: 'Differences' });
+    const list = el('aside.map-dialog-cues', dialog);
     expect(within(list).getAllByRole('button')).toHaveLength(2);
     expect(dialog.querySelector('.track-attempt, [data-segment="attempt"]')).not.toBeNull();
     expect(screen.queryByText('Map orientation is not confirmed')).toBeNull();

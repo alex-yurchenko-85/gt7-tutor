@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { ApiStub, USER, renderApp, setViewportWidth } from './support.tsx';
+import { ApiStub, USER, renderApp, setViewportWidth, els, findEl, iconButton, findIconButton, maybeIconButton } from './support.tsx';
 
 function signInApi(names: string[]): ApiStub {
   return new ApiStub().on('GET /api/auth/state', { hasUsers: true, user: null }).on(
@@ -22,7 +22,7 @@ describe('access', () => {
     await waitFor(() => expect(sockets.sockets).toHaveLength(1));
     user = null;
     act(() => sockets.latest.close(4401));
-    expect(await screen.findByRole('radiogroup', { name: 'Profiles' })).toBeInTheDocument();
+    expect(await findEl('.profile-strip')).toBeInTheDocument();
     expect(sockets.sockets).toHaveLength(1);
   });
 
@@ -62,20 +62,20 @@ describe('access', () => {
   it('sign_in_shows_logo', async () => {
     signInApi(['alex']).install();
     renderApp();
-    const brand = await screen.findByRole('region', { name: 'GT7 Tutor' });
-    expect(within(brand).getAllByRole('img', { name: 'GT7 Tutor' })).toHaveLength(1);
+    const brand = await findEl('.access-brand');
+    expect(els('.logo', brand)).toHaveLength(1);
     expect(within(brand).getByText('Short voice cues while you drive the exercises of Gran Turismo 7.')).toBeInTheDocument();
   });
 
   it('sign_in_lists_profiles_and_signs_in_the_selected_one', async () => {
     const api = signInApi(['alex', 'maria']).on('POST /api/auth/sign-in', { status: 200, body: { user: { id: 'u2', name: 'maria' } } }).install();
     renderApp();
-    const strip = await screen.findByRole('radiogroup', { name: 'Profiles' });
+    const strip = await findEl('.profile-strip');
     expect(within(strip).getAllByRole('radio').map(radio => radio.textContent)).toEqual(['Aalex', 'Mmaria']);
     const user = userEvent.setup();
-    await user.click(within(strip).getByRole('radio', { name: 'maria' }));
-    expect(within(strip).getByRole('radio', { name: 'maria' })).toHaveAttribute('aria-checked', 'true');
-    expect(within(strip).getByRole('radio', { name: 'alex' })).toHaveAttribute('aria-checked', 'false');
+    await user.click(within(strip).getByRole('radio', { name: /maria$/ }));
+    expect(within(strip).getByRole('radio', { name: /maria$/ })).toHaveAttribute('aria-checked', 'true');
+    expect(within(strip).getByRole('radio', { name: /alex$/ })).toHaveAttribute('aria-checked', 'false');
     await user.type(screen.getByLabelText('Password for maria'), 'maria password');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
     await waitFor(() => expect(api.calls.find(call => call.path === '/api/auth/sign-in')?.body).toEqual({ name: 'maria', password: 'maria password' }));
@@ -84,7 +84,7 @@ describe('access', () => {
   it('password_form_names_the_profile_for_password_managers', async () => {
     signInApi(['alex', 'maria']).install();
     renderApp();
-    await userEvent.setup().click(await screen.findByRole('radio', { name: 'maria' }));
+    await userEvent.setup().click(await screen.findByRole('radio', { name: /maria$/ }));
     const form = screen.getByLabelText('Password for maria').closest('form')!;
     const username = form.querySelector('input[autocomplete="username"]') as HTMLInputElement | null;
     expect(username).not.toBeNull();
@@ -97,7 +97,7 @@ describe('access', () => {
     setViewportWidth(390);
     signInApi(['alex']).install();
     renderApp();
-    expect(await screen.findByRole('radio', { name: 'alex' })).toHaveAttribute('aria-checked', 'true');
+    expect(await screen.findByRole('radio', { name: /alex$/ })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByLabelText('Password for alex')).toBeInTheDocument();
     expect(screen.getByText('Swipe to your profile, then enter its password.')).toBeInTheDocument();
   });
@@ -118,28 +118,28 @@ describe('access', () => {
     signInApi(['alex', 'kid', 'maria']).install();
     renderApp();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('radio', { name: 'alex' }));
+    await user.click(await screen.findByRole('radio', { name: /alex$/ }));
     await user.keyboard('{ArrowRight}');
-    expect(screen.getByRole('radio', { name: 'kid' })).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByRole('radio', { name: 'kid' })).toHaveFocus();
+    expect(screen.getByRole('radio', { name: /kid$/ })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: /kid$/ })).toHaveFocus();
     expect(screen.getByLabelText('Password for kid')).toBeInTheDocument();
     await user.keyboard('{ArrowLeft}{ArrowLeft}');
-    expect(screen.getByRole('radio', { name: 'maria' })).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByRole('radio', { name: 'maria' })).toHaveFocus();
-    expect(screen.getByRole('radio', { name: 'maria' })).toHaveAttribute('tabindex', '0');
-    expect(screen.getByRole('radio', { name: 'alex' })).toHaveAttribute('tabindex', '-1');
+    expect(screen.getByRole('radio', { name: /maria$/ })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: /maria$/ })).toHaveFocus();
+    expect(screen.getByRole('radio', { name: /maria$/ })).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('radio', { name: /alex$/ })).toHaveAttribute('tabindex', '-1');
   });
 
   it('strip_buttons_only_on_a_desktop', async () => {
     signInApi(['alex', 'maria']).install();
     const view = renderApp();
-    expect(await screen.findByRole('button', { name: 'Previous profiles' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next profiles' })).toBeInTheDocument();
+    expect(await findIconButton('Previous profiles')).toBeInTheDocument();
+    expect(iconButton('Next profiles')).toBeInTheDocument();
     view.unmount();
     setViewportWidth(390);
     renderApp();
-    await screen.findByRole('radiogroup', { name: 'Profiles' });
-    expect(screen.queryByRole('button', { name: 'Previous profiles' })).toBeNull();
+    await findEl('.profile-strip');
+    expect(maybeIconButton('Previous profiles')).toBeNull();
     expect(screen.queryByText(/Everyone on your home network/)).toBeNull();
   });
 

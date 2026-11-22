@@ -71,8 +71,8 @@ function RecurringPlaces({ race, view, moments }: { race: RaceDetail; view: Race
   const places = view?.recurring ?? race.recurring;
   const others = otherPlaces(moments, places, view?.lengthM ?? race.lapLengthM ?? Infinity);
   return (
-    <section className="panel race-places" aria-labelledby="race-places-title">
-      <h2 id="race-places-title">{t('races.off.places-title')}</h2>
+    <section className="panel race-places">
+      <h2>{t('races.off.places-title')}</h2>
       <p className="sub">{t('races.off.places-text')}</p>
       {places.length === 0 ? <p className="race-places-none">{t('races.off.places-none')}</p> : null}
       <ul>
@@ -104,7 +104,7 @@ function RecurringPlaces({ race, view, moments }: { race: RaceDetail; view: Race
 function MomentList({ moments }: { moments: RaceOffTrack[] }) {
   const laps = [...new Set(moments.map(moment => moment.lap))];
   return (
-    <ul className="race-moment-list" aria-label={t('races.off.moments-label')}>
+    <ul className="race-moment-list">
       {laps.map(lap => (
         <li key={lap}>
           <h3>{t('races.off.lap', { lap })}</h3>
@@ -128,7 +128,6 @@ function StripBox({ moment, lengthM, row, rows }: { moment: RaceOffTrack; length
     <div
       className={`strip-box ${share > BOX_SIDE_SHARE ? 'left' : 'right'}${up ? ' up' : ''}`}
       style={{ left: `${(share * 100).toFixed(2)}%`, top: `calc(26px + ${up ? row - 1 : row} * 34px)` }}
-      aria-hidden="true"
     >
       <b>{t('races.off.box-title', { lap: moment.lap, place: tenMetres(moment.sM ?? 0) })}</b>
       <span>{capital(wheelsText(moment))}</span>
@@ -207,7 +206,7 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
       onView={() => setViewing(true)}
     >
       <div className="review-map">
-        <TrackMap label={referenceText(race, { best: 'races.off.map-best', lap: 'races.off.map-lap' }, { count: moments.length })} reference={line} marks={marks} cursorSM={cursorSM} plain lapLine={lapLine} />
+        <TrackMap reference={line} marks={marks} cursorSM={cursorSM} plain lapLine={lapLine} />
       </div>
       <MapDialog
         open={viewing}
@@ -218,7 +217,6 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
         corners={[]}
         items={items}
         listTitle={t('races.off.list-title')}
-        mapLabel={referenceText(race, { best: 'races.off.dialog-best', lap: 'races.off.dialog-lap' }, { race: raceName(race) })}
         lineName={referenceText(race, { best: 'races.off.line-best', lap: 'races.off.line-lap' })}
         lapLine={lapLine}
         metresText={groupedMetres}
@@ -228,17 +226,14 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
   const charts = (
     <div className="charts race-off-charts">
       <div className="channel in-field">
-        <div className="chart-field" role="group" aria-labelledby="race-strip-label">
+        <div className="chart-field" data-chart="race-strip">
           <div className="channel-label">
-            <span id="race-strip-label" className="visually-hidden">
-              {t('races.off.strip-label')}
-            </span>
-            <b className="field-title" aria-hidden="true">
+            <b className="field-title">
               {t('races.off.strip-title')}
             </b>
             <span>{wide ? facts : ''}</span>
           </div>
-          <span className="field-unit" aria-hidden="true">
+          <span className="field-unit">
             {t('races.off.strip-unit')}
           </span>
           <OffTrackStrip
@@ -251,15 +246,12 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
             onCursor={scrub}
             selected={selected}
             onSelect={select}
-            describedBy="race-off-hint"
             box={wide && chosen && chosen.sM !== null ? <StripBox moment={chosen} lengthM={view.lengthM} row={Math.max(0, laps.indexOf(chosen.lap)) + 1} rows={laps.length} /> : null}
           />
         </div>
       </div>
       <ChannelChart
         id="race-height"
-        describedBy="race-off-hint"
-        label={t('races.off.height-label')}
         series={heightSeries}
         min={0}
         max={heightMax}
@@ -276,8 +268,6 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
       />
       <ChannelChart
         id="race-best-speed"
-        describedBy="race-off-hint"
-        label={referenceText(race, { best: 'races.off.speed-label-best', lap: 'races.off.speed-label-lap' })}
         series={speedSeries}
         min={0}
         max={speedMax}
@@ -294,19 +284,16 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
       />
       <p className="race-legend">
         <span>
-          <i className="race-mark pit-lane" aria-hidden="true" />
+          <i className="race-mark pit-lane" />
           {t('races.off.chart-pit')}
         </span>
         <span>
-          <i className="race-mark turn" aria-hidden="true" />
+          <i className="race-mark turn" />
           {t('races.off.chart-place')}
         </span>
       </p>
-      <p className="cursor-line" aria-live="polite">
+      <p className="cursor-line">
         {t(!wide && facts ? 'races.off.cursor-facts' : 'races.off.cursor', { place: tenMetres(cursorSM), length: tenMetres(view.lengthM), facts })}
-      </p>
-      <p id="race-off-hint" hidden>
-        {t('races.off.hint')}
       </p>
     </div>
   );

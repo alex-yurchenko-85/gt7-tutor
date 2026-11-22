@@ -114,16 +114,16 @@ export function useRouter(): Navigation {
 
 type LinkProps = {
   to: string;
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
   current?: boolean;
   primary?: boolean;
   onNavigate?: () => void;
   role?: 'menuitem';
-  label?: string;
+  title?: string;
 };
 
-export function Link({ to, children, className, current, primary, onNavigate, role, label }: LinkProps) {
+export function Link({ to, children, className, current, primary, onNavigate, role, title }: LinkProps) {
   const { navigate } = useRouter();
   const follow = (event: MouseEvent<HTMLAnchorElement>) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -136,7 +136,7 @@ export function Link({ to, children, className, current, primary, onNavigate, ro
       href={to}
       className={className}
       role={role}
-      aria-label={label}
+      title={title}
       aria-current={current ? 'page' : undefined}
       data-primary={primary ? 'true' : undefined}
       onClick={follow}

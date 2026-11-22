@@ -64,7 +64,7 @@ function StatList({ stats, fuelBar, className = 'race-stats' }: { stats: Stat[];
           <b>{stat.value}</b>
           <span>{stat.caption}</span>
           {stat.fuel && fuelBar !== null ? (
-            <div className="race-fuel-bar" aria-hidden="true">
+            <div className="race-fuel-bar">
               <i style={{ width: `${fuelBar}%` }} />
             </div>
           ) : null}
@@ -160,7 +160,7 @@ function Kicker({ race }: { race: LiveRace }) {
   if (race.phase === 'joined') {
     return (
       <p className="race-kicker dim">
-        <span className="race-dim-dot" aria-hidden="true" />
+        <span className="race-dim-dot" />
         {t('races.stage.joined')}
       </p>
     );
@@ -298,10 +298,9 @@ export function RaceRecordView() {
     <div className={['drive-stage', 'race-stage', motion ? 'motion' : '', showMap ? 'with-map' : ''].filter(Boolean).join(' ')} data-surface="night" data-phase={race.phase}>
       <div className="stage-top">
         <div className="stage-title race-status">
-          <p className="race-status-word">
-            <span className={`race-dot ${dot.colour}`} aria-hidden="true" />
+          <p className="race-status-word" title={telemetry.text}>
+            <span className={`race-dot ${dot.colour}`} />
             {dot.word}
-            <span className="visually-hidden">: {telemetry.text}</span>
           </p>
           <p className="race-status-sub">{subline}</p>
         </div>
@@ -341,7 +340,7 @@ export function RaceRecordView() {
           </div>
         ) : null}
         {race.phase === 'finished' && savedRaceId !== null ? (
-          <div className="race-open-bar" aria-hidden="true">
+          <div className="race-open-bar">
             <i />
           </div>
         ) : null}

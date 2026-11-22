@@ -93,13 +93,11 @@ export function ConsoleForm({ layout, onChecked, onSaved }: ConsoleFormProps) {
       inputMode="decimal"
       autoComplete="off"
       value={address}
-      aria-invalid={problem ? true : undefined}
-      aria-describedby={problem ? 'console-address-problem' : layout === 'rows' ? 'console-address-hint' : undefined}
       onChange={event => setAddress(event.target.value)}
     />
   );
   const problemText = problem ? (
-    <p className="error" id="console-address-problem" role="alert">
+    <p className="error" role="alert">
       {problem}
     </p>
   ) : null;
@@ -136,7 +134,7 @@ export function ConsoleForm({ layout, onChecked, onSaved }: ConsoleFormProps) {
       <form className="pref" onSubmit={save} noValidate>
         <span className="pref-text">
           <label htmlFor="console-address">{t('setup.console.address')}</label>
-          <span className="sub" id="console-address-hint">
+          <span className="sub">
             {t('setup.console.address-hint')}
           </span>
         </span>

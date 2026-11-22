@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { Difference, RaceDetail, RaceLap } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
-import { SIDE_FACTOR } from '../../charts/geometry.ts';
 import { useFrameCursor } from '../../charts/use-frame-cursor.ts';
 import { formatTime, groupedMetres } from '../../app/format.ts';
 import { useWideLayout } from '../../app/layout.ts';
@@ -58,11 +57,8 @@ function lapWords(race: RaceDetail, lap: number, withLap: number): LineWords {
   const pit = race.laps.some(item => (item.number === lap || item.number === withLap) && (item.pitIn || item.pitOut));
   const metres = groupedMetres;
   return {
-    referenceName: t('races.compare.lap-name', { lap: withLap }),
-    youName: t('races.compare.lap-name', { lap }),
-    referenceLegend: withLap === race.bestLap ? t('races.compare.best-legend', { lap: withLap }) : t('races.compare.lap-name', { lap: withLap }),
+    referenceLegend: t('races.compare.lap-name', { lap: withLap }),
     youLegend: t('races.compare.lap-name', { lap }),
-    timeLabel: t('races.compare.time-label', { lap: withLap }),
     fields: {
       speed: { title: t('races.compare.speed'), unit: t('races.compare.kph') },
       throttle: { title: t('races.compare.throttle'), unit: null },
@@ -70,16 +66,11 @@ function lapWords(race: RaceDetail, lap: number, withLap: number): LineWords {
       time: { title: t('races.compare.time', { lap: withLap }), unit: t('races.compare.seconds') }
     },
     ...(note === null ? {} : { timeNote: note }),
-    mapTitle: t('races.compare.map', { with: withLap, lap }),
-    mapTitleHidden: true,
-    mapLabel: t('races.compare.map', { with: withLap, lap }),
     mapNotes: pit ? [t('races.compare.map-pit')] : [],
-    sideLabel: t('races.compare.side-label', { lap, factor: SIDE_FACTOR }),
-    dialogLabel: t('races.compare.dialog-label', { with: withLap, lap, race: raceName(race) }),
     dialogLine: t('races.compare.dialog-line', { with: withLap }),
-    hint: t('races.compare.hint'),
     metres,
-    cursorText: (cursorSM, lengthM) => t('races.cursor', { place: metres(cursorSM), length: metres(lengthM) }),
+    boxOrder: withLap < lap ? ['ref', 'you'] : ['you', 'ref'],
+    boxRow: (line, value) => t('races.compare.box-row', { lap: line === 'ref' ? withLap : lap, value }),
     describe: describeAgainst(withLap)
   };
 }
@@ -126,10 +117,7 @@ function LapSelects({ race, lap, withLap }: { race: RaceDetail; lap: number; wit
   return (
     <div className="race-compare-selects">
       <div className="field">
-        <label htmlFor="race-compare-lap" className="visually-hidden">
-          {t('races.compare.lap')}
-        </label>
-        <select id="race-compare-lap" value={lap} onChange={event => navigate(paths.raceCompare(race.id, Number(event.target.value), withLap))}>
+        <select value={lap} onChange={event => navigate(paths.raceCompare(race.id, Number(event.target.value), withLap))}>
           {race.laps
             .filter(item => item.number !== withLap)
             .map(item => (
@@ -140,10 +128,7 @@ function LapSelects({ race, lap, withLap }: { race: RaceDetail; lap: number; wit
         </select>
       </div>
       <div className="field">
-        <label htmlFor="race-compare-with" className="visually-hidden">
-          {t('races.compare.with')}
-        </label>
-        <select id="race-compare-with" value={withLap} onChange={event => navigate(paths.raceCompare(race.id, lap, Number(event.target.value)))}>
+        <select value={withLap} onChange={event => navigate(paths.raceCompare(race.id, lap, Number(event.target.value)))}>
           {race.laps
             .filter(item => item.number !== lap)
             .map(item => (
@@ -179,7 +164,7 @@ function CompareBody({ race, comparison, lap, withLap }: { race: RaceDetail; com
   );
   const map = <CompareMap title={raceName(race)} review={comparison} words={words} sideCueDistanceM={null} scaleSwitch={wide} cursorSM={cursorSM} selected={selected} onSelect={select} lapLine={lapLine} />;
   const charts = <CompareCharts review={comparison} words={words} side={false} sideCueDistanceM={null} cursorSM={cursorSM} onCursor={setCursorNow} onScrub={scrub} />;
-  const differences = <Differences findings={comparison.findings} losses={comparison.turnLosses} selected={selected} words={turnWords} onSelect={select} />;
+  const differences = <Differences findings={comparison.findings} losses={comparison.turnLosses} selected={selected} words={turnWords} onSelect={select} scroll={wide} />;
   if (!wide) {
     return (
       <div className="review-phone race-compare">
@@ -195,7 +180,7 @@ function CompareBody({ race, comparison, lap, withLap }: { race: RaceDetail; com
         {map}
         {charts}
       </div>
-      <div>{differences}</div>
+      <div className="race-compare-list">{differences}</div>
     </div>
   );
 }

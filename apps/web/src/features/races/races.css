@@ -472,27 +472,46 @@ tr.race-pit td {
   margin: 0;
 }
 
-.race-speed .cursor-line {
-  margin: 8px 0 0;
-  font: 700 16px var(--font-display);
+.lap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 6px 0 0;
 }
 
-.race-speed .cursor-line + .sub {
-  margin: 4px 0 0;
+.speed-lap-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 500 15px var(--font-body);
+  cursor: pointer;
 }
 
-.race-mark.ref,
-.race-mark.lap {
-  display: inline-block;
-  width: 18px;
-  height: 3px;
-  margin-right: 8px;
-  background: var(--ref);
+.speed-lap-key .chart-swatch {
+  width: 16px;
+  margin: 0;
+  border-radius: 2px;
 }
 
-.race-mark.lap {
-  height: 2px;
-  background: var(--mute);
+.speed-lap-key.off {
+  color: var(--mute);
+}
+
+.speed-lap-key.off .chart-swatch {
+  opacity: 0.3;
+}
+
+.turn-key {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  color: var(--mute);
+  font-size: 15px;
 }
 
 .race-mark.turn {
@@ -501,55 +520,6 @@ tr.race-pit td {
   height: 10px;
   margin-right: 8px;
   background: var(--soft);
-}
-
-.speed-box {
-  position: absolute;
-  z-index: 2;
-  min-width: 160px;
-  padding: 8px 10px;
-  border: 1px solid var(--ink);
-  background: var(--paper);
-  color: var(--ink);
-  font-size: 13px;
-  line-height: 1.45;
-  pointer-events: none;
-}
-
-.speed-box.right {
-  transform: translateX(12px);
-}
-
-.speed-box.left {
-  transform: translateX(calc(-100% - 12px));
-}
-
-.speed-box.high {
-  top: 36px;
-}
-
-.speed-box.low {
-  bottom: 8px;
-}
-
-.speed-box-title {
-  display: block;
-  font-weight: 700;
-}
-
-.speed-box ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.speed-box ul {
-  column-gap: 16px;
-}
-
-.speed-box li {
-  break-inside: avoid;
-  white-space: nowrap;
 }
 
 .race-compare-tab {
@@ -885,5 +855,52 @@ tr.race-pit td {
 
   .race-golden-wide .race-golden-map {
     max-width: 640px;
+  }
+}
+
+.speed-dialog[open] {
+  overflow-y: auto;
+}
+
+.speed-dialog-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 12px var(--gutter) 16px;
+}
+
+.speed-dialog-chart {
+  flex: 1;
+  min-height: 0;
+  color: var(--ink);
+}
+
+.speed-dialog .chart-field {
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+}
+
+@media (min-width: 900px) {
+  .wide.race-compare {
+    align-items: stretch;
+  }
+
+  .race-compare-list {
+    position: relative;
+    min-height: 0;
+  }
+
+  .race-compare-list .differences {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .turn-groups.scrolls {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 }

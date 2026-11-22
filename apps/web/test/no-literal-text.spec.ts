@@ -9,7 +9,6 @@ const TEXT_PROP = /^(aria-label|title|placeholder|alt)$|(label|Label|title|Title
 const NOT_TEXT_PROP = new Set(['className', 'name', 'labelledBy', 'aria-labelledby']);
 
 const ALLOWED: { text: string; reason: string }[] = [
-  { text: 'GT7 Tutor', reason: 'the product name stays the same in every language' },
   { text: './start.sh', reason: 'a shell command stays the same in every language' }
 ];
 

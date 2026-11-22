@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Exercise } from '@gt7/contracts';
 import { voiceDeviceId } from '../src/voice/device.ts';
 import { exercise } from './fixtures.ts';
-import { ApiStub, liveState, playerRig, renderApp, setViewportWidth, signedIn, USER, openLive } from './support.tsx';
+import { ApiStub, liveState, playerRig, renderApp, setViewportWidth, signedIn, USER, openLive, els, elWith, findElWith, iconButton } from './support.tsx';
 
 function getReadyApi(ps5Ip: string | null, exercises: Exercise[] = []): ApiStub {
   let address = ps5Ip;
@@ -22,7 +22,7 @@ function getReadyApi(ps5Ip: string | null, exercises: Exercise[] = []): ApiStub 
 }
 
 function step(name: RegExp): HTMLElement {
-  return screen.getByRole('listitem', { name });
+  return elWith('li.ready-step', name);
 }
 
 describe('get ready', () => {
@@ -32,7 +32,7 @@ describe('get ready', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Get ready to train' })).toBeInTheDocument();
     expect(screen.getByText(`Welcome, ${USER.name}`)).toBeInTheDocument();
     expect(screen.getByText('0 of 3 ready')).toBeInTheDocument();
-    const steps = within(screen.getByRole('list', { name: 'Three steps' })).getAllByRole('listitem');
+    const steps = els('li.ready-step');
     expect(steps.map(item => item.querySelector('h2')?.textContent)).toEqual(['Connect the console', 'Choose the device for the voice', 'Pick your first exercise']);
     expect(within(step(/Connect the console/)).getByLabelText('PS5 address')).toBeInTheDocument();
     expect(steps[0]).toHaveAttribute('aria-current', 'step');
@@ -45,7 +45,7 @@ describe('get ready', () => {
     renderApp();
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('PS5 address'), '192.168.1.40');
-    await user.click(screen.getByRole('button', { name: 'Save and check' }));
+    await user.click(iconButton('Save and check'));
     await waitFor(() => expect(api.called('POST /api/settings/connection/check')).toBe(true));
     expect(api.calls.findIndex(call => call.path === '/api/settings/connection')).toBeLessThan(
       api.calls.findIndex(call => call.path === '/api/settings/connection/check')
@@ -60,7 +60,7 @@ describe('get ready', () => {
     getReadyApi(null);
     renderApp();
     await screen.findByLabelText('PS5 address');
-    const save = screen.getByRole('button', { name: 'Save and check' });
+    const save = iconButton('Save and check');
     expect(save.textContent).toBe('');
     expect(save.querySelector('[data-icon="check"]')).not.toBeNull();
   });
@@ -70,7 +70,7 @@ describe('get ready', () => {
     renderApp();
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('PS5 address'), '192.168.1.40');
-    await user.click(screen.getByRole('button', { name: 'Save and check' }));
+    await user.click(iconButton('Save and check'));
     expect(await within(step(/Connect the console/)).findByText('Address saved, no telemetry yet')).toBeInTheDocument();
     expect(step(/Choose the device/)).toHaveAttribute('aria-current', 'step');
     expect(screen.getByText('1 of 3 ready')).toBeInTheDocument();
@@ -81,7 +81,7 @@ describe('get ready', () => {
     renderApp();
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('PS5 address'), '192.168.1.40');
-    await user.click(screen.getByRole('button', { name: 'Save and check' }));
+    await user.click(iconButton('Save and check'));
     expect(await within(step(/Connect the console/)).findByText('Address saved, no telemetry yet')).toBeInTheDocument();
     expect(step(/Choose the device/)).toHaveAttribute('aria-current', 'step');
   });
@@ -91,7 +91,7 @@ describe('get ready', () => {
     renderApp();
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('PS5 address'), '300.1.1.1');
-    await user.click(screen.getByRole('button', { name: 'Save and check' }));
+    await user.click(iconButton('Save and check'));
     expect(await screen.findByRole('alert')).toHaveTextContent('This is not an IPv4 address');
     expect(api.called('PUT /api/settings/connection')).toBe(false);
   });
@@ -122,7 +122,7 @@ describe('get ready', () => {
     await waitFor(() => expect(socket.sent).toContainEqual({ type: 'claim-voice', deviceId: voiceDeviceId(), ready: true }));
     act(() => socket.receive({ type: 'state', state: liveState({ seq: 2, voiceDeviceId: voiceDeviceId(), voiceReady: true }) }));
     expect(within(step(/Choose the device/)).getByText('This device')).toBeInTheDocument();
-    const test = within(step(/Choose the device/)).getByRole('button', { name: 'Test' });
+    const test = iconButton('Test', step(/Choose the device/));
     expect(test.querySelector('[data-icon="speaker"]')).not.toBeNull();
     const played = vi.spyOn(rig.player, 'test');
     await userEvent.setup().click(test);
@@ -144,7 +144,7 @@ describe('get ready', () => {
   it('voice_step_texts_name_no_device_type', async () => {
     getReadyApi('192.168.1.40');
     renderApp();
-    const voiceStep = await screen.findByRole('listitem', { name: /Choose the device/ });
+    const voiceStep = await findElWith('li.ready-step', /Choose the device/);
     expect(within(voiceStep).getByText('One device plays the cues: this device, or another one with GT7 Tutor open. A phone must stay unlocked during an attempt.')).toBeInTheDocument();
     expect(within(voiceStep).getAllByRole('button').map(button => button.textContent)).toEqual(['Use this device for voice', 'Set up the voice later']);
   });
@@ -153,7 +153,7 @@ describe('get ready', () => {
     window.localStorage.setItem(`gt7.getReady.voiceLater.${USER.id}`, '1');
     getReadyApi('192.168.1.40');
     renderApp();
-    const link = await within(await screen.findByRole('listitem', { name: /Pick your first/ })).findByRole('link', { name: 'Add an exercise' });
+    const link = await within(await findElWith('li.ready-step', /Pick your first/)).findByRole('link', { name: 'Add an exercise' });
     expect(link).toHaveAttribute('href', '/exercises/add');
   });
 

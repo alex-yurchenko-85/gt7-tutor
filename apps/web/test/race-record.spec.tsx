@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { LiveRace } from '@gt7/contracts';
-import { ApiStub, renderApp, sendLiveState, setViewportWidth, signedIn } from './support.tsx';
+import { ApiStub, renderApp, sendLiveState, setViewportWidth, signedIn, el, maybeEl } from './support.tsx';
 
 const RACE_ID = 'a0000000-0000-4000-8000-000000000001';
 
@@ -55,13 +55,11 @@ function stats(): string[] {
 }
 
 function circles(): string[] {
-  return within(screen.getByRole('list', { name: 'Laps' }))
-    .getAllByRole('listitem')
-    .map(item => item.getAttribute('aria-label') ?? '');
+  return [...el('.lap-circles').children].map(item => item.className);
 }
 
 function key(): string[] {
-  return within(screen.getByRole('list', { name: 'What the circles mean' }))
+  return within(el('ul.lap-key'))
     .getAllByRole('listitem')
     .map(item => item.textContent ?? '');
 }
@@ -76,13 +74,13 @@ describe('race recording stage', () => {
     await openStage(WAITING);
     expect(await screen.findByRole('heading', { level: 1, name: 'WAITING' })).toBeInTheDocument();
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
-    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
+    expect(maybeEl('nav.nav')).not.toBeInTheDocument();
     expect(screen.getByText('Race recording')).toBeInTheDocument();
     expect(screen.getByText('Start a race of 2 or more laps in the game.')).toBeInTheDocument();
     expect(screen.getByText('The recording starts with the race and stops at the finish. You can look at the TV now.')).toBeInTheDocument();
     expect(document.querySelector('.race-light, .race-lights')).toBeNull();
     expect(document.body.textContent).not.toMatch(/-1/);
-    expect(screen.queryByRole('list', { name: 'Laps' })).not.toBeInTheDocument();
+    expect(maybeEl('.lap-circles')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(window.location.pathname).toBe('/races'));
     expect(api.called('POST /api/races/record/stop')).toBe(true);
@@ -104,8 +102,8 @@ describe('race recording stage', () => {
     expect(document.querySelector('.race-light, .race-lights')).toBeNull();
     expect(screen.getByText("BAC Mono '16")).toBeInTheDocument();
     expect(stats()).toEqual(['0:00.0this lap', 'P 20of 20', '\u2013last lap', '\u2013best lap', '100fuel']);
-    expect(circles()).toEqual(['Lap 1, this lap', 'Lap 2, to come', 'Lap 3, to come', 'Lap 4, to come', 'Lap 5, to come', 'Lap 6, to come', 'Lap 7, to come']);
-    expect(screen.getByRole('img', { name: 'The line of the last lap, brightest at the car' })).toBeInTheDocument();
+    expect(circles()).toEqual(['lap-circle now', 'lap-circle', 'lap-circle', 'lap-circle', 'lap-circle', 'lap-circle', 'lap-circle']);
+    expect(el('.race-trail')).toBeInTheDocument();
     await waitFor(() => expect(Number(document.querySelector('.race-trail-car')!.getAttribute('r'))).toBeGreaterThan(0));
     expect(document.querySelectorAll('.race-trail-line')).toHaveLength(0);
     noStrip();
@@ -151,10 +149,10 @@ describe('race recording stage', () => {
     expect(screen.getByText('The race runs already')).toBeInTheDocument();
     expect(screen.getByText('The recording starts at the next lap line.')).toBeInTheDocument();
     expect(stats()).toEqual(['1:12.6this lap', 'P 4of 20']);
-    expect(circles()).toEqual(['Lap 1, not recorded', 'Lap 2, not recorded', 'Lap 3, not recorded', 'Lap 4, not recorded', 'Lap 5, to come', 'Lap 6, to come', 'Lap 7, to come']);
+    expect(circles()).toEqual(['lap-circle skip', 'lap-circle skip', 'lap-circle skip', 'lap-circle skip', 'lap-circle', 'lap-circle', 'lap-circle']);
     expect(key()).toEqual(['lap not recorded', 'lap to come']);
     noStrip();
-    expect(screen.getByRole('img', { name: 'The line of the last lap, brightest at the car' })).toBeInTheDocument();
+    expect(el('.race-trail')).toBeInTheDocument();
   });
 
   it('lap_shows_the_values_the_fuel_and_the_circles', async () => {
@@ -166,7 +164,7 @@ describe('race recording stage', () => {
     expect(screen.getAllByText('Recording')).toHaveLength(1);
     expect(stats()).toEqual(['0:47.3this lap', 'P 11of 20', '2:37.850last lap', '2:22.032best lap · lap 1', '91fuel · about 3.0 laps left']);
     expect(document.querySelector('.race-fuel-bar')).not.toBeNull();
-    expect(circles()).toEqual(['Lap 1, done, best lap', 'Lap 2, done', 'Pit stop after lap 2', 'Lap 3, this lap', 'Lap 4, to come', 'Lap 5, to come', 'Lap 6, to come', 'Lap 7, to come']);
+    expect(circles()).toEqual(['lap-circle done best', 'lap-circle done', 'lap-pit', 'lap-circle now', 'lap-circle', 'lap-circle', 'lap-circle', 'lap-circle']);
     expect(key()).toEqual(['lap done', 'this lap', 'lap to come', 'best lap', 'pit stop after this lap']);
     const values = document.querySelector('.race-values')!;
     expect(values.querySelector('.race-stats')).not.toBeNull();
@@ -175,7 +173,7 @@ describe('race recording stage', () => {
     expect(values.querySelector('.race-trail')).toBeNull();
     expect(document.querySelector('.race-stage-map')!.parentElement).toHaveClass('race-stage');
     noStrip();
-    expect(screen.getByRole('img', { name: 'The line of the last lap, brightest at the car' })).toBeInTheDocument();
+    expect(el('.race-trail')).toBeInTheDocument();
   });
 
   it('lap_without_an_estimate_says_only_fuel', async () => {
@@ -213,7 +211,7 @@ describe('race recording stage', () => {
     expect(stats()).toEqual(['16:20.028race time', '2:20.001best lap · lap 1']);
     expect(screen.getByText('It opens by itself in a moment.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
-    expect(screen.queryByRole('list', { name: 'Laps' })).not.toBeInTheDocument();
+    expect(maybeEl('.lap-circles')).not.toBeInTheDocument();
     noStrip();
     act(() => {
       vi.advanceTimersByTime(2300);
@@ -268,7 +266,7 @@ describe('race recording stage', () => {
     expect(screen.getByText('3 of 7 laps are in your list. The race is marked as not finished.')).toBeInTheDocument();
     expect(stats()).toEqual(['7:19.813time of the recorded laps', '2:19.931best lap · lap 3', '20 → 6position, start to lap 3']);
     expect(screen.getByRole('button', { name: 'Open the race' })).toBeInTheDocument();
-    expect(circles()).toEqual(['Lap 1, done', 'Lap 2, done', 'Pit stop after lap 2', 'Lap 3, done, best lap', 'Lap 4, to come', 'Lap 5, to come', 'Lap 6, to come', 'Lap 7, to come']);
+    expect(circles()).toEqual(['lap-circle done', 'lap-circle done', 'lap-pit', 'lap-circle done best', 'lap-circle', 'lap-circle', 'lap-circle', 'lap-circle']);
     expect(key()).toEqual(['lap done', 'lap to come', 'best lap', 'pit stop after this lap']);
     noStrip();
     await userEvent.click(screen.getByRole('button', { name: 'Close' }));
@@ -377,7 +375,7 @@ describe('race recording stage', () => {
     await screen.findByRole('heading', { level: 1, name: 'LAP 3 of 7' });
     expect(document.querySelector('.race-stage')).not.toHaveClass('motion');
     expect(document.querySelector('.lap-circle.now')).not.toBeNull();
-    expect(screen.getByRole('img', { name: 'The line of the last lap, brightest at the car' })).toBeInTheDocument();
+    expect(el('.race-trail')).toBeInTheDocument();
   });
 
   it('goes_to_the_list_when_no_race_is_in_the_live_state', async () => {
@@ -399,24 +397,23 @@ describe('race recording stage', () => {
       return {
         dot: root.querySelector('.race-dot')!.className,
         word: [...root.querySelector('.race-status-word')!.childNodes].find(node => node.nodeType === Node.TEXT_NODE)!.textContent,
-        hidden: root.querySelector('.visually-hidden')!.textContent,
         sub: root.querySelector('.race-status-sub')!.textContent
       };
     }
 
     it('waiting_with_packets_is_green_telemetry', async () => {
       await open(WAITING, 'connected');
-      expect(status()).toEqual({ dot: 'race-dot green', word: 'Telemetry', hidden: ': Receiving telemetry', sub: 'Race recording' });
+      expect(status()).toEqual({ dot: 'race-dot green', word: 'Telemetry', sub: 'Race recording' });
     });
 
     it('waiting_without_packets_is_grey_no_telemetry', async () => {
       await open(WAITING, 'stale');
-      expect(status()).toEqual({ dot: 'race-dot grey', word: 'No telemetry', hidden: ': Waiting for packets', sub: 'Race recording' });
+      expect(status()).toEqual({ dot: 'race-dot grey', word: 'No telemetry', sub: 'Race recording' });
     });
 
     it('recording_with_packets_is_red_and_names_the_car', async () => {
       await open(liveRace(), 'connected');
-      expect(status()).toEqual({ dot: 'race-dot red', word: 'Recording', hidden: ': Receiving telemetry', sub: "BAC Mono '16" });
+      expect(status()).toEqual({ dot: 'race-dot red', word: 'Recording', sub: "BAC Mono '16" });
     });
 
     it('recording_without_packets_is_yellow_recording_no_telemetry', async () => {

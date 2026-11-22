@@ -40,7 +40,7 @@ function SummaryBand({ race }: { race: RaceDetail }) {
     { value: `${race.startPosition} → ${race.finishPosition}`, caption: positionCaption(race.firstLap, lastLap(race), race.complete), tone: '' }
   ];
   const title = race.carName ?? t('races.band.race');
-  return <RaceBand label={title} title={title} facts={factsText(race)} values={values} />;
+  return <RaceBand title={title} facts={factsText(race)} values={values} />;
 }
 
 function RaceHeader({ race, tab, onName }: { race: RaceDetail; tab: RaceTab; onName(): void }) {
@@ -48,7 +48,7 @@ function RaceHeader({ race, tab, onName }: { race: RaceDetail; tab: RaceTab; onN
   const text = lengthText(race);
   return (
     <header className="exercise-header race-header">
-      <nav className="breadcrumb" aria-label={t('common.breadcrumb')}>
+      <nav className="breadcrumb">
         <Link to={paths.races()}>{t('races.breadcrumb.races')}</Link> / {name}
       </nav>
       <h1>{name}</h1>
@@ -61,7 +61,7 @@ function RaceHeader({ race, tab, onName }: { race: RaceDetail; tab: RaceTab; onN
           {race.trackName === null ? t('races.name-track') : t('races.change-name')}
         </button>
       </p>
-      <nav className="exercise-tabs" aria-label={t('races.tabs')}>
+      <nav className="exercise-tabs">
         {tabs().map(item => (
           <Link key={item.tab} to={paths.race(race.id, item.tab)} current={item.tab === tab}>
             {item.label}

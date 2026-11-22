@@ -19,7 +19,6 @@ export function ThemeSwitch({ compact }: { compact: boolean }) {
   };
   const options: RadioOption<ThemeChoice>[] = THEMES.map(option => ({
     value: option.value,
-    ariaLabel: compact ? t('app.theme.choice', { theme: t(option.label) }) : undefined,
     title: compact ? t('app.theme.choice', { theme: t(option.label) }) : undefined,
     content: (
       <>
@@ -28,5 +27,5 @@ export function ThemeSwitch({ compact }: { compact: boolean }) {
       </>
     )
   }));
-  return <RadioGroup className={`theme-switch${compact ? ' compact' : ''}`} label={t('app.theme.label')} options={options} value={theme} onChange={select} />;
+  return <RadioGroup className={`theme-switch${compact ? ' compact' : ''}`} options={options} value={theme} onChange={select} />;
 }

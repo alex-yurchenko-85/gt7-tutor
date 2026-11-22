@@ -85,7 +85,7 @@ type RunChoiceProps = { proposals: ReferenceProposal[]; selected: number | null;
 
 function RunChoice({ proposals, selected, onSelect }: RunChoiceProps) {
   return (
-    <fieldset className="choice" role="radiogroup" aria-label={t('record.select.label')}>
+    <fieldset className="choice" role="radiogroup">
       <legend>{t('record.select.legend')}</legend>
       {proposals.map((proposal, index) => (
         <label key={index}>
@@ -124,7 +124,7 @@ function ManualRange({ exerciseId, onCreated }: { exerciseId: string; onCreated(
   };
 
   return (
-    <form className="panel manual" aria-label={t('record.manual.label')} onSubmit={submit} noValidate>
+    <form className="panel manual" onSubmit={submit} noValidate>
       <h2>{t('record.manual.title')}</h2>
       <p className="sub">{t('record.manual.text')}</p>
       <p className="sub">{t('record.manual.keeps')}</p>
@@ -180,7 +180,7 @@ type Slot = { note: string; state: 'done' | 'now' | null };
 
 function Slots({ slots }: { slots: Slot[] }) {
   return (
-    <ol className="record-slots" aria-label={t('record.slots.label')}>
+    <ol className="record-slots">
       {slots.map((slot, index) => (
         <li key={index} className={slot.state ?? undefined} aria-current={slot.state === 'now' ? 'step' : undefined}>
           <b>{t('record.slot.title', { number: index + 1 })}</b>
@@ -376,18 +376,18 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
     if (active && seconds !== null) {
       return (
         <div className="record-live">
-          <div className="record-count" role="timer">
+          <div className="record-count">
             {seconds}
           </div>
           {wide ? (
             <p className="record-line">
-              <span className="record-dot" aria-hidden="true" />
+              <span className="record-dot" />
               <span>{t('record.live.line-wide', { seconds })}</span>
             </p>
           ) : (
             <>
               <p className="record-line">
-                <span className="record-dot" aria-hidden="true" />
+                <span className="record-dot" />
                 <span>{t('record.live.line', { seconds })}</span>
               </p>
               <p className="record-note">{t('record.live.note')}</p>
@@ -521,16 +521,16 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
 
   if (!wide) {
     return (
-      <section className="record-phone" aria-label={title}>
+      <section className="record-phone">
         <div className="record-stage">
           <div className="record-top">
             <div>
               <p>
                 {t(checkId ? 'record.phone.check' : 'record.phone.reference', { name: exercise.data.name })}
               </p>
-              <ul className="record-dots" aria-label={t('record.readiness')}>
+              <ul className="record-dots">
                 <li title={consoleChip.text}>
-                  <span className={`dot ${consoleChip.tone}`} aria-hidden="true" />
+                  <span className={`dot ${consoleChip.tone}`} />
                   {consoleRequired ? t('record.telemetry') : t('record.recorded-data')}
                 </li>
               </ul>
@@ -554,7 +554,7 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
 
   return (
     <section className="record">
-      <nav className="breadcrumb" aria-label={t('common.breadcrumb')}>
+      <nav className="breadcrumb">
         <Link to={paths.exercises()}>{t('record.breadcrumb.exercises')}</Link> / <Link to={paths.exercise(exerciseId)}>{exercise.data.name}</Link> / {t('record.breadcrumb.reference')}
       </nav>
       <h1>{title}</h1>

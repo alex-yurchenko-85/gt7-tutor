@@ -18,15 +18,15 @@ async function checked(credentials: ProfileCredentials, send: (credentials: Prof
 function AccessScreen({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="access">
-      <section className="access-brand" aria-label={t('auth.brand.label')}>
+      <section className="access-brand">
         <Logo height={96} />
         <p className="access-tagline">{t('auth.brand.tagline')}</p>
         <p className="access-note">{t('auth.brand.note')}</p>
       </section>
-      <section className="access-main" aria-labelledby="access-title">
+      <section className="access-main">
         <div className="access-card">
           <DemoLabel />
-          <h1 id="access-title">{title}</h1>
+          <h1>{title}</h1>
           {children}
         </div>
       </section>

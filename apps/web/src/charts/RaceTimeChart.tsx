@@ -13,14 +13,13 @@ export type RaceTimeCursor = {
   active: boolean;
   value: number | null;
   box: string[];
-  valueText: string;
   snapMs: number[];
   onCursor(tMs: number): void;
   onActive(source: 'pointer' | 'focus', active: boolean): void;
 };
 
 type RaceTimeChartProps = {
-  label: string;
+  id: string;
   raceMs: number;
   firstLap: number;
   lapEnds: number[];
@@ -57,7 +56,7 @@ function touches(a: AxisLabel, b: AxisLabel, plotWidth: number): boolean {
   return Math.abs(a.at - b.at) * plotWidth < (widthOf(a) + widthOf(b)) / 2 + LABEL_GAP_PX;
 }
 
-export function RaceTimeChart({ label, raceMs, firstLap, lapEnds, pitStops, points, step, min, max, ticks, tone, height = DEFAULT_HEIGHT, bold = NO_BOLD, cursor }: RaceTimeChartProps) {
+export function RaceTimeChart({ id, raceMs, firstLap, lapEnds, pitStops, points, step, min, max, ticks, tone, height = DEFAULT_HEIGHT, bold = NO_BOLD, cursor }: RaceTimeChartProps) {
   const [plotRef, plotWidth] = usePlotWidth();
   const span = raceMs > 0 ? raceMs : 1;
   const toX = (tMs: number) => rounded((Math.max(0, Math.min(span, tMs)) / span) * WIDTH);
@@ -99,9 +98,9 @@ export function RaceTimeChart({ label, raceMs, firstLap, lapEnds, pitStops, poin
     .filter((lap, index) => index === 0 || Number(lap.text) % every === 0)
     .filter(lap => !pitLabels.some(pit => touches(lap, pit, plotWidth)));
   return (
-    <div className="race-chart chart-field" {...(cursor ? {} : { role: 'group', 'aria-label': label })}>
+    <div className="race-chart chart-field" data-chart={id}>
       <div className="channel-body">
-        <div className="y-axis" aria-hidden="true">
+        <div className="y-axis">
           {yLabels.map(item => (
             <span key={`${item.bold ? 'b' : 't'}${item.value}`} className={item.bold ? 'axis-bold' : undefined} style={{ top: percent(toY(item.value) / height) }}>
               {item.value}
@@ -115,11 +114,9 @@ export function RaceTimeChart({ label, raceMs, firstLap, lapEnds, pitStops, poin
             ? {
                 role: 'slider',
                 tabIndex: 0,
-                'aria-label': label,
                 'aria-valuemin': 0,
                 'aria-valuemax': Math.round(span),
                 'aria-valuenow': Math.round(cursor.tMs),
-                'aria-valuetext': cursor.valueText,
                 onPointerDown: (event: PointerEvent<HTMLDivElement>) => fromPointer(event, cursor),
                 onPointerMove: (event: PointerEvent<HTMLDivElement>) => {
                   if (event.buttons > 0 || event.pointerType === 'mouse') fromPointer(event, cursor);
@@ -134,7 +131,7 @@ export function RaceTimeChart({ label, raceMs, firstLap, lapEnds, pitStops, poin
               }
             : {})}
         >
-          <svg viewBox={`0 0 ${WIDTH} ${height}`} preserveAspectRatio="none" style={{ height }} aria-hidden="true">
+          <svg viewBox={`0 0 ${WIDTH} ${height}`} preserveAspectRatio="none" style={{ height }}>
             {pitStops.map(pit => (
               <rect key={pit.fromMs} className="race-chart-pit" x={toX(pit.fromMs)} width={Math.max(1, toX(pit.toMs) - toX(pit.fromMs))} y={0} height={height} />
             ))}
@@ -146,11 +143,11 @@ export function RaceTimeChart({ label, raceMs, firstLap, lapEnds, pitStops, poin
             ))}
             {line ? <path className={`chart-line ${tone}`} d={line} /> : null}
           </svg>
-          {step && last ? <span className="race-chart-end" aria-hidden="true" style={{ top: percent(toY(last.value) / height) }} /> : null}
+          {step && last ? <span className="race-chart-end" style={{ top: percent(toY(last.value) / height) }} /> : null}
           {cursor?.active ? <CursorMarks cursor={cursor} share={Math.max(0, Math.min(span, cursor.tMs)) / span} valueShare={cursor.value === null ? null : toY(cursor.value) / height} /> : null}
         </div>
       </div>
-      <div className="race-chart-laps" aria-hidden="true">
+      <div className="race-chart-laps">
         <b className="axis-name">{t('charts.race.lap-axis')}</b>
         <div>
           {[...lapLabels, ...pitLabels].map(item => (
@@ -168,11 +165,10 @@ function CursorMarks({ cursor, share, valueShare }: { cursor: RaceTimeCursor; sh
   const below = valueShare === null || valueShare < BOX_SIDE_SHARE;
   return (
     <>
-      <i className="race-cursor-line" aria-hidden="true" style={{ left: percent(share) }} />
-      {valueShare === null ? null : <i className="race-cursor-dot" aria-hidden="true" style={{ left: percent(share), top: percent(valueShare) }} />}
+      <i className="race-cursor-line" style={{ left: percent(share) }} />
+      {valueShare === null ? null : <i className="race-cursor-dot" style={{ left: percent(share), top: percent(valueShare) }} />}
       <div
         className={['race-cursor-box', share > BOX_SIDE_SHARE ? 'left' : 'right', below ? 'below' : 'above'].join(' ')}
-        aria-hidden="true"
         style={{ left: percent(share), top: percent(valueShare ?? 0) }}
       >
         {cursor.box.map((line, index) => (index === 0 ? <b key={line}>{line}</b> : <span key={line}>{line}</span>))}

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { ReferenceInfo } from '@gt7/contracts';
 import { exerciseApi, reference, EXERCISE_ID } from './fixtures.ts';
-import { renderApp } from './support.tsx';
+import { renderApp, findDialog } from './support.tsx';
 
 describe('reference history', () => {
   it('reference_history_can_return_to_demonstration', async () => {
@@ -52,7 +52,7 @@ describe('reference history', () => {
     const button = await screen.findByRole('button', { name: 'Delete' });
     expect(button).toHaveClass('btn', 'inline', 'danger');
     await user.click(button);
-    const dialog = await screen.findByRole('alertdialog', { name: 'Delete this reference?' });
+    const dialog = await findDialog('Delete this reference?');
     expect(dialog).toHaveTextContent('Your attempt, 17 November. No attempt uses it.');
     expect(dialog).toHaveTextContent('The active reference does not change.');
     expect(dialog).toHaveTextContent('You cannot undo it.');

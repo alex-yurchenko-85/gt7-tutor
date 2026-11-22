@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { catalogueEntry, exercise, EXERCISE_ID } from './fixtures.ts';
-import { ApiStub, renderApp, setViewportWidth, signedIn, USER } from './support.tsx';
+import { ApiStub, renderApp, setViewportWidth, signedIn, USER, el, findEl, iconButton } from './support.tsx';
 
 const ENTRIES = [
   catalogueEntry({
@@ -27,7 +27,7 @@ function catalogueApi(): ApiStub {
 }
 
 function listed(): string[] {
-  return within(screen.getByRole('table', { name: 'Catalogue exercises' }))
+  return within(el('.catalogue-list table'))
     .queryAllByRole('row')
     .slice(1)
     .map(row => row.getAttribute('data-entry') ?? '');
@@ -42,7 +42,7 @@ describe('add exercise', () => {
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Add an exercise' })).toBeInTheDocument();
-    const breadcrumb = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    const breadcrumb = el('nav.breadcrumb');
     expect(breadcrumb).toHaveTextContent('Exercises / Add');
     expect(within(breadcrumb).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
     expect(screen.getByText(/A catalogue entry does not mean that GT7 Tutor supports the exercise\./)).toBeInTheDocument();
@@ -52,11 +52,11 @@ describe('add exercise', () => {
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     const user = userEvent.setup();
-    await screen.findByRole('table', { name: 'Catalogue exercises' });
+    await findEl('.catalogue-list table');
     expect(listed()).toHaveLength(4);
     await user.click(screen.getByRole('button', { name: /^Licence/ }));
     expect(listed()).toEqual(['licence-b-1', 'licence-b-3']);
-    await user.type(screen.getByRole('searchbox', { name: 'Search' }), 'tsukuba');
+    await user.type(el('input[type="search"]'), 'tsukuba');
     expect(listed()).toEqual(['licence-b-1']);
     await user.click(screen.getByRole('button', { name: /^All/ }));
     expect(listed()).toEqual(['licence-b-1', 'ce-tsukuba-1']);
@@ -65,16 +65,16 @@ describe('add exercise', () => {
   it('an_empty_search_says_to_clear_the_filters', async () => {
     catalogueApi();
     renderApp({ path: '/exercises/add' });
-    await screen.findByRole('table', { name: 'Catalogue exercises' });
-    await userEvent.setup().type(screen.getByRole('searchbox', { name: 'Search' }), 'zzzz');
+    await findEl('.catalogue-list table');
+    await userEvent.setup().type(el('input[type="search"]'), 'zzzz');
     expect(screen.getByText('Check the spelling, or clear the filters.')).toBeInTheDocument();
   });
 
   it('search_filters_by_code', async () => {
     catalogueApi();
     renderApp({ path: '/exercises/add' });
-    await screen.findByRole('table', { name: 'Catalogue exercises' });
-    await userEvent.setup().type(screen.getByRole('searchbox', { name: 'Search' }), 'b-3');
+    await findEl('.catalogue-list table');
+    await userEvent.setup().type(el('input[type="search"]'), 'b-3');
     expect(listed()).toEqual(['licence-b-3']);
     expect(row('licence-b-3')).toHaveTextContent('Cornering Basics 1');
   });
@@ -82,7 +82,7 @@ describe('add exercise', () => {
   it('rows_show_track_car_and_targets', async () => {
     catalogueApi();
     renderApp({ path: '/exercises/add' });
-    await screen.findByRole('table', { name: 'Catalogue exercises' });
+    await findEl('.catalogue-list table');
     const first = row('licence-b-1');
     expect(first).toHaveTextContent('Licence · National B B-1');
     expect(first).toHaveTextContent("Mazda Demio XD Touring '15");
@@ -101,9 +101,9 @@ describe('add exercise', () => {
       })
       .on('GET /api/exercises/e0000000-0000-4000-8000-000000000009', added);
     renderApp({ path: '/exercises/add' });
-    await screen.findByRole('table', { name: 'Catalogue exercises' });
+    await findEl('.catalogue-list table');
     expect(window.localStorage.getItem('gt7.currentExercise.user-1')).toBeNull();
-    await userEvent.setup().click(within(row('licence-b-3')).getByRole('button', { name: 'Add Cornering Basics 1' }));
+    await userEvent.setup().click(within(row('licence-b-3')).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(window.localStorage.getItem('gt7.currentExercise.user-1')).toBe(added.id));
   });
 
@@ -112,8 +112,8 @@ describe('add exercise', () => {
       .on('POST /api/exercises', { status: 201, body: exercise({ id: 'e0000000-0000-4000-8000-000000000009', name: 'Cornering Basics 1' }) })
       .on('GET /api/exercises/e0000000-0000-4000-8000-000000000009', exercise({ id: 'e0000000-0000-4000-8000-000000000009', name: 'Cornering Basics 1', activeReferenceId: null, step: 1 }));
     renderApp({ path: '/exercises/add' });
-    await screen.findByRole('table', { name: 'Catalogue exercises' });
-    await userEvent.setup().click(within(row('licence-b-3')).getByRole('button', { name: 'Add Cornering Basics 1' }));
+    await findEl('.catalogue-list table');
+    await userEvent.setup().click(within(row('licence-b-3')).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(window.location.pathname).toBe('/exercises/e0000000-0000-4000-8000-000000000009'));
     expect(api.calls.find(call => call.method === 'POST' && call.path === '/api/exercises')?.body).toEqual({ catalogueId: 'licence-b-3' });
     expect(window.localStorage.getItem(`gt7.currentExercise.${USER.id}`)).toBe('e0000000-0000-4000-8000-000000000009');
@@ -122,8 +122,8 @@ describe('add exercise', () => {
   it('added_entry_links_to_its_page', async () => {
     catalogueApi();
     renderApp({ path: '/exercises/add' });
-    await screen.findByRole('table', { name: 'Catalogue exercises' });
-    const open = within(row('brand-yangwang-racing-lines')).getByRole('link', { name: 'Added · open Racing Lines' });
+    await findEl('.catalogue-list table');
+    const open = within(row('brand-yangwang-racing-lines')).getByRole('link', { name: 'Added · open' });
     expect(open).toHaveAttribute('href', `/exercises/${EXERCISE_ID}`);
     expect(within(row('brand-yangwang-racing-lines')).queryByRole('button')).toBeNull();
     expect(screen.queryByText(/checked/i)).not.toBeInTheDocument();
@@ -134,25 +134,25 @@ describe('add exercise', () => {
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     const user = userEvent.setup();
-    await user.type(await screen.findByRole('searchbox', { name: 'Search' }), 'no such exercise');
+    await user.type(await findEl('input[type="search"]'), 'no such exercise');
     expect(screen.getByText('No exercise matches.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(listed()).toHaveLength(4);
-    expect(screen.getByRole('searchbox', { name: 'Search' })).toHaveValue('');
+    expect(el('input[type="search"]')).toHaveValue('');
   });
 
   it('own_exercise_form_stays', async () => {
     setViewportWidth(390);
     catalogueApi();
     renderApp({ path: '/exercises/add' });
-    expect(await screen.findByRole('form', { name: 'Your own exercise' })).toBeInTheDocument();
+    expect(await findEl('form.own-exercise')).toBeInTheDocument();
   });
 
   it('own_exercise_is_created_with_an_icon_button', async () => {
     catalogueApi();
     renderApp({ path: '/exercises/add' });
-    const form = await screen.findByRole('form', { name: 'Your own exercise' });
-    const create = within(form).getByRole('button', { name: 'Create exercise' });
+    const form = await findEl('form.own-exercise');
+    const create = iconButton('Create exercise', form);
     expect(create.textContent).toBe('');
     expect(create.querySelector('[data-icon="check"]')).not.toBeNull();
   });

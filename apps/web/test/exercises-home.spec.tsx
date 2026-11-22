@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { Exercise, Progress } from '@gt7/contracts';
 import { catalogueEntry, exercise, exerciseApi, rememberExercise, EXERCISE_ID } from './fixtures.ts';
-import { liveState, renderApp, setViewportWidth, openLive } from './support.tsx';
+import { liveState, renderApp, setViewportWidth, openLive, sectionOf, maybeSection, findSection, dialogOf, el, findEl, maybeEl, elWith } from './support.tsx';
 
 const RACING = exercise({
   id: EXERCISE_ID,
@@ -61,7 +61,7 @@ describe('exercises home', () => {
   it('home_shows_continue_card_for_current_exercise', async () => {
     homeApi();
     renderApp();
-    const card = await screen.findByRole('region', { name: 'Racing Line: Intermediate' });
+    const card = await findSection('Racing Line: Intermediate');
     expect(card).toHaveTextContent('Continue');
     expect(card).toHaveTextContent('0:26.900your best, from the game');
     expect(card).not.toHaveTextContent('measured');
@@ -88,14 +88,14 @@ describe('exercises home', () => {
   it('home_lists_exercises_grouped_by_family', async () => {
     homeApi();
     renderApp();
-    const mine = await screen.findByRole('region', { name: /My exercises/ });
-    const licence = within(mine).getByRole('group', { name: 'Licence' });
+    const mine = await findSection(/My exercises/);
+    const licence = elWith('.family-group', /^Licence/, mine);
     const row = within(licence).getByRole('link', { name: /Cornering Basics 1/ });
     expect(row).toHaveAttribute('href', '/exercises/e0000000-0000-4000-8000-000000000002');
     expect(row).toHaveTextContent('National B, B-3');
     expect(row).toHaveTextContent('New');
     expect(row).not.toHaveTextContent('Next:');
-    const brand = within(mine).getByRole('group', { name: 'Brand Central' });
+    const brand = elWith('.family-group', /^Brand Central/, mine);
     const racing = within(brand).getByRole('link', { name: /Racing Line: Intermediate/ });
     expect(racing).toHaveTextContent('0:26.900');
     expect(racing).not.toHaveTextContent('Next:');
@@ -105,8 +105,8 @@ describe('exercises home', () => {
   it('home_filter_by_family', async () => {
     homeApi();
     renderApp();
-    const mine = await screen.findByRole('region', { name: /My exercises/ });
-    const filter = within(mine).getByRole('group', { name: 'Filter' });
+    const mine = await findSection(/My exercises/);
+    const filter = el('.family-filter', mine);
     expect(within(filter).getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
     await userEvent.setup().click(within(filter).getByRole('button', { name: 'Licence' }));
     expect(within(filter).getByRole('button', { name: 'Licence' })).toHaveAttribute('aria-pressed', 'true');
@@ -118,7 +118,7 @@ describe('exercises home', () => {
     setViewportWidth(390);
     homeApi();
     renderApp();
-    expect(await screen.findByRole('link', { name: 'Add exercise' })).toHaveAttribute('href', '/exercises/add');
+    expect(await findEl('a.add-exercise')).toHaveAttribute('href', '/exercises/add');
   });
 
   it('home_without_console_shows_get_ready', async () => {
@@ -126,7 +126,7 @@ describe('exercises home', () => {
     renderApp();
     expect(await screen.findByRole('heading', { level: 1, name: 'Get ready to train' })).toBeInTheDocument();
     expect(screen.getByLabelText('PS5 address')).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: /My exercises/ })).toBeNull();
+    expect(maybeSection(/My exercises/)).toBeNull();
   });
 
   it('home_without_exercise_shows_get_ready', async () => {
@@ -138,7 +138,7 @@ describe('exercises home', () => {
   it('home_redirects_to_drive_when_armed', async () => {
     homeApi();
     const view = renderApp();
-    await screen.findByRole('region', { name: /My exercises/ });
+    await findSection(/My exercises/);
     await openLive(view.sockets, liveState({ mode: 'armed', exerciseId: EXERCISE_ID, connection: 'connected' }));
     await waitFor(() => expect(window.location.pathname).toBe(`/exercises/${EXERCISE_ID}/drive`));
     window.history.back();
@@ -158,7 +158,7 @@ describe('exercises home', () => {
     setViewportWidth(390);
     homeApi();
     renderApp();
-    const card = await screen.findByRole('region', { name: 'Racing Line: Intermediate' });
+    const card = await findSection('Racing Line: Intermediate');
     expect(card).toHaveTextContent('Next: drive attempts');
     expect(within(card).getByRole('button', { name: 'Drive' })).toBeInTheDocument();
     expect(within(card).getByRole('link', { name: 'Attempts' })).toHaveClass('continue-link');
@@ -168,7 +168,7 @@ describe('exercises home', () => {
     homeApi();
     window.localStorage.setItem('gt7.currentExercise.user-1', BASICS.id);
     renderApp();
-    const card = await screen.findByRole('region', { name: 'Cornering Basics 1' });
+    const card = await findSection('Cornering Basics 1');
     expect(within(card).getByRole('link', { name: 'Record the reference' })).toHaveAttribute('href', `/exercises/${BASICS.id}/record`);
     expect(within(card).queryByRole('button', { name: 'Drive' })).toBeNull();
   });
@@ -176,7 +176,7 @@ describe('exercises home', () => {
   it('continue_drive_arms_and_opens_the_stage', async () => {
     const api = homeApi().on('POST /api/training/arm', { status: 201, body: { captureId: 'cap-9', exerciseId: EXERCISE_ID, referenceId: 'ref-demo' } });
     renderApp();
-    const card = await screen.findByRole('region', { name: 'Racing Line: Intermediate' });
+    const card = await findSection('Racing Line: Intermediate');
     await userEvent.setup().click(within(card).getByRole('button', { name: 'Drive' }));
     await waitFor(() => expect(window.location.pathname).toBe(`/exercises/${EXERCISE_ID}/drive`));
     expect(api.calls.find(call => call.path === '/api/training/arm')?.body).toEqual({ exerciseId: EXERCISE_ID });
@@ -185,32 +185,32 @@ describe('exercises home', () => {
   it('filter_lists_only_families_with_exercises', async () => {
     homeApi();
     renderApp();
-    const filter = await screen.findByRole('group', { name: 'Filter' });
+    const filter = await findEl('.family-filter');
     expect(within(filter).getAllByRole('button').map(button => button.textContent)).toEqual(['All', 'Licence', 'Brand Central']);
   });
 
   it('filter_is_hidden_with_one_family', async () => {
     homeApi([RACING]);
     renderApp();
-    await screen.findByRole('region', { name: /My exercises/ });
-    expect(screen.queryByRole('group', { name: 'Filter' })).toBeNull();
+    await findSection(/My exercises/);
+    expect(maybeEl('.family-filter')).toBeNull();
   });
 
   it('select_and_remove_exercises', async () => {
     const api = homeApi().on('POST /api/exercises/remove', { exercises: 2, attempts: 6, references: 2, cleanup: null });
     renderApp();
-    const mine = await screen.findByRole('region', { name: /My exercises/ });
+    const mine = await findSection(/My exercises/);
     await userEvent.click(within(mine).getByRole('button', { name: 'Select' }));
-    const racing = within(mine).getByRole('checkbox', { name: 'Select Racing Line: Intermediate' });
+    const racing = el('input', elWith('.exercise-row', 'Racing Line: Intermediate', mine));
     expect(racing.closest('.exercise-row')).toHaveTextContent('6 attempts, 2 references');
-    expect(within(mine).getByRole('checkbox', { name: 'Select Cornering Basics 1' }).closest('.exercise-row')).toHaveTextContent('no attempts, no reference');
+    expect(el('input', elWith('.exercise-row', 'Cornering Basics 1', mine)).closest('.exercise-row')).toHaveTextContent('no attempts, no reference');
     expect(within(mine).queryByRole('link', { name: /Racing Line/ })).toBeNull();
     await userEvent.click(racing);
-    await userEvent.click(within(mine).getByRole('checkbox', { name: 'Select Cornering Basics 1' }));
-    const bar = screen.getByRole('region', { name: 'Selection' });
+    await userEvent.click(el('input', elWith('.exercise-row', 'Cornering Basics 1', mine)));
+    const bar = el('.selection-bar');
     expect(bar).toHaveTextContent('2 selected');
     await userEvent.click(within(bar).getByRole('button', { name: 'Delete 2 exercises' }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Delete 2 exercises?' });
+    const dialog = dialogOf('Delete 2 exercises?');
     expect(dialog).toHaveTextContent('Racing Line: Intermediate, 6 attempts, 2 references');
     expect(dialog).toHaveTextContent('Cornering Basics 1, no attempts, no reference');
     expect(dialog).toHaveTextContent('With them go 6 attempts with their cues and differences, and 2 references.');
@@ -222,29 +222,29 @@ describe('exercises home', () => {
     const body = api.calls.find(call => call.path === '/api/exercises/remove')!.body as { ids: string[]; cleanup: boolean };
     expect({ ids: [...body.ids].sort(), cleanup: body.cleanup }).toEqual({ ids: [RACING.id, BASICS.id].sort(), cleanup: true });
     await waitFor(() => expect(api.calls.filter(call => `${call.method} ${call.path}` === 'GET /api/exercises').length).toBeGreaterThan(before));
-    expect(screen.queryByRole('region', { name: 'Selection' })).not.toBeInTheDocument();
+    expect(maybeEl('.selection-bar')).not.toBeInTheDocument();
     expect(window.localStorage.getItem('gt7.currentExercise.user-1')).toBeNull();
   });
 
   it('no_delete_button_ends_with_an_ellipsis', async () => {
     homeApi();
     renderApp();
-    const mine = await screen.findByRole('region', { name: /My exercises/ });
+    const mine = await findSection(/My exercises/);
     await userEvent.click(within(mine).getByRole('button', { name: 'Select' }));
-    await userEvent.click(within(mine).getByRole('checkbox', { name: 'Select Cornering Basics 1' }));
+    await userEvent.click(el('input', elWith('.exercise-row', 'Cornering Basics 1', mine)));
     for (const button of screen.getAllByRole('button')) expect(button.textContent).not.toMatch(/…$/);
   });
 
   it('quick_select_without_history', async () => {
     homeApi();
     renderApp();
-    const mine = await screen.findByRole('region', { name: /My exercises/ });
+    const mine = await findSection(/My exercises/);
     await userEvent.click(within(mine).getByRole('button', { name: 'Select' }));
     await userEvent.click(within(mine).getByRole('button', { name: 'Without history (1)' }));
-    expect(within(mine).getByRole('checkbox', { name: 'Select Cornering Basics 1' })).toBeChecked();
-    expect(within(mine).getByRole('checkbox', { name: 'Select Racing Line: Intermediate' })).not.toBeChecked();
+    expect(el('input', elWith('.exercise-row', 'Cornering Basics 1', mine))).toBeChecked();
+    expect(el('input', elWith('.exercise-row', 'Racing Line: Intermediate', mine))).not.toBeChecked();
     await userEvent.click(within(mine).getByRole('button', { name: 'All (2)' }));
-    expect(screen.getByRole('region', { name: 'Selection' })).toHaveTextContent('2 selected');
+    expect(el('.selection-bar')).toHaveTextContent('2 selected');
     await userEvent.click(within(mine).getByRole('button', { name: 'None' }));
     expect(screen.getByRole('button', { name: 'Delete 0 exercises' })).toBeDisabled();
   });
@@ -253,11 +253,11 @@ describe('exercises home', () => {
     setViewportWidth(390);
     const api = homeApi().on('POST /api/exercises/remove', { exercises: 1, attempts: 6, references: 2, cleanup: null });
     renderApp();
-    const mine = await screen.findByRole('region', { name: /My exercises/ });
+    const mine = await findSection(/My exercises/);
     await userEvent.click(within(mine).getByRole('button', { name: 'Select' }));
-    await userEvent.click(within(mine).getByRole('checkbox', { name: 'Select Racing Line: Intermediate' }));
+    await userEvent.click(el('input', elWith('.exercise-row', 'Racing Line: Intermediate', mine)));
     await userEvent.click(screen.getByRole('button', { name: 'Delete 1 exercise' }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Delete Racing Line: Intermediate?' });
+    const dialog = dialogOf('Delete Racing Line: Intermediate?');
     expect(dialog).toHaveTextContent('The exercise goes, with everything recorded for it:');
     expect(dialog).toHaveTextContent('6 attempts, with their cues and differences');
     expect(dialog).toHaveTextContent('2 references, the active one too');
@@ -276,11 +276,11 @@ describe('exercises home', () => {
   it('remove_one_exercise_without_history_has_no_cleanup_box', async () => {
     homeApi();
     renderApp();
-    const mine = await screen.findByRole('region', { name: /My exercises/ });
+    const mine = await findSection(/My exercises/);
     await userEvent.click(within(mine).getByRole('button', { name: 'Select' }));
-    await userEvent.click(within(mine).getByRole('checkbox', { name: 'Select Cornering Basics 1' }));
+    await userEvent.click(el('input', elWith('.exercise-row', 'Cornering Basics 1', mine)));
     await userEvent.click(screen.getByRole('button', { name: 'Delete 1 exercise' }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Delete Cornering Basics 1?' });
+    const dialog = dialogOf('Delete Cornering Basics 1?');
     expect(dialog).toHaveTextContent('It has no attempts and no reference yet.');
     expect(dialog).not.toHaveTextContent('is your current exercise');
     expect(within(dialog).queryByRole('checkbox')).toBeNull();
@@ -289,9 +289,9 @@ describe('exercises home', () => {
   it('remove_busy_shows_message', async () => {
     homeApi().on('POST /api/exercises/remove', { status: 409, body: { code: 'busy' } });
     renderApp();
-    const mine = await screen.findByRole('region', { name: /My exercises/ });
+    const mine = await findSection(/My exercises/);
     await userEvent.click(within(mine).getByRole('button', { name: 'Select' }));
-    await userEvent.click(within(mine).getByRole('checkbox', { name: 'Select Cornering Basics 1' }));
+    await userEvent.click(el('input', elWith('.exercise-row', 'Cornering Basics 1', mine)));
     await userEvent.click(screen.getByRole('button', { name: 'Delete 1 exercise' }));
     const dialog = screen.getByRole('alertdialog');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete exercise' }));

@@ -25,8 +25,8 @@ export function StorageSection() {
   };
 
   return (
-    <section className="panel setup-section" id="setup-data" aria-labelledby="data-title">
-      <h2 id="data-title">{t('setup.storage.title')}</h2>
+    <section className="panel setup-section" id="setup-data">
+      <h2>{t('setup.storage.title')}</h2>
       {storage.data ? (
         <>
           <div className="kv">

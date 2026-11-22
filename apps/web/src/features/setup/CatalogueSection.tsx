@@ -60,7 +60,7 @@ function Difference({ check, onApply, applying }: { check: CatalogueCheckRespons
     );
   }
   return (
-    <div className="catalogue-diff" role="region" aria-label={t('setup.catalogue.differences')}>
+    <div className="catalogue-diff">
       <p className="sub">{t('setup.catalogue.review')}</p>
       <DiffGroup title={t('setup.catalogue.added')} items={diff.added.map(entryLabel)} />
       <DiffGroup title={t('setup.catalogue.changed')} items={diff.changed.map(change => `${change.id}: ${change.fields.join(', ')}`)} />
@@ -132,8 +132,8 @@ export function CatalogueSection() {
 
   const data = info.data;
   return (
-    <section className="panel setup-section" id="setup-catalogue" aria-labelledby="catalogue-title">
-      <h2 id="catalogue-title">{t('setup.catalogue.title')}</h2>
+    <section className="panel setup-section" id="setup-catalogue">
+      <h2>{t('setup.catalogue.title')}</h2>
       <p className="sub">{t('setup.catalogue.text')}</p>
       {data ? (
         <dl className="catalogue-counts">

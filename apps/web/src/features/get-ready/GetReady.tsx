@@ -41,14 +41,13 @@ function storeVoiceLater(userId: string): void {
 type StepProps = { number: number; title: string; state: StepState; summary: string | null; action?: ReactNode; children: ReactNode };
 
 function Step({ number, title, state, summary, action, children }: StepProps) {
-  const id = `get-ready-step-${number}`;
   return (
-    <li className={`ready-step ${state}`} aria-labelledby={id} aria-current={state === 'now' ? 'step' : undefined}>
+    <li className={`ready-step ${state}`} aria-current={state === 'now' ? 'step' : undefined}>
       <div className="ready-step-head">
-        <span className="ready-step-mark" aria-hidden="true">
+        <span className="ready-step-mark">
           {state === 'done' ? '✓' : number}
         </span>
-        <h2 id={id}>{title}</h2>
+        <h2>{title}</h2>
         {summary ? <span className="ready-step-summary">{summary}</span> : null}
         {action}
       </div>
@@ -129,17 +128,17 @@ export function GetReady({ ps5Ip, exerciseCount }: { ps5Ip: string | null; exerc
   const voiceSummary = voiceHere ? t('app.get-ready.voice.this-device') : voiceElsewhere ? t('app.get-ready.voice.another-device') : voiceLater ? t('app.get-ready.voice.later-summary') : null;
 
   return (
-    <section className="get-ready" aria-labelledby="get-ready-title">
+    <section className="get-ready">
       <p className="sub get-ready-welcome">{t('app.get-ready.welcome', { name: user.name })}</p>
-      <h1 id="get-ready-title">{t('app.get-ready.title')}</h1>
+      <h1>{t('app.get-ready.title')}</h1>
       <p className="lede">{t('app.get-ready.text')}</p>
       <div className="ready-progress">
-        <div className="ready-bar" role="progressbar" aria-label={t('app.get-ready.progress-label')} aria-valuemin={0} aria-valuemax={3} aria-valuenow={readyCount}>
+        <div className="ready-bar">
           <span style={{ width: `${(readyCount / 3) * 100}%` }} />
         </div>
         <b>{t('app.get-ready.progress', { done: readyCount })}</b>
       </div>
-      <ol className="ready-steps" aria-label={t('app.get-ready.steps-label')}>
+      <ol className="ready-steps">
         <Step
           number={1}
           title={t('app.get-ready.console.title')}

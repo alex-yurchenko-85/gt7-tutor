@@ -1,9 +1,9 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { RaceDetail } from '@gt7/contracts';
 import { RING_ID, raceCompare, ringDetail } from './race-fixtures.ts';
-import { ApiStub, renderApp, setViewportWidth, signedIn } from './support.tsx';
+import { ApiStub, renderApp, setViewportWidth, signedIn, el, maybeEl, findEl, sectionOf, maybeSection, findSection, els, findEls, turnGroupName } from './support.tsx';
 
 const COMPARE_PATH = `/api/races/${RING_ID}/compare`;
 const MAP_NAME = /^Map of the line of lap \d+ and the line of lap \d+$/;
@@ -35,8 +35,8 @@ describe('race page, compare tab', () => {
     expect(heading).not.toHaveTextContent('1:19.336');
     expect(screen.queryByRole('link', { name: 'All laps' })).not.toBeInTheDocument();
     expect(heading.parentElement!.firstElementChild).toBe(heading);
-    expect(within(screen.getByRole('navigation', { name: 'Race' })).getByRole('link', { name: 'Compare' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.queryByRole('region', { name: 'Lexus RC F Gr.4' })).not.toBeInTheDocument();
+    expect(within(el('nav.exercise-tabs')).getByRole('link', { name: 'Compare' })).toHaveAttribute('aria-current', 'page');
+    expect(maybeSection('Lexus RC F Gr.4')).not.toBeInTheDocument();
   });
 
   it('says_the_gap_in_green_for_a_faster_lap', async () => {
@@ -55,9 +55,9 @@ describe('race page, compare tab', () => {
 
   it('puts_the_selects_without_visible_labels_in_the_heading_row', async () => {
     await openCompare();
-    const lap = await screen.findByRole('combobox', { name: 'Lap' });
-    const withLap = screen.getByRole('combobox', { name: 'Compare with' });
-    for (const select of [lap, withLap]) expect(document.querySelector(`label[for="${select.id}"]`)).toHaveClass('visually-hidden');
+    const lap = (await findEls('.race-compare-selects select'))[0]!;
+    const withLap = els('.race-compare-selects select')[1]!;
+    expect(document.querySelector('.race-compare-selects label')).toBeNull();
     const head = screen.getByRole('heading', { level: 2, name: 'Lap 5 is 1.713 s slower than lap 2' }).closest('.race-compare-head')!;
     expect(head).toContainElement(lap);
     expect(head).toContainElement(withLap);
@@ -72,39 +72,119 @@ describe('race page, compare tab', () => {
 
   it('uses_the_words_of_the_two_laps', async () => {
     await openCompare();
-    expect(await screen.findByRole('region', { name: 'Map of the line of lap 2 and the line of lap 5' })).toBeInTheDocument();
+    expect(await findEl('section.map-panel')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'The two lines' })).not.toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Map of the line of lap 2 and the line of lap 5' }).querySelector('h2')).toBeNull();
-    expect(screen.getByRole('button', { name: 'View the map in full screen' })).toBeInTheDocument();
-    expect(screen.getAllByText('lap 2, best').length).toBeGreaterThan(0);
+    expect(el('section.map-panel').querySelector('h2')).toBeNull();
+    expect(screen.getByRole('button', { name: 'View' })).toBeInTheDocument();
+    expect(screen.getAllByText('lap 2').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/^lap \d+, best$/)).not.toBeInTheDocument();
     expect(screen.getAllByText('lap 5').length).toBeGreaterThan(0);
-    expect(screen.getByRole('slider', { name: 'Time lost to lap 2, s' })).toBeInTheDocument();
-    expect(screen.getByRole('slider', { name: 'Speed, km/h' }).closest('.channel')!.querySelector('.channel-label span:last-child')!.textContent).toMatch(/^lap 2 \d+, lap 5 \d+$/);
-    expect(screen.queryByRole('slider', { name: 'Distance from the reference line, m' })).not.toBeInTheDocument();
-    expect(screen.getByText('Cursor at 0 m of 20 m.')).toBeInTheDocument();
+    expect(el('[data-chart="time"]')).toBeInTheDocument();
+    expect(maybeEl('[data-chart="side"]')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Cursor at/)).not.toBeInTheDocument();
     expect(screen.queryByText('Drive again')).not.toBeInTheDocument();
     expect(screen.queryByText('Use this attempt as a reference')).not.toBeInTheDocument();
     expect(screen.queryByText('Delete attempt')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Corners' })).not.toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Side distance on the map' })).toBeInTheDocument();
+    expect(el('.map-switch')).toBeInTheDocument();
+  });
+
+  it('shows_the_values_in_a_box_on_the_chart_under_the_pointer_only', async () => {
+    await openCompare('?lap=2&with=5');
+    await findEl('section.map-panel');
+    const plot = (id: string) => el(`[data-chart="${id}"]`);
+    const box = () => document.querySelectorAll('.chart-box');
+    const rows = () => [...document.querySelectorAll('.chart-box li')].map(row => row.textContent);
+    expect(box()).toHaveLength(0);
+    fireEvent.pointerEnter(plot('speed'));
+    expect(box()).toHaveLength(1);
+    expect(plot('speed').querySelector('.chart-box')).not.toBeNull();
+    expect(document.querySelector('.chart-box-title')!.textContent).toBe('0 m');
+    expect(rows()).toHaveLength(2);
+    expect(rows()[0]).toMatch(/^Lap 2: \d+ km\/h$/);
+    expect(rows()[1]).toMatch(/^Lap 5: \d+ km\/h$/);
+    for (const name of ['throttle', 'brake', 'time']) {
+      expect(plot(name).querySelector('.chart-cursor'), name).not.toBeNull();
+      expect(plot(name).querySelectorAll('.chart-dot').length, name).toBeGreaterThan(0);
+    }
+    fireEvent.pointerLeave(plot('speed'));
+    fireEvent.pointerEnter(plot('throttle'));
+    expect(plot('throttle').querySelector('.chart-box')).not.toBeNull();
+    expect(rows()[0]).toMatch(/^Lap 2: \d+%$/);
+    fireEvent.pointerLeave(plot('throttle'));
+    fireEvent.pointerEnter(plot('time'));
+    expect(box()).toHaveLength(0);
+  });
+
+  it('shows_the_box_on_a_phone_too', async () => {
+    setViewportWidth(390);
+    await openCompare();
+    await findEl('section.map-panel');
+    fireEvent.pointerEnter(el('[data-chart="brake"]'));
+    expect([...document.querySelectorAll('.chart-box li')].map(row => row.textContent?.replace(/\d+%$/, 'N'))).toEqual(['Lap 2: N', 'Lap 5: N']);
+  });
+
+  it('scrolls_the_differences_inside_their_column_on_a_wide_screen', async () => {
+    await openCompare();
+    const list = await findSection('Differences by turn');
+    expect(list.closest('.race-compare-list')).not.toBeNull();
+    expect(list.querySelector('.turn-groups')).toHaveClass('scrolls');
+    expect(list.querySelector('.turn-groups')!.contains(els('.turn-group', list)[0]!)).toBe(true);
+    expect(list.querySelector('.turn-groups')!.contains(within(list).getByRole('heading', { level: 2 }))).toBe(false);
+  });
+
+  it('keeps_the_differences_in_the_page_flow_on_a_phone', async () => {
+    setViewportWidth(390);
+    await openCompare();
+    const list = await findSection('Differences by turn');
+    expect(list.closest('.race-compare-list')).toBeNull();
+    expect(list.querySelector('.turn-groups')).not.toHaveClass('scrolls');
+  });
+
+  it('scrolls_the_list_and_not_the_page_to_a_selected_difference', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo');
+    const intoView = vi.fn();
+    Element.prototype.scrollIntoView = intoView;
+    await openCompare();
+    const list = await findSection('Differences by turn');
+    const groups = list.querySelector('.turn-groups') as HTMLElement;
+    const item = within(list).getAllByRole('button', { name: /^\d+ m / })[1]!;
+    Object.defineProperty(groups, 'getBoundingClientRect', { value: () => ({ top: 100, bottom: 300, left: 0, right: 300, width: 300, height: 200 }) });
+    Object.defineProperty(item, 'getBoundingClientRect', { value: () => ({ top: 400, bottom: 440, left: 0, right: 300, width: 300, height: 40 }) });
+    groups.scrollTop = 0;
+    await userEvent.setup().click(item);
+    expect(groups.scrollTop).toBe(140);
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(intoView).not.toHaveBeenCalled();
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
+  it('keeps_the_turn_labels_of_the_speed_chart_apart', async () => {
+    const corner = (number: number, fromSM: number, toSM: number) => ({ number, turnInSM: fromSM, apexSM: fromSM, radiusM: 40, apexSpeedMps: 25, zoneFromSM: fromSM, zoneToSM: toSM, outsideM: null, speedMps: 24 });
+    await openCompare('?lap=5&with=2', ringDetail(), () => raceCompare({ lap: 5, withLap: 2, corners: [corner(9, 9, 9.2), corner(10, 9.2, 9.4), corner(11, 9.4, 9.6)] }));
+    await findEl('section.map-panel');
+    const labels = els('[data-chart="speed"] .turn-label');
+    expect(labels.map(label => label.textContent)).toEqual(['T9', 'T10']);
+    expect(labels.map(label => label.style.top)).toEqual(['4px', '18px']);
   });
 
   it('holds_each_chart_in_a_field_with_its_name_unit_and_readout', async () => {
     await openCompare();
-    await screen.findByRole('region', { name: MAP_NAME });
+    await findEl('section.map-panel');
     const fields = [
-      ['Speed, km/h', 'Speed', 'km/h'],
-      ['Throttle', 'Throttle', null],
-      ['Brake', 'Brake', null],
-      ['Time lost to lap 2, s', 'Time lost to lap 2', 's']
+      ['speed', 'Speed', 'km/h'],
+      ['throttle', 'Throttle', null],
+      ['brake', 'Brake', null],
+      ['time', 'Time lost to lap 2', 's']
     ] as const;
     for (const [name, title, unit] of fields) {
-      const field = screen.getByRole('slider', { name }).closest('.chart-field')!;
+      const field = el(`[data-chart="${name}"]`).closest('.chart-field')!;
       expect(field.querySelector('.field-title')!.textContent, name).toBe(title);
       expect(field.querySelector('.field-unit')?.textContent ?? null, name).toBe(unit);
-      expect(field.querySelector('.channel-label span:last-child')!.textContent, name).not.toBe('');
+      expect(field.querySelector('.channel-readout') === null, name).toBe(name !== 'time');
     }
-    const throttleTicks = [...screen.getByRole('slider', { name: 'Throttle' }).closest('.chart-field')!.querySelectorAll('.y-axis span')].map(span => span.textContent);
+    expect(el('[data-chart="time"]').closest('.chart-field')!.querySelector('.channel-readout')!.textContent).toMatch(/^[+-]?\d\.\d\d s$/);
+    const throttleTicks = [...el('[data-chart="throttle"]').closest('.chart-field')!.querySelectorAll('.y-axis span')].map(span => span.textContent);
     expect(throttleTicks).toEqual(['0%', '50%', '100%']);
     const legend = document.querySelector('.side-legend')!;
     expect(legend.closest('.chart-field')).toBeNull();
@@ -114,16 +194,16 @@ describe('race page, compare tab', () => {
 
   it('compare_intro_keeps_only_the_note_on_the_other_lap', async () => {
     await openCompare();
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
+    const list = await findSection('Differences by turn');
     expect(within(list).getByText('Lap 2 is one of your laps, not the best possible line.')).toBeInTheDocument();
     expect(screen.queryByText(/Turns in the order|Time lost is measured|Move the pointer or a finger/)).toBeNull();
   });
 
   it('groups_the_differences_by_turn_with_no_difference_and_an_even_turn', async () => {
     await openCompare();
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
-    const groups = within(list).getAllByRole('group');
-    expect(groups.map(group => group.getAttribute('aria-label'))).toEqual(['T1 · 0.40 s lost', 'T2 · 0.00 s', 'T3 · 0.46 s gained']);
+    const list = await findSection('Differences by turn');
+    const groups = els('.turn-group', list);
+    expect(groups.map(turnGroupName)).toEqual(['T1 · 0.40 s lost', 'T2 · 0.00 s', 'T3 · 0.46 s gained']);
     expect(groups[0]).toHaveTextContent('Braked 70 m earlier');
     expect(groups[0]).toHaveTextContent('16 km/h slower in the corner');
     expect(groups[1]).toHaveTextContent('No difference');
@@ -133,15 +213,15 @@ describe('race page, compare tab', () => {
 
   it('selects_change_the_address_and_load_again', async () => {
     const api = await openCompare();
-    const lap = await screen.findByRole('combobox', { name: 'Lap' });
-    const withLap = screen.getByRole('combobox', { name: 'Compare with' });
+    const lap = (await findEls('.race-compare-selects select'))[0]!;
+    const withLap = els('.race-compare-selects select')[1]!;
     expect([...lap.querySelectorAll('option')].map(option => option.textContent)).toEqual(['Lap 1 · 1:23.585', 'Lap 3 · 1:18.765', 'Lap 4 · 1:19.208', 'Lap 5 · 1:19.336']);
     expect([...withLap.querySelectorAll('option')].map(option => option.textContent)).toEqual(['Lap 1 · 1:23.585', 'Lap 2 · 1:17.623', 'Lap 3 · 1:18.765', 'Lap 4 · 1:19.208']);
     await userEvent.selectOptions(lap, 'Lap 4 · 1:19.208');
     await waitFor(() => expect(window.location.search).toBe('?lap=4&with=2'));
     await waitFor(() => expect(compareCalls(api)).toHaveLength(2));
     expect(await screen.findByRole('heading', { level: 2, name: 'Lap 4 is 1.585 s slower than lap 2' })).toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Compare with' }), 'Lap 3 · 1:18.765');
+    await userEvent.selectOptions(els('.race-compare-selects select')[1]!, 'Lap 3 · 1:18.765');
     await waitFor(() => expect(window.location.search).toBe('?lap=4&with=3'));
     expect(await screen.findByRole('heading', { level: 2, name: 'Lap 4 is 0.443 s slower than lap 3' })).toBeInTheDocument();
     const last = api.calls.filter(call => call.path === COMPARE_PATH).at(-1)!;
@@ -156,7 +236,7 @@ describe('race page, compare tab', () => {
     });
     expect(screen.getByRole('heading', { level: 2, name: 'Lap 5 is 1.713 s slower than lap 2' })).toBeInTheDocument();
     expect(asked).toBe('?lap=5');
-    expect(await screen.findByRole('combobox', { name: 'Compare with' })).toHaveValue('2');
+    expect((await findEls('.race-compare-selects select'))[1]!).toHaveValue('2');
   });
 
   it('takes_the_lap_before_when_the_last_lap_is_the_reference_lap', async () => {
@@ -183,8 +263,8 @@ describe('race page, compare tab', () => {
   ])('shows_the_%s_text_and_keeps_the_selects', async (code, text) => {
     await openCompare('?lap=5&with=2', ringDetail(), () => ({ status: 409, body: { code } }));
     expect(await screen.findByText(text)).toBeInTheDocument();
-    expect(await screen.findByRole('combobox', { name: 'Lap' })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Compare with' })).toBeInTheDocument();
+    expect((await findEls('.race-compare-selects select'))[0]!).toBeInTheDocument();
+    expect(els('.race-compare-selects select')[1]!).toBeInTheDocument();
     expect(screen.queryByRole('slider')).not.toBeInTheDocument();
   });
 
@@ -192,9 +272,9 @@ describe('race page, compare tab', () => {
     const detail = ringDetail();
     const laps = detail.laps.map(lap => (lap.number === 3 ? { ...lap, pitOut: true, closed: false } : lap));
     await openCompare('?lap=3&with=2', { ...detail, laps }, () => raceCompare({ lap: 3, withLap: 2 }));
-    await screen.findByRole('combobox', { name: 'Lap' });
-    expect([...screen.getByRole('combobox', { name: 'Compare with' }).querySelectorAll('option')].map(option => option.textContent)).toContain('Lap 2 · 1:17.623');
-    expect([...screen.getByRole('combobox', { name: 'Lap' }).querySelectorAll('option')].map(option => option.textContent)).toContain('Lap 3 · 1:18.765');
+    (await findEls('.race-compare-selects select'))[0]!;
+    expect([...els('.race-compare-selects select')[1]!.querySelectorAll('option')].map(option => option.textContent)).toContain('Lap 2 · 1:17.623');
+    expect([...els('.race-compare-selects select')[0]!.querySelectorAll('option')].map(option => option.textContent)).toContain('Lap 3 · 1:18.765');
     expect(await screen.findByText('A gap in the line is the pit lane.')).toBeInTheDocument();
   });
 
@@ -222,7 +302,7 @@ describe('race page, compare tab', () => {
 
   it('has_no_pit_note_without_a_pit_lap', async () => {
     await openCompare();
-    await screen.findByRole('region', { name: MAP_NAME });
+    await findEl('section.map-panel');
     expect(screen.queryByText('A gap in the line is the pit lane.')).not.toBeInTheDocument();
     expect(screen.queryByText(/pit lane\. The curve|The rest of the gap/)).not.toBeInTheDocument();
   });
@@ -230,34 +310,34 @@ describe('race page, compare tab', () => {
   it('phone_shows_head_selects_map_differences_charts_and_no_scale_switch', async () => {
     setViewportWidth(390);
     await openCompare();
-    const map = await screen.findByRole('region', { name: MAP_NAME });
-    const select = await screen.findByRole('combobox', { name: 'Lap' });
-    const differences = screen.getByRole('region', { name: 'Differences by turn' });
-    const speed = screen.getByRole('slider', { name: 'Speed, km/h' });
+    const map = await findEl('section.map-panel');
+    const select = (await findEls('.race-compare-selects select'))[0]!;
+    const differences = sectionOf('Differences by turn');
+    const speed = el('[data-chart="speed"]');
     expect(select.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(map.compareDocumentPosition(differences) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(differences.compareDocumentPosition(speed) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.queryByRole('group', { name: 'Side distance on the map' })).not.toBeInTheDocument();
+    expect(maybeEl('.map-switch')).not.toBeInTheDocument();
   });
 
   it('names_the_line_of_the_other_lap_in_an_off_line_difference', async () => {
     await openCompare('?lap=5&with=2', ringDetail(), () => raceCompare({ findings: [{ kind: 'off-line', eventKey: null, sM: 16, size: 4.2, unit: 'm', turn: 2 }] }));
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
+    const list = await findSection('Differences by turn');
     expect(list).toHaveTextContent('Up to 4 m from the line of lap 2');
     expect(list).not.toHaveTextContent('reference line');
   });
 
   it('names_the_lap_in_the_map_view', async () => {
     await openCompare();
-    await userEvent.click(await screen.findByRole('button', { name: 'View the map in full screen' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'View' }));
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent('Line of lap 2, 20 m.');
-    expect(within(dialog).getByRole('img', { name: 'Line of lap 2 and line of lap 5 of High Speed Ring' })).toBeInTheDocument();
+    expect(el('.track-map', dialog)).toBeInTheDocument();
   });
 
   it('writes_every_length_in_the_map_view_with_a_thousands_separator', async () => {
     await openCompare('?lap=5&with=2', ringDetail(), () => raceCompare({ lengthM: 6181, findings: [{ kind: 'off-line', eventKey: null, sM: 1234, size: 4.2, unit: 'm', turn: 2 }] }));
-    await userEvent.click(await screen.findByRole('button', { name: 'View the map in full screen' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'View' }));
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent('Line of lap 2, 6,181 m.');
     expect(within(dialog).getByText('1,234 m')).toBeInTheDocument();
@@ -265,10 +345,10 @@ describe('race page, compare tab', () => {
 
   it('marks_the_lap_line_on_the_map_and_in_the_map_view', async () => {
     await openCompare();
-    const panel = await screen.findByRole('region', { name: MAP_NAME });
+    const panel = await findEl('section.map-panel');
     expect([...panel.querySelectorAll('.track-label')].map(node => node.textContent)).toEqual(['lap line']);
     expect(panel.querySelector('.track-finish')).toBeNull();
-    await userEvent.click(within(panel).getByRole('button', { name: 'View the map in full screen' }));
+    await userEvent.click(within(panel).getByRole('button', { name: 'View' }));
     expect([...screen.getByRole('dialog').querySelectorAll('.track-label')].map(node => node.textContent)).toEqual(['lap line']);
   });
 
@@ -276,7 +356,7 @@ describe('race page, compare tab', () => {
     const detail = ringDetail();
     const laps = detail.laps.map(lap => (lap.number === 3 ? { ...lap, pitOut: true, closed: false } : lap));
     await openCompare('?lap=5&with=3', { ...detail, laps }, () => raceCompare({ lap: 5, withLap: 3 }));
-    const panel = await screen.findByRole('region', { name: MAP_NAME });
+    const panel = await findEl('section.map-panel');
     expect([...panel.querySelectorAll('.track-label')].map(node => node.textContent)).toEqual(['start', 'finish']);
   });
 
@@ -284,27 +364,27 @@ describe('race page, compare tab', () => {
     const detail = ringDetail();
     const laps = detail.laps.map(lap => (lap.number === 2 ? { ...lap, closed: false } : lap));
     await openCompare('?lap=5&with=2', { ...detail, laps }, () => raceCompare({ lap: 5, withLap: 2 }));
-    const panel = await screen.findByRole('region', { name: MAP_NAME });
+    const panel = await findEl('section.map-panel');
     expect([...panel.querySelectorAll('.track-label')].map(node => node.textContent)).toEqual(['start', 'finish']);
   });
 
   it('keeps_start_and_finish_when_the_other_lap_is_lap_1', async () => {
     await openCompare('?lap=5&with=1', undefined, () => raceCompare({ lap: 5, withLap: 1 }));
-    const panel = await screen.findByRole('region', { name: MAP_NAME });
+    const panel = await findEl('section.map-panel');
     expect([...panel.querySelectorAll('.track-label')].map(node => node.textContent)).toEqual(['start', 'finish']);
   });
 
   it('calls_a_difference_outside_the_turns_whole_lap', async () => {
     await openCompare('?lap=5&with=2', ringDetail(), () => raceCompare({ findings: [{ kind: 'brake-late', eventKey: 'brake@3', sM: 3, size: 12, unit: 'm', turn: null }], turnLosses: [] }));
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
-    expect(within(list).getAllByRole('group').map(group => group.getAttribute('aria-label'))).toEqual(['Whole lap']);
+    const list = await findSection('Differences by turn');
+    expect(els('.turn-group', list).map(turnGroupName)).toEqual(['Whole lap']);
   });
 
   it('moves_the_cursor_to_a_selected_difference', async () => {
     await openCompare();
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
+    const list = await findSection('Differences by turn');
     await userEvent.click(within(list).getByRole('button', { name: /Braked 70 m earlier/ }));
-    expect(screen.getByRole('slider', { name: 'Speed, km/h' })).toHaveAttribute('aria-valuenow', '10');
+    expect(el('[data-chart="speed"]')).toHaveAttribute('aria-valuenow', '10');
   });
 });
 

@@ -29,7 +29,7 @@ function TimesBand({ exercise }: { exercise: Exercise }) {
   const bestMs = exercise.bestMs;
   if (bestMs === null && referenceMs === null) return null;
   return (
-    <div className="exercise-times" role="group" aria-label={t('exercises.times.label')}>
+    <div className="exercise-times">
       {bestMs !== null ? (
         <div>
           <b>{formatTime(bestMs)}</b>
@@ -61,13 +61,13 @@ export function ExerciseHeader({ exercise, title, current }: { exercise: Exercis
   return (
     <>
       <header className="exercise-header">
-        <nav className="breadcrumb" aria-label={t('common.breadcrumb')}>
+        <nav className="breadcrumb">
           <Link to={paths.exercises()}>{t('exercises.breadcrumb.exercises')}</Link> / {exercise.name}
         </nav>
         <h1>{exercise.name}</h1>
         <p className="exercise-where sub">{where}</p>
         <TimesBand exercise={exercise} />
-        <nav className="exercise-tabs" aria-label={t('exercises.tab.label')}>
+        <nav className="exercise-tabs">
           {TABS.map(tab => (
             <Link key={tab.name} to={tab.to(exercise.id)} current={active === tab.name}>
               {t(tab.label)}

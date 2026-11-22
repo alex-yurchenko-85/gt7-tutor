@@ -15,7 +15,6 @@ type OffTrackStripProps = {
   selected: number | null;
   onSelect(index: number | null): void;
   box?: ReactNode;
-  describedBy?: string;
 };
 
 export function tenMetres(value: number): string {
@@ -60,7 +59,7 @@ function letterSides(recurring: RaceRecurringPlace[], lengthM: number): Map<stri
   return new Map(centres.map((centre, index) => [centre.label, near(centres[index - 1], centre) ? 'after' : near(centre, centres[index + 1]) ? 'before' : '']));
 }
 
-export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, cursorSM, onCursor, selected, onSelect, box = null, describedBy }: OffTrackStripProps) {
+export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, cursorSM, onCursor, selected, onSelect, box = null }: OffTrackStripProps) {
   const buttons = useRef(new Map<number, HTMLButtonElement>());
   const keyed = useRef(false);
   const sides = useMemo(() => letterSides(recurring, lengthM), [recurring, lengthM]);
@@ -90,7 +89,7 @@ export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, curs
   return (
     <div className="strip">
       <div className="strip-body">
-        <div className="strip-laps" aria-hidden="true">
+        <div className="strip-laps">
           {laps.map(lap => (
             <span key={lap}>{lap}</span>
           ))}
@@ -106,7 +105,7 @@ export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, curs
             placeParts(place, lengthM).map((band, part) => (
               <div key={`${place.label}-${part}`} className="strip-place" data-place={place.label} style={{ left: share(band.fromSM, lengthM), width: share(band.toSM - band.fromSM, lengthM) }}>
                 {part === 0 ? (
-                  <b className={sides.get(place.label) || undefined} aria-hidden="true">
+                  <b className={sides.get(place.label) || undefined}>
                     {place.label}
                   </b>
                 ) : null}
@@ -114,12 +113,12 @@ export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, curs
             ))
           )}
           {laps.map(lap => (
-            <div key={lap} className="strip-row" role="group" aria-label={t('charts.off-track.row', { lap })} data-lap={lap}>
-              <i className="strip-rule" aria-hidden="true" />
+            <div key={lap} className="strip-row" data-lap={lap}>
+              <i className="strip-rule" />
               {pitLane
                 .filter(range => range.lap === lap)
                 .map(range => (
-                  <i key={`${range.fromSM}`} className="strip-pit" aria-hidden="true" style={{ left: share(range.fromSM, lengthM), width: share(range.toSM - range.fromSM, lengthM) }} />
+                  <i key={`${range.fromSM}`} className="strip-pit" style={{ left: share(range.fromSM, lengthM), width: share(range.toSM - range.fromSM, lengthM) }} />
                 ))}
               {moments.map((moment, index) =>
                 moment.lap === lap && moment.sM !== null ? (
@@ -132,19 +131,18 @@ export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, curs
                     type="button"
                     className={`strip-moment ${moment.wheels === 4 ? 'all' : 'part'}`}
                     style={{ left: share(moment.sM, lengthM) }}
-                    aria-label={momentLabel(moment)}
-                    aria-describedby={describedBy}
+                    title={momentLabel(moment)}
                     aria-pressed={selected === index}
                     onClick={() => onSelect(index)}
                     onKeyDown={event => fromKey(event, index)}
                   >
-                    <i aria-hidden="true" />
+                    <i />
                   </button>
                 ) : null
               )}
             </div>
           ))}
-          <i className="strip-cursor" aria-hidden="true" style={{ left: share(cursorSM, lengthM) }} />
+          <i className="strip-cursor" style={{ left: share(cursorSM, lengthM) }} />
           {box}
         </div>
       </div>

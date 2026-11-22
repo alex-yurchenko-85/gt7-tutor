@@ -7,7 +7,7 @@ import { LiveProvider } from '../src/api/live.tsx';
 import { RouterProvider } from '../src/app/router.tsx';
 import { SessionContext } from '../src/app/session.tsx';
 import { Shell } from '../src/app/Shell.tsx';
-import { ApiStub, FakeSockets, liveState, renderApp, setViewportWidth, signedIn, USER, openLive } from './support.tsx';
+import { ApiStub, FakeSockets, liveState, renderApp, setViewportWidth, signedIn, USER, openLive, findEl, el, els } from './support.tsx';
 
 const RACE_ID = 'a0000000-0000-4000-8000-000000000001';
 
@@ -33,7 +33,7 @@ describe('shell', () => {
         </LiveProvider>
       </SessionContext.Provider>
     );
-    await screen.findByRole('navigation', { name: 'Main' });
+    await findEl('nav.nav');
     const socket = sockets.latest;
     act(() => {
       socket.open();
@@ -49,7 +49,7 @@ describe('shell', () => {
   it('wide_nav_links_open_their_pages', async () => {
     exerciseApi().install();
     renderApp();
-    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    const nav = await findEl('nav.nav');
     expect(within(nav).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
     expect(within(nav).queryByRole('link', { name: 'Drive' })).toBeNull();
     expect(within(nav).getByRole('link', { name: 'Setup' })).toHaveAttribute('href', '/setup');
@@ -61,13 +61,13 @@ describe('shell', () => {
     signedIn(new ApiStub()).on('GET /api/exercises', []).on('GET /api/progress', { collections: [], exercises: [] }).install();
     renderApp();
     const banner = await screen.findByRole('banner');
-    const logos = within(banner).getAllByRole('img', { name: 'GT7 Tutor' });
+    const logos = els('.logo', banner);
     expect(logos).toHaveLength(1);
     expect([...logos[0]!.querySelectorAll('img')].map(image => image.getAttribute('src'))).toEqual([
       '/brand/logo-light-600.png',
       '/brand/logo-dark-600.png'
     ]);
-    expect(within(banner).getByRole('link', { name: 'GT7 Tutor' })).toHaveAttribute('href', '/');
+    expect(logos[0]!.closest('a')).toHaveAttribute('href', '/');
   });
 
   it('training_exercise_becomes_current_on_this_device', async () => {
@@ -87,7 +87,7 @@ describe('shell', () => {
     setViewportWidth(390);
     const api = signedIn(new ApiStub()).install();
     renderApp({ path: '/no-such-page' });
-    await screen.findByRole('navigation', { name: 'Main' });
+    await findEl('nav.nav');
     await new Promise(resolve => setTimeout(resolve, 50));
     expect(api.called('GET /api/exercises')).toBe(false);
   });
@@ -103,7 +103,7 @@ describe('shell', () => {
   it('exercises_nav_current_on_exercise_pages', async () => {
     exerciseApi().install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
-    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    const nav = await findEl('nav.nav');
     expect(within(nav).getByRole('link', { name: 'Exercises' })).toHaveAttribute('aria-current', 'page');
     expect(within(nav).getByRole('link', { name: 'Setup' })).not.toHaveAttribute('aria-current');
   });
@@ -112,7 +112,7 @@ describe('shell', () => {
     setViewportWidth(390);
     exerciseApi().install();
     renderApp();
-    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    const nav = await findEl('nav.nav');
     expect(nav).toHaveAttribute('data-placement', 'bottom');
     expect(nav.closest('header')).toBeNull();
     const links = within(nav).getAllByRole('link');
@@ -128,15 +128,15 @@ describe('shell', () => {
     renderApp();
     const banner = await screen.findByRole('banner');
     expect(within(banner).getByRole('link', { name: /^Console/ })).toHaveAttribute('href', '/setup#console');
-    expect(within(banner).getByRole('link', { name: 'Voice: No device plays the voice. Open Setup' })).toHaveAttribute('href', '/setup#voice');
-    expect(within(banner).getByRole('button', { name: 'Profile Driver' })).toBeInTheDocument();
+    expect(el('a.status-link[title="Voice: No device plays the voice. Open Setup"]', banner)).toHaveAttribute('href', '/setup#voice');
+    expect(el('.profile-button', banner)).toBeInTheDocument();
   });
 
   it('voice_dot_is_green_when_another_device_plays', async () => {
     exerciseApi().install();
     const view = renderApp();
     await openLive(view.sockets, liveState({ voiceDeviceId: 'another-device', voiceReady: true }));
-    const link = await screen.findByRole('link', { name: 'Voice: Another device plays the voice. Open Setup' });
+    const link = await findEl('a.status-link[title="Voice: Another device plays the voice. Open Setup"]');
     expect(link.querySelector('.dot')).toHaveClass('on');
     expect(link).toHaveAttribute('href', '/setup#voice');
   });
@@ -144,19 +144,19 @@ describe('shell', () => {
   it('console_dot_opens_the_console_section', async () => {
     exerciseApi().install();
     renderApp();
-    expect(await screen.findByRole('link', { name: /^Console: / })).toHaveAttribute('href', '/setup#console');
+    expect(await findEl('a.status-link[title^="Console: "]')).toHaveAttribute('href', '/setup#console');
   });
 
   it('status_label_has_one_full_stop', async () => {
     exerciseApi().install();
     renderApp();
-    expect(await screen.findByRole('link', { name: 'Console: GT7 Tutor does not answer. Check that it runs on the computer. Open Setup' })).toBeInTheDocument();
+    expect(await findEl('a.status-link[title="Console: GT7 Tutor does not answer. Check that it runs on the computer. Open Setup"]')).toBeInTheDocument();
   });
 
   it('wide_menu_has_exercises_races_setup', async () => {
     exerciseApi().install();
     renderApp();
-    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    const nav = await findEl('nav.nav');
     expect(nav).toHaveAttribute('data-placement', 'top');
     expect(within(nav).getAllByRole('link').map(link => link.textContent)).toEqual(['Exercises', 'Races', 'Setup']);
     expect(within(nav).getByRole('link', { name: 'Races' })).toHaveAttribute('href', '/races');
@@ -166,7 +166,7 @@ describe('shell', () => {
   it.each(['/races', '/races/record', `/races/${RACE_ID}`, `/races/${RACE_ID}/compare`, `/races/${RACE_ID}/off-track`])('races_item_is_current_on_%s', async path => {
     exerciseApi().on('GET /api/races', []).install();
     renderApp({ path });
-    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    const nav = await findEl('nav.nav');
     expect(within(nav).getByRole('link', { name: 'Races' })).toHaveAttribute('aria-current', 'page');
     expect(within(nav).getByRole('link', { name: 'Exercises' })).not.toHaveAttribute('aria-current');
   });
@@ -174,7 +174,7 @@ describe('shell', () => {
   it('exercises_item_is_current_on_the_drive_page', async () => {
     exerciseApi().install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/drive` });
-    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    const nav = await findEl('nav.nav');
     expect(within(nav).getByRole('link', { name: 'Exercises' })).toHaveAttribute('aria-current', 'page');
   });
 
@@ -182,8 +182,7 @@ describe('shell', () => {
     const api = exerciseApi().on('POST /api/auth/sign-out', { status: 204 }).install();
     renderApp();
     const user = userEvent.setup();
-    const button = await screen.findByRole('button', { name: 'Profile Driver' });
-    expect(button).toHaveAttribute('aria-haspopup', 'menu');
+    const button = await findEl('.profile-button');
     await user.click(button);
     const menu = screen.getByRole('menu');
     expect(within(menu).getByRole('menuitem', { name: 'Manage profiles' })).toHaveAttribute('href', '/setup#profiles');
@@ -196,7 +195,7 @@ describe('shell', () => {
     exerciseApi().install();
     renderApp();
     const user = userEvent.setup();
-    const button = await screen.findByRole('button', { name: 'Profile Driver' });
+    const button = await findEl('.profile-button');
     await user.click(button);
     expect(screen.getByRole('menuitem', { name: 'Manage profiles' })).toHaveFocus();
     await user.keyboard('{Escape}');
@@ -218,8 +217,8 @@ describe('shell', () => {
     exerciseApi().install();
     renderApp();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Profile Driver' }));
-    const group = within(screen.getByRole('menu')).getByRole('radiogroup', { name: 'Theme' });
+    await user.click(await findEl('.profile-button'));
+    const group = el('.theme-switch', screen.getByRole('menu'));
     expect(within(group).getByRole('radio', { name: 'System theme' })).toHaveAttribute('aria-checked', 'true');
     await user.click(within(group).getByRole('radio', { name: 'Dark theme' }));
     expect(document.documentElement.dataset.theme).toBe('dark');

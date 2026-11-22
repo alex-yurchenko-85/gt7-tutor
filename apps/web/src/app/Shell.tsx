@@ -31,7 +31,7 @@ const SETUP: NavItem = { label: 'app.nav.setup', to: paths.setup(), icon: 'gear'
 const ITEMS = [EXERCISES, RACES, SETUP];
 
 export function StatusDot({ status }: { status: Status }) {
-  return <span className={`dot ${status.tone}`} aria-hidden="true" />;
+  return <span className={`dot ${status.tone}`} />;
 }
 
 function useCurrentExercise(enabled: boolean): Exercise | null {
@@ -67,12 +67,12 @@ function StatusLinks() {
   const telemetry = useLiveState(({ state, connected }) => telemetryStatus(state, connected, demo));
   const voice = useLiveState(({ state }) => voiceStatus(state, deviceId));
   return (
-    <div className="status-links" aria-live="polite">
-      <Link to={paths.setup('console')} className="status-link" label={statusLabel(t('app.status.console'), telemetry)}>
+    <div className="status-links">
+      <Link to={paths.setup('console')} className="status-link" title={statusLabel(t('app.status.console'), telemetry)}>
         <StatusDot status={telemetry} />
         {t('app.status.console')}
       </Link>
-      <Link to={paths.setup('voice')} className="status-link" label={statusLabel(t('app.status.voice'), voice)}>
+      <Link to={paths.setup('voice')} className="status-link" title={statusLabel(t('app.status.voice'), voice)}>
         <StatusDot status={voice} />
         {t('app.status.voice')}
       </Link>
@@ -83,7 +83,7 @@ function StatusLinks() {
 function Navigation({ placement, items }: { placement: 'top' | 'bottom'; items: NavItem[] }) {
   const { route } = useRouter();
   return (
-    <nav className="nav" data-placement={placement} aria-label={t('app.nav.label')}>
+    <nav className="nav" data-placement={placement}>
       {items.map(item => (
         <Link key={item.label} to={item.to} current={item.matches(route)}>
           {placement === 'bottom' ? <Icon name={item.icon} /> : null}
@@ -97,7 +97,7 @@ function Navigation({ placement, items }: { placement: 'top' | 'bottom'; items: 
 function ImmersiveDemoLabel() {
   if (!useDemo()) return null;
   return (
-    <p className="immersive-demo-label" role="note" aria-label={t('app.demo.label')}>
+    <p className="immersive-demo-label">
       {t('app.demo.short')}
     </p>
   );

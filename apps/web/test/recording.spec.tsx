@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CaptureInfo, ReferenceProposal } from '@gt7/contracts';
 import { EXERCISE_ID, exercise, exerciseApi, reference, REFERENCE_ID } from './fixtures.ts';
-import { renderApp, sendLiveState, setViewportWidth, timedUser, type ApiStub } from './support.tsx';
+import { renderApp, sendLiveState, setViewportWidth, timedUser, type ApiStub, maybeEl, el, findEl } from './support.tsx';
 
 function captureInfo(id: string, overrides: Partial<CaptureInfo> = {}): CaptureInfo {
   return {
@@ -80,12 +80,12 @@ function recordingApi(options: { ps5Ip?: string | null; consoleRequired?: boolea
 
 async function recordOnce(user: ReturnType<typeof timedUser>, number: number) {
   await user.click(await screen.findByRole('button', { name: 'Start recording' }));
-  expect(await screen.findByRole('timer')).toHaveTextContent('0');
+  expect(await findEl('.record-count')).toHaveTextContent('0');
   await user.click(screen.getByRole('button', { name: `Stop recording ${number}` }));
 }
 
 function slotTexts(): string[] {
-  return within(screen.getByRole('list', { name: 'Recordings' }))
+  return within(el('.record-slots'))
     .getAllByRole('listitem')
     .map(item => item.textContent ?? '');
 }
@@ -127,7 +127,7 @@ describe('reference recording', () => {
     const user = timedUser();
     await recordOnce(user, 1);
     expect(await screen.findByRole('heading', { name: 'Select the demonstration' })).toBeInTheDocument();
-    const runs = screen.getByRole('radiogroup', { name: 'Demonstrations' });
+    const runs = el('fieldset.choice');
     expect(within(runs).getAllByRole('radio')).toHaveLength(2);
     expect(within(runs).getByText('Demonstrations in recording 1')).toBeInTheDocument();
     expect(
@@ -208,7 +208,7 @@ describe('reference recording', () => {
     renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Set the range by hand' }));
-    const form = screen.getByRole('form', { name: 'Manual range' });
+    const form = el('form.manual');
     expect(within(form).getAllByRole('option').map(option => option.getAttribute('value'))).toEqual(['cap-old']);
     await user.type(within(form).getByLabelText('First frame'), '352');
     await user.type(within(form).getByLabelText('Last frame'), '1897');
@@ -247,7 +247,7 @@ describe('reference recording', () => {
     api.on('POST /api/captures/cap-running/stop', { status: 201, body: captureInfo('cap-running', { active: false, packets: 2400 }) });
     renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const user = timedUser();
-    expect(await screen.findByRole('timer')).toHaveTextContent(/^(8|9)$/);
+    expect(await findEl('.record-count')).toHaveTextContent(/^(8|9)$/);
     await user.click(screen.getByRole('button', { name: 'Stop recording 1' }));
     await waitFor(() => expect(api.called('POST /api/captures/cap-running/stop')).toBe(true));
   });
@@ -270,14 +270,14 @@ describe('reference recording', () => {
     expect(await screen.findByText('Enter the PS5 address in Setup first.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start recording' })).toBeDisabled();
     expect(screen.getByRole('link', { name: 'Open Setup' })).toHaveAttribute('href', '/setup#console');
-    expect(screen.queryByRole('list', { name: 'Readiness' })).toBeNull();
+    expect(maybeEl('.record-dots')).toBeNull();
   });
 
   it('start_allowed_with_replay_without_address', async () => {
     recordingApi({ ps5Ip: null, consoleRequired: false });
     renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     await screen.findByRole('button', { name: 'Start recording' });
-    expect(screen.queryByRole('list', { name: 'Readiness' })).toBeNull();
+    expect(maybeEl('.record-dots')).toBeNull();
     expect(screen.getByRole('button', { name: 'Start recording' })).toBeEnabled();
     expect(screen.queryByText('Enter the PS5 address in Setup first.')).toBeNull();
   });
@@ -299,7 +299,7 @@ describe('reference recording', () => {
     renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Start recording' }));
-    const timer = await screen.findByRole('timer');
+    const timer = await findEl('.record-count');
     expect(timer).toHaveTextContent('0');
     expect(screen.getByText(/^Recording, 0 s\. Stop when the demonstration has ended\.$/)).toBeInTheDocument();
     act(() => vi.advanceTimersByTime(12000));
@@ -356,7 +356,7 @@ describe('reference recording', () => {
     renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Set the range by hand' }));
-    const form = screen.getByRole('form', { name: 'Manual range' });
+    const form = el('form.manual');
     expect(within(form).getByText('GT7 Tutor keeps only the part of the range that holds the demonstration.')).toBeInTheDocument();
     await user.type(within(form).getByLabelText('First frame'), '420');
     await user.type(within(form).getByLabelText('Last frame'), '1310');
@@ -373,7 +373,7 @@ describe('reference recording', () => {
     renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Set the range by hand' }));
-    const form = screen.getByRole('form', { name: 'Manual range' });
+    const form = el('form.manual');
     expect(within(form).getByLabelText('Recording')).toBeInTheDocument();
     await user.type(within(form).getByLabelText('First frame'), '420');
     await user.type(within(form).getByLabelText('Last frame'), '1310');
@@ -386,7 +386,7 @@ describe('reference recording', () => {
     renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const user = timedUser();
     await user.click(await screen.findByRole('button', { name: 'Set the range by hand' }));
-    const form = screen.getByRole('form', { name: 'Manual range' });
+    const form = el('form.manual');
     await user.type(within(form).getByLabelText('First frame'), '420');
     await user.type(within(form).getByLabelText('Last frame'), '1310');
     await user.click(within(form).getByRole('button', { name: 'Create reference' }));
@@ -439,7 +439,7 @@ describe('reference recording', () => {
     recordingApi();
     renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     const start = await screen.findByRole('button', { name: 'Start recording' });
-    expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull();
+    expect(maybeEl('nav.nav')).toBeNull();
     expect(screen.queryByRole('banner')).toBeNull();
     expect(screen.getByRole('link', { name: 'Close' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}`);
     const user = timedUser();

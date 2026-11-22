@@ -7,8 +7,7 @@ import { t } from '../app/i18n.ts';
 export type LegendKey = 'reference' | 'you' | 'turn' | 'cue' | 'muted' | 'not-spoken';
 
 export type MapPanelProps = {
-  title: string;
-  hideTitle?: boolean;
+  title?: string;
   legend: LegendKey[];
   far?: string | null;
   notes?: string[];
@@ -30,13 +29,13 @@ const LEGEND: { key: LegendKey; mark: string; text: MessageKey }[] = [
   { key: 'not-spoken', mark: 'cue not-spoken', text: 'charts.legend.not-spoken' }
 ];
 
-export function MapPanel({ title, hideTitle = false, legend, far = null, notes = [], actions, onView, children, below, viewIcon = false, legendTexts = {}, extraLegend = [] }: MapPanelProps) {
+export function MapPanel({ title, legend, far = null, notes = [], actions, onView, children, below, viewIcon = false, legendTexts = {}, extraLegend = [] }: MapPanelProps) {
   return (
-    <section className="panel map-panel" aria-label={title}>
-      <div className={hideTitle ? 'map-panel-head no-title' : 'map-panel-head'}>
-        {hideTitle ? null : <h2>{title}</h2>}
+    <section className="panel map-panel">
+      <div className={title ? 'map-panel-head' : 'map-panel-head no-title'}>
+        {title ? <h2>{title}</h2> : null}
         {actions ? <div className="map-panel-actions">{actions}</div> : null}
-        <button type="button" className={`icon-button${viewIcon ? ' icon-only' : ''}`} aria-label={t('charts.map.view-label')} onClick={onView}>
+        <button type="button" className={`icon-button${viewIcon ? ' icon-only' : ''}`} title={viewIcon ? t('charts.map.view-label') : undefined} onClick={onView}>
           <Icon name="expand" size={16} />
           {viewIcon ? null : t('charts.map.view')}
         </button>

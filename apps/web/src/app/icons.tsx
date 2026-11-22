@@ -111,7 +111,6 @@ export function Icon({ name, size = 24 }: { name: IconName; size?: number }) {
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
-      aria-hidden="true"
       focusable="false"
     >
       {SHAPES[name]}

@@ -1,3 +1,4 @@
+import { el } from './support.tsx';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { RaceTimeChart } from '../src/charts/RaceTimeChart.tsx';
@@ -7,7 +8,7 @@ const LAP_ENDS = [100_000, 200_000, 300_000, 400_000];
 function chart(step: boolean, points: { tMs: number; value: number }[], pitStops = [{ fromMs: 180_000, toMs: 220_000 }]) {
   render(
     <RaceTimeChart
-      label="Position in the race, lap by lap"
+      id="race-position"
       raceMs={400_000}
       firstLap={5}
       lapEnds={LAP_ENDS}
@@ -20,7 +21,7 @@ function chart(step: boolean, points: { tMs: number; value: number }[], pitStops
       tone={step ? 'ink' : 'ref'}
     />
   );
-  return screen.getByRole('group', { name: 'Position in the race, lap by lap' });
+  return el('[data-chart="race-position"]');
 }
 
 describe('race time chart', () => {
@@ -73,22 +74,22 @@ describe('race time chart', () => {
 
   it('names_every_fifth_lap_in_a_long_race', () => {
     const ends = Array.from({ length: 25 }, (_, index) => (index + 1) * 100_000);
-    render(<RaceTimeChart label="Fuel, lap by lap" raceMs={2_500_000} firstLap={1} lapEnds={ends} pitStops={[]} points={[{ tMs: 0, value: 100 }]} step={false} min={0} max={100} ticks={[0, 50, 100]} tone="ref" />);
-    const figure = screen.getByRole('group', { name: 'Fuel, lap by lap' });
+    render(<RaceTimeChart id="race-position" raceMs={2_500_000} firstLap={1} lapEnds={ends} pitStops={[]} points={[{ tMs: 0, value: 100 }]} step={false} min={0} max={100} ticks={[0, 50, 100]} tone="ref" />);
+    const figure = el('[data-chart="race-position"]');
     expect([...figure.querySelectorAll('.race-chart-laps span')].map(label => label.textContent)).toEqual(['1', '5', '10', '15', '20', '25']);
   });
 
   it('names_every_second_lap_in_a_race_of_15_laps', () => {
     const ends = Array.from({ length: 15 }, (_, index) => (index + 1) * 100_000);
-    render(<RaceTimeChart label="Fuel, lap by lap" raceMs={1_500_000} firstLap={1} lapEnds={ends} pitStops={[]} points={[{ tMs: 0, value: 100 }]} step={false} min={0} max={100} ticks={[0, 50, 100]} tone="ref" />);
-    const figure = screen.getByRole('group', { name: 'Fuel, lap by lap' });
+    render(<RaceTimeChart id="race-position" raceMs={1_500_000} firstLap={1} lapEnds={ends} pitStops={[]} points={[{ tMs: 0, value: 100 }]} step={false} min={0} max={100} ticks={[0, 50, 100]} tone="ref" />);
+    const figure = el('[data-chart="race-position"]');
     expect([...figure.querySelectorAll('.race-chart-laps span')].map(label => label.textContent)).toEqual(['1', '2', '4', '6', '8', '10', '12', '14']);
   });
 
   it('shows_the_start_and_the_finish_position_in_bold_and_hides_a_usual_label_closer_than_14_px', () => {
     render(
       <RaceTimeChart
-        label="Position in the race, lap by lap"
+        id="race-position"
         raceMs={400_000}
         firstLap={1}
         lapEnds={LAP_ENDS}
@@ -103,7 +104,7 @@ describe('race time chart', () => {
         height={220}
       />
     );
-    const labels = [...screen.getByRole('group', { name: 'Position in the race, lap by lap' }).querySelectorAll('.y-axis span')];
+    const labels = [...el('[data-chart="race-position"]').querySelectorAll('.y-axis span')];
     expect(labels.map(label => [label.textContent, label.classList.contains('axis-bold')])).toEqual([
       ['10', false],
       ['20', true],

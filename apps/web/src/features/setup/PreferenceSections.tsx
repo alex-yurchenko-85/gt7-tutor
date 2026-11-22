@@ -39,7 +39,7 @@ function GameVersionRow() {
     <form className="pref" onSubmit={save} noValidate>
       <span className="pref-text">
         <label htmlFor="game-version">{t('setup.preferences.version')}</label>
-        <span className="sub" id="game-version-hint">
+        <span className="sub">
           {t('setup.preferences.version-hint')}
         </span>
       </span>
@@ -50,7 +50,6 @@ function GameVersionRow() {
             className="input"
             value={version}
             maxLength={40}
-            aria-describedby="game-version-hint"
             onChange={event => setVersion(event.target.value)}
           />
           <IconButton icon="check" label={t('setup.preferences.version-save')} primary type="submit" />
@@ -71,7 +70,7 @@ function GameVersionRow() {
 }
 
 function rateOptions(): RadioOption<StateRate>[] {
-  return STATE_RATES.map(rate => ({ value: rate, ariaLabel: t('setup.preferences.rate-label', { rate }), content: t('setup.preferences.rate', { rate }) }));
+  return STATE_RATES.map(rate => ({ value: rate, content: t('setup.preferences.rate', { rate }) }));
 }
 
 function StateRateRow() {
@@ -85,11 +84,11 @@ function StateRateRow() {
   return (
     <div className="pref">
       <span className="pref-text">
-        <span id="state-rate-title">{t('setup.preferences.rate-title')}</span>
+        <span>{t('setup.preferences.rate-title')}</span>
         <span className="sub">{t('setup.preferences.rate-text')}</span>
       </span>
       <div className="pref-control">
-        <RadioGroup className="theme-switch" labelledBy="state-rate-title" options={rateOptions()} value={rate} onChange={select} />
+        <RadioGroup className="theme-switch" options={rateOptions()} value={rate} onChange={select} />
       </div>
     </div>
   );
@@ -97,8 +96,8 @@ function StateRateRow() {
 
 export function PreferencesSection() {
   return (
-    <section className="panel setup-section" id="setup-preferences" aria-labelledby="preferences-title">
-      <h2 id="preferences-title">{t('setup.preferences.title')}</h2>
+    <section className="panel setup-section" id="setup-preferences">
+      <h2>{t('setup.preferences.title')}</h2>
       <div className="pref">
         <span className="pref-text">
           <span>{t('setup.preferences.theme')}</span>

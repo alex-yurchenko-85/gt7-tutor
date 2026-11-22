@@ -53,7 +53,7 @@ export function ProfileStrip({ profiles, selected, onSelect }: ProfileStripProps
   };
 
   const group = (
-    <div ref={strip} role="radiogroup" aria-label={t('auth.strip.label')} className="profile-strip">
+    <div ref={strip} role="radiogroup" className="profile-strip">
       {profiles.map((profile, index) => (
         <button
           key={profile.name}
@@ -69,7 +69,7 @@ export function ProfileStrip({ profiles, selected, onSelect }: ProfileStripProps
           onClick={() => onSelect(profile.name)}
           onKeyDown={event => move(event, index)}
         >
-          <span className="strip-avatar" style={{ background: AVATAR_COLORS[index % AVATAR_COLORS.length] }} aria-hidden="true">
+          <span className="strip-avatar" style={{ background: AVATAR_COLORS[index % AVATAR_COLORS.length] }}>
             {initialOf(profile.name)}
           </span>
           <span className="strip-name">{profile.name}</span>

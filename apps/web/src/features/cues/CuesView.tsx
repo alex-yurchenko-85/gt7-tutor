@@ -53,7 +53,7 @@ const GLYPHS: Record<GlyphKind, string> = {
 
 function Glyph({ kind }: { kind: GlyphKind }) {
   return (
-    <svg className="glyph" viewBox="0 0 32 30" aria-hidden="true">
+    <svg className="glyph" viewBox="0 0 32 30">
       <path d={GLYPHS[kind]} />
     </svg>
   );
@@ -77,7 +77,7 @@ function OffsetSlider({ number, offsetMs, onChange }: OffsetSliderProps) {
     <span className="offset">
       <span className="offset-head">
         <span className="offset-label">{t('exercises.cues.timing')}</span>
-        <output role="status" aria-label={t('exercises.cues.timing-of', { number })} className={offsetMs === 0 ? 'zero' : undefined}>
+        <output role="status" className={offsetMs === 0 ? 'zero' : undefined}>
           {text}
         </output>
       </span>
@@ -89,12 +89,10 @@ function OffsetSlider({ number, offsetMs, onChange }: OffsetSliderProps) {
           step={CUE_OFFSET_STEP_MS}
           value={-offsetMs}
           style={range}
-          aria-label={t('exercises.cues.move', { number })}
-          aria-valuetext={text}
           onChange={event => onChange(-Number(event.target.value))}
         />
       </span>
-      <span className="offset-ends" aria-hidden="true">
+      <span className="offset-ends">
         <span>{t('exercises.cues.earliest')}</span>
         <span>{t('exercises.cues.latest')}</span>
       </span>
@@ -120,7 +118,7 @@ type CueRowProps = {
 function CueRow({ cue, phrase, number, muted, offsetMs, recurring, reaction, notSpoken, speaking, onToggle, onOffset, onHear }: CueRowProps) {
   const flagged = recurring.length > 0 && !muted;
   return (
-    <li className={`note${flagged ? ' warn' : ''}${muted ? ' off' : ''}`} aria-label={t('exercises.cues.cue', { number })}>
+    <li className={`note${flagged ? ' warn' : ''}${muted ? ' off' : ''}`} data-cue={number}>
       <span className="n">{number}</span>
       <span className="distance">
         <Rich k="app.unit.metres" parts={{ value: <b>{Math.round(cue.sM)}</b> }} />
@@ -133,7 +131,7 @@ function CueRow({ cue, phrase, number, muted, offsetMs, recurring, reaction, not
         {speaking ? <span className="tag ink">{t('exercises.cues.speaking')}</span> : null}
         {notSpoken !== null ? (
           <span className="tag outline">
-            <svg className="dots" viewBox="0 0 24 24" aria-hidden="true">
+            <svg className="dots" viewBox="0 0 24 24">
               <circle cx="5" cy="12" r="2.2" />
               <circle cx="12" cy="12" r="2.2" />
               <circle cx="19" cy="12" r="2.2" />
@@ -152,7 +150,7 @@ function CueRow({ cue, phrase, number, muted, offsetMs, recurring, reaction, not
           <em key={item.kind}>{recurringText(item)}</em>
         ))}
       </span>
-      <span className="target" aria-label={t('exercises.cues.target')}>
+      <span className="target">
         {cue.targetSpeedKph === null ? (
           '–'
         ) : (
@@ -175,7 +173,7 @@ function CueRow({ cue, phrase, number, muted, offsetMs, recurring, reaction, not
 
 function TurnRow({ corner }: { corner: CornerInfo }) {
   return (
-    <li className="note turn" aria-label={t('charts.turn.title', { turn: corner.number })}>
+    <li className="note turn" data-turn={corner.number}>
       <span className="n">{t('charts.turn.badge', { turn: corner.number })}</span>
       <span className="distance">
         <Rich k="app.unit.metres" parts={{ value: <b>{Math.round(corner.turnInSM)}</b> }} />
@@ -222,8 +220,8 @@ type SpeakSwitchProps = { on: boolean; onChange(next: boolean): void };
 function SpeakTargetsSwitch({ on, onChange }: SpeakSwitchProps) {
   return (
     <div className="speak-switch">
-      <button type="button" role="switch" aria-checked={on} aria-label={t('exercises.cues.speak-targets')} onClick={() => onChange(!on)}>
-        <span className="track" aria-hidden="true">
+      <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)}>
+        <span className="track">
           <span className="knob" />
         </span>
         <span>{t('exercises.cues.speak-targets')}</span>
@@ -280,7 +278,7 @@ function PreviewStatus({ run, phraseOf, numberOf }: PreviewStatusProps) {
   const phrase = key === null ? null : phraseOf(key);
   return (
     <div className="preview-run">
-      <span className="preview-bar" aria-hidden="true">
+      <span className="preview-bar">
         <i style={{ width: `${share * 100}%` }} />
       </span>
       <span className="preview-time">{t('exercises.cues.preview-time', { elapsed: formatTime(elapsedMs, 1), total: formatTime(timeMs, 1) })}</span>
@@ -293,11 +291,11 @@ function PreviewStatus({ run, phraseOf, numberOf }: PreviewStatusProps) {
   );
 }
 
-type PreviewMapProps = { run: CuePreviewRun; label: string; reference: ReferenceTrace; marks: TrackMark[] };
+type PreviewMapProps = { run: CuePreviewRun; reference: ReferenceTrace; marks: TrackMark[] };
 
-function PreviewMap({ run, label, reference, marks }: PreviewMapProps) {
+function PreviewMap({ run, reference, marks }: PreviewMapProps) {
   const elapsedMs = usePreviewElapsed(run);
-  return <TrackMap label={label} reference={reference} cursorSM={run.preview ? previewPositionM(run.preview, elapsedMs) : null} marks={marks} />;
+  return <TrackMap reference={reference} cursorSM={run.preview ? previewPositionM(run.preview, elapsedMs) : null} marks={marks} />;
 }
 
 type CueData = [ReferenceCue[], ReferenceTrace, RecurringDifference[], CornerInfo[], BrakeReactionSummary[]];
@@ -429,7 +427,6 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
       below={<PreviewStatus run={run} phraseOf={key => phraseOfKey(cues, key, speakTargets)} numberOf={numberOf} />} notes={[t('exercises.cues.map-note')]} onView={() => setViewing(true)}>
       <PreviewMap
         run={run}
-        label={t('exercises.cues.map-label')}
         reference={trace}
         marks={[
           ...cornerMarks(corners),

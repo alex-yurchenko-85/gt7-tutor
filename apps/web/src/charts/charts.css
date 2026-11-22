@@ -376,8 +376,91 @@
 
 .chart-cursor {
   stroke: var(--ink);
-  stroke-width: 1.5;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
   vector-effect: non-scaling-stroke;
+}
+
+.chart-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.chart-box {
+  position: absolute;
+  z-index: 2;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  padding: 8px 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.chart-box.high {
+  top: 8px;
+}
+
+.chart-box.high.labels {
+  top: 36px;
+}
+
+.chart-box.low {
+  bottom: 8px;
+}
+
+.chart-box-title {
+  display: block;
+  font-weight: 700;
+}
+
+.chart-box ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  column-count: var(--box-columns);
+  column-gap: 16px;
+}
+
+.chart-box li {
+  break-inside: avoid;
+}
+
+.chart-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.chart-swatch.ref {
+  background: var(--ref);
+}
+
+.chart-swatch.you {
+  background: var(--you);
+}
+
+.chart-swatch.lap {
+  background: var(--series);
+}
+
+.chart-line.lap.strong {
+  stroke-width: 3;
+}
+
+.chart-swatch.strong {
+  height: 4px;
 }
 
 .track-map.dark .track-start,
@@ -585,9 +668,8 @@
 }
 
 .chart-line.lap {
-  stroke: var(--mute);
-  stroke-width: 1;
-  opacity: 0.75;
+  stroke: var(--series);
+  stroke-width: 1.5;
 }
 
 .strip-body {
@@ -853,6 +935,18 @@
   font-size: 12px;
   line-height: 1;
   color: var(--mute);
+}
+
+.field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.field-head .field-unit {
+  margin-top: 0;
 }
 
 .chart-field .channel-body,

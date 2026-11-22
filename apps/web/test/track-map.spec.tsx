@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { el } from './support.tsx';
 import { TrackMap, type TrackLine } from '../src/charts/TrackMap.tsx';
 import * as geometry from '../src/charts/geometry.ts';
 
@@ -11,7 +12,7 @@ vi.mock('../src/charts/geometry.ts', async importOriginal => {
 const LINE: TrackLine = { gridM: 2, x: [0, 2, 4, 6, 8, 10], z: [0, 1, 0, 1, 0, 1] };
 
 function peak(turn: number, sM: number) {
-  return { turn, sM, title: `T${turn} title`, detail: `T${turn} detail`, name: `T${turn} name` };
+  return { turn, sM, title: `T${turn} title`, detail: `T${turn} detail` };
 }
 
 function tipText(): string[] {
@@ -23,13 +24,13 @@ describe('track map', () => {
     const spy = vi.mocked(geometry.lineSegments);
     spy.mockClear();
     const marks = [{ sM: 4, title: 'Mark' }];
-    const view = render(<TrackMap label="Map" reference={LINE} marks={marks} cursorSM={0} />);
+    const view = render(<TrackMap reference={LINE} marks={marks} cursorSM={0} />);
     const first = spy.mock.calls.length;
     const cursor = () => document.querySelector('.track-cursor')?.getAttribute('cx');
     const before = cursor();
     const polyline = document.querySelector('.track-reference');
     expect(first).toBeGreaterThan(0);
-    for (const cursorSM of [2, 4, 6, 8]) view.rerender(<TrackMap label="Map" reference={LINE} marks={marks} cursorSM={cursorSM} />);
+    for (const cursorSM of [2, 4, 6, 8]) view.rerender(<TrackMap reference={LINE} marks={marks} cursorSM={cursorSM} />);
     expect(spy.mock.calls.length).toBe(first);
     expect(cursor()).not.toBe(before);
     expect(document.querySelector('.track-reference')).toBe(polyline);
@@ -48,7 +49,7 @@ describe('track map', () => {
       }
     );
     vi.spyOn(SVGElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: 400, height: 1000, left: 0, top: 0, right: 400, bottom: 1000, x: 0, y: 0, toJSON: () => ({}) });
-    const view = render(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
+    const view = render(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
     expect(document.querySelector('.track-peak .peak-dot')!.getAttribute('r')).toBe('12');
     expect(Number(document.querySelector('.track-peak .peak-hit')!.getAttribute('r'))).toBeGreaterThanOrEqual(44);
     expect(observed).toHaveLength(1);
@@ -57,19 +58,18 @@ describe('track map', () => {
   });
 
   it('peak_is_a_dot_on_the_line_named_by_its_tip_without_a_box', () => {
-    render(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[peak(1, 4), peak(2, 6)]} />);
+    render(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4), peak(2, 6)]} />);
     const dots = screen.getAllByRole('button');
-    expect(dots.map(dot => dot.getAttribute('aria-label'))).toEqual(['T1 name', 'T2 name']);
+    expect(dots.map(dot => dot.getAttribute('data-turn'))).toEqual(['1', '2']);
     const linePoints = document.querySelector('.track-reference')!.getAttribute('points')!.split(' ');
     for (const dot of document.querySelectorAll('.peak-dot')) expect(linePoints).toContain(`${dot.getAttribute('cx')},${dot.getAttribute('cy')}`);
     expect(document.querySelector('.peak-tip')).toBeNull();
     expect(document.querySelector('.track-callout')).toBeNull();
-    expect(screen.getByRole('group', { name: 'Map' })).toBe(document.querySelector('.track-map'));
   });
 
   it('pointer_on_a_dot_shows_its_tip_and_leaving_hides_it', () => {
-    render(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[peak(1, 4), peak(2, 6)]} />);
-    const dot = screen.getByRole('button', { name: 'T2 name' });
+    render(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4), peak(2, 6)]} />);
+    const dot = el('.track-peak[data-turn="2"]');
     fireEvent.pointerEnter(dot);
     expect(tipText()).toEqual(['T2 title', 'T2 detail']);
     fireEvent.pointerLeave(dot);
@@ -77,8 +77,8 @@ describe('track map', () => {
   });
 
   it('focus_shows_the_tip_and_escape_or_blur_hides_it', () => {
-    render(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
-    const dot = screen.getByRole('button', { name: 'T1 name' });
+    render(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
+    const dot = el('.track-peak[data-turn="1"]');
     act(() => dot.focus());
     expect(tipText()).toEqual(['T1 title', 'T1 detail']);
     fireEvent.keyDown(dot, { key: 'Escape' });
@@ -91,19 +91,19 @@ describe('track map', () => {
   });
 
   it('touch_on_a_dot_shows_the_tip_and_touch_away_from_the_dots_hides_it', () => {
-    render(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[peak(1, 4), peak(2, 6)]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'T1 name' }));
+    render(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4), peak(2, 6)]} />);
+    fireEvent.click(el('.track-peak[data-turn="1"]'));
     expect(tipText()).toEqual(['T1 title', 'T1 detail']);
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'T2 name' }));
-    fireEvent.click(screen.getByRole('button', { name: 'T2 name' }));
+    fireEvent.pointerDown(el('.track-peak[data-turn="2"]'));
+    fireEvent.click(el('.track-peak[data-turn="2"]'));
     expect(tipText()).toEqual(['T2 title', 'T2 detail']);
     fireEvent.pointerDown(document.querySelector('.track-reference')!);
     expect(document.querySelector('.peak-tip')).toBeNull();
   });
 
   it('mouse_click_on_a_dot_does_not_keep_the_tip_after_the_pointer_leaves', () => {
-    render(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
-    const dot = screen.getByRole('button', { name: 'T1 name' });
+    render(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
+    const dot = el('.track-peak[data-turn="1"]');
     fireEvent.pointerEnter(dot, { pointerType: 'mouse' });
     fireEvent.pointerDown(dot, { pointerType: 'mouse' });
     act(() => dot.focus());
@@ -113,17 +113,17 @@ describe('track map', () => {
   });
 
   it('a_touched_tip_does_not_come_back_after_the_dots_go_and_return', () => {
-    const view = render(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
-    fireEvent.click(screen.getByRole('button', { name: 'T1 name' }));
+    const view = render(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
+    fireEvent.click(el('.track-peak[data-turn="1"]'));
     expect(tipText()).toEqual(['T1 title', 'T1 detail']);
-    view.rerender(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[]} />);
-    view.rerender(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
+    view.rerender(<TrackMap reference={LINE} attempt={LINE} peaks={[]} />);
+    view.rerender(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
     expect(document.querySelector('.peak-tip')).toBeNull();
   });
 
   it('a_focused_dot_keeps_its_ring_after_escape_closes_the_tip', () => {
-    render(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
-    const dot = screen.getByRole('button', { name: 'T1 name' });
+    render(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
+    const dot = el('.track-peak[data-turn="1"]');
     act(() => dot.focus());
     fireEvent.keyDown(dot, { key: 'Escape' });
     expect(document.querySelector('.peak-tip')).toBeNull();
@@ -133,8 +133,8 @@ describe('track map', () => {
   });
 
   it('enter_or_space_on_a_dot_shows_the_tip_again_after_escape', () => {
-    render(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
-    const dot = screen.getByRole('button', { name: 'T1 name' });
+    render(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} />);
+    const dot = el('.track-peak[data-turn="1"]');
     act(() => dot.focus());
     fireEvent.keyDown(dot, { key: 'Escape' });
     expect(document.querySelector('.peak-tip')).toBeNull();
@@ -146,19 +146,19 @@ describe('track map', () => {
   });
 
   it('difference_marks_and_the_cursor_stay_above_the_dots', () => {
-    render(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} marks={[{ sM: 4, title: 'Difference', onAttempt: true, onSelect: () => undefined }]} cursorSM={4} />);
+    render(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4)]} marks={[{ sM: 4, title: 'Difference', onAttempt: true, onSelect: () => undefined }]} cursorSM={4} />);
     const order = [...document.querySelector('.track-map')!.children].map(child => child.getAttribute('class') ?? '');
     const peakAt = order.findIndex(name => name.startsWith('track-peak'));
     expect(order.findIndex(name => name.startsWith('track-mark'))).toBeGreaterThan(peakAt);
     expect(order.indexOf('track-cursor')).toBeGreaterThan(peakAt);
-    fireEvent.click(screen.getByRole('button', { name: 'T1 name' }));
+    fireEvent.click(el('.track-peak[data-turn="1"]'));
     expect(order.indexOf('track-cursor')).toBeLessThan([...document.querySelector('.track-map')!.children].findIndex(child => child.getAttribute('class') === 'peak-tip'));
   });
 
   it('a_difference_mark_on_a_dot_keeps_its_touch_and_the_dot_tip_shows_near_it', () => {
     vi.spyOn(SVGElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: 800, height: 400, left: 0, top: 0, right: 800, bottom: 400, x: 0, y: 0, toJSON: () => ({}) });
     const select = vi.fn();
-    render(<TrackMap label="Map" reference={STRAIGHT} attempt={STRAIGHT} peaks={[peak(1, 200)]} marks={[{ sM: 200, title: 'Difference', onAttempt: true, onSelect: select }]} />);
+    render(<TrackMap reference={STRAIGHT} attempt={STRAIGHT} peaks={[peak(1, 200)]} marks={[{ sM: 200, title: 'Difference', onAttempt: true, onSelect: select }]} />);
     const svg = document.querySelector('.track-map') as SVGSVGElement;
     const [, , width, height] = svg.getAttribute('viewBox')!.split(' ').map(Number);
     const dot = document.querySelector('.peak-dot')!;
@@ -179,10 +179,10 @@ describe('track map', () => {
   });
 
   it('tip_stays_inside_the_map', () => {
-    render(<TrackMap label="Map" reference={STRAIGHT} attempt={STRAIGHT} peaks={[peak(1, 2), peak(2, 398)]} />);
+    render(<TrackMap reference={STRAIGHT} attempt={STRAIGHT} peaks={[peak(1, 2), peak(2, 398)]} />);
     const [, , width, height] = document.querySelector('.track-map')!.getAttribute('viewBox')!.split(' ').map(Number);
-    for (const name of ['T1 name', 'T2 name']) {
-      fireEvent.click(screen.getByRole('button', { name }));
+    for (const turn of ['1', '2']) {
+      fireEvent.click(el(`.track-peak[data-turn="${turn}"]`));
       const box = document.querySelector('.peak-tip rect')!;
       const x = Number(box.getAttribute('x'));
       const y = Number(box.getAttribute('y'));
@@ -204,7 +204,7 @@ describe('track map', () => {
     const horseshoe: TrackLine = { gridM: 2, x: points.map(point => point[0]), z: points.map(point => point[1]) };
     const topIndex = points.reduce((best, point, index) => (point[1] < points[best]![1] ? index : best), 0);
     const turn = { sM: (topIndex - 30) * 2, toSM: (topIndex + 30) * 2, kind: 'turn' as const, label: 'T1', title: 'Turn 1' };
-    render(<TrackMap label="Map" reference={horseshoe} marks={[turn]} />);
+    render(<TrackMap reference={horseshoe} marks={[turn]} />);
     const [, , width, height] = document.querySelector('svg')!.getAttribute('viewBox')!.split(' ').map(Number);
     const band = document.querySelector('.track-turn')!;
     const reference = document.querySelector('.track-reference')!;
@@ -230,9 +230,9 @@ describe('track map', () => {
       const label = document.querySelector('.track-turn-label')!;
       return [Number(label.getAttribute('x')), Number(label.getAttribute('y'))] as const;
     };
-    const view = render(<TrackMap label="Map" reference={arc} marks={[turn]} />);
+    const view = render(<TrackMap reference={arc} marks={[turn]} />);
     const free = labelAt();
-    view.rerender(<TrackMap label="Map" reference={arc} marks={[turn, { sM: 100, label: '2', title: 'Mute cue 2' }]} />);
+    view.rerender(<TrackMap reference={arc} marks={[turn, { sM: 100, label: '2', title: 'Mute cue 2' }]} />);
     const moved = labelAt();
     const mark = document.querySelector('.track-mark circle.marker')!;
     const distance = Math.hypot(Number(mark.getAttribute('cx')) - moved[0], Number(mark.getAttribute('cy')) - moved[1]);
@@ -253,7 +253,7 @@ describe('track map', () => {
       { sM: 200, label: '2', title: 'Mute cue 2' },
       { sM: 204, label: '3', title: 'Mute cue 3' }
     ];
-    render(<TrackMap label="Map" reference={STRAIGHT} marks={marks} />);
+    render(<TrackMap reference={STRAIGHT} marks={marks} />);
     const lineY = Number(document.querySelector('.track-reference')!.getAttribute('points')!.split(' ')[0]!.split(',')[1]);
     const one = centreOf('1');
     const two = centreOf('2');
@@ -271,25 +271,25 @@ describe('track map', () => {
   });
 
   it('muted_cue_mark_shows_a_speaker_badge', () => {
-    render(<TrackMap label="Map" reference={STRAIGHT} marks={[{ sM: 40, label: '1', title: 'Unmute cue 1', muted: true }, { sM: 300, label: '2', title: 'Mute cue 2' }]} />);
+    render(<TrackMap reference={STRAIGHT} marks={[{ sM: 40, label: '1', title: 'Unmute cue 1', muted: true }, { sM: 300, label: '2', title: 'Mute cue 2' }]} />);
     expect(centreOf('1').group.querySelector('.mute-badge')).not.toBeNull();
     expect(centreOf('2').group.querySelector('.mute-badge')).toBeNull();
   });
 
   it('speaking_mark_has_its_own_class', () => {
-    render(<TrackMap label="Map" reference={STRAIGHT} marks={[{ sM: 40, label: '1', title: 'Mute cue 1', speaking: true }, { sM: 300, label: '2', title: 'Mute cue 2' }]} />);
+    render(<TrackMap reference={STRAIGHT} marks={[{ sM: 40, label: '1', title: 'Mute cue 1', speaking: true }, { sM: 300, label: '2', title: 'Mute cue 2' }]} />);
     expect(centreOf('1').group).toHaveClass('speaking');
     expect(centreOf('2').group).not.toHaveClass('speaking');
   });
 
   it('not_spoken_mark_has_a_badge', () => {
-    render(<TrackMap label="Map" reference={STRAIGHT} marks={[{ sM: 40, label: '1', title: 'Mute cue 1', notSpoken: true }, { sM: 300, label: '2', title: 'Mute cue 2' }]} />);
+    render(<TrackMap reference={STRAIGHT} marks={[{ sM: 40, label: '1', title: 'Mute cue 1', notSpoken: true }, { sM: 300, label: '2', title: 'Mute cue 2' }]} />);
     expect(centreOf('1').group.querySelector('.not-spoken-badge')).not.toBeNull();
     expect(centreOf('2').group.querySelector('.not-spoken-badge')).toBeNull();
   });
 
   it('start_and_finish_are_marked_across_the_line_with_labels_beyond_the_ends', () => {
-    render(<TrackMap label="Map" reference={STRAIGHT} />);
+    render(<TrackMap reference={STRAIGHT} />);
     const points = document.querySelector('.track-reference')!.getAttribute('points')!.split(' ').map(point => point.split(',').map(Number) as [number, number]);
     const [startX, lineY] = points[0]!;
     const [endX] = points.at(-1)!;
@@ -310,7 +310,7 @@ describe('track map', () => {
   });
 
   it('lap_line_is_one_bar_across_the_line_with_its_label_beside_the_line', () => {
-    render(<TrackMap label="Map" reference={STRAIGHT} lapLine />);
+    render(<TrackMap reference={STRAIGHT} lapLine />);
     const points = document.querySelector('.track-reference')!.getAttribute('points')!.split(' ').map(point => point.split(',').map(Number) as [number, number]);
     const [startX, lineY] = points[0]!;
     expect(document.querySelectorAll('.track-start')).toHaveLength(1);
@@ -327,9 +327,9 @@ describe('track map', () => {
       const label = [...document.querySelectorAll('.track-label')].find(node => node.textContent === 'finish')!;
       return [Number(label.getAttribute('x')), Number(label.getAttribute('y'))] as const;
     };
-    const view = render(<TrackMap label="Map" reference={STRAIGHT} />);
+    const view = render(<TrackMap reference={STRAIGHT} />);
     const free = finishAt();
-    view.rerender(<TrackMap label="Map" reference={STRAIGHT} marks={[{ sM: 400, label: '1', title: 'Mute cue 1' }]} />);
+    view.rerender(<TrackMap reference={STRAIGHT} marks={[{ sM: 400, label: '1', title: 'Mute cue 1' }]} />);
     const moved = finishAt();
     const mark = document.querySelector('circle.marker')!;
     expect(moved).not.toEqual(free);
@@ -338,7 +338,7 @@ describe('track map', () => {
 
   it('spread_marks_and_end_labels_stay_inside_the_map', () => {
     const marks = [396, 397, 398, 399].map((sM, index) => ({ sM, label: String(index + 1), title: `Mute cue ${index + 1}` }));
-    render(<TrackMap label="Map" reference={STRAIGHT} marks={marks} />);
+    render(<TrackMap reference={STRAIGHT} marks={marks} />);
     const [, , width, height] = document.querySelector('svg')!.getAttribute('viewBox')!.split(' ').map(Number);
     for (const circle of document.querySelectorAll('circle.marker')) {
       const cx = Number(circle.getAttribute('cx'));
@@ -358,7 +358,7 @@ describe('track map', () => {
       x: STRAIGHT.x.map((x, index) => (index >= 1 && index <= 6) || (index >= 194 && index <= 199) ? null : x),
       z: STRAIGHT.z.map((z, index) => (index >= 1 && index <= 6) || (index >= 194 && index <= 199) ? null : z)
     };
-    render(<TrackMap label="Map" reference={gapped} />);
+    render(<TrackMap reference={gapped} />);
     expect(document.querySelector('.track-start')).not.toBeNull();
     expect(document.querySelector('.track-finish')).not.toBeNull();
     expect([...document.querySelectorAll('.track-label')].map(node => node.textContent)).toEqual(['start', 'finish']);
@@ -370,7 +370,7 @@ describe('track map', () => {
       x: STRAIGHT.x.map((x, index) => (index >= 50 && index <= 54 ? null : x)),
       z: STRAIGHT.z.map((z, index) => (index >= 50 && index <= 54 ? null : z))
     };
-    render(<TrackMap label="Map" reference={gapped} marks={[{ sM: 80, toSM: 140, kind: 'turn', label: 'T1', title: 'Turn 1' }]} />);
+    render(<TrackMap reference={gapped} marks={[{ sM: 80, toSM: 140, kind: 'turn', label: 'T1', title: 'Turn 1' }]} />);
     expect(document.querySelectorAll('.track-turn')).toHaveLength(2);
     expect(document.querySelectorAll('.track-turn-label')).toHaveLength(1);
   });
@@ -378,10 +378,10 @@ describe('track map', () => {
   it('peaks_at_the_same_distance_keep_their_own_turn', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const both = [peak(1, 4), peak(2, 4)];
-    const view = render(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={both} />);
-    expect(screen.getAllByRole('button').map(dot => dot.getAttribute('aria-label'))).toEqual(['T1 name', 'T2 name']);
-    view.rerender(<TrackMap label="Map" reference={LINE} attempt={LINE} peaks={[both[1]!]} />);
-    expect(screen.getAllByRole('button').map(dot => dot.getAttribute('aria-label'))).toEqual(['T2 name']);
+    const view = render(<TrackMap reference={LINE} attempt={LINE} peaks={both} />);
+    expect(screen.getAllByRole('button').map(dot => dot.getAttribute('data-turn'))).toEqual(['1', '2']);
+    view.rerender(<TrackMap reference={LINE} attempt={LINE} peaks={[both[1]!]} />);
+    expect(screen.getAllByRole('button').map(dot => dot.getAttribute('data-turn'))).toEqual(['2']);
     expect(error.mock.calls.flat().join(' ')).not.toMatch(/same key/);
   });
 });

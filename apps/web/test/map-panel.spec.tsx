@@ -1,10 +1,11 @@
+import { el, sectionOf } from './support.tsx';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { MapPanel } from '../src/charts/MapPanel.tsx';
 
 function legendWords(name: string): string[] {
-  const panel = screen.getByRole('region', { name });
+  const panel = sectionOf(name);
   return [...panel.querySelectorAll('.legend span')].map(span => span.textContent ?? '');
 }
 
@@ -43,7 +44,7 @@ describe('map panel', () => {
         <svg data-testid="map" />
       </MapPanel>
     );
-    await userEvent.setup().click(screen.getByRole('button', { name: 'View the map in full screen' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'View' }));
     expect(onView).toHaveBeenCalledOnce();
     const below = screen.getByText('Below the map');
     expect(screen.getByTestId('map').compareDocumentPosition(below) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -59,13 +60,13 @@ describe('map panel', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Your line' })).toBeInTheDocument();
   });
 
-  it('keeps_a_hidden_title_as_the_name_of_the_panel_only', () => {
+  it('shows_no_title_row_when_the_panel_has_no_title', () => {
     render(
-      <MapPanel title="Map of the line of lap 4 and the line of lap 3" hideTitle legend={['reference']} onView={() => undefined}>
+      <MapPanel legend={['reference']} onView={() => undefined}>
         <svg />
       </MapPanel>
     );
-    const panel = screen.getByRole('region', { name: 'Map of the line of lap 4 and the line of lap 3' });
+    const panel = el('section.map-panel');
     expect(panel.querySelector('h2')).toBeNull();
     expect(panel.querySelector('.map-panel-head')).toHaveClass('no-title');
   });

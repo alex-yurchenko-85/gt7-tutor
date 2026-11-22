@@ -1,4 +1,4 @@
-import type { LiveRaceLap, MessageKey } from '@gt7/contracts';
+import type { LiveRaceLap } from '@gt7/contracts';
 import { t } from '../../app/i18n.ts';
 
 type LapCirclesProps = {
@@ -15,11 +15,6 @@ type Sign = 'skip' | 'done' | 'now' | 'todo' | 'best' | 'pit';
 type Circle = { number: number; state: 'skip' | 'done' | 'now' | 'todo'; best: boolean; pitAfter: boolean };
 
 const SIGNS: Sign[] = ['skip', 'done', 'now', 'todo', 'best', 'pit'];
-
-function circleLabel(circle: Circle): string {
-  const key: MessageKey = circle.best ? 'races.circles.done-best' : `races.circles.${circle.state}`;
-  return t(key, { lap: circle.number });
-}
 
 function circlesOf({ lapsInRace, firstRecordedLap, laps, lap, bestLap, running }: LapCirclesProps): Circle[] {
   return Array.from({ length: lapsInRace }, (_, index) => {
@@ -46,16 +41,16 @@ export function LapCircles(props: LapCirclesProps) {
   const shown = new Set<Sign>(circles.flatMap(circle => [circle.state, ...(circle.best ? ['best' as const] : []), ...(circle.pitAfter ? ['pit' as const] : [])]));
   return (
     <>
-      <ol className="lap-circles" aria-label={t('races.circles.label')}>
+      <ol className="lap-circles">
         {circles.flatMap(circle => [
-          <li key={circle.number} className={circleClass(circle.state, circle.best)} aria-label={circleLabel(circle)} />,
-          ...(circle.pitAfter ? [<li key={`pit-${circle.number}`} className="lap-pit" aria-label={t('races.circles.pit', { lap: circle.number })} />] : [])
+          <li key={circle.number} className={circleClass(circle.state, circle.best)} />,
+          ...(circle.pitAfter ? [<li key={`pit-${circle.number}`} className="lap-pit" />] : [])
         ])}
       </ol>
-      <ul className="lap-key" aria-label={t('races.circles.key')}>
+      <ul className="lap-key">
         {SIGNS.filter(sign => shown.has(sign)).map(sign => (
           <li key={sign}>
-            <i aria-hidden="true">
+            <i>
               <KeySign sign={sign} />
             </i>
             {t(`races.circles.key-${sign}`)}

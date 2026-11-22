@@ -25,6 +25,12 @@ describe('groupByTurn', () => {
     expect(groups[3]).toMatchObject({ turn: null, fromSM: null, toSM: null, lostMs: null });
   });
 
+  it('group_by_turn_reverses_the_order_and_keeps_the_rest_last', () => {
+    const findings = [difference(100, 1), difference(400, 2), difference(800, 3), difference(900, null)];
+    expect(groupByTurn(findings, LOSSES, 'track', false, 'descending').map(group => group.turn)).toEqual([3, 2, 1, null]);
+    expect(groupByTurn(findings, LOSSES, 'time-lost', false, 'ascending').map(group => group.turn)).toEqual([1, 2, 3, null]);
+  });
+
   it('group_by_turn_keeps_finding_indices', () => {
     const findings = [difference(100, 1), difference(400, 2), difference(200, 1)];
     const groups = groupByTurn(findings, LOSSES, 'time-lost');

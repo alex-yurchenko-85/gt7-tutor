@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { RaceDetail, RaceGoldenLap, RaceGoldenSector, RaceLapsSpeed } from '@gt7/contracts';
 import { parseRoute, paths } from '../src/app/router.tsx';
 import { PANORAMA_LAPS, RACE_ID, raceDetail } from './race-fixtures.ts';
-import { ApiStub, renderApp, setViewportWidth, signedIn } from './support.tsx';
+import { ApiStub, renderApp, setViewportWidth, signedIn, el, findEl } from './support.tsx';
 
 const GOLDEN_PATH = `/api/races/${RACE_ID}/golden`;
 const GRID_M = 2;
@@ -70,7 +70,7 @@ async function openGolden(golden: RaceGoldenLap = infieldGolden(), detail: RaceD
 }
 
 async function turnRows(): Promise<string[]> {
-  const table = await screen.findByRole('table', { name: 'Turns' });
+  const table = await findEl('.golden-table');
   return within(table)
     .getAllByRole('row')
     .slice(1)
@@ -80,7 +80,7 @@ async function turnRows(): Promise<string[]> {
 describe('race page, golden lap tab', () => {
   it('shows_the_best_lap_the_golden_lap_and_the_gain', async () => {
     await openGolden();
-    const band = await screen.findByRole('region', { name: 'Golden lap' });
+    const band = await findEl('.race-golden-band');
     expect(within(band).getByText('1:14.120')).toBeInTheDocument();
     expect(within(band).getByText('best clean lap · lap 3')).toBeInTheDocument();
     expect(within(band).getByText('1:13.325')).toBeInTheDocument();
@@ -92,6 +92,28 @@ describe('race page, golden lap tab', () => {
     expect(screen.queryByText(/from the game/i)).toBeNull();
   });
 
+  it('reverses_the_sort_on_a_second_click_of_the_active_header', async () => {
+    await openGolden();
+    expect(await turnRows()).toEqual(['T3', 'T6', 'T7', 'T5', 'T8', 'T2', 'T4', 'T1']);
+    const user = userEvent.setup();
+    const header = (name: string) => screen.getByRole('button', { name }).closest('[role="columnheader"]')!;
+    await user.click(screen.getByRole('button', { name: 'Spread, best to median' }));
+    expect(await turnRows()).toEqual(['T1', 'T4', 'T2', 'T8', 'T5', 'T7', 'T6', 'T3']);
+    expect(header('Spread, best to median')).toHaveAttribute('aria-sort', 'ascending');
+    expect(header('Spread, best to median').querySelector('[data-arrow="ascending"]')).not.toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Turn' }));
+    expect(await turnRows()).toEqual(['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8']);
+    expect(header('Turn')).toHaveAttribute('aria-sort', 'ascending');
+    await user.click(screen.getByRole('button', { name: 'Turn' }));
+    expect(await turnRows()).toEqual(['T8', 'T7', 'T6', 'T5', 'T4', 'T3', 'T2', 'T1']);
+    expect(header('Turn')).toHaveAttribute('aria-sort', 'descending');
+    expect(header('Turn').querySelector('[data-arrow="descending"]')).not.toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Spread, best to median' }));
+    expect(await turnRows()).toEqual(['T3', 'T6', 'T7', 'T5', 'T8', 'T2', 'T4', 'T1']);
+    expect(header('Spread, best to median')).toHaveAttribute('aria-sort', 'descending');
+    expect(header('Turn')).not.toHaveAttribute('aria-sort');
+  });
+
   it('sorts_by_spread_first_and_by_turn_on_a_click', async () => {
     await openGolden();
     expect(await turnRows()).toEqual(['T3', 'T6', 'T7', 'T5', 'T8', 'T2', 'T4', 'T1']);
@@ -101,7 +123,7 @@ describe('race page, golden lap tab', () => {
     expect(await turnRows()).toEqual(['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8']);
     expect(screen.getByRole('button', { name: 'Turn' }).closest('[role="columnheader"]')).toHaveAttribute('aria-sort', 'ascending');
     expect(spread).not.toHaveAttribute('aria-sort');
-    const first = within(screen.getByRole('table', { name: 'Turns' })).getAllByRole('row')[1]!;
+    const first = within(el('.golden-table')).getAllByRole('row')[1]!;
     expect(first).toHaveTextContent('0–1,068 m');
     expect(first).toHaveTextContent('18.023');
     expect(first).toHaveTextContent('17.951');
@@ -136,7 +158,7 @@ describe('race page, golden lap tab', () => {
   it('keeps_three_columns_on_a_phone', async () => {
     setViewportWidth(390);
     await openGolden();
-    const table = await screen.findByRole('table', { name: 'Turns' });
+    const table = await findEl('.golden-table');
     expect(within(table).getAllByRole('columnheader').map(cell => cell.textContent)).toEqual(['Turn', 'Golden lap', 'Spread']);
     expect(screen.getByText('golden lap')).toBeInTheDocument();
     expect(screen.getByText(/^From laps 3 and 4\./)).toBeInTheDocument();
@@ -144,7 +166,7 @@ describe('race page, golden lap tab', () => {
 
   it('draws_the_line_in_the_colour_of_each_source_lap', async () => {
     await openGolden();
-    const map = await screen.findByRole('img', { name: 'Map of the golden lap: each part in the colour of its source lap' });
+    const map = await findEl('.race-golden-tab .track-map');
     const parts = [...map.querySelectorAll('.track-segment')].map(part => part.getAttribute('data-colour'));
     expect(parts).toEqual(['a', 'a', 'b', 'b', 'a', 'a', 'a', 'b']);
     expect(map.querySelectorAll('.track-mark.join')).toHaveLength(7);
@@ -217,6 +239,6 @@ describe('race page, golden lap tab', () => {
     expect(parseRoute(`/races/${RACE_ID}/golden`)).toEqual({ name: 'race', raceId: RACE_ID, tab: 'golden' });
     expect(paths.race(RACE_ID, 'golden')).toBe(`/races/${RACE_ID}/golden`);
     await openGolden();
-    expect(within(screen.getByRole('navigation', { name: 'Race' })).getByRole('link', { name: 'Golden lap' })).toHaveAttribute('aria-current', 'page');
+    expect(within(el('nav.exercise-tabs')).getByRole('link', { name: 'Golden lap' })).toHaveAttribute('aria-current', 'page');
   });
 });

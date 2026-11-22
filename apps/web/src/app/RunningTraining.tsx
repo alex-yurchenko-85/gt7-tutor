@@ -43,7 +43,7 @@ export function RunningTraining() {
   };
 
   return (
-    <div className="running-bar" role="status" aria-label={t('app.training.bar.label')}>
+    <div className="running-bar" role="status">
       <span className="running-bar-text">{barText(training, wide)}</span>
       <div className="running-bar-actions">
         {training.exerciseId ? (

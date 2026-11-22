@@ -67,8 +67,8 @@ function DataSummary({ exercises }: { exercises: Exercise[] | null }) {
   const attempts = exercises?.reduce((total, exercise) => total + exercise.attemptCount, 0) ?? null;
   const withAttempts = exercises?.filter(exercise => exercise.attemptCount > 0).length ?? 0;
   return (
-    <section className="panel setup-section" aria-labelledby="history-data-title">
-      <h2 id="history-data-title">{t('setup.history.data')}</h2>
+    <section className="panel setup-section">
+      <h2>{t('setup.history.data')}</h2>
       <div className="kv">
         <span>{t('setup.storage.yours')}</span>
         <b>{storage.data ? t('setup.storage.yours-size', { size: megabytes(storage.data.profileRawBytes), count: storage.data.profileCaptures }) : storage.error ? errorText(storage.error) : '…'}</b>
@@ -121,8 +121,8 @@ export function DeleteHistoryView() {
   return (
     <div className="delete-history">
       <DataSummary exercises={exercises.data} />
-      <section className="panel setup-section history-danger" aria-labelledby="history-title">
-        <h2 id="history-title">{t('setup.history.title')}</h2>
+      <section className="panel setup-section history-danger">
+        <h2>{t('setup.history.title')}</h2>
         <p className="sub">
           <Rich k="setup.history.profile-only" parts={{ name: <b className="history-name">{user.name}</b> }} />
         </p>

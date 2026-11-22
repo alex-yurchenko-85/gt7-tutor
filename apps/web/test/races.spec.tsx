@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { RaceSummary } from '@gt7/contracts';
-import { ApiStub, renderApp, sendLiveState, setViewportWidth, signedIn } from './support.tsx';
+import { ApiStub, renderApp, sendLiveState, setViewportWidth, signedIn, sectionOf, maybeSection, dialogOf, el, elWith, els, maybeEl } from './support.tsx';
 
 const PANORAMA_ID = 'a0000000-0000-4000-8000-000000000001';
 const RING_ID = 'a0000000-0000-4000-8000-000000000002';
@@ -66,7 +66,7 @@ describe('races list', () => {
     renderApp({ path: '/races' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Races' })).toBeVisible();
     expect(await screen.findByRole('heading', { level: 2, name: 'My races 3' })).toBeInTheDocument();
-    const days = screen.getAllByRole('group').filter(group => group.getAttribute('aria-labelledby')?.startsWith('race-day-'));
+    const days = els('.race-day');
     expect(days.map(day => within(day).getByRole('heading').textContent)).toEqual(['20 November', '18 November']);
     expect(within(days[0]!).getAllByRole('link').map(link => link.getAttribute('href'))).toEqual([`/races/${PANORAMA_ID}`, `/races/${RING_ID}`]);
     const panorama = rowOf('Mount Panorama');
@@ -86,8 +86,8 @@ describe('races list', () => {
     const panorama = await screen.findByRole('link', { name: /^Mount Panorama/ });
     expect(panorama).toHaveTextContent("BAC Mono '16 · 7 laps · 2 pit stops2:18.285position 20 → 2");
     expect(panorama).not.toHaveTextContent('17:36');
-    expect(screen.getByRole('heading', { level: 1, name: 'Races' })).toHaveClass('visually-hidden');
-    expect(screen.getByRole('button', { name: 'Record a race' })).toHaveTextContent(/^Record$/);
+    expect(screen.queryByRole('heading', { level: 1, name: 'Races' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Record' })).toHaveTextContent(/^Record$/);
   });
 
   it('race_without_a_track_name_and_without_a_car_name', async () => {
@@ -177,26 +177,26 @@ describe('races list', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Select' }));
     expect(screen.queryByRole('link', { name: /^Mount Panorama/ })).not.toBeInTheDocument();
-    const bar = screen.getByRole('region', { name: 'Selection' });
+    const bar = el('.selection-bar');
     expect(within(bar).getByRole('button', { name: 'Delete 0 races' })).toBeDisabled();
-    await user.click(screen.getByRole('checkbox', { name: 'Select Mount Panorama' }));
-    await user.click(screen.getByRole('checkbox', { name: 'Select High Speed Ring' }));
+    await user.click(el('input', elWith('.race-row', 'Mount Panorama')));
+    await user.click(el('input', elWith('.race-row', 'High Speed Ring')));
     expect(bar).toHaveTextContent('2 selected');
     await user.click(within(bar).getByRole('button', { name: 'Delete 2 races' }));
-    let dialog = screen.getByRole('alertdialog', { name: 'Delete 2 races?' });
+    let dialog = dialogOf('Delete 2 races?');
     expect(dialog).toHaveTextContent('The laps, the pit stops and the places off the track of these races go. Clean up captures frees the disk space later.');
     await user.click(within(dialog).getByRole('button', { name: 'Keep races' }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(api.called('POST /api/races/delete')).toBe(false);
-    expect(screen.getByRole('checkbox', { name: 'Select Mount Panorama' })).toBeChecked();
+    expect(el('input', elWith('.race-row', 'Mount Panorama'))).toBeChecked();
     api.on('GET /api/races', [OLDER]);
     await user.click(within(bar).getByRole('button', { name: 'Delete 2 races' }));
-    dialog = screen.getByRole('alertdialog', { name: 'Delete 2 races?' });
+    dialog = dialogOf('Delete 2 races?');
     await user.click(within(dialog).getByRole('button', { name: 'Delete races' }));
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
     expect(api.calls.find(call => call.path === '/api/races/delete')!.body).toEqual({ ids: [PANORAMA_ID, RING_ID] });
     expect(await screen.findByRole('heading', { level: 2, name: 'My races 1' })).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Selection' })).not.toBeInTheDocument();
+    expect(maybeEl('.selection-bar')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Tsukuba Circuit/ })).toBeInTheDocument();
   });
 
@@ -205,9 +205,9 @@ describe('races list', () => {
     renderApp({ path: '/races' });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Select' }));
-    await user.click(screen.getByRole('checkbox', { name: 'Select High Speed Ring' }));
+    await user.click(el('input', elWith('.race-row', 'High Speed Ring')));
     await user.click(screen.getByRole('button', { name: 'Delete 1 race' }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Delete 1 race?' });
+    const dialog = dialogOf('Delete 1 race?');
     expect(dialog).toHaveTextContent('The laps, the pit stops and the places off the track of this race go. Clean up captures frees the disk space later.');
     expect(within(dialog).getByRole('button', { name: 'Delete race' })).toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Keep race' }));
@@ -219,7 +219,7 @@ describe('races list', () => {
     renderApp({ path: '/races' });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Select' }));
-    await user.click(screen.getByRole('checkbox', { name: 'Select Tsukuba Circuit' }));
+    await user.click(el('input', elWith('.race-row', 'Tsukuba Circuit')));
     await user.click(screen.getByRole('button', { name: 'Delete 1 race' }));
     const dialog = screen.getByRole('alertdialog');
     await user.click(within(dialog).getByRole('button', { name: 'Delete race' }));
@@ -232,11 +232,11 @@ describe('races list', () => {
     renderApp({ path: '/races' });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Select' }));
-    await user.click(screen.getByRole('checkbox', { name: 'Select Mount Panorama' }));
-    await user.click(within(screen.getByRole('region', { name: 'Selection' })).getByRole('button', { name: 'Cancel' }));
+    await user.click(el('input', elWith('.race-row', 'Mount Panorama')));
+    await user.click(within(el('.selection-bar')).getByRole('button', { name: 'Cancel' }));
     expect(screen.getByRole('link', { name: /^Mount Panorama/ })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Select' }));
-    expect(screen.getByRole('checkbox', { name: 'Select Mount Panorama' })).not.toBeChecked();
+    expect(el('input', elWith('.race-row', 'Mount Panorama'))).not.toBeChecked();
   });
 
   it('race_page_route_shows_not_found_for_a_bad_id', async () => {

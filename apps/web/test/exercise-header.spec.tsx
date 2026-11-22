@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { catalogueEntry, exercise, exerciseApi, exerciseAtStep, rememberExercise, TRACE, EXERCISE_ID } from './fixtures.ts';
-import { renderApp, setViewportWidth, USER } from './support.tsx';
+import { renderApp, setViewportWidth, USER, findEl, maybeSection } from './support.tsx';
 
 function band(): HTMLElement | null {
   return document.querySelector<HTMLElement>('.exercise-times');
@@ -13,18 +13,18 @@ describe('exercise page', () => {
     exerciseApi(exerciseAtStep(3)).install();
     rememberExercise();
     renderApp({ path: `/exercises/${EXERCISE_ID}` });
-    const tabs = await screen.findByRole('navigation', { name: 'Exercise' });
+    const tabs = await findEl('nav.exercise-tabs');
     expect(within(tabs).getAllByRole('link').map(link => link.textContent)).toEqual(['Cues', 'References', 'Attempts']);
     expect(within(tabs).getByRole('link', { name: 'Cues' })).toHaveAttribute('aria-current', 'page');
     expect(within(tabs).getByRole('link', { name: 'Cues' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}/cues`);
     expect(within(tabs).queryByRole('link', { name: 'Overview' })).toBeNull();
-    expect(screen.queryByRole('region', { name: /^Next:/ })).toBeNull();
+    expect(maybeSection(/^Next:/)).toBeNull();
   });
 
   it('tabs_have_no_drive_tab', async () => {
     exerciseApi(exercise({ step: 3, attemptCount: 6, completeAttempts: 4 })).install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
-    const tabs = await screen.findByRole('navigation', { name: 'Exercise' });
+    const tabs = await findEl('nav.exercise-tabs');
     expect(within(tabs).queryByRole('link', { name: 'Drive' })).toBeNull();
     expect(tabs.querySelector('.drive-tab')).toBeNull();
     expect(within(tabs).getByRole('link', { name: 'Attempts' })).toHaveTextContent(/^Attempts$/);
@@ -42,7 +42,7 @@ describe('exercise page', () => {
       exerciseApi(exerciseAtStep(3)).install();
       rememberExercise();
       const view = renderApp({ path });
-      const navigation = await screen.findByRole('navigation', { name: 'Exercise' });
+      const navigation = await findEl('nav.exercise-tabs');
       const title = screen.getByRole('heading', { level: 1 });
       expect(title, path).toHaveTextContent('Yangwang Experience / Racing Lines');
       const times = await waitFor(() => band() ?? Promise.reject(new Error('no band')));
@@ -78,7 +78,7 @@ describe('exercise page', () => {
     first.unmount();
     exerciseApi(exercise({ step: 1, bestMs: null, activeReferenceId: null })).install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
-    await screen.findByRole('navigation', { name: 'Exercise' });
+    await findEl('nav.exercise-tabs');
     expect(band()).toBeNull();
   });
 
@@ -93,7 +93,7 @@ describe('exercise page', () => {
   it('exercise_header_has_a_breadcrumb', async () => {
     exerciseApi(exercise({ step: 3, attemptCount: 6, completeAttempts: 4 })).install();
     renderApp({ path: `/exercises/${EXERCISE_ID}` });
-    const breadcrumb = await screen.findByRole('navigation', { name: 'Breadcrumb' });
+    const breadcrumb = await findEl('nav.breadcrumb');
     expect(within(breadcrumb).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
     expect(breadcrumb).toHaveTextContent('Exercises / Yangwang Experience / Racing Lines');
     expect(within(breadcrumb).getAllByRole('link')).toHaveLength(1);

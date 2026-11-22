@@ -15,7 +15,7 @@ export function AttemptSummary({ attemptId, onDriveAgain }: { attemptId: string;
 
   const complete = data.completion === 'complete';
   return (
-    <section className="panel summary" aria-label={t('exercises.summary.label', { number: data.number })}>
+    <section className="panel summary">
       <p className="sub">{t('exercises.summary.label', { number: data.number })}</p>
       <div className="summary-time">{complete ? formatTime(data.timeMs) : t('exercises.summary.no-time')}</div>
       {!complete ? (

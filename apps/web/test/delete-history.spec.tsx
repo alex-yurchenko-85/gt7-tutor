@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { exercise } from './fixtures.ts';
-import { ApiStub, renderApp, sendLiveState, setViewportWidth, signedIn, USER } from './support.tsx';
+import { ApiStub, renderApp, sendLiveState, setViewportWidth, signedIn, USER, el, maybeSection, findSection } from './support.tsx';
 
 const RACING = exercise({ attemptCount: 6, referenceCount: 1, completeAttempts: 4, name: 'Racing Line: Intermediate' });
 const LICENCE = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', attemptCount: 2, referenceCount: 2 });
@@ -25,7 +25,7 @@ describe('delete history', () => {
   it('delete_history_needs_profile_name', async () => {
     historyApi();
     renderApp({ path: '/setup/delete-history' });
-    const section = await screen.findByRole('region', { name: 'Delete history' });
+    const section = await findSection('Delete history');
     expect(section).toHaveTextContent(`This affects the profile ${USER.name} only. It cannot be undone.`);
     expect(within(section).getByRole('radio', { name: /^All attempts/ })).toBeChecked();
     expect(await within(section).findByRole('radio', { name: 'All attempts 8 attempts in 2 exercises. References, exercises and races stay.' })).toBeChecked();
@@ -42,7 +42,7 @@ describe('delete history', () => {
   it('delete_history_sends_scope_and_cleanup', async () => {
     const api = historyApi();
     renderApp({ path: '/setup/delete-history' });
-    const section = await screen.findByRole('region', { name: 'Delete history' });
+    const section = await findSection('Delete history');
     expect(section).toHaveTextContent('This keeps: the exercises, the references, the races, the settings.');
     expect(within(section).getByRole('radio', { name: 'Start over All attempts, references, exercise progress and races. The profile and its settings stay.' })).toBeInTheDocument();
     await userEvent.click(within(section).getByRole('radio', { name: /Start over/ }));
@@ -71,7 +71,7 @@ describe('delete history', () => {
   it('delete_history_busy_shows_message', async () => {
     historyApi().on('POST /api/history/delete', { status: 409, body: { code: 'busy' } });
     renderApp({ path: '/setup/delete-history' });
-    const section = await screen.findByRole('region', { name: 'Delete history' });
+    const section = await findSection('Delete history');
     await typeName(USER.name);
     await userEvent.click(within(section).getByRole('button', { name: 'Delete all attempts' }));
     expect(await within(section).findByRole('alert')).toHaveTextContent('Stop the training or the recording first.');
@@ -81,16 +81,16 @@ describe('delete history', () => {
     setViewportWidth(390);
     historyApi();
     renderApp({ path: '/setup/delete-history' });
-    await screen.findByRole('region', { name: 'Delete history' });
-    const crumbs = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    await findSection('Delete history');
+    const crumbs = el('nav.breadcrumb');
     expect(within(crumbs).getByRole('link', { name: 'Data' })).toHaveAttribute('href', '/setup#data');
-    expect(screen.queryByRole('region', { name: 'Voice' })).not.toBeInTheDocument();
+    expect(maybeSection('Voice')).not.toBeInTheDocument();
   });
 
   it('delete_history_names_one_attempt', async () => {
     historyApi().on('GET /api/exercises', [exercise({ attemptCount: 1, referenceCount: 1, name: 'Racing Line: Intermediate' })]);
     renderApp({ path: '/setup/delete-history' });
-    const section = await screen.findByRole('region', { name: 'Delete history' });
+    const section = await findSection('Delete history');
     await within(section).findByRole('radio', { name: /^All attempts 1 attempt in 1 exercise/ });
     expect(section).toHaveTextContent('This deletes: the 1 attempt of this profile, with its cues and differences.');
     await userEvent.click(within(section).getByRole('radio', { name: /Attempts of one exercise/ }));
@@ -101,7 +101,7 @@ describe('delete history', () => {
     const api = historyApi().on('POST /api/training/disarm', { status: 201, body: { ok: true } });
     const view = renderApp({ path: '/setup/delete-history' });
     await sendLiveState(view, { mode: 'armed', exerciseId: RACING.id });
-    const section = await screen.findByRole('region', { name: 'Delete history' });
+    const section = await findSection('Delete history');
     await waitFor(() => expect(section).toHaveTextContent(`The training of ${RACING.name} is on. It stops when you delete.`));
     await typeName(USER.name);
     await userEvent.click(within(section).getByRole('button', { name: 'Stop the training and delete' }));
@@ -112,7 +112,7 @@ describe('delete history', () => {
   it('delete_history_result_names_only_what_went', async () => {
     historyApi().on('POST /api/history/delete', { attempts: 1, references: 0, races: 0, cleanup: null });
     renderApp({ path: '/setup/delete-history' });
-    const section = await screen.findByRole('region', { name: 'Delete history' });
+    const section = await findSection('Delete history');
     await typeName(USER.name);
     await userEvent.click(within(section).getByRole('button', { name: 'Delete all attempts' }));
     expect(await within(section).findByRole('status')).toHaveTextContent(/^Deleted 1 attempt\.$/);
@@ -123,7 +123,7 @@ describe('delete history', () => {
       .on('GET /api/races', [{ id: 'a0000000-0000-4000-8000-000000000001' }])
       .on('POST /api/history/delete', { attempts: 0, references: 0, races: 1, cleanup: null });
     renderApp({ path: '/setup/delete-history' });
-    const section = await screen.findByRole('region', { name: 'Delete history' });
+    const section = await findSection('Delete history');
     await userEvent.click(within(section).getByRole('radio', { name: /Start over/ }));
     await waitFor(() => expect(section).toHaveTextContent('This deletes: 8 attempts, 3 references, 1 race, the progress of 2 exercises.'));
     await typeName(USER.name);

@@ -54,8 +54,8 @@ export function VoiceSection() {
   };
 
   return (
-    <section className="panel setup-section" id="setup-voice" aria-labelledby="voice-title">
-      <h2 id="voice-title">{t('setup.voice.title')}</h2>
+    <section className="panel setup-section" id="setup-voice">
+      <h2>{t('setup.voice.title')}</h2>
       <p className="sub">{t('setup.voice.text')}</p>
       <div className="pref">
         <span className="pref-text">

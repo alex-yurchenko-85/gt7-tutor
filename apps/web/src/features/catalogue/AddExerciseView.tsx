@@ -63,7 +63,7 @@ function EntryAction({ entry, onProblem }: { entry: CatalogueListEntry; onProble
   const [busy, setBusy] = useState(false);
   if (entry.exerciseId) {
     return (
-      <Link to={paths.exercise(entry.exerciseId)} className="add-action added" label={t('exercises.add.added-label', { name: entry.name })}>
+      <Link to={paths.exercise(entry.exerciseId)} className="add-action added">
         {t('exercises.add.added')}
       </Link>
     );
@@ -79,7 +79,7 @@ function EntryAction({ entry, onProblem }: { entry: CatalogueListEntry; onProble
     }
   };
   return (
-    <button type="button" className="add-action" aria-label={t('exercises.add.add-label', { name: entry.name })} disabled={busy} onClick={() => void add()}>
+    <button type="button" className="add-action" disabled={busy} onClick={() => void add()}>
       {t('exercises.add.add')}
     </button>
   );
@@ -124,7 +124,7 @@ function OwnExercise() {
     }
   };
   return (
-    <form className="panel own-exercise" onSubmit={create} aria-label={t('exercises.add.own-label')} noValidate>
+    <form className="panel own-exercise" onSubmit={create} noValidate>
       <h2>{t('exercises.add.own-label')}</h2>
       <p className="sub">{t('exercises.add.own-text')}</p>
       <div className="field-pair">
@@ -160,16 +160,15 @@ export function AddExerciseView() {
 
   if (entries.error) return <p className="error">{errorText(entries.error)}</p>;
   return (
-    <section className="add-exercise" aria-labelledby="add-exercise-title">
-      <nav className="breadcrumb" aria-label={t('common.breadcrumb')}>
+    <section className="add-exercise">
+      <nav className="breadcrumb">
         <Link to={paths.exercises()}>{t('exercises.breadcrumb.exercises')}</Link> / {t('exercises.add.breadcrumb')}
       </nav>
-      <h1 id="add-exercise-title">{t('exercises.add.title')}</h1>
+      <h1>{t('exercises.add.title')}</h1>
       <p className="lede">{t('exercises.add.lede', { count: all.length })}</p>
       <div className="add-filters">
         <label className="search-field">
           <Icon name="search" size={18} />
-          <span className="visually-hidden">{t('exercises.add.search')}</span>
           <input
             type="search"
             value={filters.q}
@@ -178,23 +177,23 @@ export function AddExerciseView() {
           />
         </label>
         <div className="catalogue-selects">
-          <select className="input" aria-label={t('exercises.add.collection')} value={filters.collection} onChange={event => set({ collection: event.target.value })}>
+          <select className="input" value={filters.collection} onChange={event => set({ collection: event.target.value })}>
             <option value="">{t('exercises.add.all-collections')}</option>
             {unique(pool.map(entry => entry.collection)).map(value => (
               <option key={value}>{value}</option>
             ))}
           </select>
-          <select className="input" aria-label={t('exercises.add.track')} value={filters.track} onChange={event => set({ track: event.target.value })}>
+          <select className="input" value={filters.track} onChange={event => set({ track: event.target.value })}>
             <option value="">{t('exercises.add.all-tracks')}</option>
             {unique(pool.map(entry => entry.track)).map(value => (
               <option key={value}>{value}</option>
             ))}
           </select>
         </div>
-        <span className="sub catalogue-count" aria-live="polite">
+        <span className="sub catalogue-count">
           {entries.loading && !entries.data ? t('exercises.add.reading') : t('exercises.add.shown', { count: rows.length })}
         </span>
-        <div className="filters" role="group" aria-label={t('exercises.add.family')}>
+        <div className="filters">
           {[ALL, ...families].map(family => (
             <button
               key={family}
@@ -215,15 +214,13 @@ export function AddExerciseView() {
       ) : null}
       {!entries.data ? null : rows.length ? (
         <div className="catalogue-list">
-          <table aria-label={t('exercises.add.table')}>
+          <table>
             <thead>
               <tr>
                 <th scope="col">{t('exercises.add.exercise')}</th>
                 <th scope="col">{t('exercises.add.track-and-car')}</th>
                 <th scope="col">{t('exercises.add.medal-targets')}</th>
-                <th scope="col">
-                  <span className="visually-hidden">{t('exercises.add.action')}</span>
-                </th>
+                <th scope="col" />
               </tr>
             </thead>
             <tbody>

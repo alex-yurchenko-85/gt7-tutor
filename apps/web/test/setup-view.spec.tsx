@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { CatalogueDiff, CatalogueEntry } from '@gt7/contracts';
 import { voiceDeviceId } from '../src/voice/device.ts';
 import { exercise } from './fixtures.ts';
-import { ApiStub, liveState, playerRig, renderApp, setViewportWidth, signedIn, USER, openLive } from './support.tsx';
+import { ApiStub, liveState, playerRig, renderApp, setViewportWidth, signedIn, USER, openLive, el, maybeEl, findEl, findElWith, dialogOf, iconButton, findIconButton, maybeIconButton } from './support.tsx';
 
 const INFO = {
   retrieved: '2026-11-16T10:00:00.000Z',
@@ -39,14 +39,13 @@ describe('setup', () => {
     renderApp({ path: '/setup' });
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('PS5 address'), '10.0.0.300');
-    await user.click(screen.getByRole('button', { name: 'Save and check' }));
+    await user.click(iconButton('Save and check'));
     expect(await screen.findByRole('alert')).toHaveTextContent('This is not an IPv4 address.');
-    expect(screen.getByLabelText('PS5 address')).toHaveAttribute('aria-invalid', 'true');
     expect(api.called('PUT /api/settings/connection')).toBe(false);
 
     await user.clear(screen.getByLabelText('PS5 address'));
     await user.type(screen.getByLabelText('PS5 address'), '10.0.0.5');
-    await user.click(screen.getByRole('button', { name: 'Save and check' }));
+    await user.click(iconButton('Save and check'));
     expect(await screen.findByText('Saved. GT7 Tutor listens for 10.0.0.5.')).toBeInTheDocument();
   });
 
@@ -62,7 +61,7 @@ describe('setup', () => {
     await waitFor(() => expect(socket.sent).toContainEqual({ type: 'claim-voice', deviceId: voiceDeviceId(), ready: true }));
     act(() => socket.receive({ type: 'state', state: liveState({ seq: 2, voiceDeviceId: voiceDeviceId(), voiceReady: true }) }));
     expect(screen.getByText('This device plays the voice. The other device no longer plays cues.')).toBeInTheDocument();
-    const test = screen.getByRole('button', { name: 'Test' });
+    const test = iconButton('Test');
     expect(test).toBeEnabled();
     expect(test.querySelector('[data-icon="speaker"]')).not.toBeNull();
   });
@@ -71,8 +70,8 @@ describe('setup', () => {
     const api = setupApi({ added: [entry('licence-b-11', 'New test')], removed: [], changed: [{ id: 'licence-b-1', fields: ['targets'] }], rejected: null });
     renderApp({ path: '/setup#catalogue' });
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Check for updates' }));
-    const region = await screen.findByRole('region', { name: 'Catalogue differences' });
+    await user.click(await findIconButton('Check for updates'));
+    const region = await findEl('.catalogue-diff');
     expect(within(region).getByText('New test (Licence)')).toBeInTheDocument();
     expect(within(region).getByText('licence-b-1: targets')).toBeInTheDocument();
     expect(api.called('POST /api/catalogue/update/apply')).toBe(false);
@@ -85,7 +84,7 @@ describe('setup', () => {
   it('rejected_update_shows_reason_and_no_apply_action', async () => {
     setupApi({ added: [], removed: [entry('licence-b-1', 'Old test')], changed: [], rejected: { lost: 60, total: 100, family: 'Licence' } });
     renderApp({ path: '/setup#catalogue' });
-    await userEvent.setup().click(await screen.findByRole('button', { name: 'Check for updates' }));
+    await userEvent.setup().click(await findIconButton('Check for updates'));
     expect(await screen.findByText(/The update would remove 60 of 100 Licence entries\. The source format may have changed\./)).toBeInTheDocument();
     expect(screen.getByText(/The catalogue did not change/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Apply update' })).not.toBeInTheDocument();
@@ -99,11 +98,11 @@ describe('voice test icon', () => {
     const { sockets } = renderApp({ path: '/setup#voice', player: rig.player });
     await screen.findByRole('heading', { name: 'Voice' });
     await openLive(sockets, liveState({ voiceDeviceId: null }));
-    expect(screen.queryByRole('button', { name: 'Test' })).not.toBeInTheDocument();
+    expect(maybeIconButton('Test')).not.toBeInTheDocument();
     expect(screen.queryByText('The test appears here when this device plays the voice.')).not.toBeInTheDocument();
     expect(screen.getByText('One device plays the cues: this device, or another one with GT7 Tutor open. A phone must stay unlocked during an attempt.')).toBeInTheDocument();
     act(() => sockets.latest.receive({ type: 'state', state: liveState({ seq: 2, voiceDeviceId: voiceDeviceId(), voiceReady: true }) }));
-    expect(screen.getByRole('button', { name: 'Test' })).toBeInTheDocument();
+    expect(iconButton('Test')).toBeInTheDocument();
     expect(screen.queryByText('The test appears here when this device plays the voice.')).not.toBeInTheDocument();
   });
 });
@@ -125,7 +124,7 @@ describe('setup fixes', () => {
     const { sockets } = renderApp({ path: '/setup#voice', player: rig.player });
     await screen.findByRole('heading', { name: 'Voice' });
     await openLive(sockets, liveState({ voiceDeviceId: voiceDeviceId(), voiceReady: true }));
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Test' }));
+    await userEvent.setup().click(iconButton('Test'));
     const result = await screen.findByText(/The browser reports an output delay of 25 ms/);
     expect(result).toHaveTextContent('wireless headphones');
     expect(screen.queryByText(/Playback started/)).not.toBeInTheDocument();
@@ -136,7 +135,7 @@ describe('setup fixes', () => {
     renderApp({ path: '/setup' });
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('PS5 address'), '10.0.0.5');
-    const save = screen.getByRole('button', { name: 'Save and check' });
+    const save = iconButton('Save and check');
     expect(save.querySelector('[data-icon="check"]')).not.toBeNull();
     expect(save.textContent).toBe('');
     await user.click(save);
@@ -150,7 +149,7 @@ describe('setup fixes', () => {
   it('telemetry_check_again_is_an_icon_button', async () => {
     const api = setupApi(undefined, '10.0.0.5').on('POST /api/settings/connection/check', { packets: 31, decoded: 31, durationMs: 520, carId: null });
     renderApp({ path: '/setup#console' });
-    const again = await screen.findByRole('button', { name: 'Check again' });
+    const again = await findIconButton('Check again');
     expect(again.querySelector('[data-icon="refresh"]')).not.toBeNull();
     await userEvent.setup().click(again);
     expect(await screen.findByText(/Receiving: 31 packets in 0.5 s/)).toBeInTheDocument();
@@ -163,7 +162,7 @@ describe('setup fixes', () => {
       body: { code: 'console-address-missing' }
     });
     renderApp({ path: '/setup' });
-    await userEvent.setup().click(await screen.findByRole('button', { name: 'Check again' }));
+    await userEvent.setup().click(await findIconButton('Check again'));
     expect(await screen.findByText('Enter the PS5 address in Setup before a capture.')).toBeInTheDocument();
   });
 });
@@ -183,7 +182,7 @@ describe('voice after a reload', () => {
 });
 
 function sectionNav() {
-  return screen.getByRole('navigation', { name: 'Setup sections' });
+  return el('nav.setup-nav');
 }
 
 function openSocket(sockets: ReturnType<typeof renderApp>['sockets'], overrides: Parameters<typeof liveState>[0] = {}) {
@@ -249,7 +248,7 @@ describe('setup sections', () => {
   it('setup_menu_has_no_dots', async () => {
     setupApi();
     renderApp({ path: '/setup' });
-    const nav = await screen.findByRole('navigation', { name: 'Setup sections' });
+    const nav = await findEl('nav.setup-nav');
     expect(nav.querySelector('.dot')).toBeNull();
   });
 
@@ -316,7 +315,7 @@ describe('setup sections', () => {
     for (const name of ['Voice', 'Profiles', 'Preferences', 'Catalogue', 'Data']) {
       expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument();
     }
-    expect(screen.queryByRole('navigation', { name: 'Setup sections' })).not.toBeInTheDocument();
+    expect(maybeEl('nav.setup-nav')).not.toBeInTheDocument();
   });
 
   it('add_profile_form_is_collapsed', async () => {
@@ -342,7 +341,7 @@ describe('setup sections', () => {
   it('profile_row_shows_the_signed_in_profile', async () => {
     setupApi();
     renderApp({ path: '/setup#profiles' });
-    const row = await screen.findByRole('group', { name: USER.name });
+    const row = await findElWith('.pref', USER.name);
     expect(within(row).getByText('Signed in on this device')).toBeInTheDocument();
     expect(within(row).getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
   });
@@ -404,7 +403,7 @@ describe('setup sections', () => {
     setupApi({ added: [], removed: [], changed: [], rejected: null });
     const first = renderApp({ path: '/setup#catalogue' });
     expect(await screen.findByText('Not checked on this device yet.')).toBeInTheDocument();
-    const check = screen.getByRole('button', { name: 'Check for updates' });
+    const check = iconButton('Check for updates');
     expect(check.querySelector('[data-icon="refresh"]')).not.toBeNull();
     await userEvent.setup().click(check);
     expect(await screen.findByText(/^Last checked \d{1,2} \w+ \d{4}, \d{2}:\d{2}:\d{2}\. No changes\. On this device\.$/)).toBeInTheDocument();
@@ -427,7 +426,7 @@ describe('setup sections', () => {
     renderApp({ path: '/setup#preferences' });
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText('GT7 version'), '1.65');
-    const save = screen.getByRole('button', { name: 'Save the game version' });
+    const save = iconButton('Save the game version');
     expect(save.querySelector('[data-icon="check"]')).not.toBeNull();
     await user.click(save);
     expect(await screen.findByText(/Saved: 1.65/)).toBeInTheDocument();
@@ -437,7 +436,7 @@ describe('setup sections', () => {
   it('no_restore_without_a_previous_catalogue', async () => {
     setupApi();
     renderApp({ path: '/setup#catalogue' });
-    await screen.findByRole('button', { name: 'Check for updates' });
+    await findIconButton('Check for updates');
     expect(screen.queryByRole('button', { name: 'Restore the previous catalogue' })).not.toBeInTheDocument();
   });
 
@@ -452,7 +451,7 @@ describe('setup sections', () => {
   it('theme_switch_has_labels_in_setup', async () => {
     setupApi();
     renderApp({ path: '/setup#preferences' });
-    const group = await screen.findByRole('radiogroup', { name: 'Theme' });
+    const group = await findEl('.theme-switch');
     expect(within(group).getAllByRole('radio').map(radio => radio.textContent)).toEqual(['System', 'Light', 'Dark']);
   });
 
@@ -493,7 +492,7 @@ describe('setup sections', () => {
     renderApp({ path: '/setup#profiles' });
     await screen.findByRole('heading', { level: 2, name: 'Profiles' });
     expect(screen.queryByText(/Switch profile/i)).not.toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Profile Driver' }));
+    await userEvent.setup().click(el('.profile-button'));
     expect(within(screen.getByRole('menu')).queryByText(/Switch profile/i)).not.toBeInTheDocument();
   });
 });
@@ -504,7 +503,7 @@ describe('screen updates', () => {
     const { sockets } = renderApp({ path: '/setup#preferences' });
     await waitFor(() => sockets.latest);
     act(() => sockets.latest.open());
-    const group = await screen.findByRole('radiogroup', { name: 'Screen updates while driving' });
+    const group = await findElWith('.pref', 'Screen updates while driving');
     expect(within(group.closest('.pref') as HTMLElement).getByText('Higher values are smoother and use more battery.')).toBeInTheDocument();
     expect(screen.queryByText(/How often this device/)).toBeNull();
   });
@@ -514,12 +513,12 @@ describe('screen updates', () => {
     const { sockets } = renderApp({ path: '/setup#preferences' });
     await waitFor(() => sockets.latest);
     act(() => sockets.latest.open());
-    const group = await screen.findByRole('radiogroup', { name: 'Screen updates while driving' });
+    const group = await findElWith('.pref', 'Screen updates while driving');
     expect(within(group).getAllByRole('radio').map(radio => radio.textContent)).toEqual(['15/s', '30/s', '60/s']);
-    expect(within(group).getByRole('radio', { name: '15 per second' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(group).getByRole('radio', { name: '15/s' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.queryByText('On this device')).not.toBeInTheDocument();
-    await userEvent.setup().click(within(group).getByRole('radio', { name: '60 per second' }));
-    expect(within(group).getByRole('radio', { name: '60 per second' })).toHaveAttribute('aria-checked', 'true');
+    await userEvent.setup().click(within(group).getByRole('radio', { name: '60/s' }));
+    expect(within(group).getByRole('radio', { name: '60/s' })).toHaveAttribute('aria-checked', 'true');
     expect(window.localStorage.getItem('gt7.stateRate')).toBe('60');
     expect(sockets.latest.sent).toContainEqual({ type: 'state-rate', perSecond: 60 });
   });
@@ -531,7 +530,7 @@ describe('screen updates', () => {
     await waitFor(() => sockets.latest);
     act(() => sockets.latest.open());
     expect(sockets.latest.sent).toContainEqual({ type: 'state-rate', perSecond: 30 });
-    expect(within(await screen.findByRole('radiogroup', { name: 'Screen updates while driving' })).getByRole('radio', { name: '30 per second' })).toHaveAttribute(
+    expect(within(await findElWith('.pref', 'Screen updates while driving')).getByRole('radio', { name: '30/s' })).toHaveAttribute(
       'aria-checked',
       'true'
     );
@@ -555,7 +554,7 @@ describe('screen updates', () => {
     renderApp({ path: '/setup#profiles' });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Delete profile' }));
-    const dialog = screen.getByRole('alertdialog', { name: `Delete the profile ${USER.name}?` });
+    const dialog = dialogOf(`Delete the profile ${USER.name}?`);
     expect(dialog).toHaveTextContent('Everything of this profile goes:');
     expect(await within(dialog).findByText(/2 exercises/)).toBeInTheDocument();
     expect(dialog).toHaveTextContent('2 exercises with their references');

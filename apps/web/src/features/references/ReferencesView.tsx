@@ -126,7 +126,7 @@ export function ReferencesView({ exerciseId }: { exerciseId: string }) {
       ) : null}
       {list.length ? (
         <div className="table-wrap">
-          <table aria-label={t('exercises.references.table')}>
+          <table>
             <thead>
               <tr>
                 <th>{t('exercises.references.column')}</th>

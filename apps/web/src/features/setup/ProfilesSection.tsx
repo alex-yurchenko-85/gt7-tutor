@@ -22,12 +22,12 @@ export function ProfilesSection() {
   };
 
   return (
-    <section className="panel setup-section narrow-controls" id="setup-profiles" aria-labelledby="profiles-title">
-      <h2 id="profiles-title">{t('setup.profiles.title')}</h2>
+    <section className="panel setup-section narrow-controls" id="setup-profiles">
+      <h2>{t('setup.profiles.title')}</h2>
       <p className="sub">{t('setup.profiles.text')}</p>
-      <div className="pref" role="group" aria-label={user.name}>
+      <div className="pref">
         <span className="profile-row">
-          <span className="profile-avatar" aria-hidden="true">
+          <span className="profile-avatar">
             {user.name.slice(0, 1).toUpperCase()}
           </span>
           <span className="pref-text">
@@ -37,7 +37,7 @@ export function ProfilesSection() {
         </span>
         <div className="pref-control">
           {demo ? null : (
-            <button className="btn ghost" type="button" aria-expanded={changing} aria-controls="change-password" onClick={toggleChange}>
+            <button className="btn ghost" type="button" aria-expanded={changing} onClick={toggleChange}>
               {t('setup.profiles.change-password')}
             </button>
           )}

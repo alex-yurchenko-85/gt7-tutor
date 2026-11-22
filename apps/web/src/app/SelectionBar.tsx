@@ -4,7 +4,7 @@ type SelectionBarProps = { count: number; action: string; onCancel(): void; onAc
 
 export function SelectionBar({ count, action, onCancel, onAction }: SelectionBarProps) {
   return (
-    <div className="selection-bar" role="region" aria-label={t('app.selection.label')}>
+    <div className="selection-bar">
       <b className="selection-count">{t('app.selection.count', { count })}</b>
       <button type="button" className="btn inline selection-cancel" onClick={onCancel}>
         {t('common.cancel')}

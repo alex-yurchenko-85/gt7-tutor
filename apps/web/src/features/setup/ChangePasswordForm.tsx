@@ -40,9 +40,9 @@ export function ChangePasswordForm({ onChanged, onCancel }: { onChanged(): void;
   };
 
   return (
-    <form className="pref" id="change-password" aria-labelledby="change-password-title" onSubmit={submit} noValidate>
+    <form className="pref" id="change-password" onSubmit={submit} noValidate>
       <span className="pref-text">
-        <span id="change-password-title">{t('setup.password.title')}</span>
+        <span>{t('setup.password.title')}</span>
         <span className="sub">{t('setup.password.text')}</span>
       </span>
       <div className="pref-control">
@@ -62,11 +62,10 @@ export function ChangePasswordForm({ onChanged, onCancel }: { onChanged(): void;
             id="new-password"
             type="password"
             autoComplete="new-password"
-            aria-describedby="new-password-hint"
             value={newPassword}
             onChange={event => setNewPassword(event.target.value)}
           />
-          <span className="sub" id="new-password-hint">
+          <span className="sub">
             {t('setup.profiles.password-hint')}
           </span>
         </div>

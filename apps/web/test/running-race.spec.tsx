@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { LiveRace } from '@gt7/contracts';
-import { ApiStub, renderApp, sendLiveState, setViewportWidth, signedIn } from './support.tsx';
+import { ApiStub, renderApp, sendLiveState, setViewportWidth, signedIn, maybeEl, findEl } from './support.tsx';
 
 function liveRace(overrides: Partial<LiveRace> = {}): LiveRace {
   return {
@@ -39,7 +39,7 @@ function barApi(): ApiStub {
 async function barFor(race: LiveRace, path = '/races') {
   const view = renderApp({ path });
   await sendLiveState(view, { mode: race.phase === 'waiting' ? 'race-waiting' : 'race-running', race });
-  return screen.findByRole('status', { name: 'Race recording' });
+  return findEl('.running-bar');
 }
 
 describe('running race bar', () => {
@@ -74,7 +74,7 @@ describe('running race bar', () => {
     const view = renderApp({ path: '/races/record' });
     await sendLiveState(view, { mode: 'race-running', race: liveRace() });
     await screen.findByRole('heading', { level: 1, name: 'LAP 3 of 7' });
-    expect(screen.queryByRole('status', { name: 'Race recording' })).not.toBeInTheDocument();
+    expect(maybeEl('.running-bar')).not.toBeInTheDocument();
   });
 
   it('bar_is_not_shown_after_the_finish_or_a_stop', async () => {
@@ -82,9 +82,9 @@ describe('running race bar', () => {
     const view = renderApp({ path: '/races' });
     await sendLiveState(view, { mode: 'idle', race: liveRace({ phase: 'finished', savedRaceId: 'a0000000-0000-4000-8000-000000000001' }) });
     await screen.findByRole('heading', { level: 2, name: /My races/ });
-    expect(screen.queryByRole('status', { name: 'Race recording' })).not.toBeInTheDocument();
+    expect(maybeEl('.running-bar')).not.toBeInTheDocument();
     await sendLiveState(view, { mode: 'idle', race: liveRace({ phase: 'stopped' }), seq: 2 });
-    expect(screen.queryByRole('status', { name: 'Race recording' })).not.toBeInTheDocument();
+    expect(maybeEl('.running-bar')).not.toBeInTheDocument();
   });
 
   it('capture_bar_is_not_shown_in_a_race_mode', async () => {

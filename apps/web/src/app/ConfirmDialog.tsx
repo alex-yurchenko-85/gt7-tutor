@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useScrollLock } from './scroll-lock.ts';
 
 type ConfirmDialogProps = {
@@ -19,8 +19,6 @@ type ConfirmDialogProps = {
 export function ConfirmDialog({ title, children, keepLabel, confirmLabel, working = false, confirmDisabled = false, error = null, notice = null, role = 'alertdialog', confirmTone = 'destructive', onKeep, onConfirm }: ConfirmDialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const keep = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
-  const bodyId = useId();
   useScrollLock(true);
 
   useEffect(() => {
@@ -39,9 +37,6 @@ export function ConfirmDialog({ title, children, keepLabel, confirmLabel, workin
     <dialog
       ref={dialog}
       role={role}
-      aria-modal="true"
-      aria-labelledby={titleId}
-      aria-describedby={bodyId}
       className="confirm-dialog"
       onCancel={event => {
         event.preventDefault();
@@ -53,8 +48,8 @@ export function ConfirmDialog({ title, children, keepLabel, confirmLabel, workin
         if (!working) onKeep();
       }}
     >
-      <h2 id={titleId}>{title}</h2>
-      <div id={bodyId} className="confirm-body">
+      <h2>{title}</h2>
+      <div className="confirm-body">
         {children}
       </div>
       {notice ? <p className="notice">{notice}</p> : null}

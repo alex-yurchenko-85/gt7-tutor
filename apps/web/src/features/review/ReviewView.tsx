@@ -1,7 +1,6 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { WIDE_APEX_M, eventKeyPlace, type AttemptReaction, type AttemptReview, type AttemptSummary, type CornerReview, type ReferenceInfo } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
-import { SIDE_FACTOR } from '../../charts/geometry.ts';
 import { useWideLayout } from '../../app/layout.ts';
 import { abortReasonText, formatDateTime, formatDay, formatTime, metres, signedSecondsText } from '../../app/format.ts';
 import { rememberedExerciseId } from '../../app/current-exercise.ts';
@@ -26,8 +25,8 @@ function referenceName(reference: ReferenceInfo): string {
 const Corners = memo(function Corners({ corners }: { corners: CornerReview[] }) {
   if (corners.length === 0) return null;
   return (
-    <section aria-labelledby="corners-title" className="corners">
-      <h2 id="corners-title">{t('exercises.review.corners')}</h2>
+    <section className="corners">
+      <h2>{t('exercises.review.corners')}</h2>
       <p className="sub">{t('exercises.review.corners-text')}</p>
       <ol className="corner-list">
         {corners.map(corner => {
@@ -50,8 +49,8 @@ const Corners = memo(function Corners({ corners }: { corners: CornerReview[] }) 
 const Reactions = memo(function Reactions({ reactions }: { reactions: AttemptReaction[] }) {
   if (reactions.length === 0) return null;
   return (
-    <section aria-labelledby="reaction-title" className="reactions">
-      <h2 id="reaction-title">{t('exercises.review.reaction')}</h2>
+    <section className="reactions">
+      <h2>{t('exercises.review.reaction')}</h2>
       <ul>
         {reactions.map(reaction => (
           <li key={reaction.eventKey}>
@@ -105,21 +104,16 @@ function AttemptFacts({ attempt }: { attempt: AttemptSummary }) {
   );
 }
 
-function reviewWords(title: string): LineWords {
+function reviewWords(): LineWords {
   return {
-    referenceName: t('exercises.review.reference'),
-    youName: t('exercises.review.you'),
     referenceLegend: t('exercises.review.reference-legend'),
     youLegend: t('exercises.review.you-legend'),
     timeLabel: t('exercises.review.time-label'),
     mapTitle: t('exercises.review.map-title'),
-    mapLabel: t('exercises.review.map-label'),
     mapNotes: [t('exercises.review.map-note')],
-    sideLabel: t('exercises.review.side-label', { factor: SIDE_FACTOR }),
-    dialogLabel: t('exercises.review.dialog-label', { title }),
     dialogLine: t('exercises.review.dialog-line'),
-    hint: t('exercises.review.hint'),
-    cursorText: (cursorSM, lengthM) => t('exercises.review.cursor', { place: Math.round(cursorSM), length: Math.round(lengthM) }),
+    boxOrder: ['ref', 'you'],
+    boxRow: (line, value) => t(line === 'ref' ? 'exercises.review.box-reference' : 'exercises.review.box-you', { value }),
     metres,
     describe: differenceText
   };
@@ -140,7 +134,7 @@ function ReviewBody({ title, attempt, review, references, sideCueDistanceM, acti
     [review.findings, setCursorNow]
   );
   const switchReference = (referenceId: string) => navigate(paths.review(attempt.id, referenceId === attempt.referenceId ? undefined : referenceId));
-  const words = useMemo(() => reviewWords(title), [title]);
+  const words = useMemo(reviewWords, []);
   const differencesWords = useMemo(reviewDifferences, []);
   const map = <CompareMap title={title} review={review} words={words} sideCueDistanceM={sideCueDistanceM} scaleSwitch cursorSM={cursorSM} selected={selected} onSelect={select} />;
   const charts = <CompareCharts review={review} words={words} side sideCueDistanceM={sideCueDistanceM} cursorSM={cursorSM} onCursor={setCursorNow} onScrub={scrub} />;
