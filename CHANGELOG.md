@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.12.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.11.0...v1.12.0) (2026-11-22)
+
+### Features
+
+* show one dot per turn on the compared map and join split corners ([a4b2723](https://github.com/alex-yurchenko-85/gt7-tutor/commit/a4b272397a6e1222ad488faac2aafd5e494eb7d9))
+
 # [1.11.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.10.0...v1.11.0) (2026-11-21)
 
 ### Features
