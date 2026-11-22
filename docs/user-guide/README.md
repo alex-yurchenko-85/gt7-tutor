@@ -615,9 +615,7 @@ With an in-lap or an out-lap:
 
 **Where:** the **Off the track** tab of the race.
 
-![The Off the track tab with 20 moments off the track. It shows the map Places and the panel Recurring places with A and B. Below are the off-track chart lap by lap, the height of the track and the speed of the best lap.](images/race-off-track.webp)
-
-The heading gives the number of moments off the track, and how many of them had all four wheels off.
+![The Off the track tab of a race with 20 moments off the track. It shows the map Places and the panel Recurring places with A and B. Below are the off-track chart lap by lap, the height of the track and the speed of the best lap.](images/race-off-track.webp)
 
 - **Places**: the map of the line of the reference lap. A red dot marks a moment with all four wheels off. A red ring marks a moment with two or three wheels off. A black circle with a letter marks a recurring place. Select a mark to put the cursor there. **View** opens the map in full screen with the list of the moments.
 - **Recurring places**: the places where you went off the track in 3 or more laps. An example row is `3,190 m. All four wheels off in 1 lap.` with the letter `A`. The row also gives the speed of the reference lap at that place and the largest speed loss. At the right, it gives the number of laps, for example `6 of 7`. Under the list: the number of other places, each in 1 or 2 laps.

@@ -648,11 +648,6 @@ tr.race-pit td {
   font-size: 24px;
 }
 
-.race-off-title .sub {
-  margin-left: 6px;
-  font: 400 14px var(--font-body);
-}
-
 .race-mark.pit-lane {
   display: inline-block;
   width: 18px;

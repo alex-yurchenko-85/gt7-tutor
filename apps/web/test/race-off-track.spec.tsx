@@ -14,7 +14,9 @@ function detailWith(overrides: Partial<RaceDetail> = {}): RaceDetail {
 async function openOffTrack(detail: RaceDetail = detailWith(), view: unknown = offTrackView()) {
   const api = signedIn(new ApiStub()).on(`GET /api/races/${RACE_ID}`, detail).on(`GET ${OFF_PATH}`, view).install();
   renderApp({ path: `/races/${RACE_ID}/off-track` });
-  await screen.findByRole('heading', { level: 2, name: /moments off the track|No moments/ });
+  await waitFor(() => {
+    if (!document.querySelector('.race-off-tab')) throw new Error('The tab is not drawn yet');
+  });
   return api;
 }
 
@@ -34,8 +36,14 @@ function cursorLine(): string {
 describe('race page, off the track tab', () => {
   it('counts_the_moments_and_the_four_wheel_moments', async () => {
     await openOffTrack();
-    expect(screen.getByRole('heading', { level: 2, name: '8 moments off the track 3 with all four wheels' })).toBeInTheDocument();
     expect(within(screen.getByRole('navigation', { name: 'Race' })).getByRole('link', { name: 'Off the track' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('shows_no_count_of_the_moments_above_the_map', async () => {
+    await openOffTrack();
+    await screen.findByRole('region', { name: 'Places' });
+    expect(screen.queryByRole('heading', { name: /moments? off the track/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/with all four wheels/)).not.toBeInTheDocument();
   });
 
   it('lists_the_recurring_places_and_the_other_places', async () => {

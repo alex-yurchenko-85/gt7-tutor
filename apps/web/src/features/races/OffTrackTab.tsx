@@ -14,7 +14,6 @@ import { errorText, useResource } from '../../app/resource.ts';
 import { raceName } from './RacesView.tsx';
 import { isRawMissing, rawMissingText } from './race-errors.ts';
 import { t } from '../../app/i18n.ts';
-import { Rich } from '../../app/rich-text.tsx';
 
 const HEIGHT_CHART = 110;
 const SPEED_CHART = 150;
@@ -332,15 +331,6 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
   );
 }
 
-function OffTrackHeading({ moments }: { moments: RaceOffTrack[] }) {
-  const all = moments.filter(moment => moment.wheels === 4).length;
-  return (
-    <h2 className="race-off-title">
-      <Rich k="races.off.heading" params={{ count: moments.length }} parts={{ all: <span className="sub">{t('races.off.heading-all', { count: all })}</span> }} />
-    </h2>
-  );
-}
-
 export function OffTrackTab({ race }: { race: RaceDetail }) {
   const empty = race.offTrack === 0;
   const view = useResource(() => (empty ? Promise.resolve(null) : api.raceOffTrack(race.id)), [race.id, empty]);
@@ -356,7 +346,6 @@ export function OffTrackTab({ race }: { race: RaceDetail }) {
   const noLine = (view.error instanceof ApiError && view.error.code === 'no-match') || (view.data !== null && view.data.moments.every(moment => moment.sM === null));
   return (
     <section className="race-off-tab">
-      <OffTrackHeading moments={moments} />
       {missing || noLine ? (
         <>
           <p className="sub race-off-note">{missing ? rawMissingText() : t('races.off.no-line')}</p>

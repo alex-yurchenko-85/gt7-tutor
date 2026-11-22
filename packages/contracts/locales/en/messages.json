@@ -4766,18 +4766,6 @@
     "text": "Focus a chart and use the arrow keys to move the cursor. In the lap rows, the arrow keys move from moment to moment.",
     "note": "Keyboard help of the charts, for a screen reader only. It is not shown on the screen."
   },
-  "races.off.heading_one": {
-    "text": "{count} moment off the track {all}",
-    "note": "Heading of the Off the track tab. {count} is the number of moments. {all} is the grey text from races.off.heading-all."
-  },
-  "races.off.heading_other": {
-    "text": "{count} moments off the track {all}",
-    "note": "Heading of the Off the track tab. {count} is the number of moments. {all} is the grey text from races.off.heading-all."
-  },
-  "races.off.heading-all": {
-    "text": "{count} with all four wheels",
-    "note": "Grey part of the heading of the Off the track tab. {count} is the number of moments with all four wheels off."
-  },
   "races.off.none": {
     "text": "No moments off the track in this race.",
     "note": "Off the track tab when the race has no moment off the track."
