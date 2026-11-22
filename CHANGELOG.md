@@ -1,5 +1,15 @@
 # Changelog
 
+# [1.13.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.12.0...v1.13.0) (2026-11-22)
+
+### Bug Fixes
+
+* drop the off-track count above the map ([90f77d0](https://github.com/alex-yurchenko-85/gt7-tutor/commit/90f77d0a9b7e3afdfbd1009fa30ebfb85f27c05d))
+
+### Features
+
+* add the golden lap of a race and sort the turns from the column headers ([f609a6d](https://github.com/alex-yurchenko-85/gt7-tutor/commit/f609a6d042473d8c88746821ab40597a5ab5ae67))
+
 # [1.12.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.11.0...v1.12.0) (2026-11-22)
 
 ### Features
