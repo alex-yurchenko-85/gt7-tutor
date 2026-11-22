@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.14.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.13.0...v1.14.0) (2026-11-22)
+
+### Features
+
+* show the values at the chart cursor, colour each lap and open the speed chart in full screen ([8332b06](https://github.com/alex-yurchenko-85/gt7-tutor/commit/8332b06832c36e0243a4028c448f6cfca7f6c2e4))
+
 # [1.13.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.12.0...v1.13.0) (2026-11-22)
 
 ### Bug Fixes
