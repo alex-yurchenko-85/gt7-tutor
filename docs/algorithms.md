@@ -224,11 +224,12 @@ Guidance uses only trusted matches.
 2. Window: from each `brake` or `ease-off` to 40 m after the next `throttle`, or to the path end.
 3. Apex: the largest curvature in the window. Radius > 150 m there: no corner.
 4. Turn-in: the last point before the apex with a curvature below one third of the apex curvature.
-5. Number the corners by apex order from 1.
+5. Sort the corners by apex. A corner with a turn-in at or before the last apex of the previous corner joins the previous corner. The last apex is the largest apex of all the corners that joined. The joined corner keeps the sharpest apex, the earliest turn-in and the earliest opening.
+6. Number the corners by apex order from 1.
 
 `outsideM(corner, lateralM)` = `−insideSign × lateralM`. Positive: outside.
 
-`turnZones(corners, lengthM)`: one zone per corner, from the turn-in to `apex + (apex − turn-in)`. It ends earlier at the next turn-in or the section end. Zones can overlap or be empty when turn-ins are out of apex order.
+`turnZones(corners, lengthM)`: one zone per corner, from the turn-in to `apex + (apex − turn-in)`. It ends earlier at the next turn-in or the section end.
 
 `turnOf(corners, sM)`: the last corner whose `zoneStartSM` (its opening `brake` or `ease-off`) is ≤ `sM`. Before turn 1: turn 1. No corners: `null`.
 

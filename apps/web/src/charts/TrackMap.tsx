@@ -1,8 +1,7 @@
-import { memo, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type RefObject } from 'react';
 import type { MessageKey } from '@gt7/contracts';
 import { WIDTH, clamp, finitePoints, lineSegments, projection, rounded, zoneIndexes, type Point } from './geometry.ts';
 import { Icon } from '../app/icons.tsx';
-import { placeCallout, type Box } from './callout-place.ts';
 import './charts.css';
 import { t } from '../app/i18n.ts';
 
@@ -24,13 +23,13 @@ export type TrackMark = {
   beside?: boolean;
 };
 
-export type TrackCallout = { turn: number; sM: number; side: 1 | -1; title: string; detail: string };
+export type TrackPeak = { turn: number; sM: number; title: string; detail: string; name: string };
 
 type TrackMapProps = {
   reference: TrackLine;
   attempt?: TrackLine | null;
   far?: TrackLine | null;
-  callouts?: TrackCallout[];
+  peaks?: TrackPeak[];
   marks?: TrackMark[];
   cursorSM?: number | null;
   dark?: boolean;
@@ -53,8 +52,7 @@ function pointOn(line: TrackLine, sM: number): Point | null {
 }
 
 const NO_MARKS: TrackMark[] = [];
-const NO_CALLOUTS: TrackCallout[] = [];
-const NO_POINTS: Point[] = [];
+const NO_PEAKS: TrackPeak[] = [];
 
 const CUE_RADIUS_PX = 13;
 const TURN_LABEL_OFFSETS_PX = [24, 40, 56];
@@ -152,9 +150,9 @@ function geometryOf(reference: TrackLine, attempt: TrackLine | null | undefined,
 type Placed = { anchor: Point; centre: Point; spread: boolean };
 type TurnPlace = { key: number; segments: string[]; label: { text: string; at: Point } | null };
 type Ends = { start: Point | null; finish: Point | null };
-type Layout = { placed: (Placed | null)[]; turns: TurnPlace[]; ends: Ends; taken: Circle[] };
+type Layout = { placed: (Placed | null)[]; turns: TurnPlace[]; ends: Ends };
 
-const NO_LAYOUT: Layout = { placed: [], turns: [], ends: { start: null, finish: null }, taken: [] };
+const NO_LAYOUT: Layout = { placed: [], turns: [], ends: { start: null, finish: null } };
 
 function placeMarks(marks: TrackMark[], reference: TrackLine, attempt: TrackLine | null | undefined, { project, height }: Geometry): (Placed | null)[] {
   const placed: (Placed | null)[] = marks.map(mark => {
@@ -240,7 +238,7 @@ function layoutOf(marks: TrackMark[], reference: TrackLine, attempt: TrackLine |
   const taken: Circle[] = placed.flatMap((place, index) => (place ? [{ at: place.centre, r: markRadius(marks[index]!) }] : []));
   const turns = placeTurns(marks, reference, geometry, taken);
   const ends = placeEnds(geometry, taken, lapLine);
-  return { placed, turns, ends, taken };
+  return { placed, turns, ends };
 }
 
 type StartShape = { barFrom: Point; barTo: Point; tail: Point; tip: Point; heads: [Point, Point] };
@@ -442,74 +440,148 @@ const MarksLayer = memo(function MarksLayer({ marks, placed }: { marks: TrackMar
   );
 });
 
-const CALLOUT_WIDTH = 150;
-const CALLOUT_HEIGHT = 44;
-const CALLOUT_LEADER = 70;
-const CALLOUT_MARGIN = 4;
-const CALLOUT_CLEARANCE = 6;
-const CALLOUT_DOT_PX = 7;
-const RING_STEPS = 8;
+const PEAK_DOT_PX = 6;
+const PEAK_RING_PX = 12;
+const PEAK_HIT_PX = 22;
+const TIP_GAP_PX = 14;
+const TIP_PAD_PX = 10;
+const TIP_TITLE_PX = 17;
+const TIP_DETAIL_PX = 14;
+const TIP_LINE_GAP_PX = 5;
+const TIP_TITLE_CHAR = 0.5;
+const TIP_DETAIL_CHAR = 0.52;
 
-function ring([x, y]: Point, radius: number): Point[] {
-  return [[x, y], ...Array.from({ length: RING_STEPS }, (_, index) => [x + radius * Math.cos((index * 2 * Math.PI) / RING_STEPS), y + radius * Math.sin((index * 2 * Math.PI) / RING_STEPS)] as Point)];
+type TipBox = { x: number; y: number; width: number; height: number };
+
+function tipBox([x, y]: Point, peak: TrackPeak, scale: number, height: number, textWidth: number | null): TipBox {
+  const width = (textWidth ?? Math.max(peak.title.length * TIP_TITLE_CHAR * TIP_TITLE_PX, peak.detail.length * TIP_DETAIL_CHAR * TIP_DETAIL_PX) * scale) + 2 * TIP_PAD_PX * scale;
+  const boxHeight = (TIP_TITLE_PX + TIP_LINE_GAP_PX + TIP_DETAIL_PX + 2 * TIP_PAD_PX) * scale;
+  const gap = TIP_GAP_PX * scale;
+  const left = x + gap + width > WIDTH ? x - gap - width : x + gap;
+  const top = y + gap + boxHeight > height ? y - gap - boxHeight : y + gap;
+  return { x: clamp(left, 0, Math.max(0, WIDTH - width)), y: clamp(top, 0, Math.max(0, height - boxHeight)), width, height: boxHeight };
 }
 
-function startPoints({ startPoint, startDirection }: Geometry): Point[] {
-  if (!startPoint || !startDirection) return [];
-  const { barFrom, barTo, tail, tip } = startShape(startPoint, startDirection);
-  return [barFrom, barTo, tail, [(tail[0] + tip[0]) / 2, (tail[1] + tip[1]) / 2], tip];
+type PeakPlace = { peak: TrackPeak; at: Point };
+
+function measured(texts: (SVGTextElement | null)[]): number | null {
+  const widths = texts.map(text => (text && typeof text.getComputedTextLength === 'function' ? text.getComputedTextLength() : 0));
+  const widest = Math.max(...widths);
+  return widest > 0 ? widest : null;
 }
 
-function obstaclesOf(geometry: Geometry, reference: TrackLine, attempt: TrackLine | null | undefined, taken: Circle[]): Point[] {
-  const projectAll = (line: TrackLine) => finitePoints(line).map(([x, z]) => geometry.project(x, z));
-  return [...projectAll(reference), ...(attempt ? projectAll(attempt) : []), ...startPoints(geometry), ...taken.flatMap(circle => ring(circle.at, circle.r))];
+function PeakTip({ place, scale, height }: { place: PeakPlace; scale: number; height: number }) {
+  const title = useRef<SVGTextElement>(null);
+  const detail = useRef<SVGTextElement>(null);
+  const [textWidth, setTextWidth] = useState<number | null>(null);
+  useLayoutEffect(() => setTextWidth(measured([title.current, detail.current])), [place.peak.title, place.peak.detail, scale]);
+  const box = tipBox(place.at, place.peak, scale, height, textWidth);
+  const pad = TIP_PAD_PX * scale;
+  return (
+    <g className="peak-tip" aria-hidden="true">
+      <rect x={box.x} y={box.y} width={box.width} height={box.height} />
+      <text ref={title} className="peak-title" x={box.x + pad} y={box.y + pad + TIP_TITLE_PX * 0.8 * scale} style={{ fontSize: TIP_TITLE_PX * scale }}>
+        {place.peak.title}
+      </text>
+      <text ref={detail} className="peak-detail" x={box.x + pad} y={box.y + pad + (TIP_TITLE_PX + TIP_LINE_GAP_PX + TIP_DETAIL_PX * 0.8) * scale} style={{ fontSize: TIP_DETAIL_PX * scale }}>
+        {place.peak.detail}
+      </text>
+    </g>
+  );
 }
 
-type CalloutsLayerProps = { callouts: TrackCallout[]; reference: TrackLine; line: TrackLine; obstacles: Point[]; project: Project; height: number; scale: number };
+type PeakHide = 'hover' | 'focus' | 'tip' | 'all';
 
-const CalloutsLayer = memo(function CalloutsLayer({ callouts, reference, line, obstacles, project, height, scale }: CalloutsLayerProps) {
-  const width = CALLOUT_WIDTH * scale;
-  const boxHeight = CALLOUT_HEIGHT * scale;
-  const taken: Box[] = [];
+type PeaksLayerProps = { places: PeakPlace[]; shown: number | null; ring: number | null; scale: number; onShow(turn: number | null, how: 'hover' | 'focus' | 'touch'): void; onHide(how: PeakHide): void };
+
+const PeaksLayer = memo(function PeaksLayer({ places, shown, ring, scale, onShow, onHide }: PeaksLayerProps) {
+  const pointer = useRef<string | null>(null);
   return (
     <>
-      {callouts.map(callout => {
-        const point = pointOn(line, callout.sM);
-        const normal = normalAt(reference, callout.sM, project);
-        if (!point || !normal) return null;
-        const anchor = project(point[0], point[1]);
-        const { box, end } = placeCallout({
-          anchor,
-          normal,
-          side: callout.side,
-          width,
-          height: boxHeight,
-          leader: CALLOUT_LEADER * scale,
-          bounds: { width: WIDTH, height },
-          margin: CALLOUT_MARGIN * scale,
-          clearance: CALLOUT_CLEARANCE * scale,
-          obstacles,
-          taken
-        });
-        taken.push(box);
-        const padX = 10 * scale;
-        return (
-          <g key={callout.turn} className="track-callout">
-            <line className="callout-leader" x1={anchor[0]} y1={anchor[1]} x2={end[0]} y2={end[1]} />
-            <rect x={box.x} y={box.y} width={width} height={boxHeight} />
-            <text className="callout-title" x={box.x + padX} y={box.y + 19 * scale} style={{ fontSize: 17 * scale }}>
-              {callout.title}
-            </text>
-            <text className="callout-detail" x={box.x + padX} y={box.y + 37 * scale} style={{ fontSize: 13 * scale }}>
-              {callout.detail}
-            </text>
-            <circle className="callout-dot" cx={anchor[0]} cy={anchor[1]} r={CALLOUT_DOT_PX * scale} />
-          </g>
-        );
-      })}
+      {places.map(({ peak, at }) => (
+        <g
+          key={peak.turn}
+          className={`track-peak${shown === peak.turn ? ' shown' : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-label={peak.name}
+          onPointerEnter={event => {
+            if (event.pointerType !== 'touch') onShow(peak.turn, 'hover');
+          }}
+          onPointerLeave={event => {
+            if (event.pointerType !== 'touch') onHide('hover');
+          }}
+          onFocus={() => {
+            if (pointer.current !== 'mouse') onShow(peak.turn, 'focus');
+          }}
+          onBlur={() => onHide('focus')}
+          onPointerDown={event => {
+            pointer.current = event.pointerType;
+          }}
+          onClick={() => {
+            if (pointer.current !== 'mouse') onShow(peak.turn, 'touch');
+            pointer.current = null;
+          }}
+          onKeyDown={event => {
+            if (event.key === 'Escape') onHide('tip');
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onShow(peak.turn, 'touch');
+            }
+          }}
+        >
+          <circle className="peak-hit" cx={at[0]} cy={at[1]} r={PEAK_HIT_PX * scale} />
+          {shown === peak.turn || ring === peak.turn ? <circle className="peak-ring" cx={at[0]} cy={at[1]} r={PEAK_RING_PX * scale} /> : null}
+          <circle className="peak-dot" cx={at[0]} cy={at[1]} r={PEAK_DOT_PX * scale} />
+        </g>
+      ))}
     </>
   );
 });
+
+type PeakState = { hover: number | null; focus: number | null; touch: number | null; ring: number | null };
+
+function peakNear(element: SVGSVGElement, places: PeakPlace[], height: number, clientX: number, clientY: number): number | null {
+  const box = element.getBoundingClientRect();
+  const pixels = Math.min(box.width / WIDTH, box.height / height);
+  if (!(pixels > 0)) return null;
+  const x = (clientX - box.left - (box.width - WIDTH * pixels) / 2) / pixels;
+  const y = (clientY - box.top - (box.height - height * pixels) / 2) / pixels;
+  const reach = PEAK_HIT_PX / pixels;
+  let best: PeakPlace | null = null;
+  let bestDistance = reach;
+  for (const place of places) {
+    const distance = Math.hypot(place.at[0] - x, place.at[1] - y);
+    if (distance <= bestDistance) {
+      best = place;
+      bestDistance = distance;
+    }
+  }
+  return best?.peak.turn ?? null;
+}
+
+const NO_PEAK: PeakState = { hover: null, focus: null, touch: null, ring: null };
+
+function samePeak(state: PeakState, next: PeakState): PeakState {
+  return state.hover === next.hover && state.focus === next.focus && state.touch === next.touch && state.ring === next.ring ? state : next;
+}
+
+function showPeak(state: PeakState, turn: number | null, how: 'hover' | 'focus' | 'touch'): PeakState {
+  if (how === 'touch') return { ...state, hover: null, touch: turn };
+  if (how === 'focus') return { ...state, focus: turn, ring: turn };
+  return { ...state, hover: turn };
+}
+
+function hidePeak(state: PeakState, how: PeakHide): PeakState {
+  if (how === 'all') return NO_PEAK;
+  if (how === 'tip') return { ...NO_PEAK, ring: state.ring };
+  if (how === 'focus') return { ...state, focus: null, touch: null, ring: null };
+  return { ...state, hover: null };
+}
+
+function shownPeak(state: PeakState): number | null {
+  return state.hover ?? state.touch ?? state.focus;
+}
 
 function useUnitsPerPixel(svg: RefObject<SVGSVGElement | null>, height: number, active: boolean): number {
   const [units, setUnits] = useState(1);
@@ -529,26 +601,65 @@ function useUnitsPerPixel(svg: RefObject<SVGSVGElement | null>, height: number, 
   return units;
 }
 
-export function TrackMap({ reference, attempt, far, callouts = NO_CALLOUTS, marks = NO_MARKS, cursorSM, dark = false, plain = false, lapLine = false, label }: TrackMapProps) {
+export function TrackMap({ reference, attempt, far, peaks = NO_PEAKS, marks = NO_MARKS, cursorSM, dark = false, plain = false, lapLine = false, label }: TrackMapProps) {
   const geometry = useMemo(() => geometryOf(reference, attempt, far), [reference, attempt, far]);
   const svg = useRef<SVGSVGElement>(null);
-  const calloutScale = useUnitsPerPixel(svg, geometry?.height ?? 1, callouts.length > 0);
+  const scale = useUnitsPerPixel(svg, geometry?.height ?? 1, peaks.length > 0);
   const layout = useMemo(() => (geometry ? layoutOf(marks, reference, attempt, geometry, lapLine) : NO_LAYOUT), [geometry, marks, reference, attempt, lapLine]);
-  const obstacles = useMemo(() => (geometry && callouts.length > 0 ? obstaclesOf(geometry, reference, attempt, layout.taken) : NO_POINTS), [geometry, callouts, reference, attempt, layout]);
+  const [peakState, setPeakState] = useState<PeakState>(NO_PEAK);
+  const cursorLine = attempt ?? reference;
+  const places = useMemo(() => {
+    if (!geometry) return [];
+    return peaks.flatMap(peak => {
+      const point = pointOn(cursorLine, peak.sM);
+      return point ? [{ peak, at: geometry.project(point[0], point[1]) }] : [];
+    });
+  }, [geometry, peaks, cursorLine]);
+  const [peaksSeen, setPeaksSeen] = useState(peaks);
+  if (peaksSeen !== peaks) {
+    setPeaksSeen(peaks);
+    setPeakState(NO_PEAK);
+  }
+  const onShow = useMemo(() => (turn: number | null, how: 'hover' | 'focus' | 'touch') => setPeakState(state => samePeak(state, showPeak(state, turn, how))), []);
+  const onHide = useMemo(() => (how: PeakHide) => setPeakState(state => samePeak(state, hidePeak(state, how))), []);
   if (!geometry) return null;
   const { height, project } = geometry;
-  const cursorLine = attempt ?? reference;
   const cursor = cursorSM === null || cursorSM === undefined ? null : pointOn(cursorLine, cursorSM);
   const cursorPoint = cursor ? project(cursor[0], cursor[1]) : null;
+  const shown = shownPeak(peakState);
+  const shownPlace = shown === null ? null : (places.find(place => place.peak.turn === shown) ?? null);
+  const near = (event: PointerEvent<SVGSVGElement>) => peakNear(event.currentTarget, places, height, event.clientX, event.clientY);
+  const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
+    if (event.target instanceof Element && event.target.closest('[role="button"]')) return;
+    const turn = event.pointerType === 'mouse' ? null : near(event);
+    if (turn === null) onHide('all');
+    else onShow(turn, 'touch');
+  };
+  const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
+    if (event.pointerType === 'touch') return;
+    const turn = near(event);
+    if (turn !== null) onShow(turn, 'hover');
+    else if (peakState.hover !== null && !(event.target instanceof Element && event.target.closest('.track-peak'))) onHide('hover');
+  };
   return (
-    <svg ref={svg} className={`track-map${dark ? ' dark' : ''}${plain ? ' plain' : ''}`} viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-label={label}>
+    <svg
+      ref={svg}
+      className={`track-map${dark ? ' dark' : ''}${plain ? ' plain' : ''}`}
+      viewBox={`0 0 ${WIDTH} ${height}`}
+      role={places.length > 0 ? 'group' : 'img'}
+      aria-label={label}
+      onPointerDown={places.length > 0 ? onPointerDown : undefined}
+      onPointerMove={places.length > 0 ? onPointerMove : undefined}
+      onPointerLeave={places.length > 0 ? () => onHide('hover') : undefined}
+    >
       <TurnsLayer turns={layout.turns} />
       <LinesLayer geometry={geometry} />
       <EndsLayer geometry={geometry} ends={layout.ends} lapLine={lapLine} />
       <TurnLabelsLayer turns={layout.turns} />
+      <PeaksLayer places={places} shown={shown} ring={peakState.ring} scale={scale} onShow={onShow} onHide={onHide} />
       <MarksLayer marks={marks} placed={layout.placed} />
-      <CalloutsLayer callouts={callouts} reference={reference} line={cursorLine} obstacles={obstacles} project={project} height={height} scale={calloutScale} />
       {cursorPoint ? <circle className="track-cursor" cx={cursorPoint[0]} cy={cursorPoint[1]} r={8} /> : null}
+      {shownPlace ? <PeakTip place={shownPlace} scale={scale} height={height} /> : null}
     </svg>
   );
 }

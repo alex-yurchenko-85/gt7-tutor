@@ -21,7 +21,6 @@ export type MapDialogProps = {
   corners: CornerInfo[];
   items: MapDialogItem[];
   listTitle: string;
-  listHint: string;
   mapLabel?: string;
   lineName?: string;
   lapLine?: boolean;
@@ -46,7 +45,7 @@ function itemMark(item: MapDialogItem, selected: boolean, onSelect: () => void):
   };
 }
 
-export function MapDialog({ open, onClose, title, lengthM, reference, attempt = null, corners, items, listTitle, listHint, mapLabel, lineName, lapLine = false, metresText = metres }: MapDialogProps) {
+export function MapDialog({ open, onClose, title, lengthM, reference, attempt = null, corners, items, listTitle, mapLabel, lineName, lapLine = false, metresText = metres }: MapDialogProps) {
   const wide = useWideLayout();
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -115,7 +114,6 @@ export function MapDialog({ open, onClose, title, lengthM, reference, attempt = 
         </div>
         <aside className="map-dialog-cues" aria-labelledby={`${titleId}-cues`}>
           <h3 id={`${titleId}-cues`}>{listTitle}</h3>
-          <p>{listHint}</p>
           <ol>
             {items.map((item, index) => (
               <li key={item.key}>

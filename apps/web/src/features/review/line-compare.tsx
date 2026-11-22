@@ -1,10 +1,10 @@
-import { Fragment, memo, useMemo, useState, type ReactNode } from 'react';
-import { KPH_PER_MPS, type AttemptReview, type Difference, type ReviewSeries, type TurnLossInfo, type MessageKey } from '@gt7/contracts';
+import { Fragment, memo, useId, useMemo, useState, type ReactNode } from 'react';
+import { KPH_PER_MPS, type AttemptReview, type Difference, type ReviewSeries, type TurnLossInfo } from '@gt7/contracts';
 import { ChannelChart, type ChartBand, type ChartField, type ChartSeries, type ChartTick } from '../../charts/ChannelChart.tsx';
 import { labelledTicks, signedTickLabel, tickLabel, tickStep, valueTicks } from '../../charts/ticks.ts';
 import { MapDialog, type MapDialogItem } from '../../charts/MapDialog.tsx';
 import { MapPanel } from '../../charts/MapPanel.tsx';
-import { TrackMap, type TrackCallout, type TrackLine } from '../../charts/TrackMap.tsx';
+import { TrackMap, type TrackLine, type TrackPeak } from '../../charts/TrackMap.tsx';
 import { SIDE_FACTOR, beyondSide, largestSideInZones, sideScaledLine } from '../../charts/geometry.ts';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { useWideLayout } from '../../app/layout.ts';
@@ -12,7 +12,7 @@ import { metres } from '../../app/format.ts';
 import { ON_THE_LINE_M, differenceText } from '../cues/cue-format.ts';
 import { groupByTurn, type TurnGroup, type TurnOrder } from './turn-groups.ts';
 import './review.css';
-import { listText, t } from '../../app/i18n.ts';
+import { t } from '../../app/i18n.ts';
 
 export type LineComparison = Pick<AttemptReview, 'gridM' | 'lengthM' | 'reference' | 'attempt' | 'findings' | 'turnLosses' | 'corners'>;
 
@@ -29,9 +29,7 @@ export type LineWords = {
   mapLabel: string;
   mapNotes: string[];
   sideLabel: string;
-  sideNote: string;
   dialogLabel: string;
-  dialogHint: string;
   dialogLine: string;
   hint: string;
   cursorText(cursorSM: number, lengthM: number): string;
@@ -173,6 +171,7 @@ type CompareChartsProps = { review: LineComparison; words: LineWords; side: bool
 
 export function CompareCharts({ review, words, side, sideCueDistanceM, cursorSM, onCursor, onScrub }: CompareChartsProps) {
   const wide = useWideLayout();
+  const hintId = useId();
   const index = Math.min(review.reference.v.length - 1, Math.round(cursorSM / review.gridM));
   const { refSpeed, youSpeed, loss, bands, channels } = useMemo(
     () => derive(review, words, side, sideCueDistanceM, wide ? SIDE_HEIGHT_WIDE : SIDE_HEIGHT_PHONE),
@@ -208,6 +207,7 @@ export function CompareCharts({ review, words, side, sideCueDistanceM, cursorSM,
             bands={bands}
             {...channel}
             readout={readouts[channel.id]!}
+            describedBy={hintId}
             {...(words.fields?.[channel.id] ? { field: words.fields[channel.id] } : {})}
           />
           {channel.id === 'time' && words.timeNote ? <p className="sub time-note">{words.timeNote}</p> : null}
@@ -216,7 +216,9 @@ export function CompareCharts({ review, words, side, sideCueDistanceM, cursorSM,
       <p className="cursor-line" aria-live="polite">
         {words.cursorText(cursorSM, review.lengthM)}
       </p>
-      <p className="sub">{words.hint}</p>
+      <p id={hintId} hidden>
+        {words.hint}
+      </p>
     </div>
   );
 }
@@ -255,15 +257,6 @@ function TurnGroupList({ group, selected, neutralSmall, emptyText, wholeLabel, d
   );
 }
 
-const ORDER_TEXT: Record<TurnOrder, MessageKey> = {
-  track: 'exercises.compare.order-track',
-  'time-lost': 'exercises.compare.order-time'
-};
-
-function orderText(order: TurnOrder): string {
-  return t(ORDER_TEXT[order]);
-}
-
 function OrderSwitch({ order, onOrder }: { order: TurnOrder; onOrder(order: TurnOrder): void }) {
   return (
     <fieldset className="plain turn-order">
@@ -282,11 +275,11 @@ function OrderSwitch({ order, onOrder }: { order: TurnOrder; onOrder(order: Turn
   );
 }
 
-export type DifferencesWords = { intro(order: TurnOrder): string; none: string; emptyTurn: string | null; orderSwitch: boolean; neutralSmall: boolean; allTurns: boolean; wholeLabel: string; describe(difference: Difference): string };
+export type DifferencesWords = { intro: string; none: string; emptyTurn: string | null; orderSwitch: boolean; neutralSmall: boolean; allTurns: boolean; wholeLabel: string; describe(difference: Difference): string };
 
 export function reviewDifferences(): DifferencesWords {
   return {
-    intro: order => t('exercises.compare.intro', { order: orderText(order) }),
+    intro: t('exercises.compare.intro'),
     none: t('exercises.compare.none'),
     emptyTurn: null,
     orderSwitch: true,
@@ -306,7 +299,7 @@ export const Differences = memo(function Differences({ findings, losses, selecte
     <section aria-labelledby="differences-title" className="differences">
       <h2 id="differences-title">{t('exercises.compare.title')}</h2>
       {words.orderSwitch && groups.length > 1 ? <OrderSwitch order={order} onOrder={setOrder} /> : null}
-      <p className="sub">{words.intro(order)}</p>
+      <p className="sub">{words.intro}</p>
       {findings.length === 0 ? <p className="notice">{words.none}</p> : null}
       {groups.map(group => (
         <TurnGroupList key={group.turn ?? 'whole'} group={group} selected={selected} neutralSmall={words.neutralSmall} emptyText={words.emptyTurn} wholeLabel={words.wholeLabel} describe={words.describe} onSelect={onSelect} />
@@ -317,26 +310,21 @@ export const Differences = memo(function Differences({ findings, losses, selecte
 
 type MapScale = 'true' | 'side';
 
-type SideCallout = TrackCallout & { spoken: string };
-
-function sideCallouts(review: LineComparison): SideCallout[] {
+function sidePeaks(review: LineComparison): TrackPeak[] {
   return largestSideInZones(review.corners, review.attempt.lat, review.gridM).map(peak => {
-    const parts = { turn: t('charts.turn.badge', { turn: peak.turn }), metres: Math.abs(peak.lat).toFixed(1), side: peak.lat < 0 ? t('exercises.compare.left') : t('exercises.compare.right') };
+    const parts = { turn: t('charts.turn.badge', { turn: peak.turn }), metres: Math.abs(peak.lat).toFixed(1), side: peak.lat < 0 ? t('exercises.compare.left') : t('exercises.compare.right'), place: metres(peak.sM) };
     return {
       turn: peak.turn,
       sM: peak.sM,
-      side: peak.lat < 0 ? -1 : 1,
       title: t('exercises.compare.callout', parts),
-      spoken: t('exercises.compare.callout-spoken', parts),
-      detail: t('exercises.compare.callout-at', { place: metres(peak.sM) })
+      detail: t('exercises.compare.callout-at', parts),
+      name: t('exercises.compare.callout-spoken', parts)
     };
   });
 }
 
-function mapLabelOf(words: LineWords, side: boolean, callouts: SideCallout[]): string {
-  if (!side) return words.mapLabel;
-  if (callouts.length === 0) return t('exercises.compare.map-label-side', { map: words.mapLabel, side: words.sideLabel });
-  return t('exercises.compare.map-label-callouts', { map: words.mapLabel, side: words.sideLabel, callouts: listText(callouts.map(callout => callout.spoken), 'unit') });
+function mapLabelOf(words: LineWords, side: boolean): string {
+  return side ? t('exercises.compare.map-label-side', { map: words.mapLabel, side: words.sideLabel }) : words.mapLabel;
 }
 
 function MapSwitch({ scale, onScale }: { scale: MapScale; onScale(scale: MapScale): void }) {
@@ -384,7 +372,7 @@ export function CompareMap({ title, review, words, sideCueDistanceM, scaleSwitch
   const trueAttempt = useMemo(() => line(review, review.attempt), [review]);
   const sideAttempt = useMemo(() => (side ? sideScaledLine(reference, review.attempt.lat, SIDE_FACTOR) : null), [side, reference, review]);
   const far = useMemo(() => (sideAttempt && sideCueDistanceM !== null ? beyondSide(sideAttempt, review.attempt.lat, sideCueDistanceM) : null), [sideAttempt, sideCueDistanceM, review]);
-  const callouts = useMemo(() => (side ? sideCallouts(review) : []), [side, review]);
+  const peaks = useMemo(() => (side ? sidePeaks(review) : []), [side, review]);
   const corners = useMemo(() => cornerMarks(review.corners), [review.corners]);
   const marks = useMemo(
     () => [
@@ -399,7 +387,7 @@ export function CompareMap({ title, review, words, sideCueDistanceM, scaleSwitch
     ],
     [corners, review.findings, selected, onSelect, words]
   );
-  const label = mapLabelOf(words, side, callouts);
+  const label = mapLabelOf(words, side);
   return (
     <MapPanel
       title={words.mapTitle}
@@ -410,10 +398,9 @@ export function CompareMap({ title, review, words, sideCueDistanceM, scaleSwitch
       notes={words.mapNotes}
       actions={scaleSwitch ? <MapSwitch scale={scale} onScale={setScale} /> : null}
       onView={() => setViewing(true)}
-      below={side ? <p className="map-note">{words.sideNote}</p> : null}
     >
       <div className="review-map">
-        <TrackMap label={label} reference={reference} attempt={sideAttempt ?? trueAttempt} far={far} callouts={callouts} cursorSM={cursorSM} marks={marks} lapLine={lapLine} />
+        <TrackMap label={label} reference={reference} attempt={sideAttempt ?? trueAttempt} far={far} peaks={peaks} cursorSM={cursorSM} marks={marks} lapLine={lapLine} />
       </div>
       <MapDialog
         open={viewing}
@@ -425,7 +412,6 @@ export function CompareMap({ title, review, words, sideCueDistanceM, scaleSwitch
         corners={review.corners}
         items={differenceItems(review.findings, words.describe, words.metres)}
         listTitle={t('exercises.compare.list-title')}
-        listHint={words.dialogHint}
         mapLabel={words.dialogLabel}
         lineName={words.dialogLine}
         lapLine={lapLine}

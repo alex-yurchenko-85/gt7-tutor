@@ -499,6 +499,16 @@ describe('setup sections', () => {
 });
 
 describe('screen updates', () => {
+  it('screen_updates_have_one_sentence_of_help', async () => {
+    setupApi();
+    const { sockets } = renderApp({ path: '/setup#preferences' });
+    await waitFor(() => sockets.latest);
+    act(() => sockets.latest.open());
+    const group = await screen.findByRole('radiogroup', { name: 'Screen updates while driving' });
+    expect(within(group.closest('.pref') as HTMLElement).getByText('Higher values are smoother and use more battery.')).toBeInTheDocument();
+    expect(screen.queryByText(/How often this device/)).toBeNull();
+  });
+
   it('preferences_set_screen_updates', async () => {
     setupApi();
     const { sockets } = renderApp({ path: '/setup#preferences' });
@@ -508,7 +518,6 @@ describe('screen updates', () => {
     expect(within(group).getAllByRole('radio').map(radio => radio.textContent)).toEqual(['15/s', '30/s', '60/s']);
     expect(within(group).getByRole('radio', { name: '15 per second' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.queryByText('On this device')).not.toBeInTheDocument();
-    expect(screen.getByText(/The voice cues themselves are sent at once, whatever you choose\./)).toBeInTheDocument();
     await userEvent.setup().click(within(group).getByRole('radio', { name: '60 per second' }));
     expect(within(group).getByRole('radio', { name: '60 per second' })).toHaveAttribute('aria-checked', 'true');
     expect(window.localStorage.getItem('gt7.stateRate')).toBe('60');

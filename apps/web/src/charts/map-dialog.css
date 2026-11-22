@@ -119,14 +119,8 @@
 }
 
 .map-dialog-cues h3 {
-  margin: 20px 20px 4px;
+  margin: 20px 20px 12px;
   font-size: 22px;
-}
-
-.map-dialog-cues > p {
-  margin: 0 20px 16px;
-  color: var(--night-mute);
-  font-size: 14px;
 }
 
 .map-dialog-cues ol {

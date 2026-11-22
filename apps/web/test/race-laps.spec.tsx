@@ -104,7 +104,6 @@ describe('race page, laps tab', () => {
 
   it('says_how_to_compare_and_explains_the_marks', async () => {
     await openRace();
-    expect(screen.getByText('Select a lap to compare it with the best lap.')).toBeInTheDocument();
     expect(screen.getByText('all four wheels off the track')).toBeInTheDocument();
     expect(screen.getByText('two or three wheels off')).toBeInTheDocument();
   });
@@ -299,7 +298,14 @@ describe('race page, speed of all laps', () => {
     expect(document.querySelector('.speed-box-title')?.textContent).toBe('0 m');
     expect(box()).toEqual(['Lap 4, best: 148 km/h', 'Lap 1: 140 km/h', 'Lap 2: 142 km/h', 'Lap 3: no data', 'Lap 5: 148 km/h', 'Lap 6: 150 km/h', 'Lap 7: 152 km/h']);
     expect(screen.getByText('Cursor at 0 m of 6,165 m.')).toBeInTheDocument();
-    expect(screen.getByText('Move the pointer or a finger across a chart, or focus a chart and use the arrow keys.')).toBeInTheDocument();
+  });
+
+  it('keyboard_help_of_the_speed_chart_is_a_description_not_a_visible_text', async () => {
+    await openSpeed();
+    const group = document.querySelector('.charts')!;
+    expect(group).not.toHaveAttribute('aria-describedby');
+    expect(group.querySelector('[role="slider"]')).toHaveAccessibleDescription('Focus the chart and use the arrow keys to move the cursor.');
+    expect(screen.queryByText(/Move the pointer or a finger/)).toBeNull();
   });
 
   it('moves_the_cursor_with_the_keyboard_and_names_the_turn', async () => {

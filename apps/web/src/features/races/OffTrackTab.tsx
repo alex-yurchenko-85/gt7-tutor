@@ -219,7 +219,6 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
         corners={[]}
         items={items}
         listTitle={t('races.off.list-title')}
-        listHint={t('races.off.list-hint')}
         mapLabel={referenceText(race, { best: 'races.off.dialog-best', lap: 'races.off.dialog-lap' }, { race: raceName(race) })}
         lineName={referenceText(race, { best: 'races.off.line-best', lap: 'races.off.line-lap' })}
         lapLine={lapLine}
@@ -253,12 +252,14 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
             onCursor={scrub}
             selected={selected}
             onSelect={select}
+            describedBy="race-off-hint"
             box={wide && chosen && chosen.sM !== null ? <StripBox moment={chosen} lengthM={view.lengthM} row={Math.max(0, laps.indexOf(chosen.lap)) + 1} rows={laps.length} /> : null}
           />
         </div>
       </div>
       <ChannelChart
         id="race-height"
+        describedBy="race-off-hint"
         label={t('races.off.height-label')}
         series={heightSeries}
         min={0}
@@ -276,6 +277,7 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
       />
       <ChannelChart
         id="race-best-speed"
+        describedBy="race-off-hint"
         label={referenceText(race, { best: 'races.off.speed-label-best', lap: 'races.off.speed-label-lap' })}
         series={speedSeries}
         min={0}
@@ -293,14 +295,6 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
       />
       <p className="race-legend">
         <span>
-          <i className="race-mark all" aria-hidden="true" />
-          {t('races.off.chart-all')}
-        </span>
-        <span>
-          <i className="race-mark part" aria-hidden="true" />
-          {t('races.off.chart-part')}
-        </span>
-        <span>
           <i className="race-mark pit-lane" aria-hidden="true" />
           {t('races.off.chart-pit')}
         </span>
@@ -312,7 +306,9 @@ function OffTrackBody({ race, view, moments }: { race: RaceDetail; view: RaceOff
       <p className="cursor-line" aria-live="polite">
         {t(!wide && facts ? 'races.off.cursor-facts' : 'races.off.cursor', { place: tenMetres(cursorSM), length: tenMetres(view.lengthM), facts })}
       </p>
-      <p className="sub">{t('races.off.hint')}</p>
+      <p id="race-off-hint" hidden>
+        {t('races.off.hint')}
+      </p>
     </div>
   );
   const places = <RecurringPlaces race={race} view={view} moments={moments} />;

@@ -24,6 +24,13 @@ describe('cue list', () => {
     expect(screen.queryByText(/mistake/i)).toBeNull();
   });
 
+  it('cue_intro_keeps_only_the_counts_and_the_muted_cue_rule', async () => {
+    exerciseApi().install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
+    expect(await screen.findByText('3 cues and 3 turns found in the reference. A muted cue is not spoken, and its decision is still recorded.')).toBeInTheDocument();
+    expect(screen.queryByText(/Select a cue to find it|Distance is from the section start|Timing moves one cue/)).toBeNull();
+  });
+
   it('cue_list_counts_cues_and_turns_found', async () => {
     exerciseApi().install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });

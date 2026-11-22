@@ -99,6 +99,7 @@ function SpeedChart({ speed, bestLap, wide }: { speed: RaceLapsSpeed; bestLap: n
       <div className="charts">
         <ChannelChart
           id="race-speed"
+          describedBy="race-speed-hint"
           label={t('races.speed.label')}
           series={data.series}
           min={data.min}
@@ -133,7 +134,9 @@ function SpeedChart({ speed, bestLap, wide }: { speed: RaceLapsSpeed; bestLap: n
         </span>
       </p>
       <p className="cursor-line" aria-live="polite">{t('races.cursor', { place: metresText(cursorSM), length: metresText(speed.lengthM) })}</p>
-      <p className="sub">{t('races.speed.hint')}</p>
+      <p id="race-speed-hint" hidden>
+        {t('races.speed.hint')}
+      </p>
     </>
   );
 }
@@ -396,9 +399,7 @@ export function LapsTab({ race }: { race: RaceDetail }) {
             </tbody>
           </table>
         </div>
-        <p className="sub race-laps-hint">
-          {race.referenceLap === race.bestLap ? t('races.laps.hint-best') : t('races.laps.hint-reference', { lap: race.referenceLap })}
-        </p>
+        {race.referenceLap === race.bestLap ? null : <p className="sub race-laps-hint">{t('races.laps.hint-reference', { lap: race.referenceLap })}</p>}
         {race.offTrack > 0 ? (
           <p className="race-legend">
             <span>

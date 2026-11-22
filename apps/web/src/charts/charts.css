@@ -493,35 +493,51 @@
   vector-effect: non-scaling-stroke;
 }
 
-.track-callout rect {
-  fill: var(--paper);
-  stroke: var(--ink);
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
+.track-peak {
+  cursor: pointer;
+  outline: none;
 }
 
-.track-callout .callout-leader {
-  stroke: var(--ink);
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
+.track-peak .peak-hit {
+  fill: transparent;
 }
 
-.track-callout .callout-title {
-  font-family: var(--font-display);
-  font-weight: 800;
-  fill: var(--ink);
-}
-
-.track-callout .callout-detail {
-  font-family: var(--font-body);
-  fill: var(--mute);
-}
-
-.track-callout .callout-dot {
+.track-peak .peak-dot {
   fill: var(--ink);
   stroke: var(--paper);
-  stroke-width: 3;
+  stroke-width: 2;
   vector-effect: non-scaling-stroke;
+}
+
+.track-peak .peak-ring {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.track-peak:focus-visible .peak-ring {
+  stroke: var(--ref);
+  stroke-width: 4;
+}
+
+.peak-tip {
+  pointer-events: none;
+}
+
+.peak-tip rect {
+  fill: var(--ink);
+}
+
+.peak-tip .peak-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  fill: var(--paper);
+}
+
+.peak-tip .peak-detail {
+  font-family: var(--font-body);
+  fill: var(--paper);
 }
 
 .race-chart-plot svg {

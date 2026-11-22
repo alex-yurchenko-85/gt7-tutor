@@ -1,7 +1,7 @@
 import { KPH_PER_MPS, type Vec3 } from '@gt7/contracts';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../src/config.ts';
-import { cornerAt, cornerCursor, findCorners, outsideM, type Corner } from '../src/corners.ts';
+import { cornerAt, cornerCursor, findCorners, joinCorners, outsideM, type Corner } from '../src/corners.ts';
 import { buildCueEvents } from '../src/cue-events.ts';
 import { Matcher } from '../src/match.ts';
 import type { ReferencePath } from '../src/reference.ts';
@@ -14,6 +14,10 @@ import { kph } from '../src/units.ts';
 function interlagosCorners(): Corner[] {
   const path = interlagosReference();
   return findCorners(path, buildCueEvents(path, DEFAULT_CONFIG), DEFAULT_CONFIG);
+}
+
+function bend(zoneStartSM: number, turnInSM: number, apexSM: number, radiusM: number): Omit<Corner, 'number'> {
+  return { zoneStartSM, turnInSM, apexSM, radiusM, apexSpeedMps: 20, insideSign: 1 };
 }
 
 const ARC_RADIUS_M = 50;
@@ -91,6 +95,34 @@ describe('corners', () => {
   it('arc_radius_is_measured', () => {
     const corner = findCorners(arcPath(1), arcEvents, DEFAULT_CONFIG)[0]!;
     expect(Math.abs(corner.radiusM - ARC_RADIUS_M)).toBeLessThanOrEqual(3);
+  });
+
+  it('openings_inside_one_bend_give_one_corner', () => {
+    const corners = findCorners(arcPath(1), [event('brake', 60, 50, 90), event('throttle', 95, null), event('ease-off', 130, null), event('throttle', 160, null)], DEFAULT_CONFIG);
+    expect(corners).toHaveLength(1);
+    const corner = corners[0]!;
+    expect(corner.number).toBe(1);
+    expect(corner.zoneStartSM).toBe(60);
+    expect(corner.turnInSM).toBeLessThan(corner.apexSM);
+  });
+
+  it('a_turn_in_before_the_last_apex_of_a_joined_bend_joins_it', () => {
+    const joined = joinCorners([bend(60, 80, 100, 30), bend(85, 90, 150, 40), bend(130, 120, 200, 50), bend(240, 260, 300, 45)]);
+    expect(joined.map(corner => [corner.zoneStartSM, corner.turnInSM, corner.apexSM, corner.radiusM])).toEqual([
+      [60, 80, 100, 30],
+      [240, 260, 300, 45]
+    ]);
+  });
+
+  it('turn_ins_follow_the_apexes_of_the_corners_before_them', () => {
+    const joined = joinCorners([bend(10, 20, 50, 60), bend(55, 60, 90, 30), bend(100, 110, 140, 40), bend(130, 135, 170, 80), bend(200, 210, 240, 50)]);
+    expect(joined.map(corner => [corner.turnInSM, corner.apexSM])).toEqual([
+      [20, 50],
+      [60, 90],
+      [110, 140],
+      [210, 240]
+    ]);
+    joined.slice(1).forEach((corner, index) => expect(corner.turnInSM).toBeGreaterThan(joined[index]!.apexSM));
   });
 
   it('straight_has_no_corner', () => {

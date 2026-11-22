@@ -59,6 +59,23 @@ describe('race page, off the track tab', () => {
     expect(within(map).getByText('recurring place')).toBeInTheDocument();
   });
 
+  it('has_one_legend_for_the_wheels_and_keyboard_help_only_as_a_description', async () => {
+    await openOffTrack();
+    await screen.findByRole('region', { name: 'Places' });
+    expect(screen.getAllByText(/all four wheels off the track|^all four wheels$/)).toHaveLength(1);
+    expect(screen.getAllByText(/two or three wheels/)).toHaveLength(1);
+    expect(screen.getByText('pit lane')).toBeInTheDocument();
+    const group = document.querySelector('.race-off-charts')!;
+    expect(group).not.toHaveAttribute('aria-describedby');
+    const moments = group.querySelectorAll('.strip-row button');
+    expect(moments.length).toBeGreaterThan(0);
+    for (const moment of moments) expect(moment).toHaveAccessibleDescription('Focus a chart and use the arrow keys to move the cursor. In the lap rows, the arrow keys move from moment to moment.');
+    const sliders = group.querySelectorAll('[role="slider"]');
+    expect(sliders.length).toBeGreaterThan(0);
+    for (const slider of sliders) expect(slider).toHaveAccessibleDescription('Focus a chart and use the arrow keys to move the cursor. In the lap rows, the arrow keys move from moment to moment.');
+    expect(screen.queryByText(/Move the pointer or a finger/)).toBeNull();
+  });
+
   it('marks_the_lap_line_on_the_map_and_in_the_map_view', async () => {
     await openOffTrack();
     const map = await screen.findByRole('region', { name: 'Places' });

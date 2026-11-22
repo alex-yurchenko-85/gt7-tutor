@@ -453,7 +453,6 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
         corners={corners}
         items={cueItems(cues, cue => muted.includes(cue.key))}
         listTitle={t('exercises.cues.list-title')}
-        listHint={t('exercises.cues.list-hint')}
       />
     </MapPanel>
   );

@@ -191,12 +191,6 @@
   outline-offset: -3px;
 }
 
-.map-note {
-  margin: 8px 0 0;
-  font-size: 14px;
-  color: var(--mute);
-}
-
 .corners,
 .reactions {
   margin-top: 20px;

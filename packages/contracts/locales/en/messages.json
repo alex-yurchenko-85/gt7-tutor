@@ -1389,7 +1389,7 @@
     "note": "Label of the screen update rate choice."
   },
   "setup.preferences.rate-text": {
-    "text": "How often this device gets the speed, the distance, the gap and the map point while you drive. Higher values move them more smoothly, but use more battery and network and can make the page slower on an older phone. With the voice on this device, a busy page can also delay a cue a little. The voice cues themselves are sent at once, whatever you choose.",
+    "text": "Higher values are smoother and use more battery.",
     "note": "Help of the screen update rate choice."
   },
   "setup.preferences.title": {
@@ -3072,12 +3072,8 @@
     "note": "Title of the list in the full-screen map.",
     "maxChars": 20
   },
-  "exercises.cues.list-hint": {
-    "text": "Select a cue to find it on the line.",
-    "note": "Help of the list in the full-screen map."
-  },
   "exercises.cues.intro": {
-    "text": "{cues} and {turns} found in the reference. Distance is from the section start. A muted cue is not spoken, and its decision is still recorded. Timing moves one cue earlier or later in steps of 0.1 s.",
+    "text": "{cues} and {turns} found in the reference. A muted cue is not spoken, and its decision is still recorded.",
     "note": "Help above the cue list. {cues} is the number of cues, {turns} the number of turns."
   },
   "exercises.cues.footer": {
@@ -3184,25 +3180,17 @@
     "text": "The side distance of your line is drawn {factor} times larger.",
     "note": "Label of the larger side scale. {factor} is the scale factor."
   },
-  "exercises.review.side-note": {
-    "text": "Your line is drawn {factor} times farther from the reference line than it was, so that a difference of 1 m shows. The labels give the true distance at the largest point of each turn.",
-    "note": "Help of the larger side scale. {factor} is the scale factor."
-  },
   "exercises.review.dialog-label": {
     "text": "Reference line and your line of {title}",
     "note": "Accessible name of the full-screen review map. {title} is the exercise name."
-  },
-  "exercises.review.dialog-hint": {
-    "text": "Select a difference to find it on your line.",
-    "note": "Help of the list in the full-screen review map."
   },
   "exercises.review.dialog-line": {
     "text": "Reference line",
     "note": "Line name in the full-screen review map."
   },
   "exercises.review.hint": {
-    "text": "Move the pointer or a finger across a chart, or focus a chart and use the arrow keys. The map point shows the same place.",
-    "note": "Help of the review charts."
+    "text": "Focus a chart and use the arrow keys to move the cursor. The map point shows the same place.",
+    "note": "Keyboard help of the charts, for a screen reader only. It is not shown on the screen."
   },
   "exercises.review.cursor": {
     "text": "Cursor at {place} m of {length} m",
@@ -3313,14 +3301,6 @@
     "note": "Time gained in a turn. {seconds} is the time with two decimals.",
     "maxChars": 22
   },
-  "exercises.compare.order-track": {
-    "text": "Turns in the order of the section.",
-    "note": "First sentence of the differences help when the turns follow the track."
-  },
-  "exercises.compare.order-time": {
-    "text": "Largest time lost first.",
-    "note": "First sentence of the differences help when the turns follow the time lost."
-  },
   "exercises.compare.order": {
     "text": "Order of the turns",
     "note": "Hidden legend of the order choice."
@@ -3336,8 +3316,8 @@
     "maxChars": 12
   },
   "exercises.compare.intro": {
-    "text": "{order} Time lost is measured from telemetry. Select a difference to put the cursor there. The reference is one recorded drive, not the best possible line.",
-    "note": "Help of the differences by turn in the review. {order} is the order sentence."
+    "text": "The reference is one recorded drive, not the best possible line.",
+    "note": "Note under the title of the differences of an attempt."
   },
   "exercises.compare.none": {
     "text": "No differences above the limits in this attempt.",
@@ -3354,11 +3334,11 @@
   },
   "exercises.compare.callout": {
     "text": "{turn} · {metres} m {side}",
-    "note": "Map label of the largest side distance in a turn. {turn} is the turn badge, {metres} the distance, {side} left or right."
+    "note": "Tip of a dot on the map at the largest side distance in a turn, first line. {turn} is the turn badge, {metres} the distance, {side} left or right."
   },
   "exercises.compare.callout-at": {
     "text": "at {place}",
-    "note": "Place of a map label. {place} is the distance from the start. Lower case."
+    "note": "Tip of a dot on the map, second line: the place of the dot. {place} is the distance from the start. Lower case."
   },
   "exercises.compare.map-switch": {
     "text": "Side distance on the map",
@@ -4252,8 +4232,8 @@
     "note": "Line under a chart of a race. {place} is the cursor distance, {length} the lap length, both with the unit."
   },
   "races.speed.hint": {
-    "text": "Move the pointer or a finger across a chart, or focus a chart and use the arrow keys.",
-    "note": "Help under the speed chart of all laps."
+    "text": "Focus the chart and use the arrow keys to move the cursor.",
+    "note": "Keyboard help of the charts, for a screen reader only. It is not shown on the screen."
   },
   "races.speed.title": {
     "text": "Speed, all laps",
@@ -4369,10 +4349,6 @@
     "text": "Off the track",
     "note": "Column title of the lap table: the moments off the track.",
     "maxChars": 16
-  },
-  "races.laps.hint-best": {
-    "text": "Select a lap to compare it with the best lap.",
-    "note": "Help under the lap table when the best lap has no pit stop."
   },
   "races.laps.hint-reference": {
     "text": "Select a lap to compare it with lap {lap}, the best lap without a pit stop.",
@@ -4528,29 +4504,21 @@
     "text": "The side distance of lap {lap} is drawn {factor} times larger.",
     "note": "Line under the map on the Compare tab. {lap} is the selected lap, {factor} the scale factor."
   },
-  "races.compare.side-note": {
-    "text": "The line of lap {lap} is drawn {factor} times farther from the line of lap {with} than it was, so that a difference of 1 m shows. The labels give the true distance at the largest point of each turn.",
-    "note": "Help of the map scale on the Compare tab. {lap} is the selected lap, {with} the lap to compare with, {factor} the scale factor."
-  },
   "races.compare.dialog-label": {
     "text": "Line of lap {with} and line of lap {lap} of {race}",
     "note": "Accessible name of the full-screen map on the Compare tab. {with} is the lap to compare with, {lap} the selected lap, {race} the race name."
-  },
-  "races.compare.dialog-hint": {
-    "text": "Select a difference to find it on lap {lap}.",
-    "note": "Help of the list in the full-screen map on the Compare tab. {lap} is the selected lap."
   },
   "races.compare.dialog-line": {
     "text": "Line of lap {with}",
     "note": "Legend of the line in the full-screen map on the Compare tab. {with} is the lap to compare with."
   },
   "races.compare.hint": {
-    "text": "Move the pointer or a finger across a chart, or focus a chart and use the arrow keys. The map point shows the same place.",
-    "note": "Help under the charts on the Compare tab."
+    "text": "Focus a chart and use the arrow keys to move the cursor. The map point shows the same place.",
+    "note": "Keyboard help of the charts, for a screen reader only. It is not shown on the screen."
   },
   "races.compare.intro": {
-    "text": "Turns in the order of the lap. Time lost is measured from telemetry. Lap {lap} is one of your laps, not the best possible line.",
-    "note": "Help of the differences by turn on the Compare tab. {lap} is the lap to compare with."
+    "text": "Lap {lap} is one of your laps, not the best possible line.",
+    "note": "Note under the title of the differences on the Compare tab. {lap} is the lap to compare with."
   },
   "races.compare.none": {
     "text": "No differences above the limits between these two laps.",
@@ -4730,10 +4698,6 @@
     "text": "Moments off the track",
     "note": "Title of the list in the full-screen map."
   },
-  "races.off.list-hint": {
-    "text": "Select a moment to find it on the line.",
-    "note": "Help of the list in the full-screen map."
-  },
   "races.off.dialog-best": {
     "text": "Line of the best lap of {race} with the moments off the track",
     "note": "Accessible name of the full-screen map when the reference is the best lap. {race} is the race name."
@@ -4780,16 +4744,6 @@
     "text": "lap {lap}: {speed}",
     "note": "Readout of the speed chart at the cursor. {lap} is the reference lap, {speed} the speed without a unit. Lower case."
   },
-  "races.off.chart-all": {
-    "text": "all four wheels",
-    "note": "Chart legend of the red mark. Lower case.",
-    "maxChars": 24
-  },
-  "races.off.chart-part": {
-    "text": "two or three wheels",
-    "note": "Chart legend of the yellow mark. Lower case.",
-    "maxChars": 24
-  },
   "races.off.chart-pit": {
     "text": "pit lane",
     "note": "Chart legend of the pit lane band. Lower case.",
@@ -4809,8 +4763,8 @@
     "note": "Line under the charts on a phone when the player selects a moment. {facts} is that moment."
   },
   "races.off.hint": {
-    "text": "Move the pointer or a finger across a chart, or focus a chart and use the arrow keys. In the lap rows the arrow keys move from moment to moment. The map point shows the same place.",
-    "note": "Help under the charts on the Off the track tab."
+    "text": "Focus a chart and use the arrow keys to move the cursor. In the lap rows, the arrow keys move from moment to moment.",
+    "note": "Keyboard help of the charts, for a screen reader only. It is not shown on the screen."
   },
   "races.off.heading_one": {
     "text": "{count} moment off the track {all}",
@@ -5085,15 +5039,11 @@
     "note": "Result of the reception check when some packets cannot be decoded. {receiving} is the text from setup.console.receiving, {undecoded} the text from setup.console.undecoded."
   },
   "exercises.compare.callout-spoken": {
-    "text": "{turn} {metres} m {side}",
-    "note": "Map label of the largest side distance in a turn, for a screen reader. {turn} is the turn badge, {metres} the distance, {side} left or right."
+    "text": "{turn} {metres} m {side}, at {place}",
+    "note": "Accessible name of a dot on the map at the largest side distance in a turn. {turn} is the turn badge, {metres} the distance, {side} left or right, {place} the distance from the start."
   },
   "exercises.compare.map-label-side": {
     "text": "{map}. {side}",
     "note": "Accessible name of the map with the larger side scale. {map} is the map name, {side} the sentence about the scale."
-  },
-  "exercises.compare.map-label-callouts": {
-    "text": "{map}. {side} {callouts}.",
-    "note": "Accessible name of the map with the larger side scale and its labels. {map} is the map name, {side} the sentence about the scale, {callouts} the list of the labels."
   }
 }

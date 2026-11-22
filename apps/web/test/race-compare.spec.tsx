@@ -112,10 +112,16 @@ describe('race page, compare tab', () => {
     expect(legend.closest('.channel')!.querySelector('[data-chart="time"]')).not.toBeNull();
   });
 
+  it('compare_intro_keeps_only_the_note_on_the_other_lap', async () => {
+    await openCompare();
+    const list = await screen.findByRole('region', { name: 'Differences by turn' });
+    expect(within(list).getByText('Lap 2 is one of your laps, not the best possible line.')).toBeInTheDocument();
+    expect(screen.queryByText(/Turns in the order|Time lost is measured|Move the pointer or a finger/)).toBeNull();
+  });
+
   it('groups_the_differences_by_turn_with_no_difference_and_an_even_turn', async () => {
     await openCompare();
     const list = await screen.findByRole('region', { name: 'Differences by turn' });
-    expect(list).toHaveTextContent('Turns in the order of the lap. Time lost is measured from telemetry. Lap 2 is one of your laps, not the best possible line.');
     const groups = within(list).getAllByRole('group');
     expect(groups.map(group => group.getAttribute('aria-label'))).toEqual(['T1 · 0.40 s lost', 'T2 · 0.00 s', 'T3 · 0.46 s gained']);
     expect(groups[0]).toHaveTextContent('Braked 70 m earlier');
@@ -246,7 +252,6 @@ describe('race page, compare tab', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'View the map in full screen' }));
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent('Line of lap 2, 20 m.');
-    expect(dialog).toHaveTextContent('Select a difference to find it on lap 5.');
     expect(within(dialog).getByRole('img', { name: 'Line of lap 2 and line of lap 5 of High Speed Ring' })).toBeInTheDocument();
   });
 

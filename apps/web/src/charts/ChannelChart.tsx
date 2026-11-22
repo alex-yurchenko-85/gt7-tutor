@@ -36,6 +36,7 @@ type ChannelChartProps = {
   overlay?: ReactNode;
   onActive?: (source: 'pointer' | 'focus', active: boolean) => void;
   field?: ChartField;
+  describedBy?: string;
 };
 
 const CHART_HEIGHT = 120;
@@ -100,7 +101,7 @@ const PlotLayer = memo(function PlotLayer({ series, ticks, bands = [], marks = N
   );
 });
 
-export function ChannelChart({ id, label, series, min, max, gridM, lengthM, cursorSM, onCursor, onScrub = onCursor, readout, ticks, height = CHART_HEIGHT, bands = NO_BANDS, turnLabels = false, marks = NO_MARKS, area = false, legend = null, overlay = null, onActive, field }: ChannelChartProps) {
+export function ChannelChart({ id, label, series, min, max, gridM, lengthM, cursorSM, onCursor, onScrub = onCursor, readout, ticks, height = CHART_HEIGHT, bands = NO_BANDS, turnLabels = false, marks = NO_MARKS, area = false, legend = null, overlay = null, onActive, field, describedBy }: ChannelChartProps) {
   const zones = useMemo(() => bands.filter(band => band.toSM > band.fromSM), [bands]);
   const span = max - min || 1;
   const toY = (value: number) => height - 4 - ((value - min) / span) * (height - 8);
@@ -149,6 +150,7 @@ export function ChannelChart({ id, label, series, min, max, gridM, lengthM, curs
         role="slider"
         tabIndex={0}
         aria-labelledby={`${id}-label`}
+        aria-describedby={describedBy}
         aria-valuemin={0}
         aria-valuemax={Math.round(lengthM)}
         aria-valuenow={Math.round(cursorSM)}

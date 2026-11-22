@@ -76,7 +76,24 @@ export function findCorners(path: ReferencePath, events: ReferenceCueEvent[], co
       insideSign: apex.sign
     });
   }
-  return corners.sort((a, b) => a.apexSM - b.apexSM).map((corner, index) => ({ number: index + 1, ...corner }));
+  return joinCorners(corners.sort((a, b) => a.apexSM - b.apexSM)).map((corner, index) => ({ number: index + 1, ...corner }));
+}
+
+export function joinCorners(ordered: Omit<Corner, 'number'>[]): Omit<Corner, 'number'>[] {
+  const joined: Omit<Corner, 'number'>[] = [];
+  let lastApexSM = -Infinity;
+  for (const corner of ordered) {
+    const last = joined.at(-1);
+    if (!last || corner.turnInSM > lastApexSM) {
+      joined.push(corner);
+      lastApexSM = corner.apexSM;
+      continue;
+    }
+    const sharper = corner.radiusM < last.radiusM ? corner : last;
+    joined[joined.length - 1] = { ...sharper, zoneStartSM: Math.min(last.zoneStartSM, corner.zoneStartSM), turnInSM: Math.min(last.turnInSM, corner.turnInSM) };
+    lastApexSM = Math.max(lastApexSM, corner.apexSM);
+  }
+  return joined;
 }
 
 export function cornerAt(corners: Corner[], sM: number): Corner | null {

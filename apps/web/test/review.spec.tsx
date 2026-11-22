@@ -152,6 +152,17 @@ describe('attempt review', () => {
     expect(screen.queryByText(/mistake/)).toBeNull();
   });
 
+  it('review_keyboard_help_is_a_description_of_the_charts_and_no_hint_texts_show', async () => {
+    reviewApi();
+    renderApp({ path: REVIEW_PATH });
+    const list = await screen.findByRole('region', { name: 'Differences by turn' });
+    expect(within(list).getByText('The reference is one recorded drive, not the best possible line.')).toBeInTheDocument();
+    expect(document.querySelector('.charts')).not.toHaveAttribute('aria-describedby');
+    for (const slider of document.querySelectorAll('.charts [role="slider"]')) expect(slider).toHaveAccessibleDescription('Focus a chart and use the arrow keys to move the cursor. The map point shows the same place.');
+    expect(screen.queryByText(/Move the pointer or a finger/)).toBeNull();
+    expect(screen.queryByText(/Turns in the order|Time lost is measured|Select a difference/)).toBeNull();
+  });
+
   it('phone_review_shows_map_and_differences_first', async () => {
     setViewportWidth(390);
     reviewApi();
@@ -235,7 +246,6 @@ describe('attempt review', () => {
     const user = userEvent.setup();
     await user.click(within(order).getByRole('radio', { name: 'Time lost' }));
     expect(turnGroups().map(group => group.getAttribute('aria-label'))).toEqual(['T2 · 0.50 s lost', 'T1 · 0.12 s gained']);
-    expect(within(list).getByText(/^Largest time lost first\./)).toBeInTheDocument();
     const groups = turnGroups();
     expect(within(groups[0]!).getAllByRole('button')).toHaveLength(2);
     await user.click(within(groups[1]!).getByRole('button', { name: /4 m\. Braked 2 m earlier/ }));
@@ -437,7 +447,7 @@ describe('attempt review', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Side distance × 6' }));
     expect(document.querySelectorAll('.track-map [data-segment="attempt"]')).toHaveLength(1);
     expect(document.querySelectorAll('.track-map .track-far')).toHaveLength(0);
-    expect([...document.querySelectorAll('.track-map .track-callout')].map(callout => callout.textContent)).toEqual(['T1 · 5.0 m leftat 6 m', 'T2 · 1.2 m rightat 14 m']);
+    expect([...document.querySelectorAll('.track-map .track-peak')].map(dot => dot.getAttribute('aria-label'))).toEqual(['T1 5.0 m left, at 6 m', 'T2 1.2 m right, at 14 m']);
     expect(document.querySelector('.map-legend')).not.toHaveTextContent('from the line');
   });
 
@@ -448,7 +458,7 @@ describe('attempt review', () => {
     expect(within(group).getByRole('button', { name: 'True scale' })).toHaveAttribute('aria-pressed', 'true');
     expect(within(group).getByRole('button', { name: 'Side distance × 6' })).toHaveAttribute('aria-pressed', 'false');
     expect(document.querySelectorAll('.track-map .track-far')).toHaveLength(0);
-    expect(document.querySelectorAll('.track-map .track-callout')).toHaveLength(0);
+    expect(document.querySelectorAll('.track-map .track-peak')).toHaveLength(0);
     expect(screen.queryByText(/drawn 6 times farther/)).not.toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Map of the reference line and your line' })).toBeInTheDocument();
   });
@@ -468,8 +478,7 @@ describe('attempt review', () => {
     expect(after[0]).toBeGreaterThan(0);
     expect(after[3]).toBeLessThan(0);
     expect(before[0]! / before[3]!).toBeCloseTo(-0.2, 1);
-    expect(screen.getByText('Your line is drawn 6 times farther from the reference line than it was, so that a difference of 1 m shows. The labels give the true distance at the largest point of each turn.')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Map of the reference line and your line. The side distance of your line is drawn 6 times larger. T1 5.0 m left, T2 1.2 m right.' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Map of the reference line and your line. The side distance of your line is drawn 6 times larger.' })).toBeInTheDocument();
   });
 
   it('map_side_distance_marks_the_parts_beyond_the_side_cue_distance', async () => {
@@ -485,18 +494,18 @@ describe('attempt review', () => {
     expect(document.querySelector('.map-legend')).toHaveTextContent('more than 2 m from the line');
   });
 
-  it('map_side_distance_gives_one_label_per_turn_zone', async () => {
+  it('map_side_distance_gives_one_dot_per_turn_zone_with_a_tip', async () => {
     reviewApi(sideReview());
     renderApp({ path: REVIEW_PATH });
     await screen.findByRole('group', { name: 'Side distance on the map' });
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Side distance × 6' }));
-    const callouts = [...document.querySelectorAll('.track-map .track-callout')];
-    expect(callouts.map(callout => [callout.querySelector('.callout-title')!.textContent, callout.querySelector('.callout-detail')!.textContent])).toEqual([
-      ['T1 · 5.0 m left', 'at 6 m'],
-      ['T2 · 1.2 m right', 'at 14 m']
-    ]);
-    await userEvent.setup().click(screen.getByRole('button', { name: 'True scale' }));
-    expect(document.querySelectorAll('.track-map .track-callout')).toHaveLength(0);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Side distance × 6' }));
+    expect(document.querySelectorAll('.track-map .track-peak')).toHaveLength(2);
+    expect(document.querySelector('.peak-tip')).toBeNull();
+    await user.hover(screen.getByRole('button', { name: 'T2 1.2 m right, at 14 m' }));
+    expect([...document.querySelectorAll('.peak-tip text')].map(text => text.textContent)).toEqual(['T2 · 1.2 m right', 'at 14 m']);
+    await user.click(screen.getByRole('button', { name: 'True scale' }));
+    expect(document.querySelectorAll('.track-map .track-peak')).toHaveLength(0);
   });
 
   it('map_switch_is_not_stored', async () => {
@@ -561,8 +570,6 @@ describe('attempt review', () => {
     reviewApi(review(), attemptSummary({ startedAt: new Date(2026, 10, 16, 14, 5).toISOString() }));
     renderApp({ path: REVIEW_PATH });
     expect(await screen.findByText('16 Nov 2026, 14:05. Times from the game. Gap to the compared reference.')).toBeInTheDocument();
-    const list = await screen.findByRole('region', { name: 'Differences by turn' });
-    expect(list).toHaveTextContent('Turns in the order of the section. Time lost is measured from telemetry. Select a difference to put the cursor there.');
   });
 
   it('review_lede_of_an_aborted_attempt_names_the_reason', async () => {
@@ -707,7 +714,6 @@ describe('attempt review', () => {
     expect(within(dialog).getByRole('checkbox', { name: 'Differences' })).toBeChecked();
     const list = within(dialog).getByRole('complementary', { name: 'Differences' });
     expect(within(list).getAllByRole('button')).toHaveLength(2);
-    expect(list).toHaveTextContent('Select a difference to find it on your line.');
     expect(dialog.querySelector('.track-attempt, [data-segment="attempt"]')).not.toBeNull();
     expect(screen.queryByText('Map orientation is not confirmed')).toBeNull();
   });

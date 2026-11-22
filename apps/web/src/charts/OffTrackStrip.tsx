@@ -15,6 +15,7 @@ type OffTrackStripProps = {
   selected: number | null;
   onSelect(index: number | null): void;
   box?: ReactNode;
+  describedBy?: string;
 };
 
 export function tenMetres(value: number): string {
@@ -59,7 +60,7 @@ function letterSides(recurring: RaceRecurringPlace[], lengthM: number): Map<stri
   return new Map(centres.map((centre, index) => [centre.label, near(centres[index - 1], centre) ? 'after' : near(centre, centres[index + 1]) ? 'before' : '']));
 }
 
-export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, cursorSM, onCursor, selected, onSelect, box = null }: OffTrackStripProps) {
+export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, cursorSM, onCursor, selected, onSelect, box = null, describedBy }: OffTrackStripProps) {
   const buttons = useRef(new Map<number, HTMLButtonElement>());
   const keyed = useRef(false);
   const sides = useMemo(() => letterSides(recurring, lengthM), [recurring, lengthM]);
@@ -132,6 +133,7 @@ export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, curs
                     className={`strip-moment ${moment.wheels === 4 ? 'all' : 'part'}`}
                     style={{ left: share(moment.sM, lengthM) }}
                     aria-label={momentLabel(moment)}
+                    aria-describedby={describedBy}
                     aria-pressed={selected === index}
                     onClick={() => onSelect(index)}
                     onKeyDown={event => fromKey(event, index)}

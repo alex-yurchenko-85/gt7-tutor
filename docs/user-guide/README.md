@@ -421,7 +421,7 @@ The training stays on when you open another screen. Stop it when you do not driv
 **Goal:** see where and how your attempt is different from the reference.
 **Where:** **Review this attempt** after the finish, or a row in the **Attempts** tab.
 
-![The review of attempt 2 with Side distance × 6. The reference line is blue and your line is orange, with the label T1 · 3.5 m left. At the right are the yellow Drive button and the differences by turn. The difference 23 km/h slower in the corner is selected.](images/review-side.webp)
+![The review of attempt 2 with Side distance × 6. The reference line is blue and your line is orange. The pointer is on the dot of turn 1, and its tip shows the true side distance and the place. At the right are the yellow Drive button and the differences by turn. The difference 23 km/h slower in the corner is selected.](images/review-side.webp)
 
 The review shows the header and the tabs of the exercise. Under them:
 
@@ -431,12 +431,12 @@ The review shows the header and the tabs of the exercise. Under them:
 | Part | What it shows |
 | --- | --- |
 | **Your line** | The map with the reference line (blue) and your line (orange). A circle marks a difference. The legend has the words `reference line`, `you`, `turn` and `A gap in your line is a place without a match`. A gap is a place where GT7 Tutor could not match your position. |
-| **True scale** / **Side distance × 6** | **Side distance × 6** draws your line 6 times farther from the reference line, so that a difference of 1 m shows. The labels give the true distance. The legend then also has `more than <n> m from the line` for the parts beyond the **Side cue distance**. On a phone, the two buttons are in a row under the title. |
+| **True scale** / **Side distance × 6** | **Side distance × 6** draws your line 6 times farther from the reference line, so that a difference of 1 m shows. A dot marks the largest side distance in each turn. Put the pointer on a dot, move the focus to it with the Tab key, or touch it. A tip then shows the true distance and the place, for example `T1 · 3.5 m left` and `at 120 m`. When a dot has the focus, press Esc to close the tip. On a touch screen, touch the map away from the dots to close the tip. The legend then also has `more than <n> m from the line` for the parts beyond the **Side cue distance**. On a phone, the two buttons are in a row under the title. |
 | **View** | Opens the map in full screen, with your line in true scale and the list of the differences. Select a difference in the list to find it on your line. Press Esc or select **Back** to close. |
 | **Differences by turn** | The differences, grouped by turn, with the time lost or gained in each turn. **Track** or **Time lost** sets the order. Select a difference to put the cursor there. A section without turns shows one group, **Whole section**. `No differences above the limits in this attempt.` means that GT7 Tutor found no difference. |
 | **Corners** | Your line at each apex: on the line, or the distance inside or outside, and your speed at the apex. A section without turns has no **Corners**. |
 | **Brake reaction** | The time from the start of a spoken brake cue to your brake. A value `before the cue` means that you braked before the voice. |
-| Charts | Speed, throttle, brake, the distance from the reference line, and the time lost. Move the pointer or a finger across a chart. The map shows the same place. |
+| Charts | Speed, throttle, brake, the distance from the reference line, and the time lost. Move the pointer or a finger across a chart. With a keyboard, move the focus to a chart and use the arrow keys. The map shows the same place. |
 | **Compare with** | Another reference of the exercise. The review then compares the same attempt with that reference. |
 
 ![The whole review page. The charts show speed, throttle, brake, the distance from the reference line and the time lost to the reference. A yellow zone marks turn 1.](images/review-charts.webp)
@@ -625,7 +625,7 @@ The heading gives the number of moments off the track, and how many of them had 
 - **Height of the track**: the height above the lowest place of the lap.
 - **Speed of the best lap** (or **Speed of lap <n>**): the speed of the reference lap at each place.
 
-The three charts and the map use the same cursor. The recurring places are yellow bands on the charts.
+The three charts and the map use the same cursor. With a keyboard, move the focus to a chart and use the arrow keys. In the lap rows of the chart **Off the track**, the arrow keys move from moment to moment. The recurring places are yellow bands on the charts.
 
 A race without a moment shows `No moments off the track in this race.`
 

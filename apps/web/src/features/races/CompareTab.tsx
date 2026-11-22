@@ -75,9 +75,7 @@ function lapWords(race: RaceDetail, lap: number, withLap: number): LineWords {
     mapLabel: t('races.compare.map', { with: withLap, lap }),
     mapNotes: pit ? [t('races.compare.map-pit')] : [],
     sideLabel: t('races.compare.side-label', { lap, factor: SIDE_FACTOR }),
-    sideNote: t('races.compare.side-note', { lap, with: withLap, factor: SIDE_FACTOR }),
     dialogLabel: t('races.compare.dialog-label', { with: withLap, lap, race: raceName(race) }),
-    dialogHint: t('races.compare.dialog-hint', { lap }),
     dialogLine: t('races.compare.dialog-line', { with: withLap }),
     hint: t('races.compare.hint'),
     metres,
@@ -88,7 +86,7 @@ function lapWords(race: RaceDetail, lap: number, withLap: number): LineWords {
 
 function differencesWords(withLap: number): DifferencesWords {
   return {
-    intro: () => t('races.compare.intro', { lap: withLap }),
+    intro: t('races.compare.intro', { lap: withLap }),
     none: t('races.compare.none'),
     emptyTurn: t('races.compare.no-difference'),
     orderSwitch: false,
