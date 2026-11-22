@@ -126,6 +126,12 @@ describe('LiveRaceTracker', () => {
     expect(atLap4.fuelLapsLeft).toBeCloseTo(atLap4.fuel / (lap3[0]!.fuel - lap3.at(-1)!.fuel), 9);
   });
 
+  it('takes the best lap only from laps without a pit stop while the race runs', () => {
+    const pitRace = raceOf({ laps: [60000, 58000, 59000, 61000], lapsInRace: 4, pitAfter: [1] });
+    expect(tracked(upTo(pitRace, sample => sample.lap === 3)).tracker.live(carName)).toMatchObject({ bestLap: 2, bestLapMs: 58000 });
+    expect(tracked(upTo(pitRace, sample => sample.lap === 4)).tracker.live(carName)).toMatchObject({ bestLap: 3, bestLapMs: 59000 });
+  });
+
   it('keeps the last finite fuel value', () => {
     const samples = upTo(race, sample => sample.lap === 1);
     const fuel = samples.at(-1)!.fuel;

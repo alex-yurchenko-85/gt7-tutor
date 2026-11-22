@@ -2,7 +2,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync
 import { basename, join } from 'node:path';
 import type { INestApplication } from '@nestjs/common';
 import knex, { type Knex } from 'knex';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReplaySource, readRaw } from '@gt7/capture';
 import type { LiveState, Sample } from '@gt7/contracts';
 import { clockWarmupStart, toSample } from '@gt7/core';
@@ -609,7 +609,7 @@ describe('race recorder', () => {
     const watcher = await live();
     const raceId = await recordRace(watcher, offTrackRace());
     const detail = (await http().get(`/api/races/${raceId}`).set('Cookie', cookie).expect(200)).body;
-    expect(detail).toMatchObject({ id: raceId, lapsDone: 4, pitStops: 1, offTrack: 3, bestLap: 2, referenceLap: 4, complete: true });
+    expect(detail).toMatchObject({ id: raceId, lapsDone: 4, pitStops: 1, offTrack: 3, bestLap: 1, referenceLap: 4, complete: true });
     expect(detail.lapLengthM).toBeCloseTo(2 * Math.PI * 100, -1);
     expect(detail.laps.map((lap: Record<string, unknown>) => [lap.number, lap.pitIn, lap.pitOut, lap.closed, lap.offAll, lap.offPart])).toEqual([
       [1, false, false, false, 0, 0],
@@ -840,6 +840,39 @@ describe('race recorder', () => {
     expect(view.recurring).toEqual(detail.recurring);
   });
 
+  it('serves_the_golden_lap_of_a_race', async () => {
+    const watcher = await live();
+    const raceId = await recordRace(watcher, raceOf({ laps: [0, 0, 0, 0, 0], lapsInRace: 5, timedLaps: true, pace: [{ lap: 3, from: 20, to: 100, factor: 1.1 }] }));
+    const golden = (await http().get(`/api/races/${raceId}/golden`).set('Cookie', cookie).expect(200)).body;
+    expect(golden).toMatchObject({ state: 'ok', bestLap: 3, sourceLaps: [3], cleanLaps: [2, 3, 4, 5] });
+    expect(Object.keys(golden.sectors[0]).sort()).toEqual(['bestJoins', 'bestLap', 'bestMs', 'cleanLaps', 'fromM', 'lap', 'medianMs', 'ms', 'slipstream', 'spreadMs', 'toM', 'turn']);
+    const view = (await http().get(`/api/races/${raceId}/off-track`).set('Cookie', cookie).expect(200)).body;
+    expect(golden.line).toEqual({ gridM: view.gridM, x: view.x, z: view.z });
+    const short = await recordRace(watcher, raceOf(BRAKE_RACE));
+    const few = (await http().get(`/api/races/${short}/golden`).set('Cookie', cookie).expect(200)).body;
+    expect(few).toMatchObject({ state: 'too-few', cleanLaps: [2, 3], excluded: [{ lap: 1, reason: 'first' }] });
+    expect(few.line.x.length).toBeGreaterThan(0);
+  });
+
+  it('hides_the_golden_lap_of_another_profile', async () => {
+    const watcher = await live();
+    const raceId = await recordRace(watcher, raceOf(BRAKE_RACE));
+    await http().get(`/api/races/${raceId}/golden`).set('Cookie', cookie).expect(200);
+    const other = await anotherProfile(app, cookie, 'Second');
+    expect((await http().get(`/api/races/${raceId}/golden`).set('Cookie', other).expect(404)).body.code).toBe('race-not-found');
+  });
+
+  it('caches_the_golden_view', async () => {
+    const watcher = await live();
+    const raceId = await recordRace(watcher, raceOf(BRAKE_RACE));
+    const reads = vi.spyOn(samples, 'read');
+    const first = (await http().get(`/api/races/${raceId}/golden`).set('Cookie', cookie).expect(200)).body;
+    const count = reads.mock.calls.length;
+    expect((await http().get(`/api/races/${raceId}/golden`).set('Cookie', cookie).expect(200)).body).toEqual(first);
+    expect(reads.mock.calls.length).toBe(count);
+    reads.mockRestore();
+  });
+
   it('serves a race recorded from lap 5 with the lap numbers of the game', async () => {
     const watcher = await live();
     const raceId = await recordRace(watcher, raceOf({ laps: [60000, 58000, 59000, 61000, 60500, 59500, 62000], lapsInRace: 7, joinAtLap: 4 }));
@@ -1013,7 +1046,7 @@ describe('race recorder', () => {
         .returning('id');
       await migrated('race_laps').insert({ race_id: stored.id, number: 1, first_raw_index: 0, last_raw_index: 5, time_ms: 60000, position_start: 8, position_end: 8, top_speed_mps: 50, fuel_start: 100, fuel_end: 90, pit_in: false, pit_out: false });
       await expect(migrated('race_events').insert({ race_id: stored.id, kind: 'pause', lap: 1, x: 0, z: 0, duration_ms: 1, first_raw_index: 0, last_raw_index: 0 })).rejects.toMatchObject({ code: '23514' });
-      await migrated.migrate.down(migrationConfig());
+      while (await migrated.schema.hasTable('races')) await migrated.migrate.down(migrationConfig());
       expect((await migrated('captures').select('purpose')).map(row => row.purpose)).toEqual(['player']);
       await expect(capture('race')).rejects.toMatchObject({ code: '23514' });
       expect(await migrated.schema.hasTable('races')).toBe(false);

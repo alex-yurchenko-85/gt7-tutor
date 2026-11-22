@@ -961,3 +961,73 @@
 .race-cursor-box span {
   font-size: 12px;
 }
+
+.track-segment {
+  fill: none;
+  stroke-width: 9;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.track-segment[data-colour='a'],
+.lap-swatch.lap-a {
+  stroke: var(--lap-a);
+  background: var(--lap-a);
+}
+
+.track-segment[data-colour='b'],
+.lap-swatch.lap-b {
+  stroke: var(--lap-b);
+  background: var(--lap-b);
+}
+
+.track-segment[data-colour='c'],
+.lap-swatch.lap-c {
+  stroke: var(--lap-c);
+  background: var(--lap-c);
+}
+
+.track-segment[data-colour='d'],
+.lap-swatch.lap-d {
+  stroke: var(--lap-d);
+  background: var(--lap-d);
+}
+
+.track-segment[data-dashed='dashed'] {
+  stroke-dasharray: 18 10;
+  stroke-linecap: butt;
+}
+
+.lap-swatch.dashed {
+  background-image: linear-gradient(90deg, transparent 50%, var(--paper) 50%);
+  background-size: 8px 100%;
+}
+
+.track-mark.join circle.marker {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 3.5;
+}
+
+.track-mark.badge rect.marker {
+  fill: var(--yellow);
+  stroke: var(--night);
+  stroke-width: 1;
+}
+
+.track-mark.badge text {
+  fill: var(--night);
+  font: 800 24px var(--font-display);
+}
+
+.map-legend .lap-swatch {
+  height: 5px;
+}
+
+.map-legend .join {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+}

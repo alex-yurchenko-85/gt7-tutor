@@ -76,7 +76,7 @@ describe('analyseRace', () => {
 
   it('takes_a_reference_lap_that_has_no_pit_stop', () => {
     const a = analyseRace(raceOf({ laps: [60000, 55000, 56000, 61000], lapsInRace: 4, pitAfter: [2] }), DEFAULT_CONFIG)!;
-    expect(a.bestLap).toBe(2);
+    expect(a.bestLap).toBe(1);
     expect(a.referenceLap).toBe(4);
     expect(a.pitStops.map(stop => stop.afterLap)).toEqual([2]);
     expect(a.laps.map(lap => [lap.number, lap.pitIn, lap.pitOut])).toEqual([
@@ -85,6 +85,18 @@ describe('analyseRace', () => {
       [3, false, true],
       [4, false, false]
     ]);
+  });
+
+  it('best_lap_skips_a_lap_with_a_pit_stop', () => {
+    const a = analyseRace(raceOf({ laps: [62000, 55000, 56000, 59000, 60000], lapsInRace: 5, pitAfter: [2] }), DEFAULT_CONFIG)!;
+    expect(a).toMatchObject({ bestLap: 4, bestLapMs: 59000 });
+    const first = analyseRace(raceOf({ laps: [58000, 57000, 56000, 59000], lapsInRace: 4, pitAfter: [2] }), DEFAULT_CONFIG)!;
+    expect(first).toMatchObject({ bestLap: 1, bestLapMs: 58000 });
+  });
+
+  it('best_lap_falls_back_when_every_lap_has_a_pit_stop', () => {
+    const a = analyseRace(raceOf({ laps: [62000, 61000], lapsInRace: 2, pitAfter: [1] }), DEFAULT_CONFIG)!;
+    expect(a).toMatchObject({ bestLap: 2, bestLapMs: 61000 });
   });
 
   it('takes_a_closed_lap_as_the_reference_lap_because_lap_1_starts_on_the_grid', () => {

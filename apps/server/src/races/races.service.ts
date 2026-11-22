@@ -8,6 +8,7 @@ import type {
   RaceDetail,
   RaceLap,
   RaceDistances,
+  RaceGoldenLap,
   RaceLapsSpeed,
   RaceOffTrack,
   RaceOffTrackView,
@@ -17,7 +18,7 @@ import type {
   RenameRaceRequest,
   Sample
 } from '@gt7/contracts';
-import { DEFAULT_CONFIG, NOMINAL_PACKET_MS, analyseRace, isClosedLap, compareLaps, lapsSpeed, offTrackView, raceDistances, type RaceAnalysis } from '@gt7/core';
+import { DEFAULT_CONFIG, NOMINAL_PACKET_MS, analyseRace, isClosedLap, compareLaps, goldenLap, lapsSpeed, offTrackView, raceDistances, type RaceAnalysis } from '@gt7/core';
 import type { Knex } from 'knex';
 import { reviewBody } from '../attempts/review-shapes.js';
 import { CaptureService } from '../captures/capture.service.js';
@@ -213,6 +214,15 @@ export class RacesService {
     const view = await this.view(race, 'off-track', ({ samples, analysis }) => offTrackView(samples, analysis, DEFAULT_CONFIG));
     const events = await this.db<EventRow>('race_events').where({ race_id: id, kind: 'off-track' }).orderBy(['lap', 'first_raw_index']);
     return { ...view, moments: events.map(offTrack), recurring: race.recurring as RaceRecurringPlace[] };
+  }
+
+  async golden(userId: string, id: string): Promise<RaceGoldenLap> {
+    const race = await ownedRace(this.db, userId, id);
+    return this.view(race, 'golden', ({ samples, analysis }) => {
+      const view = offTrackView(samples, analysis, DEFAULT_CONFIG);
+      const line = view ? { gridM: view.gridM, x: view.x, z: view.z } : { gridM: DEFAULT_CONFIG.reviewGridM, x: [], z: [] };
+      return { ...goldenLap(samples, analysis, DEFAULT_CONFIG), line };
+    });
   }
 
   private defaultWith(race: RaceRow, laps: { number: number; time_ms: number }[], lap: number): number {

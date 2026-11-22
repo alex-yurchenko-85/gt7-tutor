@@ -10,6 +10,7 @@ import {
   type RaceCompareQuery,
   type RaceDetail,
   type RaceDistances,
+  type RaceGoldenLap,
   type RaceLapsSpeed,
   type RaceOffTrackView,
   type RaceSummary,
@@ -77,6 +78,11 @@ export class RacesController {
   @Get(':id/off-track')
   offTrack(@CurrentUser() user: ProfileUser, @Param('id', ParseUUIDPipe) id: string): Promise<RaceOffTrackView> {
     return this.races.offTrack(user.id, id);
+  }
+
+  @Get(':id/golden')
+  golden(@CurrentUser() user: ProfileUser, @Param('id', ParseUUIDPipe) id: string): Promise<RaceGoldenLap> {
+    return this.races.golden(user.id, id);
   }
 
   @Patch(':id')

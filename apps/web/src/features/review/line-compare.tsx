@@ -8,6 +8,7 @@ import { TrackMap, type TrackLine, type TrackPeak } from '../../charts/TrackMap.
 import { SIDE_FACTOR, beyondSide, largestSideInZones, sideScaledLine } from '../../charts/geometry.ts';
 import { cornerMarks } from '../../charts/corner-marks.ts';
 import { useWideLayout } from '../../app/layout.ts';
+import { SortHeader } from '../../app/SortHeader.tsx';
 import { metres } from '../../app/format.ts';
 import { ON_THE_LINE_M, differenceText } from '../cues/cue-format.ts';
 import { groupByTurn, type TurnGroup, type TurnOrder } from './turn-groups.ts';
@@ -257,21 +258,14 @@ function TurnGroupList({ group, selected, neutralSmall, emptyText, wholeLabel, d
   );
 }
 
-function OrderSwitch({ order, onOrder }: { order: TurnOrder; onOrder(order: TurnOrder): void }) {
+function TurnSort({ order, onOrder }: { order: TurnOrder; onOrder(order: TurnOrder): void }) {
   return (
-    <fieldset className="plain turn-order">
-      <legend className="visually-hidden">{t('exercises.compare.order')}</legend>
-      <div className="segmented">
-        <label>
-          <input type="radio" name="turn-order" checked={order === 'track'} onChange={() => onOrder('track')} />
-          {t('exercises.compare.track')}
-        </label>
-        <label>
-          <input type="radio" name="turn-order" checked={order === 'time-lost'} onChange={() => onOrder('time-lost')} />
-          {t('exercises.compare.time-lost')}
-        </label>
+    <div className="turn-sort" role="table" aria-label={t('exercises.compare.order')}>
+      <div className="turn-sort-row" role="row">
+        <SortHeader label={t('exercises.compare.sort-turn')} active={order === 'track'} direction="ascending" onSort={() => onOrder('track')} />
+        <SortHeader label={t('exercises.compare.sort-time-lost')} active={order === 'time-lost'} direction="descending" onSort={() => onOrder('time-lost')} />
       </div>
-    </fieldset>
+    </div>
   );
 }
 
@@ -298,9 +292,9 @@ export const Differences = memo(function Differences({ findings, losses, selecte
   return (
     <section aria-labelledby="differences-title" className="differences">
       <h2 id="differences-title">{t('exercises.compare.title')}</h2>
-      {words.orderSwitch && groups.length > 1 ? <OrderSwitch order={order} onOrder={setOrder} /> : null}
       <p className="sub">{words.intro}</p>
       {findings.length === 0 ? <p className="notice">{words.none}</p> : null}
+      {words.orderSwitch && groups.length > 1 ? <TurnSort order={order} onOrder={setOrder} /> : null}
       {groups.map(group => (
         <TurnGroupList key={group.turn ?? 'whole'} group={group} selected={selected} neutralSmall={words.neutralSmall} emptyText={words.emptyTurn} wholeLabel={words.wholeLabel} describe={words.describe} onSelect={onSelect} />
       ))}

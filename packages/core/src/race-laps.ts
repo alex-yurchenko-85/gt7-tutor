@@ -130,6 +130,15 @@ function stopSample(lap: LapSamples, config: CoreConfig): Sample | undefined {
   return stop;
 }
 
+export function fastestLap<T extends { timeMs: number }>(laps: T[]): T | undefined {
+  return laps.reduce<T | undefined>((best, lap) => (best === undefined || lap.timeMs < best.timeMs ? lap : best), undefined);
+}
+
+export function bestLapOf<T extends { timeMs: number }>(laps: T[], hasPit: (lap: T) => boolean): T | undefined {
+  const withoutPit = laps.filter(lap => !hasPit(lap));
+  return fastestLap(withoutPit.length > 0 ? withoutPit : laps);
+}
+
 export type PitLane = { stopRawIndex: number | null; exitRawIndex: number | null };
 
 export function isClosedLap(lap: { number: number; pitIn: boolean; pitOut: boolean }): boolean {

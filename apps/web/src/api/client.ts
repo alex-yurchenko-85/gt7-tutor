@@ -34,6 +34,7 @@ import type {
   RaceCompare,
   RaceDetail,
   RaceDistances,
+  RaceGoldenLap,
   RaceLapsSpeed,
   RaceOffTrackView,
   RaceSummary,
@@ -204,6 +205,7 @@ export const api = {
   deleteRaces: (ids: string[]) => request<DeleteRacesResult>('POST', '/races/delete', { ids }),
   raceCompare: (id: string, lap: number, withLap?: number) => request<RaceCompare>('GET', `/races/${id}/compare${query({ lap, with: withLap })}`),
   raceSpeed: (id: string) => request<RaceLapsSpeed>('GET', `/races/${id}/speed`),
+  raceGolden: (id: string) => request<RaceGoldenLap>('GET', `/races/${id}/golden`),
   raceDistances: (id: string) => request<RaceDistances>('GET', `/races/${id}/distances`),
   raceOffTrack: (id: string) => request<RaceOffTrackView>('GET', `/races/${id}/off-track`)
 };

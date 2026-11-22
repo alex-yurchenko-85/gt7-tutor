@@ -20,6 +20,7 @@ export * from './packet-clock.ts';
 export * from './progress.ts';
 export * from './race-analysis.ts';
 export * from './race-compare.ts';
+export * from './race-golden.ts';
 export * from './race-laps.ts';
 export * from './race-off-track.ts';
 export * from './race-watch.ts';

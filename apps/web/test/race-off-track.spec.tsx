@@ -34,7 +34,7 @@ function cursorLine(): string {
 }
 
 describe('race page, off the track tab', () => {
-  it('counts_the_moments_and_the_four_wheel_moments', async () => {
+  it('marks_the_off_the_track_tab_as_current', async () => {
     await openOffTrack();
     expect(within(screen.getByRole('navigation', { name: 'Race' })).getByRole('link', { name: 'Off the track' })).toHaveAttribute('aria-current', 'page');
   });
@@ -191,7 +191,7 @@ describe('race page, off the track tab', () => {
     expect(cursorLine()).toBe('Cursor at 3,330 m of 6,170 m. Lap 6: all four wheels off for 1.0 s, 104 → 64 km/h.');
   });
 
-  it('phone_shows_heading_map_places_then_charts', async () => {
+  it('phone_shows_map_places_then_charts', async () => {
     setViewportWidth(390);
     await openOffTrack();
     const map = await screen.findByRole('region', { name: 'Places' });

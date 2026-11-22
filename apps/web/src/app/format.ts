@@ -85,8 +85,12 @@ export function formatClock(at: Date): string {
   return at.toLocaleTimeString(formatLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
+export function groupedNumber(value: number): string {
+  return Math.round(value).toLocaleString(formatLocale());
+}
+
 export function groupedMetres(value: number): string {
-  return t('app.unit.metres', { value: Math.round(value).toLocaleString(formatLocale()) });
+  return t('app.unit.metres', { value: groupedNumber(value) });
 }
 
 export function metres(value: number): string {

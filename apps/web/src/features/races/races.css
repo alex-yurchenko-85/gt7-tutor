@@ -744,3 +744,146 @@ tr.race-pit td {
 .race-gap-word {
   white-space: nowrap;
 }
+
+.race-golden-method {
+  margin: 12px 0 0;
+  font-size: 15px;
+}
+
+.race-golden-body {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.race-golden-body.race-golden-wide {
+  grid-template-columns: minmax(0, 1fr) 440px;
+  gap: 24px;
+  align-items: start;
+}
+
+.race-golden-turns h2,
+.race-golden-map h2,
+.race-golden-none h2 {
+  margin: 0;
+  font: 700 22px/48px var(--font-display);
+}
+
+.race-golden-map h2 {
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.golden-head,
+.golden-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 64px;
+  gap: 8px;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+.golden-table-wide .golden-head,
+.golden-table-wide .golden-row {
+  grid-template-columns: 56px 130px minmax(170px, 1fr) 120px 110px 190px;
+  gap: 16px;
+  padding: 0 16px;
+}
+
+.golden-head {
+  min-height: 38px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--ink);
+}
+
+.golden-row {
+  min-height: 56px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: 15px;
+}
+
+.golden-table-wide .golden-row {
+  min-height: 60px;
+}
+
+.golden-row .tag {
+  justify-self: start;
+}
+
+.golden-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.golden-chip .lap-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 4px;
+}
+
+.golden-time {
+  font: 800 19px var(--font-display);
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.golden-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--mute);
+}
+
+.golden-spread {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.golden-table-wide .golden-spread {
+  font-size: 15px;
+}
+
+.golden-spread i {
+  display: block;
+  height: 10px;
+  background: var(--ink);
+}
+
+.race-golden-none {
+  margin-top: 20px;
+  max-width: 760px;
+}
+
+.race-golden-none h2 {
+  line-height: 1.2;
+}
+
+.race-golden-none p {
+  margin: 8px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1439px) {
+  .race-golden-body.race-golden-wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .golden-table-wide .golden-head,
+  .golden-table-wide .golden-row {
+    grid-template-columns: 52px 110px minmax(150px, 1fr) 100px 80px 190px;
+    gap: 12px;
+  }
+
+  .race-golden-wide .race-golden-map {
+    max-width: 640px;
+  }
+}

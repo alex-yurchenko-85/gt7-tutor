@@ -112,6 +112,10 @@ export type CoreConfig = {
     brakeM: number;
     throttleLateM: number;
     slowCornerMps: number;
+    goldenMinLaps: number;
+    goldenJoinMps: number;
+    goldenJoinSideM: number;
+    goldenSlipstreamMps: number;
   };
 };
 
@@ -227,6 +231,10 @@ export const DEFAULT_CONFIG: CoreConfig = {
     offLineM: 5,
     brakeM: 15,
     throttleLateM: 30,
-    slowCornerMps: kph(10)
+    slowCornerMps: kph(10),
+    goldenMinLaps: 3,
+    goldenJoinMps: kph(5),
+    goldenJoinSideM: 1.5,
+    goldenSlipstreamMps: kph(3)
   }
 };

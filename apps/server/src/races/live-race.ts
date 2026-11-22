@@ -1,5 +1,5 @@
 import type { LiveRace, LiveRaceLap, LiveRacePhase, Sample } from '@gt7/contracts';
-import { RaceWatch, type CoreConfig, type RaceWatchEvent } from '@gt7/core';
+import { RaceWatch, bestLapOf, type CoreConfig, type RaceWatchEvent } from '@gt7/core';
 
 export type TrackerOutcome = 'none' | 'finish' | 'ended';
 
@@ -11,6 +11,7 @@ export class LiveRaceTracker {
   private watch: RaceWatch;
   private lapLinePassed = false;
   private recorded: LiveRaceLap[] = [];
+  private pitLaps = new Set<number>();
   private fuelUse: number[] = [];
   private lapFuel: LapFuel | null = null;
   private lastLapMs: number | null = null;
@@ -64,7 +65,7 @@ export class LiveRaceTracker {
   }
 
   live(carName: (carId: number) => string | null): LiveRace {
-    const best = this.recorded.reduce<LiveRaceLap | null>((found, lap) => (found === null || lap.timeMs < found.timeMs ? lap : found), null);
+    const best = bestLapOf(this.recorded, lap => this.pitLaps.has(lap.number));
     const meanUse = this.fuelUse.length === 0 ? null : this.fuelUse.reduce((sum, use) => sum + use, 0) / this.fuelUse.length;
     const sample = this.last;
     return {
@@ -111,6 +112,7 @@ export class LiveRaceTracker {
     if (firstLap !== null && event.lap >= firstLap) {
       this.recorded.push({ number: event.lap, timeMs: event.lastLapMs, pitAfter });
       const lapFuel = this.lapFuel;
+      if (pitAfter || lapFuel?.pitOut) this.pitLaps.add(event.lap);
       if (lapFuel && !lapFuel.pitOut && !pitAfter) this.fuelUse.push(lapFuel.start - fuelBefore);
     }
     this.lapLinePassed = true;
@@ -121,6 +123,7 @@ export class LiveRaceTracker {
     this.watch = new RaceWatch(this.config);
     this.lapLinePassed = false;
     this.recorded = [];
+    this.pitLaps = new Set();
     this.fuelUse = [];
     this.lapFuel = null;
     this.lastLapMs = null;

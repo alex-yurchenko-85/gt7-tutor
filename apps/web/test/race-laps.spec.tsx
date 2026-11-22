@@ -38,7 +38,8 @@ describe('race page, laps tab', () => {
     expect(within(tabs).getAllByRole('link').map(link => [link.textContent, link.getAttribute('href')])).toEqual([
       ['Laps', `/races/${RACE_ID}`],
       ['Compare', `/races/${RACE_ID}/compare`],
-      ['Off the track', `/races/${RACE_ID}/off-track`]
+      ['Off the track', `/races/${RACE_ID}/off-track`],
+      ['Golden lap', `/races/${RACE_ID}/golden`]
     ]);
     expect(within(tabs).getByRole('link', { name: 'Laps' })).toHaveAttribute('aria-current', 'page');
     expect(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Races' })).toHaveAttribute('aria-current', 'page');

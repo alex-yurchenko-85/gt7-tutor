@@ -43,7 +43,7 @@ GT7 Tutor leads you through three steps for each exercise:
 2. **Attempts.** Drive the exercise. GT7 Tutor finds the start and the finish of each attempt by itself, and the time comes from the game. The Drive screen shows the next action, and a voice device says it, for example `Hard brake. One fifteen`, about half a second before the place where the reference does it.
 3. **Review.** Compare each attempt with the reference on a map and in speed, pedal and side-distance charts. The differences are grouped by turn, with the time lost in each turn. Differences that repeat in your last attempts show on the cue list.
 
-GT7 Tutor can also record a race by laps. Select **Record a race**, then drive the race in the game. The recording starts and stops with the race. After the race, the **Laps** tab shows the lap times, the pit stops, the position and the fuel. **Compare** puts two laps of the race side by side, by turn. **Off the track** shows where your wheels left the track and the places where it happened in 3 or more laps.
+GT7 Tutor can also record a race by laps. Select **Record a race**, then drive the race in the game. The recording starts and stops with the race. After the race, the **Laps** tab shows the lap times, the pit stops, the position and the fuel. **Compare** puts two laps of the race side by side, by turn. **Off the track** shows where your wheels left the track and the places where it happened in 3 or more laps. **Golden lap** shows the fastest lap that you can drive from the parts of your clean laps that fit together.
 
 The [user guide](docs/user-guide/README.md) shows each screen and each step.
 

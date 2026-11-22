@@ -47,10 +47,12 @@ The profile names `Sam` and `demo` are test names.
 | Capture | The raw file of all telemetry that GT7 Tutor received during a recording, an attempt or a race. |
 | Race | A race by laps in the game that GT7 Tutor recorded, from the start or the first recorded lap line to the finish. |
 | Lap | One lap of a race, from one lap line to the next. A lap keeps the number that the game gives it. |
-| Best lap | The lap of the race with the shortest lap time of the game. |
+| Best lap | The lap of the race with the shortest lap time of the game. A lap with a pit stop does not count. When each lap has a pit stop, the fastest lap is the best lap. |
 | Pit stop | A stop in the pit lane between two laps. The lap before the stop is the in-lap. The lap after it is the out-lap. |
 | Off the track | A moment with two or more wheels on a surface that is not the track or a kerb, for example grass or gravel. |
 | Recurring place | A place of the track where you went off the track in 3 or more laps of one race. |
+| Clean lap | A lap of a race that is not lap 1 and has no pit stop. When the recording starts after lap 1, the first recorded lap is not clean either. |
+| Golden lap | The fastest lap that you can drive from parts of the clean laps of one race. The parts must fit together at each join. |
 
 ## What you need
 
@@ -165,7 +167,7 @@ Under that line, a band shows the times from the game: `your best`, the time of 
 
 The review of an attempt keeps the header and the tabs of its exercise. GT7 Tutor marks the **Attempts** tab there.
 
-Each race has a page with the breadcrumb `Races / <track name>` and three tabs: **Laps**, **Compare** and **Off the track**. See [Record a race and look at it](#record-a-race-and-look-at-it).
+Each race has a page with the breadcrumb `Races / <track name>` and four tabs: **Laps**, **Compare**, **Off the track** and **Golden lap**. See [Record a race and look at it](#record-a-race-and-look-at-it).
 
 ## Add an exercise
 
@@ -433,7 +435,7 @@ The review shows the header and the tabs of the exercise. Under them:
 | **Your line** | The map with the reference line (blue) and your line (orange). A circle marks a difference. The legend has the words `reference line`, `you`, `turn` and `A gap in your line is a place without a match`. A gap is a place where GT7 Tutor could not match your position. |
 | **True scale** / **Side distance × 6** | **Side distance × 6** draws your line 6 times farther from the reference line, so that a difference of 1 m shows. A dot marks the largest side distance in each turn. Put the pointer on a dot, move the focus to it with the Tab key, or touch it. A tip then shows the true distance and the place, for example `T1 · 3.5 m left` and `at 120 m`. When a dot has the focus, press Esc to close the tip. On a touch screen, touch the map away from the dots to close the tip. The legend then also has `more than <n> m from the line` for the parts beyond the **Side cue distance**. On a phone, the two buttons are in a row under the title. |
 | **View** | Opens the map in full screen, with your line in true scale and the list of the differences. Select a difference in the list to find it on your line. Press Esc or select **Back** to close. |
-| **Differences by turn** | The differences, grouped by turn, with the time lost or gained in each turn. **Track** or **Time lost** sets the order. Select a difference to put the cursor there. A section without turns shows one group, **Whole section**. `No differences above the limits in this attempt.` means that GT7 Tutor found no difference. |
+| **Differences by turn** | The differences, grouped by turn, with the time lost or gained in each turn. The column headers **Turn** and **Time lost** set the order. **Turn** puts the turns in the order of the track. **Time lost** puts the turn with the largest time lost first. An arrow shows the active order. Select a difference to put the cursor there. A section without turns shows one group, **Whole section**. `No differences above the limits in this attempt.` means that GT7 Tutor found no difference. |
 | **Corners** | Your line at each apex: on the line, or the distance inside or outside, and your speed at the apex. A section without turns has no **Corners**. |
 | **Brake reaction** | The time from the start of a spoken brake cue to your brake. A value `before the cue` means that you braked before the voice. |
 | Charts | Speed, throttle, brake, the distance from the reference line, and the time lost. Move the pointer or a finger across a chart. With a keyboard, move the focus to a chart and use the arrow keys. The map shows the same place. |
@@ -626,6 +628,49 @@ With an in-lap or an out-lap:
 The three charts and the map use the same cursor. With a keyboard, move the focus to a chart and use the arrow keys. In the lap rows of the chart **Off the track**, the arrow keys move from moment to moment. The recurring places are yellow bands on the charts.
 
 A race without a moment shows `No moments off the track in this race.`
+
+### Golden lap
+
+**Where:** the **Golden lap** tab of the race.
+
+![The Golden lap tab of a race of 4 laps. The dark band gives the best clean lap 1:14.120, the golden lap 1:13.325 from laps 3 and 4, and the possible gain −0.795 s. Below are the table Turns, sorted by the spread, and the map Where each part comes from with the line in two colours.](images/race-golden.webp)
+
+The golden lap is the fastest lap that you can drive from parts of your clean laps of this race. GT7 Tutor cuts each clean lap into parts, one part for each turn. Then it joins the fastest parts that fit together.
+
+- **Clean laps**: lap 1 and the laps with a pit stop do not count. When the recording starts after lap 1, the first recorded lap does not count. A lap without a time for each part of the lap does not count. A lap that leaves the track in a part gives no time for that part.
+- **Joins**: at the join, two parts of different laps fit together when the speed differs by 5 km/h at most. The line must also differ by 1.5 m at most. Two parts of the same lap always fit. The end of the last part must also fit the start of the first part.
+
+The dark band gives the best clean lap, the golden lap in yellow and the possible gain, for example `1:14.120`, `1:13.325` and `−0.795 s`. The caption `best clean lap` tells you that this lap can be another lap than the best lap of the **Laps** tab. The caption of the golden lap names the laps that give its parts, for example `golden lap · from laps 3 and 4`. The text under the band gives the join limits.
+
+**Turns** has one row for each turn:
+
+| Column | Content |
+| --- | --- |
+| **Turn** | The turn, for example `T3` |
+| **Part of the lap** | The distance of the part from the lap line, for example `1,369–1,956 m` |
+| **Golden lap** | The time of the part in the golden lap and its lap, with the colour of that lap on the map |
+| **Best** | The best time of the part in the clean laps and its lap |
+| **Median** | The median time of the part in the clean laps |
+| **Spread, best to median** | The median time minus the best time, with a bar. A large spread shows a turn where your laps are not the same. You can find time there. |
+
+The table opens with the largest spread first. Select **Turn** to put the turns in the order of the track. Select **Spread, best to median** to put the largest spread first again. An arrow shows the active order. With a keyboard, move the focus to a header and push Enter or Space.
+
+A time in the **Golden lap** column can have a hint under it:
+
+- `Best 3.340 (lap 2) does not fit`: the best time of this part does not fit the parts before or after it. The golden lap uses the part of another lap here.
+- `Lap 2 off track here`: this lap left the track in this part. Its time does not count for this part.
+
+**Where each part comes from** shows the line of the lap. Each part has the colour of its lap. The legend names the lap of each colour, for example `from lap 3`. A circle marks each join between two parts. Yellow labels name the turns. With more than 4 source laps, the colours show again as dashed lines.
+
+On a phone, the caption of the golden lap is only `golden lap`. The text under the band names the laps of the parts. The table shows only **Turn**, **Golden lap** and **Spread**, and the map is under the table.
+
+![The Golden lap tab on a phone. The band gives the best clean lap, the golden lap and the possible gain. Under it is the table Turns with the columns Turn, Golden lap and Spread.](images/phone-race-golden.webp)
+
+When the race has no golden lap, the tab shows `No golden lap for this race` and the reason:
+
+- **Too few clean laps**: a golden lap needs 3 clean laps. The text names the clean laps and tells why each other lap does not count. The reasons are the first lap, the first recorded lap, a pit stop and a lap without a time for each part. An example: `Laps 2, 3, 5 and 6 have a pit stop and do not count.`
+- **A turn without a clean lap**: `Each clean lap left the track in turn 5, so no clean lap gives a time for that turn.`
+- **Parts that do not fit**: `Each clean lap left the track in one turn or more, and the other parts do not fit together at the joins.`
 
 ### Delete a race
 

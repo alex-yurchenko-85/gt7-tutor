@@ -155,3 +155,27 @@ export type RaceOffTrackView = {
   moments: RaceOffTrack[];
   recurring: RaceRecurringPlace[];
 };
+
+export type RaceGoldenSector = {
+  turn: number | null;
+  fromM: number;
+  toM: number;
+  lap: number;
+  ms: number;
+  bestLap: number;
+  bestMs: number;
+  medianMs: number;
+  spreadMs: number;
+  cleanLaps: number;
+  bestJoins: boolean;
+  slipstream: boolean;
+};
+
+export type RaceGoldenLine = { gridM: number; x: (number | null)[]; z: (number | null)[] };
+
+export type RaceGoldenLap = (
+  | { state: 'ok'; bestLap: number; bestMs: number; goldenMs: number; sourceLaps: number[]; cleanLaps: number[]; sectors: RaceGoldenSector[] }
+  | { state: 'too-few'; cleanLaps: number[]; excluded: { lap: number; reason: 'first' | 'pit' | 'open' }[] }
+  | { state: 'gap'; cleanLaps: number[]; turn: number | null }
+  | { state: 'no-chain'; cleanLaps: number[] }
+) & { line: RaceGoldenLine };

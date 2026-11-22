@@ -1,7 +1,7 @@
 import type { RawRange, Sample } from '@gt7/contracts';
 import type { CoreConfig } from './config.ts';
 import { findOffTrack, recurringPlaces, type OffTrackFacts, type RecurringPlace } from './race-off-track.ts';
-import { drivenLap, isClosedLap, lapSamples, splitLaps, withFiniteFuel, type LapFacts, type PitStopFacts } from './race-laps.ts';
+import { bestLapOf, drivenLap, fastestLap, isClosedLap, lapSamples, splitLaps, withFiniteFuel, type LapFacts, type PitStopFacts } from './race-laps.ts';
 import { RaceWatch } from './race-watch.ts';
 import { buildReference, type ReferencePath } from './reference.ts';
 
@@ -74,7 +74,7 @@ export function analyseRace(samples: Sample[], config: CoreConfig): RaceAnalysis
   if (laps.length === 0) return null;
   const grid = race[0]!;
   const firstLapSample = race.find(sample => sample.rawIndex === laps[0]!.range.first)!;
-  const best = fastest(laps);
+  const best = bestLapOf(laps, lap => lap.pitIn || lap.pitOut)!;
   const { referenceLap, path, lapLengthM } = reference(race, laps, pitStops, config);
   const offTrack = findOffTrack(race, laps, pitStops, path, config);
   const timed = raceTimes(race, laps);
@@ -103,7 +103,7 @@ export function analyseRace(samples: Sample[], config: CoreConfig): RaceAnalysis
 }
 
 function fastest(laps: LapFacts[]): LapFacts {
-  return laps.reduce((best, lap) => (lap.timeMs < best.timeMs ? lap : best));
+  return fastestLap(laps)!;
 }
 
 type Reference = { referenceLap: LapFacts; path: ReferencePath | null; lapLengthM: number | null };

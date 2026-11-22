@@ -40,11 +40,11 @@ export function raceCompareConfig(config: CoreConfig): CoreConfig {
   };
 }
 
-function lapOf(analysis: RaceAnalysis, number: number): LapFacts | undefined {
+export function lapOf(analysis: RaceAnalysis, number: number): LapFacts | undefined {
   return analysis.laps.find(lap => lap.number === number);
 }
 
-function referenceOf(samples: Sample[], analysis: RaceAnalysis, lap: LapFacts, config: CoreConfig): ReferenceAnalysis | null {
+export function referenceOf(samples: Sample[], analysis: RaceAnalysis, lap: LapFacts, config: CoreConfig): ReferenceAnalysis | null {
   const path = lapPath(samples, lap, analysis.pitStops, config);
   if (path === null) return null;
   return analysisOf(path, lap.timeMs, config);

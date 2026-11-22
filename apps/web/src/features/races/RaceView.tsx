@@ -6,8 +6,10 @@ import { LoadProblem } from '../../app/NotFound.tsx';
 import { useResource } from '../../app/resource.ts';
 import { Link, paths, type RaceTab } from '../../app/router.tsx';
 import { CompareTab } from './CompareTab.tsx';
+import { GoldenTab } from './GoldenTab.tsx';
 import { LapsTab } from './LapsTab.tsx';
 import { OffTrackTab } from './OffTrackTab.tsx';
+import { RaceBand, type BandValue } from './RaceBand.tsx';
 import { raceName } from './RacesView.tsx';
 import { lapsText, lastLap, positionCaption } from './race-text.ts';
 import { TrackNameDialog } from './TrackNameDialog.tsx';
@@ -18,7 +20,8 @@ function tabs(): { tab: RaceTab; label: string }[] {
   return [
     { tab: 'laps', label: t('races.tab.laps') },
     { tab: 'compare', label: t('races.tab.compare') },
-    { tab: 'off-track', label: t('races.tab.off-track') }
+    { tab: 'off-track', label: t('races.tab.off-track') },
+    { tab: 'golden', label: t('races.tab.golden') }
   ];
 }
 
@@ -31,28 +34,13 @@ function lengthText(race: RaceDetail): string | null {
 }
 
 function SummaryBand({ race }: { race: RaceDetail }) {
-  const values = [
+  const values: BandValue[] = [
     { value: formatTime(race.raceMs), caption: race.complete ? t('races.band.race-time') : t('races.band.recorded-time'), tone: '' },
     { value: formatTime(race.bestLapMs), caption: t('races.band.best-lap', { lap: race.bestLap }), tone: 'yellow' },
     { value: `${race.startPosition} → ${race.finishPosition}`, caption: positionCaption(race.firstLap, lastLap(race), race.complete), tone: '' }
   ];
   const title = race.carName ?? t('races.band.race');
-  return (
-    <section className="race-band" aria-label={title}>
-      <div className="race-band-car">
-        <h2>{title}</h2>
-        <p>{factsText(race)}</p>
-      </div>
-      <div className="race-band-values">
-        {values.map(item => (
-          <div key={item.caption} className={['race-band-value', item.tone].filter(Boolean).join(' ')}>
-            <b>{item.value}</b>
-            <span>{item.caption}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+  return <RaceBand label={title} title={title} facts={factsText(race)} values={values} />;
 }
 
 function RaceHeader({ race, tab, onName }: { race: RaceDetail; tab: RaceTab; onName(): void }) {
@@ -101,6 +89,8 @@ export function RaceView({ raceId, tab }: { raceId: string; tab: RaceTab }) {
         <CompareTab race={detail} />
       ) : tab === 'off-track' ? (
         <OffTrackTab race={detail} />
+      ) : tab === 'golden' ? (
+        <GoldenTab race={detail} />
       ) : (
         <>
           <SummaryBand race={detail} />

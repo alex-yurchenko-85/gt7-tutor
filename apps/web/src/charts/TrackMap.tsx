@@ -19,9 +19,11 @@ export type TrackMark = {
   speaking?: boolean;
   onAttempt?: boolean;
   onSelect?: () => void;
-  variant?: 'off-all' | 'off-part' | 'place';
+  variant?: 'off-all' | 'off-part' | 'place' | 'join' | 'badge';
   beside?: boolean;
 };
+
+export type TrackSegment = { fromM: number; toM: number; colour: 'a' | 'b' | 'c' | 'd'; dashed?: boolean };
 
 export type TrackPeak = { turn: number; sM: number; title: string; detail: string; name: string };
 
@@ -31,6 +33,7 @@ type TrackMapProps = {
   far?: TrackLine | null;
   peaks?: TrackPeak[];
   marks?: TrackMark[];
+  segments?: TrackSegment[];
   cursorSM?: number | null;
   dark?: boolean;
   plain?: boolean;
@@ -53,6 +56,7 @@ function pointOn(line: TrackLine, sM: number): Point | null {
 
 const NO_MARKS: TrackMark[] = [];
 const NO_PEAKS: TrackPeak[] = [];
+const NO_SEGMENTS: TrackSegment[] = [];
 
 const CUE_RADIUS_PX = 13;
 const TURN_LABEL_OFFSETS_PX = [24, 40, 56];
@@ -60,6 +64,9 @@ const TURN_LABEL_RADIUS_PX = 14;
 const SPREAD_GAP_PX = 28;
 const SPREAD_OFFSET_PX = 30;
 const PLACE_RADIUS_PX = 11;
+const JOIN_RADIUS_PX = 8;
+const BADGE_HALF_WIDTH_PX = 24;
+const BADGE_HALF_HEIGHT_PX = 17;
 const END_LABEL_OFFSETS_PX = [24, 44, 64];
 const END_LABEL_HALF_PX = 24;
 const END_LABEL_SIDE_PX = 40;
@@ -104,6 +111,8 @@ function firstClear(spots: Point[], r: number, taken: Circle[]): Point {
 
 function markRadius(mark: TrackMark): number {
   if (mark.variant === 'place') return PLACE_RADIUS_PX;
+  if (mark.variant === 'join') return JOIN_RADIUS_PX;
+  if (mark.variant === 'badge') return BADGE_HALF_WIDTH_PX;
   return mark.label ? CUE_RADIUS_PX : mark.selected ? 10 : 7;
 }
 
@@ -347,12 +356,26 @@ const TurnLabelsLayer = memo(function TurnLabelsLayer({ turns }: { turns: TurnPl
   );
 });
 
-const LinesLayer = memo(function LinesLayer({ geometry }: { geometry: Geometry }) {
+type ColouredPart = { key: string; colour: TrackSegment['colour']; dashed: boolean; points: string };
+
+function colouredParts(reference: TrackLine, segments: TrackSegment[], project: Project): ColouredPart[] {
+  return segments.flatMap((segment, index) => {
+    const [first, last] = zoneIndexes(segment.fromM, segment.toM, reference.gridM, reference.x.length);
+    const end = Math.min(reference.x.length - 1, last + 1);
+    const part: TrackLine = { gridM: reference.gridM, x: reference.x.slice(first, end + 1), z: reference.z.slice(first, end + 1) };
+    return lineSegments(part, project).map((points, piece) => ({ key: `${index}-${piece}`, colour: segment.colour, dashed: segment.dashed ?? false, points }));
+  });
+}
+
+const LinesLayer = memo(function LinesLayer({ geometry, parts }: { geometry: Geometry; parts: ColouredPart[] }) {
   const { referenceSegments, attemptSegments, farSegments } = geometry;
   return (
     <>
       {referenceSegments.map((points, index) => (
         <polyline key={`r${index}`} className="track-reference" points={points} />
+      ))}
+      {parts.map(part => (
+        <polyline key={`s${part.key}`} className="track-segment" data-colour={part.colour} data-dashed={part.dashed ? 'dashed' : undefined} points={part.points} />
       ))}
       {attemptSegments ? attemptSegments.map((points, index) => <polyline key={`a${index}`} className="track-attempt" data-segment="attempt" points={points} />) : null}
       {farSegments.map((points, index) => (
@@ -403,9 +426,13 @@ const MarksLayer = memo(function MarksLayer({ marks, placed }: { marks: TrackMar
                 <circle className="dot" cx={place.anchor[0]} cy={place.anchor[1]} r={3.5} />
               </>
             ) : null}
-            <circle className="marker" cx={cx} cy={cy} r={radius} />
+            {mark.variant === 'badge' ? (
+              <rect className="marker" x={cx - BADGE_HALF_WIDTH_PX} y={cy - BADGE_HALF_HEIGHT_PX} width={2 * BADGE_HALF_WIDTH_PX} height={2 * BADGE_HALF_HEIGHT_PX} />
+            ) : (
+              <circle className="marker" cx={cx} cy={cy} r={radius} />
+            )}
             {mark.label ? (
-              <text x={cx} y={cy + 5} textAnchor="middle">
+              <text x={cx} y={cy + (mark.variant === 'badge' ? 8 : 5)} textAnchor="middle">
                 {mark.label}
               </text>
             ) : null}
@@ -601,11 +628,12 @@ function useUnitsPerPixel(svg: RefObject<SVGSVGElement | null>, height: number, 
   return units;
 }
 
-export function TrackMap({ reference, attempt, far, peaks = NO_PEAKS, marks = NO_MARKS, cursorSM, dark = false, plain = false, lapLine = false, label }: TrackMapProps) {
+export function TrackMap({ reference, attempt, far, peaks = NO_PEAKS, marks = NO_MARKS, segments = NO_SEGMENTS, cursorSM, dark = false, plain = false, lapLine = false, label }: TrackMapProps) {
   const geometry = useMemo(() => geometryOf(reference, attempt, far), [reference, attempt, far]);
   const svg = useRef<SVGSVGElement>(null);
   const scale = useUnitsPerPixel(svg, geometry?.height ?? 1, peaks.length > 0);
   const layout = useMemo(() => (geometry ? layoutOf(marks, reference, attempt, geometry, lapLine) : NO_LAYOUT), [geometry, marks, reference, attempt, lapLine]);
+  const parts = useMemo(() => (geometry ? colouredParts(reference, segments, geometry.project) : []), [geometry, reference, segments]);
   const [peakState, setPeakState] = useState<PeakState>(NO_PEAK);
   const cursorLine = attempt ?? reference;
   const places = useMemo(() => {
@@ -653,7 +681,7 @@ export function TrackMap({ reference, attempt, far, peaks = NO_PEAKS, marks = NO
       onPointerLeave={places.length > 0 ? () => onHide('hover') : undefined}
     >
       <TurnsLayer turns={layout.turns} />
-      <LinesLayer geometry={geometry} />
+      <LinesLayer geometry={geometry} parts={parts} />
       <EndsLayer geometry={geometry} ends={layout.ends} lapLine={lapLine} />
       <TurnLabelsLayer turns={layout.turns} />
       <PeaksLayer places={places} shown={shown} ring={peakState.ring} scale={scale} onShow={onShow} onHide={onHide} />

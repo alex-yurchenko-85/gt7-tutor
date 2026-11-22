@@ -3303,17 +3303,17 @@
   },
   "exercises.compare.order": {
     "text": "Order of the turns",
-    "note": "Hidden legend of the order choice."
+    "note": "Hidden name of the column headers that set the order of the turns."
   },
-  "exercises.compare.track": {
-    "text": "Track",
-    "note": "Order choice: the turns follow the track.",
+  "exercises.compare.sort-turn": {
+    "text": "Turn",
+    "note": "Column header button. It puts the turns in the order of the track.",
     "maxChars": 12
   },
-  "exercises.compare.time-lost": {
+  "exercises.compare.sort-time-lost": {
     "text": "Time lost",
-    "note": "Order choice: the largest time lost comes first.",
-    "maxChars": 12
+    "note": "Column header button. It puts the turn with the largest time lost first.",
+    "maxChars": 16
   },
   "exercises.compare.intro": {
     "text": "The reference is one recorded drive, not the best possible line.",
@@ -4064,6 +4064,11 @@
     "note": "Tab of a race: the moments off the track.",
     "maxChars": 16
   },
+  "races.tab.golden": {
+    "text": "Golden lap",
+    "note": "Tab of a race: the fastest lap from parts of the clean laps.",
+    "maxChars": 14
+  },
   "races.tabs": {
     "text": "Race",
     "note": "Accessible name of the tabs of a race."
@@ -4773,6 +4778,198 @@
   "races.off.reading": {
     "text": "Reading the places off the track…",
     "note": "Off the track tab while the places load."
+  },
+  "races.golden.reading": {
+    "text": "Reading the golden lap…",
+    "note": "Golden lap tab while the data loads."
+  },
+  "races.golden.band": {
+    "text": "Golden lap",
+    "note": "Hidden name of the dark band with the best lap, the golden lap and the possible gain."
+  },
+  "races.golden.clean-range": {
+    "text": "clean laps {first} to {last}",
+    "note": "Part of the facts line in the band. {first} and {last} are the first and the last clean lap. A clean lap is not lap 1 and has no pit stop. Lower case.",
+    "maxChars": 32
+  },
+  "races.golden.clean-list_one": {
+    "text": "clean lap {laps}",
+    "note": "Part of the facts line in the band. {laps} is the list of the clean laps. Lower case.",
+    "maxChars": 40
+  },
+  "races.golden.clean-list_other": {
+    "text": "clean laps {laps}",
+    "note": "Part of the facts line in the band. {laps} is the list of the clean laps. Lower case.",
+    "maxChars": 40
+  },
+  "races.golden.best-lap": {
+    "text": "best clean lap · lap {lap}",
+    "note": "Caption under the best clean lap time in the band of the golden lap. A clean lap is not lap 1 and has no pit stop. {lap} is the lap number. Lower case.",
+    "maxChars": 30
+  },
+  "races.golden.golden-from_one": {
+    "text": "golden lap · from lap {laps}",
+    "note": "Caption under the golden lap time. {laps} is the list of the laps that give the parts. Lower case.",
+    "maxChars": 40
+  },
+  "races.golden.golden-from_other": {
+    "text": "golden lap · from laps {laps}",
+    "note": "Caption under the golden lap time. {laps} is the list of the laps that give the parts. Lower case.",
+    "maxChars": 40
+  },
+  "races.golden.golden": {
+    "text": "golden lap",
+    "note": "Caption under the golden lap time on a phone. Lower case.",
+    "maxChars": 20
+  },
+  "races.golden.gain": {
+    "text": "possible gain",
+    "note": "Caption under the time that the golden lap gains on the best lap. Lower case.",
+    "maxChars": 20
+  },
+  "races.golden.method": {
+    "text": "The golden lap joins the parts of your clean laps that fit together: at each join the speed differs by {speed} km/h at most and the line by {side} m at most. Lap 1 and laps with a pit stop do not count.",
+    "note": "Text under the band. {speed} is the largest speed difference at a join. {side} is the largest difference of the line at a join, in metres."
+  },
+  "races.golden.method-short_one": {
+    "text": "From lap {laps}. At each join the speed differs by {speed} km/h at most and the line by {side} m at most.",
+    "note": "Text under the band on a phone. {laps} is the list of the laps that give the parts. {speed} and {side} are the largest differences at a join."
+  },
+  "races.golden.method-short_other": {
+    "text": "From laps {laps}. At each join the speed differs by {speed} km/h at most and the line by {side} m at most.",
+    "note": "Text under the band on a phone. {laps} is the list of the laps that give the parts. {speed} and {side} are the largest differences at a join."
+  },
+  "races.golden.turns": {
+    "text": "Turns",
+    "note": "Title of the table of the turns. Also the name of the table.",
+    "maxChars": 20
+  },
+  "races.golden.column-turn": {
+    "text": "Turn",
+    "note": "Column header button. It puts the turns in the order of the track.",
+    "maxChars": 10
+  },
+  "races.golden.column-part": {
+    "text": "Part of the lap",
+    "note": "Column header: the distance range of the turn on the lap.",
+    "maxChars": 18
+  },
+  "races.golden.column-golden": {
+    "text": "Golden lap",
+    "note": "Column header: the time of the turn in the golden lap and its source lap.",
+    "maxChars": 14
+  },
+  "races.golden.column-best": {
+    "text": "Best",
+    "note": "Column header: the best time of the turn and its lap.",
+    "maxChars": 12
+  },
+  "races.golden.column-median": {
+    "text": "Median",
+    "note": "Column header: the median time of the turn over the clean laps.",
+    "maxChars": 12
+  },
+  "races.golden.column-spread": {
+    "text": "Spread, best to median",
+    "note": "Column header button. It puts the turn with the largest spread first. The spread is the median time minus the best time.",
+    "maxChars": 24
+  },
+  "races.golden.column-spread-short": {
+    "text": "Spread",
+    "note": "Column header button on a phone. It puts the turn with the largest spread first.",
+    "maxChars": 10
+  },
+  "races.golden.part": {
+    "text": "{from}–{to} m",
+    "note": "Distance range of a turn in metres. {from} and {to} are the distances from the lap line.",
+    "maxChars": 20
+  },
+  "races.golden.lap": {
+    "text": "lap {lap}",
+    "note": "Source lap of a time in the table. {lap} is the lap number. Lower case.",
+    "maxChars": 10
+  },
+  "races.golden.no-join": {
+    "text": "Best {time} (lap {lap}) does not fit",
+    "note": "Note under a time of the golden lap. The best time of this turn does not fit the parts before or after it. {time} is the time in seconds. {lap} is the lap number."
+  },
+  "races.golden.left_one": {
+    "text": "Lap {laps} off track here",
+    "note": "Note under a time of the golden lap. This lap left the track in this turn, so its time does not count here. {laps} is the lap number."
+  },
+  "races.golden.left_other": {
+    "text": "Laps {laps} off track here",
+    "note": "Note under a time of the golden lap. These laps left the track in this turn, so their times do not count here. {laps} is the list of the lap numbers."
+  },
+  "races.golden.map-title": {
+    "text": "Where each part comes from",
+    "note": "Title of the map of the golden lap."
+  },
+  "races.golden.map-label": {
+    "text": "Map of the golden lap: each part in the colour of its source lap",
+    "note": "Hidden name of the map of the golden lap."
+  },
+  "races.golden.legend-lap": {
+    "text": "from lap {lap}",
+    "note": "Legend of the map: the colour of the parts from this lap. Lower case.",
+    "maxChars": 14
+  },
+  "races.golden.legend-join": {
+    "text": "join",
+    "note": "Legend of the map: the circle where two parts join. Lower case.",
+    "maxChars": 10
+  },
+  "races.golden.none": {
+    "text": "No golden lap for this race",
+    "note": "Title when the race has no golden lap."
+  },
+  "races.golden.few_one": {
+    "text": "A golden lap needs {min} clean laps. This race has {count}: lap {laps}.",
+    "note": "Reason for no golden lap. {min} is the smallest count of clean laps. {count} is the count of clean laps. {laps} is the list of the clean laps."
+  },
+  "races.golden.few_other": {
+    "text": "A golden lap needs {min} clean laps. This race has {count}: laps {laps}.",
+    "note": "Reason for no golden lap. {min} is the smallest count of clean laps. {count} is the count of clean laps. {laps} is the list of the clean laps."
+  },
+  "races.golden.few-none": {
+    "text": "A golden lap needs {min} clean laps. This race has no clean lap.",
+    "note": "Reason for no golden lap when the race has no clean lap. {min} is the smallest count of clean laps."
+  },
+  "races.golden.not-first": {
+    "text": "Lap {lap} is the first lap of the race and does not count.",
+    "note": "Why a lap is not clean. {lap} is the lap number."
+  },
+  "races.golden.not-first-recorded": {
+    "text": "Lap {lap} is the first recorded lap and does not count.",
+    "note": "Why a lap is not clean when the recording starts after lap 1. {lap} is the lap number."
+  },
+  "races.golden.not-pit_one": {
+    "text": "Lap {laps} has a pit stop and does not count.",
+    "note": "Why a lap is not clean. {laps} is the list of the laps."
+  },
+  "races.golden.not-pit_other": {
+    "text": "Laps {laps} have a pit stop and do not count.",
+    "note": "Why laps are not clean. {laps} is the list of the laps."
+  },
+  "races.golden.not-open_one": {
+    "text": "Lap {laps} has no time for each part of the lap and does not count.",
+    "note": "Why a lap is not clean: GT7 Tutor cannot put its samples on the line. {laps} is the list of the laps."
+  },
+  "races.golden.not-open_other": {
+    "text": "Laps {laps} have no time for each part of the lap and do not count.",
+    "note": "Why laps are not clean: GT7 Tutor cannot put their samples on the line. {laps} is the list of the laps."
+  },
+  "races.golden.gap": {
+    "text": "Each clean lap left the track in turn {turn}, so no clean lap gives a time for that turn.",
+    "note": "Reason for no golden lap. {turn} is the turn number."
+  },
+  "races.golden.gap-lap": {
+    "text": "Each clean lap left the track, so no clean lap gives a time for the whole lap.",
+    "note": "Reason for no golden lap on a track without turns."
+  },
+  "races.golden.no-chain": {
+    "text": "Each clean lap left the track in one turn or more, and the other parts do not fit together at the joins.",
+    "note": "Reason for no golden lap: no lap is clean in all turns, and the parts differ too much in speed or line at the joins."
   },
   "races.stage.this-lap": {
     "text": "this lap",

@@ -172,6 +172,7 @@ This section is about a race by laps with a rolling start. The facts come from t
 - Race position (0x84) changes during the race. It gives a position history.
 - Time of day (0x80) follows the time multiplier of the race. It is not a race clock. In the race of 5 laps it ran at race speed. In the race of 7 laps it ran at 25 times the race speed.
 - For 0x78 and 0x7C, the game counts each lap from line to line. This is also true for a lap into the pit lane and a lap out of it.
+- 0x78 does not take a lap with a pit in or a pit out. In one capture (Mount Panorama), out-lap 3 took 139 931 ms and lap 1 took 142 032 ms. 0x78 kept 142 032.
 - Fuel stays 100 in the race of 5 laps. In the race of 7 laps the car uses about 30 units per lap.
 
 ### Pit stop
@@ -264,7 +265,7 @@ How GT7 Tutor receives, checks, times and stores the packets. The calculations o
 
 ### Receive
 
-The UDP source (`packages/capture/src/udp-source.ts`, `CAPTURE_CONFIG.udp`) binds port 33740. It sends the heartbeat `C` to port 33739 after the bind and then every 1000 ms. It drops a datagram from any address other than the console address of Setup.
+The UDP source binds port 33740. Its code is in `packages/capture/src/udp-source.ts`, and its values are in `CAPTURE_CONFIG.udp`. It sends the heartbeat `C` to port 33739 after the bind. Then it sends it again every 1000 ms. It drops a datagram from any address other than the console address of Setup.
 
 ### Decode
 

@@ -491,7 +491,7 @@ A pit stop follows lap n when the first sample of lap n + 1 has the loading bit 
 | `firstLap` | Number of the first lap in the result |
 | `complete` | `firstLap` is 1, and the number of complete laps equals the laps in the race |
 | `raceMs` | Sum of the recorded lap times |
-| `bestLap` | Recorded lap with the smallest time |
+| `bestLap` | Recorded lap with the smallest time and no pit in and no pit out. Lap 1 counts. When each lap has a pit in or a pit out: the recorded lap with the smallest time. |
 | `referenceLap` | Fastest closed lap that has a path. Without one: the fastest lap with a path. Without any path: the fastest lap. |
 | `lapLengthM` | Length of the path of the reference lap. When the reference lap is not closed: the length of the longest lap path. Without any path: `null`. |
 | `startPosition` | Race position of the last lap-0 sample before lap 1. The first grid sample gives 1. Without a lap-0 sample: the first lap-1 sample. After a join: the first sample of the first recorded lap. |
@@ -547,7 +547,7 @@ A **closed lap** (`isClosedLap`) starts and ends at the lap line: it is not lap 
 - An in-lap against a lap without a pit stop does not move. Its curve starts at 0 at the lap line and stops at the pit entry.
 - The move does not change the time lost per turn.
 
-Two laps of a race use larger limits (`raceCompareConfig(config)`). The race functions `compareLaps`, `lapsSpeed` and `offTrackView` use them. No other code reads them.
+Two laps of a race use larger limits (`raceCompareConfig(config)`). The race functions `compareLaps`, `goldenLap`, `lapsSpeed` and `offTrackView` use them. No other code reads them.
 
 | Value | Exercise | Race |
 | --- | --- | --- |
@@ -559,17 +559,44 @@ Two laps of a race use larger limits (`raceCompareConfig(config)`). The race fun
 | `findings.throttleLateM` | 10 m | 30 m (`race.throttleLateM`) |
 | `findings.slowCornerMps` | 8 km/h | 10 km/h (`race.slowCornerMps`) |
 
-### 8.10 Speed of all laps and the off-track view
+### 8.10 Golden lap
+
+**Task.** Find the fastest lap that one driver can drive from parts of the clean laps of one race. Two parts join only when the speed and the side position agree at the join.
+
+**Input.** The samples of the race, `RaceAnalysis` and the race limits of 8.9.
+
+**Method.**
+
+1. A clean lap is not the first lap of the race (`analysis.firstLap`, or lap 1), not an in-lap and not an out-lap. A lap without a time for each sector is open, and it is not clean. A sector of a clean lap is not usable when an off-track moment of that lap starts in the sector (`sM` of 8.7).
+2. The line is the path of the reference lap (`lapPath`). The turns are the corners of `analysisOf` of that path.
+3. Each turn has one sector. The lap line is the first and the last boundary. The range for the boundary between turn N and turn N + 1 starts at the zone end of turn N (`turnZones`). It stops at the zone start of turn N + 1 (`zoneStartSM`). The method looks at each whole metre of the range. At each metre, it calculates the standard deviation of the speed over the clean laps. The boundary is the first metre with the smallest value. When that range is shorter than 4 m, the range goes from the apex of turn N to the apex of turn N + 1. A metre without a speed for each clean lap is not a candidate. Without a candidate, the boundary is the middle of the range. A path without a corner gives one sector without a turn.
+4. A `Matcher` puts each sample of a clean lap on the line. Paused samples and loading samples get no match. Each match gives `sM`, the side position (`lateralM`), the speed and the race position. The first match goes to 0 m when its `sM` is more than half of the path length.
+5. Each packet ID step adds 1000 / 60 ms to the time from the first sample of the lap. A step counts 0 when one of the two samples has the pause flag. A step also counts 0 when the position does not change. The lap ends at the first sample of the next lap.
+6. A boundary value is the linear interpolation between two matches at the first crossing of the boundary `sM`. Two matches with 50 m or more between them give no crossing. At the lap line, the end of a lap takes the first match of the next lap when the next lap is clean. Otherwise, the end takes the speed of the first sample of the next lap. It takes the side position of the last match.
+7. Two sectors of the same lap always join. Two sectors of different laps join when the speed difference at the boundary is not more than `goldenJoinMps` and the side difference is not more than `goldenJoinSideM`.
+8. The chain is the shortest path over the sectors and the clean laps (dynamic programming). The method calculates one chain for each lap of the first sector. A chain is valid only when its last sector joins its first sector at the lap line. The golden lap is the valid chain with the smallest sum of sector times.
+9. A straight is the range from the zone end of turn N to the zone start of turn N + 1, at least 100 m long. For each clean lap, the method finds the match with the top speed on the straight. A slipstream hint is a top speed more than `goldenSlipstreamMps` above the median of the clean laps. The race position at that match must not be 1. The hint goes to the sector of that match.
+
+**Output.** `GoldenLap` with one of four states:
+
+- `ok`: the best clean lap and its time of the game, the golden time, the source laps, the clean laps and one row per sector. A row has the turn, the range in metres, the source lap and its sector time. It also has the best sector time and its lap, the median, the spread (median − best) and the count of usable laps. The last fields are `bestJoins` and `slipstream`. `bestJoins` is false when the best sector time is not in the golden lap. `slipstream` is true when the source lap of the sector has a slipstream hint in that sector.
+- `too-few`: fewer clean laps than `goldenMinLaps`. The output gives the clean laps and the reason for each other lap (`first`, `pit` or `open`).
+- `gap`: a sector has no usable lap. The output gives the clean laps and the turn of that sector.
+- `no-chain`: no valid chain. The output gives the clean laps.
+
+**Parameters.** `race`: `goldenMinLaps` 3, `goldenJoinMps` 5 km/h, `goldenJoinSideM` 1.5 m, `goldenSlipstreamMps` 3 km/h. Fixed values: the narrow range 4 m, the crossing step 50 m, the straight 100 m.
+
+### 8.11 Speed of all laps and the off-track view
 
 `lapsSpeed(samples, analysis)` uses the reference lap in the place of the reference. It gives the speed series of each lap on the 2 m grid and the turn zones. In-laps and out-laps follow the rules of 8.9. Without a path of the reference lap: `null`.
 
 `offTrackView(samples, analysis)` gives the line (`x`, `z`), the height (`y` − the lowest `y` of the path) and the speed of the reference lap on the 2 m grid. For each pit stop it gives the pit lane of two laps. In-lap: from `nearestSM` of the stop to the lap end. Out-lap: from 0 to the `startSM` of the out-lap. Without a path of the reference lap: `null`.
 
-### 8.11 Track candidates
+### 8.12 Track candidates
 
 `trackCandidates(lapLengthM, circuits)` gives the circuits with a length within 60 m of the lap length, nearest first. The packet does not name the track (`docs/protocol.md`).
 
-**Output.** `RaceAnalysis`: the range, the laps, the pit stops, the race values, the off-track moments and the recurring places. On request: the comparison of two laps, the speed of all laps, the off-track view and the distances.
+**Output.** `RaceAnalysis`: the range, the laps, the pit stops, the race values, the off-track moments and the recurring places. On request: the comparison of two laps, the golden lap, the speed of all laps, the off-track view and the distances.
 
 **Parameters.** `race`: `minLaps` 2, `sessionLostMs` 1000, `unsupportedAfterMs` 5000, `afterFinishMs` 2000, `silenceEndMs` 10 000, `pitStoppedMps` 0.1, `fuelStepMs` 2000, `distanceStepMs` 250, `offTrackMinWheels` 2, `offTrackJoinMs` 1000, `recurringWithinM` 80, `recurringLaps` 3, `trackWithinM` 60, and the compare limits above. Minimum fuel use for the estimate: 0.5 per lap.
 

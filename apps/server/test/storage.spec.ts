@@ -268,6 +268,71 @@ describe('database schema', () => {
     });
   });
 
+  it('best_lap_migration_skips_laps_with_a_pit_stop_and_rolls_back', async () => {
+    await withDatabase(async db => {
+      await migrateUpTo(db, '009-add-races.cjs');
+      const { user, capture } = await seedOwner(db, 'R-1');
+      const race = (bestLap: number, bestLapMs: number) => ({
+        user_id: user.id,
+        capture_id: capture.id,
+        first_raw_index: 0,
+        last_raw_index: 10,
+        car_id: 3602,
+        first_lap: 1,
+        laps_in_race: 3,
+        cars: 16,
+        start_position: 8,
+        finish_position: 5,
+        race_ms: 180000,
+        best_lap: bestLap,
+        best_lap_ms: bestLapMs,
+        reference_lap: 3,
+        complete: true,
+        position_steps: JSON.stringify([]),
+        fuel_points: JSON.stringify([]),
+        recurring: JSON.stringify([]),
+        started_at: db.fn.now()
+      });
+      const [pit, allPit, plain] = await db('races').insert([race(2, 55000), race(2, 61000), race(2, 58000)]).returning('id');
+      const lap = (raceId: string, number: number, timeMs: number, pitIn: boolean, pitOut: boolean) => ({
+        race_id: raceId,
+        number,
+        first_raw_index: number * 10,
+        last_raw_index: number * 10 + 5,
+        time_ms: timeMs,
+        position_start: 8,
+        position_end: 8,
+        top_speed_mps: 50,
+        fuel_start: 100,
+        fuel_end: 90,
+        pit_in: pitIn,
+        pit_out: pitOut
+      });
+      await db('race_laps').insert([
+        lap(pit.id, 1, 60000, true, false),
+        lap(pit.id, 2, 55000, false, true),
+        lap(pit.id, 3, 59000, false, false),
+        lap(allPit.id, 1, 62000, true, false),
+        lap(allPit.id, 2, 61000, false, true),
+        lap(plain.id, 1, 60000, false, false),
+        lap(plain.id, 2, 58000, false, false)
+      ]);
+      const best = async () => (await db('races').whereIn('id', [pit.id, allPit.id, plain.id]).select('id', 'best_lap', 'best_lap_ms')).map(row => [row.id === pit.id ? 'pit' : row.id === allPit.id ? 'all-pit' : 'plain', row.best_lap, row.best_lap_ms]).sort();
+      await db.migrate.latest(migrationConfig());
+      expect(await best()).toEqual([
+        ['all-pit', 2, 61000],
+        ['pit', 3, 59000],
+        ['plain', 2, 58000]
+      ]);
+      await migrateDownTo(db, '009-add-races.cjs');
+      expect(await best()).toEqual([
+        ['all-pit', 2, 61000],
+        ['pit', 2, 55000],
+        ['plain', 2, 58000]
+      ]);
+    });
+  });
+
   describe('constraints', () => {
     let database: DisposableDatabase;
     let db: Knex;

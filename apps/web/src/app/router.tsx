@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 export type SetupSection = 'console' | 'voice' | 'profiles' | 'preferences' | 'catalogue' | 'data';
 
-export type RaceTab = 'laps' | 'compare' | 'off-track';
+export type RaceTab = 'laps' | 'compare' | 'off-track' | 'golden';
 
 export type Route =
   | { name: 'exercises' }
@@ -31,7 +31,7 @@ const SIMPLE: Record<string, Route> = {
 
 const EXERCISE_VIEWS = ['cues', 'references', 'record', 'attempts', 'drive'] as const;
 
-const RACE_TABS: RaceTab[] = ['compare', 'off-track'];
+const RACE_TABS: RaceTab[] = ['compare', 'off-track', 'golden'];
 
 function cleanPath(path: string): string {
   return path.replace(/\/+$/, '') || '/';

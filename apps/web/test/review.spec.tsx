@@ -223,7 +223,7 @@ describe('attempt review', () => {
     expect(document.querySelectorAll('[data-band]')).toHaveLength(0);
   });
 
-  it('review_groups_follow_the_track_and_sort_by_time_lost', async () => {
+  it('sorts_the_turns_by_time_lost_from_the_header', async () => {
     reviewApi(
       review({
         findings: [
@@ -239,18 +239,26 @@ describe('attempt review', () => {
     );
     renderApp({ path: REVIEW_PATH });
     const list = await screen.findByRole('region', { name: 'Differences by turn' });
-    const order = within(list).getByRole('group', { name: 'Order of the turns' });
-    expect(within(order).getByRole('radio', { name: 'Track' })).toBeChecked();
-    const turnGroups = () => within(list).getAllByRole('group').filter(group => group !== order);
-    expect(turnGroups().map(group => group.getAttribute('aria-label'))).toEqual(['T1 · 0.12 s gained', 'T2 · 0.50 s lost']);
+    expect(within(list).queryByRole('radio')).toBeNull();
+    const header = (name: string) => within(list).getByRole('button', { name }).closest('[role="columnheader"]')!;
+    const sort = within(list).getByRole('table', { name: 'Order of the turns' });
+    expect(within(within(sort).getByRole('row')).getAllByRole('columnheader').map(cell => cell.textContent)).toEqual(['Turn', 'Time lost']);
+    expect(header('Turn')).toHaveAttribute('aria-sort', 'ascending');
+    expect(header('Time lost')).not.toHaveAttribute('aria-sort');
+    const turnGroups = () => within(list).getAllByRole('group').map(group => group.getAttribute('aria-label'));
+    expect(turnGroups()).toEqual(['T1 · 0.12 s gained', 'T2 · 0.50 s lost']);
     const user = userEvent.setup();
-    await user.click(within(order).getByRole('radio', { name: 'Time lost' }));
-    expect(turnGroups().map(group => group.getAttribute('aria-label'))).toEqual(['T2 · 0.50 s lost', 'T1 · 0.12 s gained']);
-    const groups = turnGroups();
+    await user.click(within(list).getByRole('button', { name: 'Time lost' }));
+    expect(header('Time lost')).toHaveAttribute('aria-sort', 'descending');
+    expect(header('Turn')).not.toHaveAttribute('aria-sort');
+    expect(turnGroups()).toEqual(['T2 · 0.50 s lost', 'T1 · 0.12 s gained']);
+    const groups = within(list).getAllByRole('group');
     expect(within(groups[0]!).getAllByRole('button')).toHaveLength(2);
     await user.click(within(groups[1]!).getByRole('button', { name: /4 m\. Braked 2 m earlier/ }));
     expect(screen.getByRole('slider', { name: 'Speed, km/h' })).toHaveAttribute('aria-valuenow', '4');
     expect(document.querySelectorAll('[data-chart="speed"] [data-band]')).toHaveLength(0);
+    await user.click(within(list).getByRole('button', { name: 'Turn' }));
+    expect(turnGroups()).toEqual(['T1 · 0.12 s gained', 'T2 · 0.50 s lost']);
   });
 
   it('difference_header_shows_the_turn_and_the_time_lost', async () => {
