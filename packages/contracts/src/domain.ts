@@ -1,15 +1,10 @@
 import { z } from 'zod';
-import { medalTargetsSchema, type ExerciseStatusName } from './catalogue.ts';
-import { CUE_OFFSET_MAX_MS, CUE_OFFSET_MIN_MS, CUE_OFFSET_STEP_MS, RECURRING_DEFAULT_LAST } from './constants.ts';
+import type { ExerciseStatusName } from './catalogue.ts';
+import { CUE_OFFSET_MAX_MS, CUE_OFFSET_MIN_MS, CUE_OFFSET_STEP_MS, RECURRING_DEFAULT_LAST, TARGET_MAX_MS } from './constants.ts';
 
 export const capturePurposeSchema = z.enum(['demo', 'player', 'race']);
 
 export type CapturePurpose = z.infer<typeof capturePurposeSchema>;
-
-
-export const exerciseTargetsSchema = medalTargetsSchema.partial();
-
-export type ExerciseTargets = z.infer<typeof exerciseTargetsSchema>;
 
 export type RawRange = { first: number; last: number };
 
@@ -66,34 +61,34 @@ export const updateExerciseSchema = z
     mutedCues: z.array(eventKeySchema).max(500),
     speakTargets: z.boolean(),
     cueOffsetsMs: z.record(eventKeySchema, cueOffsetMsSchema),
-    sideCueDistanceM: sideCueDistanceSchema
+    sideCueDistanceM: sideCueDistanceSchema,
+    targetMs: z.number().int().positive().max(TARGET_MAX_MS).nullable()
   })
   .partial()
   .strict();
 
 export type UpdateExerciseRequest = z.infer<typeof updateExerciseSchema>;
 
-export type ExerciseStep = 1 | 2 | 3;
-
 export type Exercise = {
   id: string;
   catalogueId: string | null;
   family: string;
   name: string;
+  collection: string | null;
+  code: string | null;
   carId: number | null;
-  targets: ExerciseTargets;
+  targetMs: number | null;
   mutedCues: string[];
   speakTargets: boolean;
   cueOffsetsMs: Record<string, number>;
   sideCueDistanceM: number | null;
   activeReferenceId: string | null;
   status: ExerciseStatusName;
-  step: ExerciseStep;
   attemptCount: number;
   referenceCount: number;
   completeAttempts: number;
   bestMs: number | null;
-  nextMedal: { medal: MedalName; targetMs: number; gapMs: number } | null;
+  targetGapMs: number | null;
   createdAt: string;
 };
 
@@ -188,15 +183,19 @@ export type ReferenceCue = {
   followClip: string | null;
 };
 
-export type CornerInfo = { number: number; turnInSM: number; apexSM: number; radiusM: number; apexSpeedMps: number; zoneFromSM: number; zoneToSM: number };
+export type CornerInfo = { number: number; turnInSM: number; apexSM: number; radiusM: number; apexSpeedMps: number; zoneFromSM: number; zoneToSM: number; brakeToSM: number | null; brakeAtTurnIn: number | null; lowSpeedSM: number | null; lowSpeedMps: number | null; lowSpeedAtApex: boolean };
 
-export type CornerReview = CornerInfo & { outsideM: number | null; speedMps: number | null };
+export type CornerReview = CornerInfo & { outsideM: number | null; speedMps: number | null; attemptLowSM: number | null; attemptLowMps: number | null };
 
 export type BrakeReactionSummary = { eventKey: string; medianMs: number; count: number };
 
 export type AttemptReaction = { eventKey: string; reactionMs: number };
 
-export type FocusSummary = { kind: FindingKindName; turn: number; clip: string | null };
+export const FOCUS_PARTS = ['approach', 'entry', 'exit'] as const;
+
+export type FocusPart = (typeof FOCUS_PARTS)[number];
+
+export type FocusSummary = { turn: number; part: FocusPart; cause: FindingKindName | null; clip: string | null };
 
 export type StorageUse = { rawBytes: number; profileRawBytes: number; profileCaptures: number };
 
@@ -225,11 +224,7 @@ export type RemoveExercisesResult = { exercises: number; attempts: number; refer
 
 export type DeleteProfileResult = { exercises: number; attempts: number; references: number; races: number; cleanup: CleanupResult };
 
-export const medalSchema = z.enum(['bronze', 'silver', 'gold']);
-
-export type MedalName = z.infer<typeof medalSchema>;
-
-export const findingKindSchema = z.enum(['brake-early', 'brake-late', 'slow-corner', 'throttle-late', 'off-line', 'wide-apex']);
+export const findingKindSchema = z.enum(['brake-early', 'brake-late', 'slow-corner', 'throttle-late', 'off-line', 'wide-apex', 'low-point-early', 'low-point-late']);
 
 export type FindingKindName = z.infer<typeof findingKindSchema>;
 

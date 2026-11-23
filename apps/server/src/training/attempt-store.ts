@@ -1,4 +1,4 @@
-import { buildReview, findDifferences, type CoreConfig, type Finding } from '@gt7/core';
+import { buildReview, findDifferences, reviewLosses, type CoreConfig, type FocusAttempt } from '@gt7/core';
 import type { Knex } from 'knex';
 import { saveComparison } from '../attempts/finding-rows.js';
 import type { AttemptRecord, CueRecord, TrainingSnapshot } from './training-session.js';
@@ -20,8 +20,10 @@ function cueRow(attemptId: string, record: CueRecord) {
   };
 }
 
-export function attemptFindings(snapshot: TrainingSnapshot, record: AttemptRecord, config: CoreConfig): Finding[] {
-  return record.samples.length >= 2 ? findDifferences(buildReview(record.samples, snapshot.analysis, config), config) : [];
+export function attemptComparison(snapshot: TrainingSnapshot, record: AttemptRecord, config: CoreConfig): FocusAttempt {
+  if (record.samples.length < 2) return { findings: [], losses: [] };
+  const review = buildReview(record.samples, snapshot.analysis, config);
+  return { findings: findDifferences(review, config), losses: reviewLosses(review) };
 }
 
 export async function storeAttempt(
@@ -29,8 +31,7 @@ export async function storeAttempt(
   snapshot: TrainingSnapshot,
   captureId: string,
   record: AttemptRecord,
-  findings: Finding[],
-  config: CoreConfig
+  comparison: FocusAttempt
 ): Promise<StoredAttempt> {
   const complete = record.completion === 'complete';
   const storedOutcomes = new Map(record.cues.map(cue => [cue, cue.outcome]));
@@ -49,7 +50,7 @@ export async function storeAttempt(
       })
       .returning<{ id: string }[]>('id');
     const attemptId = row!.id;
-    await saveComparison(trx, attemptId, snapshot.referenceId, findings);
+    await saveComparison(trx, attemptId, snapshot.referenceId, comparison);
     if (record.cues.length > 0) await trx('cue_events').insert(record.cues.map(cue => cueRow(attemptId, cue)));
     return attemptId;
   });

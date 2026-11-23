@@ -20,7 +20,7 @@ import type {
 } from '@gt7/contracts';
 import { DEFAULT_CONFIG, NOMINAL_PACKET_MS, analyseRace, isClosedLap, compareLaps, goldenLap, lapsSpeed, offTrackView, raceDistances, type RaceAnalysis } from '@gt7/core';
 import type { Knex } from 'knex';
-import { reviewBody } from '../attempts/review-shapes.js';
+import { reviewBody, turnLossInfos } from '../attempts/review-shapes.js';
 import { CaptureService } from '../captures/capture.service.js';
 import { SampleCache } from '../captures/sample-cache.js';
 import { dropOldest } from '../drop-oldest.js';
@@ -195,7 +195,7 @@ export class RacesService {
     return this.view(race, `compare:${lap}:${withLap}`, ({ samples, analysis }) => {
       const result = compareLaps(samples, analysis, lap, withLap, DEFAULT_CONFIG);
       if (result === null) return null;
-      return { lap, withLap, lapMs: result.lapMs, withMs: result.withMs, ...reviewBody(result.review, result.findings), turnLosses: result.turnLosses };
+      return { lap, withLap, lapMs: result.lapMs, withMs: result.withMs, ...reviewBody(result.review, result.findings), turnLosses: turnLossInfos(result.turnLosses) };
     });
   }
 

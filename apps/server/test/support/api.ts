@@ -8,8 +8,8 @@ import { testTempDir } from '../../../../tools/testing/temp-root.js';
 import { createTestApp } from './app.js';
 import { FixtureReplays } from './replay-sources.js';
 
-export const INTERLAGOS = 'ce-autodromo-de-interlagos';
-export const INTERLAGOS_TARGETS = { goldMs: 16400, silverMs: 16700, bronzeMs: 17800 };
+export const INTERLAGOS = 'ce-autodromo-de-interlagos-s2';
+export const INTERLAGOS_TARGET_MS = 16400;
 export const DEMONSTRATION = { first: 457, last: 1422 };
 export const CLEAN_ATTEMPT = { first: 381, last: 1409 };
 

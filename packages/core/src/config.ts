@@ -57,7 +57,10 @@ export type CoreConfig = {
     apexAfterThrottleM: number;
     wideApexM: number;
     tighterHoldMs: number;
+    rangeBeforeM: number;
+    rangeAfterM: number;
   };
+  cues: { apexNearM: number };
   guidanceResumeMs: number;
   guidanceAnnounceAfterMs: number;
   incompatibleOverspeedMps: number;
@@ -65,12 +68,14 @@ export type CoreConfig = {
     brakeM: number;
     slowCornerMps: number;
     throttleLateM: number;
+    lowPointM: number;
     offLineM: number;
     offLineMs: number;
     eventWindowM: number;
     cornerExtensionM: number;
   };
   recurring: { minAttempts: number; minShare: number; placeWithinM: number };
+  focus: { attempts: number; turnMinMs: number; partMinMs: number; partMinShare: number };
   reviewGridM: number;
   reviewMaxBridgeM: number;
   gameTimer: { startMaxMs: number; stillPackets: number };
@@ -115,11 +120,10 @@ export type CoreConfig = {
     goldenMinLaps: number;
     goldenJoinMps: number;
     goldenJoinSideM: number;
-    goldenSlipstreamMps: number;
   };
 };
 
-export const DEFAULT_SIDE_CUE_DISTANCE_M = 2;
+export const DEFAULT_SIDE_CUE_DISTANCE_M: number | null = null;
 
 export const DEFAULT_CONFIG: CoreConfig = {
   freshnessMs: 150,
@@ -176,8 +180,11 @@ export const DEFAULT_CONFIG: CoreConfig = {
     curvatureSpanM: 10,
     apexAfterThrottleM: 40,
     wideApexM: WIDE_APEX_M,
-    tighterHoldMs: 300
+    tighterHoldMs: 300,
+    rangeBeforeM: 30,
+    rangeAfterM: 60
   },
+  cues: { apexNearM: 6 },
   guidanceResumeMs: 1000,
   guidanceAnnounceAfterMs: 2000,
   incompatibleOverspeedMps: kph(15),
@@ -185,12 +192,14 @@ export const DEFAULT_CONFIG: CoreConfig = {
     brakeM: 8,
     slowCornerMps: kph(8),
     throttleLateM: 10,
+    lowPointM: 20,
     offLineM: 1.5,
     offLineMs: 500,
     eventWindowM: 60,
     cornerExtensionM: 40
   },
   recurring: { minAttempts: RECURRING_MIN_ATTEMPTS, minShare: 0.5, placeWithinM: 20 },
+  focus: { attempts: 5, turnMinMs: 100, partMinMs: 100, partMinShare: 0.2 },
   reviewGridM: 2,
   reviewMaxBridgeM: 10,
   gameTimer: { startMaxMs: 50, stillPackets: 3 },
@@ -234,7 +243,6 @@ export const DEFAULT_CONFIG: CoreConfig = {
     slowCornerMps: kph(10),
     goldenMinLaps: 3,
     goldenJoinMps: kph(5),
-    goldenJoinSideM: 1.5,
-    goldenSlipstreamMps: kph(3)
+    goldenJoinSideM: 1.5
   }
 };

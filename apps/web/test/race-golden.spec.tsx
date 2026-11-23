@@ -24,7 +24,7 @@ const INFIELD_SECTORS: SectorRow[] = [
 ];
 
 function sectorOf([turn, fromM, toM, lap, ms, bestLap, bestMs, medianMs, cleanLaps]: SectorRow): RaceGoldenSector {
-  return { turn, fromM, toM, lap, ms, bestLap, bestMs, medianMs, spreadMs: medianMs - bestMs, cleanLaps, bestJoins: lap === bestLap, slipstream: false };
+  return { turn, fromM, toM, lap, ms, bestLap, bestMs, medianMs, spreadMs: medianMs - bestMs, cleanLaps, bestJoins: lap === bestLap };
 }
 
 function line() {

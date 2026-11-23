@@ -126,7 +126,7 @@ Select **Add an exercise**. The next section tells you how to find the exercise.
 
 ## Find your way in the application
 
-![The Exercises home on a computer. The Continue card has the buttons Drive and Attempts. Under it, My exercises has Select, + Add exercise and one exercise row.](images/exercises-home.webp)
+![The Exercises home on a computer. The Continue card shows your best time 0:17.071 and 0.67 s to the target 0:16.400, with the buttons Drive and Attempts. Under it, My exercises has Select, + Add exercise and one exercise row.](images/exercises-home.webp)
 
 The application has three items in the menu:
 
@@ -154,10 +154,21 @@ The dots have these states:
 
 The **current exercise** is the exercise that you opened last. The **Continue** card on the Exercises home shows it. The pages of an exercise and its Drive screen make it the current exercise.
 
-Each exercise has a page with a header and three tabs.
-The header has the breadcrumb `Exercises / <exercise name>`. Select **Exercises** in it to go back to the Exercises home.
-Under the exercise name, one line gives the family, the collection with the code, and the track, for example `Licence · National B, B-4 · Alsace – Village`. An exercise that you created yourself shows only its family.
-Under that line, a band shows the times from the game: `your best`, the time of the `reference` and the `gap to the reference`. The band shows only the times that GT7 Tutor knows.
+The title of an exercise is the same on all screens. A licence test shows the licence and the code, for example `National B, B-5`. A Brand Central exercise shows the brand and the code, for example `Yangwang, EXP-1`. The name of these exercises, for example `Cornering Basics 3`, is in the line under the title. A Circuit Experience sector shows its name, for example `Tsukuba Circuit · Sector 1`. An exercise that you created yourself shows its name.
+
+Each exercise has a page with a header and, after the first reference or attempt, three tabs.
+The header has the breadcrumb `Exercises / <exercise title>`. Select **Exercises** in it to go back to the Exercises home.
+Under the title, one line gives the family, the name and the track, for example `Licence · Cornering Basics 3 · Tsukuba Circuit`. A Circuit Experience sector shows the family and the track, for example `Circuit Experience · Tsukuba Circuit`. An exercise that you created yourself shows its family and `Own exercises`.
+Under that line, a band shows these times:
+
+- `your best`: your best time, when the exercise has a complete attempt.
+- `target`: the time that you want to reach. Without a target, the band shows `–`. See [Set the target](#set-the-target).
+- `gap to the target`: your best time minus the target. It shows when the exercise has a best time and a target.
+- `reference`: the time of the active reference, and the `gap to the reference`.
+
+The band also shows on a new exercise, with `–` and **edit**.
+
+The tabs show when the exercise has a reference or an attempt. A new exercise shows only the band and the **Cues** content.
 
 | Tab | Content |
 | --- | --- |
@@ -177,18 +188,24 @@ Each race has a page with the breadcrumb `Races / <track name>` and four tabs: *
 2. Find the exercise. Use one or more of these:
    - Type in the search field: a name, track, car or code, for example `B-3` or `Interlagos`.
    - Select a family: **All**, **Licence**, **Circuit Experience** or **Brand Central**.
-   - Select a collection in **All collections**, for example `Americas` or `National B`.
+   - Select a collection in **All collections**, for example `Americas` or `National B`. The collections come in the order of the game. The licences go from National B to Super, then the Master licences in the same order.
    - Select a track in **All tracks**.
 3. Select **Add** in the row of the exercise.
 
-**Result:** GT7 Tutor opens the **Cues** tab of the new exercise. It says `The cues come from the reference. This exercise has no reference yet.` and shows the button **Record the reference**.
+**Result:** GT7 Tutor opens the page of the new exercise. The band shows the target, or `–` when the exercise has no target. There are no tabs yet. The text says `The cues come from the reference. This exercise has no reference yet.` and the page shows the button **Record the reference**.
 
-![The page of a new exercise with the tabs Cues, References and Attempts. The text says that the exercise has no reference yet. Under it is the button Record the reference.](images/exercise-new.webp)
+![The page of the new exercise National B, B-5. The line under the title gives Licence, Cornering Basics 3 and Tsukuba Circuit. The band shows the target 0:13.100 with edit. There are no tabs. The text says that the exercise has no reference yet. Under it is the button Record the reference.](images/exercise-new.webp)
 
-![Add an exercise, with the filter Circuit Experience and the search Interlagos. One row shows, with the Add button. Below it is the form Your own exercise.](images/add-exercise.webp)
+![The list of Add an exercise after the search Tsukuba. The rows show licence tests, for example National B, B-5 and its name. Then come the Circuit Experience tasks Sector 1, Sector 2, Sector 3 and 1 Lap Attack. Each row has the track, the car and the Add button.](images/add-exercise.webp)
 
-The column **Medal targets** shows the gold, silver and bronze times when the catalogue has them. `Not listed` means that the catalogue has no targets for the exercise.
-An exercise that you already added shows **Added · open**.
+Each row shows the exercise in bold and the track and the car:
+
+- A licence test shows the licence and the code, for example `National B, B-5`, and the name under it.
+- A Circuit Experience task shows only the sector, for example `Sector 1`, or `1 Lap Attack` for the full lap. Each sector and the full lap of a track is a separate exercise.
+- A Brand Central exercise shows the brand and the code, for example `Yangwang, EXP-1`, and the name under it.
+
+A licence test has a target from the catalogue: the gold time of the test. The other exercises have no target until you set one. See [Set the target](#set-the-target).
+An exercise that you already added shows **View**.
 `No exercise matches.`: check the spelling, or select **Clear filters**.
 
 A catalogue entry does not mean that GT7 Tutor works for the exercise.
@@ -210,7 +227,7 @@ Your own exercise has the same needs. If the game does not time a demonstration 
 
 On the Exercises home, select **Select**, mark one or more exercises, then select **Delete N exercises**. The quick buttons **Without history**, **All** and **None** help you mark them.
 
-For one exercise, the dialog lists what goes: the attempts with their cues and differences, the references, the best time and the medal. For more exercises, it lists each exercise with its attempts and references.
+For one exercise, the dialog lists what goes: the attempts with their cues and differences, the references and the best time. For more exercises, it lists each exercise with its attempts and references.
 **Also clean up the raw captures that nothing uses afterwards** is on by default. Select **Delete exercise** (or **Delete N exercises**) to delete, or **Keep it** to close the dialog. You cannot undo it. The catalogue entry stays, so you can add the exercise again.
 
 ## Record the reference
@@ -259,7 +276,7 @@ While an attempt runs, the screen says `Attempt <n> runs. Finish it or stop the 
 **Goal:** choose what the voice says, and when.
 **Where:** the **Cues** tab of the exercise, or **Hear the cues** after you record the reference.
 
-![The Cues tab. At the top are the switch Speak target speeds and the list Side cue distance. Below them is the list of cues with distance, phrase and target speed. At the right is the map Reference line with numbered cues.](images/cues.webp)
+![The Cues tab. At the top are the switch Speak target speeds and the list Side cue distance. Below them is the list of cues with distance, phrase and target speed. The turn row T1 has the line Brake to 377 m, 87 % at the turn-in. Lowest speed at the apex. At the right is the map Reference line with numbered cues.](images/cues.webp)
 
 The list shows each cue and each turn in the order of the section. Each cue row has:
 
@@ -272,11 +289,12 @@ The list shows each cue and each turn in the order of the section. Each cue row 
 - The tag `NOT SPOKEN`: on the reference line, the voice does not say this cue. The line under the phrase tells why. An example is `The voice still says cue 3 here. Mute cue 3 or this cue, or move cue 3 earlier.` The voice says one cue at a time, so a cue that comes too soon after another cue stays silent. The line above the list gives the number of these cues. A muted cue does not get this tag.
 
 The turn rows (`T1`) show the turn-in, the apex, the radius and the speed of the reference at the apex. The voice does not say them.
+A turn with a brake zone has one more line: how the reference brakes for the turn. An example is `Brake to 377 m, 87 % at the turn-in. Lowest speed at the apex.` The brake to value is the end of the brake zone. The percent is the brake of the reference at the turn-in. When the lowest speed of the reference is more than 6 m from the apex, the line gives the distance, for example `Lowest speed 12 m after the apex.`
 
 Settings above the list:
 
 - **Speak target speeds**: on, the voice says the lowest speed of the reference after a brake phrase. Off, it says the action only.
-- **Side cue distance**: `Off`, or 0.5 m to 3 m. The voice says `More left` or `More right` when the car stays farther than this distance from the reference line.
+- **Side cue distance**: `Off`, or 0.5 m to 3 m. The voice says `More left` or `More right` when the car stays farther than this distance from the reference line. A new exercise starts with `Off`.
 
 The map is on the right, in a frame with the title `Reference line, <length> m`. The legend under the map has the words `reference line`, `turn`, `voice cue`, `muted cue`, `cue not spoken` and `Select a number to mute that cue`. **View** opens the map in full screen, with the list of the voice cues. Select a cue in the list to find it on the line. Press Esc or select **Back** to close the full-screen map. On a phone, the map is above the list of cues.
 
@@ -290,7 +308,7 @@ On the map, a yellow band marks each turn, from the turn-in to the end of the tu
 2. Listen to the cues. The number of the cue that the voice says turns black on the map, and its row shows the tag `SPEAKING`. Under the map, a bar and the time show the progress, for example `0:11.3 of 0:16.1, measured`. The line `The voice says:` gives the phrase and the cue number.
 3. To stop before the end, select **Stop** (square icon).
 
-![The Cues tab while the preview plays. A yellow dot moves on the reference line. Cue 3 Lift off has the tag SPEAKING. Cue 4 has the tag NOT SPOKEN. The time is 0:11.3 of 0:16.1, measured.](images/cues-preview.webp)
+![The Cues tab while the preview plays. A yellow dot moves on the reference line. Cue 3 Lift off has the tag SPEAKING. Cue 4 has the tag NOT SPOKEN. The time is 0:11.2 of 0:16.1, measured.](images/cues-preview.webp)
 
 The preview stops by itself at the end of the reference. It also stops when you change a setting of this tab, and when you leave the tab. The preview does not start a training, and it does not record an attempt. **Preview** is only on the **Cues** tab. On a phone, **Preview**, **Stop** and **View** are icon buttons.
 
@@ -364,12 +382,18 @@ When you pause the game, the screen shows `Paused. Cues stop until you continue.
 
 ### After the finish
 
-![The summary of attempt 4: the time 0:18.824 from the game and the focus Turn one. Carry more speed. Then the gap to your best +1.41 s, the largest difference and the buttons Review this attempt and Drive again.](images/drive-summary.webp)
+![The summary of attempt 5: the time 0:18.824 from the game and the focus Turn one. Braking too early before the turn. Then the gap to your best +1.75 s, the largest difference and the buttons Review this attempt and Drive again.](images/drive-summary.webp)
 
 The summary shows:
 
 - The time from the game.
-- **Focus for the next attempt**: one difference to work on, for example `Turn one. Brake earlier.` The voice device also says it. The focus names a turn, so it shows only when the difference is in a turn. An exercise without turns, for example a licence test on a straight, has no focus.
+- **Focus for the next attempt**: the place in one turn where you lose the most time, and its cause. An example is `Turn one. Too slow on entry.` The voice device also says it. GT7 Tutor uses your last 5 complete attempts with the same reference:
+  - The turn is the turn with the largest median time lost. It must lose 0.1 s or more.
+  - The turn has three parts: before the turn, the entry and the exit. Before the turn ends at the turn-in of the reference. The entry goes from the turn-in to the apex. The exit goes from the apex to the next turn. The part is the first part that loses more than 0.1 s and more than a fifth of the time lost in the turn. When no part does, it is the part that loses the most time.
+  - The cause is a difference of that part in half or more of these attempts. Before the turn: `Braking too early before the turn.` or `Braking too late before the turn.` On entry: `Too slow on entry.`, `Too fast on entry.` or `Far from the apex on entry.` On exit: `Late on the throttle on exit.` A late brake is the cause in each part, and the sentence is then `Braking too late before the turn.`
+  - `Off the line on entry.` and the other sentences with `Off the line` come only when no difference of the part is in half or more of these attempts. You must also be off the line in that part, in half or more of these attempts.
+  - When no cause comes in half or more of these attempts, the sentence names the part only, for example `Turn two. Time lost on exit.`
+  - When no turn loses 0.1 s or more, there is no focus. The screen and the voice then give no focus. An exercise without turns, for example a licence test on a straight, has no focus. Above turn 10, the screen shows the sentence, for example `Turn 11. Time lost on exit.`, and the voice does not say it.
 - **Gap to your best**, and **Largest difference**.
 
 Then:
@@ -435,15 +459,19 @@ The review shows the header and the tabs of the exercise. Under them:
 | **Your line** | The map with the reference line (blue) and your line (orange). A circle marks a difference. The legend has the words `reference line`, `you`, `turn` and `A gap in your line is a place without a match`. A gap is a place where GT7 Tutor could not match your position. |
 | **True scale** / **Side distance × 6** | **Side distance × 6** draws your line 6 times farther from the reference line, so that a difference of 1 m shows. A dot marks the largest side distance in each turn. Put the pointer on a dot, move the focus to it with the Tab key, or touch it. A tip then shows the true distance and the place, for example `T1 · 3.5 m left` and `at 120 m`. When a dot has the focus, press Esc to close the tip. On a touch screen, touch the map away from the dots to close the tip. The legend then also has `more than <n> m from the line` for the parts beyond the **Side cue distance**. On a phone, the two buttons are in a row under the title. |
 | **View** | Opens the map in full screen, with your line in true scale and the list of the differences. Select a difference in the list to find it on your line. Press Esc or select **Back** to close. |
-| **Differences by turn** | The differences, grouped by turn, with the time lost or gained in each turn. The column headers **Turn** and **Time lost** set the order. **Turn** puts the turns in the order of the track. **Time lost** puts the turn with the largest time lost first. Select the active header again to reverse the order. An arrow shows the active order and its direction. Select a difference to put the cursor there. A section without turns shows one group, **Whole section**. `No differences above the limits in this attempt.` means that GT7 Tutor found no difference. |
+| **Differences by turn** | The differences, grouped by turn, with the time lost or gained in each turn. The time of a turn starts at its first brake or lift-off. It stops at the first brake or lift-off of the next turn. The first turn starts at the start of the section or the lap. The last turn stops at its end. The times of all turns add up to the change of the chart **Time lost** from its start to its end. The column headers **Turn** and **Time lost** set the order. **Turn** puts the turns in the order of the track. **Time lost** puts the turn with the largest time lost first. Select the active header again to reverse the order. An arrow shows the active order and its direction. Select a difference to put the cursor there. A section without turns shows one group, **Whole section**. `No differences above the limits in this attempt.` means that GT7 Tutor found no difference. |
 | **Corners** | Your line at each apex: on the line, or the distance inside or outside, and your speed at the apex. A section without turns has no **Corners**. |
 | **Brake reaction** | The time from the start of a spoken brake cue to your brake. A value `before the cue` means that you braked before the voice. |
-| Charts | Speed, throttle, brake, the distance from the reference line, and the time lost. Move the pointer or a finger across a chart. With a keyboard, move the focus to a chart and use the arrow keys. A dashed line and a dot on each line mark the cursor on all charts. The map shows the same place. On the chart under the pointer, the finger or the focus, a box gives the distance, the turn and the values, for example `Reference: 110 km/h` and `You: 108 km/h`. **Time lost** has no box. It gives its value at the top right. |
+| Charts | Speed, throttle, brake, the distance from the reference line, and the time lost. On **Speed**, a ring marks the lowest speed of each line in each turn with a brake zone. Your ring shows only when your lowest speed is inside the turn and has no gap before or after it. The legend calls it `lowest speed in the turn`. When the chart has 3 turns or fewer with rings, each ring also shows its speed, for example `116 km/h`. Move the pointer or a finger across a chart. With a keyboard, move the focus to a chart and use the arrow keys. A dashed line and a dot on each line mark the cursor on all charts. The map shows the same place. On the chart under the pointer, the finger or the focus, a box gives the distance, the turn and the values, for example `Reference: 110 km/h` and `You: 108 km/h`. **Time lost** has no box. It gives its value at the top right. |
 | **Compare with** | Another reference of the exercise. The review then compares the same attempt with that reference. |
 
-![The lower part of the review page. The charts show speed, throttle, brake, the distance from the reference line and the time lost to the reference. A yellow zone marks turn 1. The cursor is at 400 m in turn 1. The box on the speed chart gives Reference: 116 km/h and You: 96 km/h. A dot marks each line on all charts.](images/review-charts.webp)
+![The lower part of the review page. The charts show speed, throttle, brake, the distance from the reference line and the time lost to the reference. A yellow zone marks turn 1. On the speed chart, a blue ring marks the lowest speed of the reference, 116 km/h. An orange ring marks your lowest speed, 93 km/h. The legend under the brake chart has the entry lowest speed in the turn. The cursor is at 680 m. The box on the speed chart gives Reference: 195 km/h and You: 171 km/h.](images/review-charts.webp)
+
+After an update of GT7 Tutor with new rules for the differences or the turns, GT7 Tutor calculates the differences of your earlier attempts again. The first view of an exercise after the update can then take some seconds.
 
 Read a difference with care. `Braked 37 m later` compares your brake that is nearest to the brake of the reference, within 60 m. If you pressed the brake two times, the charts show both.
+
+`Lowest speed 53 m before the apex` tells you that your lowest speed in the turn is more than 20 m before the lowest speed of the reference. `after the apex` tells you that it is more than 20 m after it. The distance is from the apex of the reference. GT7 Tutor gives this difference only for a turn with a brake zone. The lowest speed of the reference must also be 6 m or less from its apex. When this difference is in the focus, the sentence is `Too slow on entry.` for a lowest speed before the apex, or `Too fast on entry.` for a lowest speed after it.
 
 Other actions under **Source**:
 
@@ -454,13 +482,14 @@ Other actions under **Source**:
 
 **Where:** the **Attempts** tab of the exercise.
 
-![The Attempts tab with three attempts of one day: time, gap to best and largest difference. Select and Hide aborted are in the row of the day heading. The yellow Drive button is above Recurring differences.](images/attempts.webp)
+![The Attempts tab with the attempts of one day: number, time and gap to best. Select and Hide aborted are in the row of the day heading. The yellow Drive button is above Recurring differences.](images/attempts.webp)
 
 - The yellow **Drive** button starts an attempt. See [Drive an attempt](#drive-an-attempt). On a computer, it is at the top of the right column. On a phone, it is under the tabs, with **Select** and **Hide aborted** under it.
 - Without attempts, the tab says `No attempts yet. Select Drive, then drive the exercise in the game.`
-- GT7 Tutor groups the attempts by day. Each day shows its best time.
-- **Time from the game**: the time of a complete attempt. `No time` and `aborted` with the reason for an attempt that did not finish.
-- **Gap to best** and **Largest difference**. On a phone, the row shows the largest difference under the time.
+- GT7 Tutor groups the attempts by day. The heading of each day is the date.
+- **Time**: the time of a complete attempt from the game. `No time` and `aborted` with the reason for an attempt that did not finish. The best attempt has the tag `best`.
+- **Gap to best**: the gap of the attempt to your best time. On a phone, it is next to the time.
+- The review of an attempt shows its differences. See [Review an attempt](#review-an-attempt).
 - Select a row to open the review of the attempt.
 - On a computer, **Select** and **Hide aborted** are at the right end of the first day heading.
 - **Hide aborted** hides the attempts that did not finish. The button then says **Show aborted** and is filled. Select **Show aborted** to show the attempts again.
@@ -472,17 +501,31 @@ Other actions under **Source**:
 
 The **Exercises** home shows:
 
-- **Continue**: the current exercise, the next step, for example `Next: drive attempts`, your best time and the gap to the next medal. The main button is **Drive** when the exercise has an active reference, and **Record the reference** when it has none. **Attempts** opens the **Attempts** tab. Select the exercise name to open the exercise.
-- **My exercises**: each exercise in one row, with its status tag and, on a computer, its best time. On a computer, buttons filter the list by family, for example **All**, **Licence** and **Circuit Experience**. The filter shows only the families of your exercises, and only when you have exercises of more than one family.
+- **Continue**: the current exercise, `your best time` and the gap to the target, for example `0.67 s` with `to the target, 0:16.400`. On a phone, one line gives `best 0:17.071 · 0.67 s to the target`. The gap shows only when the exercise has a best time and a target, and the best time is more than the target. The main button is **Drive** when the exercise has an active reference, and **Record the reference** when it has none. **Attempts** opens the **Attempts** tab. Select the exercise title to open the exercise. Above the title, a line gives `Continue`, the family, the name and the track, for example `Continue · Licence · Cornering Basics 3 · Tsukuba Circuit`. On a phone, it gives only `Continue`, and `Own exercises` for an exercise that you created yourself.
+- **My exercises**: each exercise in one row, with its title, its status tag and, on a computer, its best time. Under the title, a computer shows the name, the track and the car, for example `Cornering Basics 3 · Tsukuba Circuit · Autobianchi A112 Abarth '85`. A phone shows the family and the name, for example `Licence · Cornering Basics 3`. For an exercise that you created yourself, `Own exercises` replaces the name in these lines and in the line of the **Continue** card. In each family, the exercises come in the order of the catalogue, and your own exercises come last. On a computer, buttons filter the list by family, for example **All**, **Licence** and **Circuit Experience**. The filter shows only the families of your exercises, and only when you have exercises of more than one family.
 
-| Status | Meaning |
+| Status tag | Meaning |
 | --- | --- |
-| New | No reference yet |
-| Ready | An active reference, no complete attempt yet |
-| Practising | Complete attempts, no medal yet, or no medal targets |
-| Bronze, Silver, Gold | The medal that your best time from the game reaches |
+| New | No active reference yet |
+| No tag | An active reference, and the exercise has no target or your best time is more than the target |
+| Target reached | Your best time is equal to the target or less |
 
-The next step of an exercise moves by itself. `Next: record the reference` shows until an active reference exists. Then `Next: drive attempts` shows. `Next: review your attempts` comes after 3 complete attempts against the active reference.
+### Set the target
+
+**Goal:** set the time that you want to reach in an exercise.
+
+1. Open the exercise. The band under the exercise name shows `target` with **edit**.
+2. Select **edit**. The target becomes a text field in the same place.
+3. Type the time, for example `23.8`, `0:23.800` or `1:02.345`. A comma is also correct, for example `23,8`. On a phone keypad without `:`, type the seconds only, for example `62.345`.
+4. Push **Enter**, or select another place on the page.
+
+**Result:** the band shows the new target and the `gap to the target`. The status tag and the **Continue** card use the new target.
+
+- **Esc** closes the field and keeps the old target.
+- An empty field deletes the target. The band then shows `–`.
+- A text that is not a time keeps the old target.
+
+![The band of an exercise while you edit the target. It shows your best 0:17.071 and the target field with 0:16.400. Then come the gap to the target +0.67 s, the reference 0:16.082 and the gap to the reference +0.99 s.](images/target-edit.webp)
 
 ## Record a race and look at it
 
@@ -610,11 +653,11 @@ Select **View** at the top right of the chart to open the chart in full screen. 
 
 **Where:** the **Compare** tab of the race, or a row of the lap table.
 
-![The Compare tab of lap 7 and lap 4, scrolled down to the charts. The cursor is at 2,280 m in turn 6. The box on the chart Speed gives Lap 4: 155 km/h and Lap 7: 133 km/h. A dot marks each line on Speed, Throttle and Brake. At the right, the list Differences by turn scrolls inside its column, from turn 5 to turn 10.](images/race-compare.webp)
+![The Compare tab of lap 7 and lap 4, scrolled down to the charts. The chart Speed has a ring at the lowest speed of each lap in each turn. The cursor is at 2,272 m in turn 6. The box on the chart Speed gives Lap 4: 152 km/h and Lap 7: 130 km/h. At the right, the list Differences by turn scrolls inside its column, from turn 3 to turn 8. Turn 6 has the row Lowest speed 20 m after the apex, and turn 8 has Lowest speed 48 m before the apex.](images/race-compare.webp)
 
 The heading gives the gap of the two lap times of the game, for example `Lap 7 is 2.020 s slower than lap 4`. Use the two selects to choose the lap and the lap to compare it with. By default, the tab compares the last lap that is not the reference lap with the reference lap.
 
-The tab shows the same parts as the review of an attempt. These parts are the map with the two lines, **Differences by turn**, and the charts of speed, throttle, brake and time lost. Here the other lap takes the place of the reference. It is one of your laps, not the best possible line. The legends name the two laps, for example `lap 4` and `lap 7`. The box of the chart under the cursor gives the value of each lap, for example `Lap 4: 155 km/h` on **Speed** and `Lap 4: 100%` on **Throttle**. **Time lost** has no box. It gives its value at the top right. On a computer, **Differences by turn** stays beside the map and the charts. Scroll the list of the turns inside its column. When you select a difference on the map, the list moves to that difference. See [Review an attempt](#review-an-attempt).
+The tab shows the same parts as the review of an attempt. These parts are the map with the two lines, **Differences by turn**, and the charts of speed, throttle, brake and time lost. Here the other lap takes the place of the reference. It is one of your laps, not the best possible line. The legends name the two laps, for example `lap 4` and `lap 7`. The rings on **Speed** mark the lowest speed of each lap in each turn with a brake zone. The box of the chart under the cursor gives the value of each lap, for example `Lap 4: 155 km/h` on **Speed** and `Lap 4: 100%` on **Throttle**. **Time lost** has no box. It gives its value at the top right. On a computer, **Differences by turn** stays beside the map and the charts. Scroll the list of the turns inside its column. When you select a difference on the map, the list moves to that difference. See [Review an attempt](#review-an-attempt).
 
 With an in-lap or an out-lap:
 
@@ -799,7 +842,7 @@ An entry that has your exercises stays. After an update, **Restore** makes the p
 | Delete one attempt | Review → **Delete attempt** | The attempt, its cues and differences | References, other attempts. The raw capture stays until a clean-up. |
 | Delete several attempts | Attempts → **Select** → **Delete N attempts** | The selected attempts, their cues and differences. GT7 Tutor counts your best time and the recurring differences again. | References. The raw captures stay until a clean-up. |
 | Delete a reference | References → **Delete** → **Delete reference** | The reference | Only possible when the reference is not active and no attempt uses it |
-| Delete an exercise | Exercises → **Select** → **Delete N exercises** | The exercise, its attempts, references, best time and medal | The catalogue entry. You can add the exercise again. |
+| Delete an exercise | Exercises → **Select** → **Delete N exercises** | The exercise, its attempts, references, best time and target | The catalogue entry. You can add the exercise again. |
 | Delete races | Races → **Select** → **Delete N races** | The selected races with their laps, pit stops and places off the track | The exercises. The raw captures stay until a clean-up. |
 | Clean up captures | Setup → Data → **Clean up captures** | The parts of the raw captures that no reference, no attempt and no race uses | All references, attempts and races |
 | Delete history: **Attempts of one exercise** | Setup → Data → **Delete history** | The attempts of the selected exercise | Its references, the other exercises, the races, the settings |

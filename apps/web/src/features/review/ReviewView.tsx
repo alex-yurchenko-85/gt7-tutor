@@ -13,6 +13,8 @@ import { apexPlaceText, apexSpeedText, differenceText, reactionText } from '../c
 import { DeleteAttemptsDialog } from '../attempts/DeleteAttemptsDialog.tsx';
 import { DriveButton } from '../drive/DriveButton.tsx';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
+import { loadExercise } from '../exercise/use-exercise.ts';
+import { exerciseTitle } from '../exercise/use-exercise-where.ts';
 import { CompareCharts, CompareMap, Differences, reviewDifferences, type LineWords } from './line-compare.tsx';
 import './review.css';
 import { t } from '../../app/i18n.ts';
@@ -245,7 +247,7 @@ export function ReviewView({ attemptId }: { attemptId: string }) {
   const review = useResource(() => api.review(attemptId, referenceId), [attemptId, referenceId]);
   const exerciseId = attempt.data?.exerciseId;
   const references = useResource(() => (exerciseId ? api.references(exerciseId) : Promise.resolve([])), [exerciseId]);
-  const exercise = useResource(() => (exerciseId ? api.exercise(exerciseId) : Promise.resolve(null)), [exerciseId]);
+  const exercise = useResource(() => (exerciseId ? loadExercise(exerciseId) : Promise.resolve(null)), [exerciseId]);
   const { user } = useSession();
   const error = attempt.error ?? review.error;
   const remembered = rememberedExerciseId(user.id);
@@ -256,7 +258,7 @@ export function ReviewView({ attemptId }: { attemptId: string }) {
     <section>
       {exercise.data ? <ExerciseHeader exercise={exercise.data} current="attempts" /> : null}
       <AttemptHeading attempt={data} review={review.data ?? null} />
-      {review.data && !exercise.loading ? <ReviewBody key={review.data.referenceId} title={exercise.data?.name ?? t('exercises.review.fallback-title', { number: data.number })} attempt={data} review={review.data} references={references.data ?? []} sideCueDistanceM={exercise.data?.sideCueDistanceM ?? null} activeReferenceId={exercise.data?.activeReferenceId ?? null} /> : <p className="sub">{t('exercises.review.comparing')}</p>}
+      {review.data && !exercise.loading ? <ReviewBody key={review.data.referenceId} title={exercise.data ? exerciseTitle(exercise.data).title : t('exercises.review.fallback-title', { number: data.number })} attempt={data} review={review.data} references={references.data ?? []} sideCueDistanceM={exercise.data?.sideCueDistanceM ?? null} activeReferenceId={exercise.data?.activeReferenceId ?? null} /> : <p className="sub">{t('exercises.review.comparing')}</p>}
     </section>
   );
 }

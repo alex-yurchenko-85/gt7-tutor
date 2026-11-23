@@ -1,6 +1,10 @@
+import type { FocusPart } from '@gt7/contracts';
+import type { Review } from './compare.ts';
 import { cornerAt, type Corner } from './corners.ts';
 
-export type TurnLoss = { turn: number; fromSM: number; toSM: number; lostMs: number | null };
+export type TurnPartLosses = Record<FocusPart, number | null>;
+
+export type TurnLoss = { turn: number; fromSM: number; toSM: number; entrySM: number; exitSM: number; lostMs: number | null; parts: TurnPartLosses };
 
 export type TurnZone = { turn: number; fromSM: number; toSM: number };
 
@@ -23,15 +27,21 @@ function gapAt(attemptT: (number | null)[], referenceT: (number | null)[], index
   return attempt - reference;
 }
 
-function zoneGaps(zone: TurnZone, gridM: number, attemptT: (number | null)[], referenceT: (number | null)[]): number[] {
-  const gaps: number[] = [];
-  const first = Math.ceil(zone.fromSM / gridM);
-  const last = Math.floor(zone.toSM / gridM);
-  for (let index = first; index <= last; index += 1) {
-    const gap = gapAt(attemptT, referenceT, index);
-    if (gap !== null) gaps.push(gap);
-  }
-  return gaps;
+function lossRanges(corners: Corner[], lengthM: number): TurnZone[] {
+  return corners.map((corner, index) => ({
+    turn: corner.number,
+    fromSM: index === 0 ? 0 : corner.zoneStartSM,
+    toSM: corners[index + 1]?.zoneStartSM ?? lengthM
+  }));
+}
+
+function cellOf(sM: number, gridM: number, count: number): number {
+  return Math.max(0, Math.min(count - 1, Math.round(sM / gridM)));
+}
+
+function partLosses(range: TurnZone, entrySM: number, exitSM: number, gridM: number, carried: (number | null)[]): TurnPartLosses {
+  const [start, turnIn, apex, end] = [range.fromSM, entrySM, exitSM, range.toSM].map(sM => carried[cellOf(sM, gridM, carried.length)]!);
+  return { approach: turnIn! - start!, entry: apex! - turnIn!, exit: end! - apex! };
 }
 
 export function turnLosses(
@@ -41,9 +51,27 @@ export function turnLosses(
   attemptT: (number | null)[],
   referenceT: (number | null)[]
 ): TurnLoss[] {
-  return turnZones(corners, lengthM).map(zone => {
-    const gaps = zoneGaps(zone, gridM, attemptT, referenceT);
-    const lostMs = gaps.length < 2 ? null : gaps[gaps.length - 1]! - gaps[0]!;
-    return { ...zone, lostMs };
+  const gaps = attemptT.map((_, index) => gapAt(attemptT, referenceT, index));
+  const first = gaps.findIndex(gap => gap !== null);
+  const carried: (number | null)[] = [];
+  let known: number | null = first < 0 ? null : gaps[first]!;
+  for (const gap of gaps) {
+    if (gap !== null) known = gap;
+    carried.push(known);
+  }
+  return lossRanges(corners, lengthM).map((range, index) => {
+    const from = cellOf(range.fromSM, gridM, gaps.length);
+    const to = cellOf(range.toSM, gridM, gaps.length);
+    let matched = false;
+    for (let cell = index === 0 ? from : from + 1; cell <= to && !matched; cell++) matched = (gaps[cell] ?? null) !== null;
+    const lostMs = matched ? carried[to]! - carried[from]! : null;
+    const clamped = (sM: number) => Math.max(range.fromSM, Math.min(range.toSM, sM));
+    const entrySM = clamped(corners[index]!.turnInSM);
+    const exitSM = clamped(corners[index]!.apexSM);
+    return { ...range, entrySM, exitSM, lostMs, parts: lostMs === null ? { approach: null, entry: null, exit: null } : partLosses(range, entrySM, exitSM, gridM, carried) };
   });
+}
+
+export function reviewLosses(review: Review, corners: Corner[] = review.corners): TurnLoss[] {
+  return turnLosses(corners, review.lengthM, review.gridM, review.attempt.t, review.reference.t);
 }

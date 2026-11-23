@@ -35,7 +35,7 @@ describe('goldenLap', () => {
     for (const sector of result.sectors) {
       expect(sector.cleanLaps).toBe(3);
       expect(sector.spreadMs).toBeCloseTo(sector.medianMs - sector.bestMs, 6);
-      expect(sector.slipstream).toBe(false);
+      expect(Object.keys(sector).sort()).toEqual(['bestJoins', 'bestLap', 'bestMs', 'cleanLaps', 'fromM', 'lap', 'medianMs', 'ms', 'spreadMs', 'toM', 'turn']);
     }
   });
 
@@ -115,18 +115,13 @@ describe('goldenLap', () => {
     expect(Math.abs(result.goldenMs - result.bestMs)).toBeLessThan(1);
   });
 
-  it('slipstream_hint_needs_a_car_ahead', () => {
+  it('race_position_does_not_change_the_golden_lap', () => {
     const pace = [{ lap: 4, from: 300, to: 400, factor: 1.05 }];
     const leading = ok(golden({ count: 5, pace, positions: [8, 1, 1, 1, 1] }));
-    expect(leading.sectors.map(sector => [sector.lap, sector.slipstream])).toEqual([
-      [2, false],
-      [4, false]
-    ]);
     const following = ok(golden({ count: 5, pace, positions: [8, 3, 3, 3, 3] }));
-    expect(following.sectors.map(sector => [sector.lap, sector.slipstream])).toEqual([
-      [2, false],
-      [4, true]
-    ]);
+    expect(leading.sectors.map(sector => sector.lap)).toEqual([2, 4]);
+    expect(following.sectors).toEqual(leading.sectors);
+    expect(following.goldenMs).toBe(leading.goldenMs);
   });
 
   it('checks_the_join_at_the_lap_line', () => {

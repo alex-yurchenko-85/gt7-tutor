@@ -1,20 +1,18 @@
 import { useState } from 'react';
 import type { AttemptDay, AttemptSummary, Exercise } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
-import { abortReasonText, formatDay, formatGap, formatTime, metres } from '../../app/format.ts';
+import { abortReasonText, formatDay, formatGap, formatTime } from '../../app/format.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Icon } from '../../app/icons.tsx';
 import { useWideLayout } from '../../app/layout.ts';
 import { Link, paths } from '../../app/router.tsx';
 import { SelectionBar } from '../../app/SelectionBar.tsx';
-import { differenceText } from '../cues/cue-format.ts';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
 import { useExercise } from '../exercise/use-exercise.ts';
 import { DriveButton } from '../drive/DriveButton.tsx';
 import { DeleteAttemptsDialog } from './DeleteAttemptsDialog.tsx';
 import { RecurringDifferences } from './RecurringDifferences.tsx';
-import { TurnTag } from './TurnTag.tsx';
 import './attempts.css';
 import { t } from '../../app/i18n.ts';
 
@@ -30,13 +28,6 @@ function AttemptRow({ attempt, bestMs, selection, wide }: { attempt: AttemptSumm
   const isBest = complete && attempt.timeMs === bestMs;
   const picked = selection?.picked.has(attempt.id) ?? false;
   const gap = complete && !isBest ? formatGap(attempt.gapToBestMs) : '';
-  const largest = attempt.largestDifference;
-  const largestLine = largest ? (
-    <>
-      <TurnTag turn={largest.turn} muted={!complete} />
-      {t('exercises.attempts.largest', { place: metres(largest.sM), difference: differenceText(largest) })}
-    </>
-  ) : null;
   const classes = [rowClass(isBest, complete, picked, selection !== null), selection ? 'selectable' : 'linked'].filter(Boolean).join(' ');
   return (
     <tr className={classes} data-attempt={attempt.number} onClick={selection ? () => selection.toggle(attempt.id) : undefined}>
@@ -68,13 +59,11 @@ function AttemptRow({ attempt, bestMs, selection, wide }: { attempt: AttemptSumm
           </>
         )}
         {wide ? null : gap ? <span className="phone-gap">{gap}</span> : null}
-        {wide || !largestLine ? null : <span className="phone-difference">{largestLine}</span>}
         {selection ? null : (
           <Link to={paths.review(attempt.id)} className="row-link" />
         )}
       </td>
       {wide ? <td>{gap}</td> : null}
-      {wide ? <td>{largestLine}</td> : null}
       <td className="chevron-cell">{selection ? null : <Icon name="chevron-right" size={18} />}</td>
     </tr>
   );
@@ -183,9 +172,7 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
           {days.map((day, index) => (
             <div key={day.date} className="attempt-day">
               <div className="attempt-day-head">
-                <h2>
-                  {formatDay(day.date)} <span className="sub">{day.bestMs === null ? t('exercises.attempts.day-none') : t('exercises.attempts.day-best', { time: formatTime(day.bestMs) })}</span>
-                </h2>
+                <h2>{formatDay(day.date)}</h2>
                 {wide && index === 0 ? tools : null}
               </div>
               {selecting ? <QuickSelect day={day} onPick={ids => pickOnDay(day, ids)} /> : null}
@@ -199,7 +186,6 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
                       <th>{t('exercises.attempts.number')}</th>
                       <th>{t('exercises.attempts.time')}</th>
                       {wide ? <th>{t('exercises.attempts.gap')}</th> : null}
-                      {wide ? <th>{t('exercises.attempts.difference')}</th> : null}
                       <th />
                     </tr>
                   </thead>

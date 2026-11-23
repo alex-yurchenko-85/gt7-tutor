@@ -44,8 +44,8 @@ export class StatsService {
       .where({ exercise_id: exerciseId, completion: 'complete' })
       .orderBy([{ column: 'started_at', order: 'desc' }, { column: 'id', order: 'desc' }])
       .limit(last);
-    const findings = await this.attempts.findingsFor(recent.map(attempt => attempt.id), reference.id);
-    const perAttempt = recent.map(attempt => findings.get(attempt.id)!);
+    const comparisons = await this.attempts.comparisonsFor(recent.map(attempt => attempt.id), reference.id);
+    const perAttempt = recent.map(attempt => comparisons.get(attempt.id)!.findings);
     const found = recurring(perAttempt, DEFAULT_CONFIG);
     if (found.length === 0) return [];
     const corners = await this.attempts.cornersOfReference(reference);

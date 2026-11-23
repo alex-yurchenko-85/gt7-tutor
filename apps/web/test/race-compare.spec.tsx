@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import type { RaceDetail } from '@gt7/contracts';
+import { KPH_PER_MPS, type RaceDetail } from '@gt7/contracts';
 import { RING_ID, raceCompare, ringDetail } from './race-fixtures.ts';
 import { ApiStub, renderApp, setViewportWidth, signedIn, el, maybeEl, findEl, sectionOf, maybeSection, findSection, els, findEls, turnGroupName } from './support.tsx';
 
@@ -159,8 +159,18 @@ describe('race page, compare tab', () => {
     delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
   });
 
+  it('compare_shows_the_low_point_row_and_the_rings', async () => {
+    await openCompare('?lap=5&with=2', ringDetail(), () =>
+      raceCompare({ corners: [{ number: 1, turnInSM: 2, apexSM: 10, radiusM: 40, apexSpeedMps: 67 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 18, brakeToSM: 8, brakeAtTurnIn: 0.35, lowSpeedSM: 12, lowSpeedMps: 66 / KPH_PER_MPS, lowSpeedAtApex: true, outsideM: 0, speedMps: 65 / KPH_PER_MPS, attemptLowSM: 6, attemptLowMps: 63 / KPH_PER_MPS }], findings: [{ kind: 'low-point-late', eventKey: 'corner-1', sM: 14, size: 14, unit: 'm', turn: 1 }] })
+    );
+    await findEl('[data-chart="speed"]');
+    expect(screen.getByText('Lowest speed 14 m after the apex')).toBeInTheDocument();
+    expect(els('[data-chart="speed"] .chart-ring').map(ring => ring.dataset.tone)).toEqual(['ref', 'you']);
+    expect(el('.ring-legend')).toHaveTextContent('lowest speed in the turn');
+  });
+
   it('keeps_the_turn_labels_of_the_speed_chart_apart', async () => {
-    const corner = (number: number, fromSM: number, toSM: number) => ({ number, turnInSM: fromSM, apexSM: fromSM, radiusM: 40, apexSpeedMps: 25, zoneFromSM: fromSM, zoneToSM: toSM, outsideM: null, speedMps: 24 });
+    const corner = (number: number, fromSM: number, toSM: number) => ({ number, turnInSM: fromSM, apexSM: fromSM, radiusM: 40, apexSpeedMps: 25, zoneFromSM: fromSM, zoneToSM: toSM, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: null, speedMps: 24, attemptLowSM: null, attemptLowMps: null });
     await openCompare('?lap=5&with=2', ringDetail(), () => raceCompare({ lap: 5, withLap: 2, corners: [corner(9, 9, 9.2), corner(10, 9.2, 9.4), corner(11, 9.4, 9.6)] }));
     await findEl('section.map-panel');
     const labels = els('[data-chart="speed"] .turn-label');

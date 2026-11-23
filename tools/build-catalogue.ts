@@ -50,8 +50,8 @@ async function main(): Promise<void> {
   const committed = readCommitted();
   console.log(`Circuits: ${next.circuits.length}. Cars: ${next.cars.length}.`);
   console.log('Entries by family:', countBy(next.entries, entry => entry.family));
-  const withoutTargets = next.entries.filter(entry => entry.family === 'Licence' && entry.targets === null).map(entry => entry.code);
-  console.log('Licence tests without three target times:', withoutTargets);
+  const withoutTarget = next.entries.filter(entry => entry.family === 'Licence' && entry.targetMs === null).map(entry => entry.code);
+  console.log('Licence tests without a target time:', withoutTarget);
   const unmatched = [...new Set(next.entries.filter(entry => entry.track && entry.circuitId === null).map(entry => entry.track))];
   console.log(`Track names without a circuit (add them to ${aliasesPath}):`, unmatched);
 

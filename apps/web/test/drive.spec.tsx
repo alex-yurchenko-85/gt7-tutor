@@ -17,7 +17,7 @@ const ARMED = { captureId: 'cap-9', exerciseId: EXERCISE_ID, referenceId: 'ref-d
 
 function driveApi(): ApiStub {
   rememberExercise();
-  return exerciseApi(exercise({ step: 3 }))
+  return exerciseApi(exercise())
     .on('POST /api/training/arm', { status: 201, body: ARMED })
     .on('POST /api/training/disarm', { status: 201, body: { ok: true } });
 }
@@ -177,13 +177,13 @@ describe('drive', () => {
 
   it('drive_view_shows_the_exercise_of_the_route_not_the_remembered_one', async () => {
     setViewportWidth(390);
-    const basics = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', activeReferenceId: null, step: 1 });
+    const basics = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', code: null, activeReferenceId: null });
     driveApi().on(`GET /api/exercises/${basics.id}`, basics).install();
     rememberExercise(basics.id);
     const { socket } = await openDrive(DRIVE_PATH, driving({ lastCue: cue({ kind: 'brake', targetSpeedKph: 85 }) }));
     expect(await screen.findByText('142')).toBeInTheDocument();
     expect(el('[role="status"].cue')).toHaveTextContent('Brake85');
-    expect(screen.getByText(/· Yangwang Experience \/ Racing Lines$/)).toBeInTheDocument();
+    expect(screen.getByText(/· Yangwang, EXP-1$/)).toBeInTheDocument();
   });
 
   it('drive_route_without_a_training_opens_the_attempts', async () => {
@@ -199,7 +199,7 @@ describe('drive', () => {
   });
 
   it('drive_route_without_a_reference_opens_the_attempts', async () => {
-    const basics = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', activeReferenceId: null, step: 1 });
+    const basics = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', code: null, activeReferenceId: null });
     driveApi().on(`GET /api/exercises/${basics.id}`, basics).install();
     await openDrive(`/exercises/${basics.id}/drive`, liveState());
     await waitFor(() => expect(window.location.pathname).toBe(`/exercises/${basics.id}/attempts`));
@@ -207,8 +207,8 @@ describe('drive', () => {
   });
 
   it('drive_route_of_another_exercise_opens_its_attempts', async () => {
-    const other = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', activeReferenceId: 'ref-demo', step: 2 });
-    const api = driveApi().on('GET /api/exercises', [exercise({ step: 3 }), other]).on(`GET /api/exercises/${other.id}`, other).install();
+    const other = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', activeReferenceId: 'ref-demo' });
+    const api = driveApi().on('GET /api/exercises', [exercise(), other]).on(`GET /api/exercises/${other.id}`, other).install();
     await openDrive(`/exercises/${other.id}/drive`, armed());
     await waitFor(() => expect(window.location.pathname).toBe(`/exercises/${other.id}/attempts`));
     expect(maybeEl('[role="status"].cue')).toBeNull();
@@ -296,7 +296,7 @@ describe('action cues on Drive', () => {
   it('drive_does_not_show_the_focus_cue', async () => {
     setViewportWidth(390);
     driveApi().install();
-    await openDrive(DRIVE_PATH, driving({ lastCue: cue({ id: 'f1', kind: 'focus', eventKey: 'focus', targetSpeedKph: null, clip: 'focus-brake-early-1' }) }));
+    await openDrive(DRIVE_PATH, driving({ lastCue: cue({ id: 'f1', kind: 'focus', eventKey: 'focus', targetSpeedKph: null, clip: 'focus-approach-brake-early-1' }) }));
     const current = el('[role="status"].cue');
     expect(current).toHaveTextContent(/^$/);
     expect(current).toHaveClass('idle');
@@ -322,14 +322,34 @@ describe('attempt summary', () => {
   it('summary_shows_the_focus_sentence', async () => {
     setViewportWidth(390);
     driveApi()
-      .on(`GET /api/attempts/${ATTEMPT_ID}`, { ...ATTEMPT, focus: { kind: 'brake-early', turn: 1, clip: 'focus-brake-early-1' } })
+      .on(`GET /api/attempts/${ATTEMPT_ID}`, { ...ATTEMPT, focus: { turn: 1, part: 'approach', cause: 'brake-early', clip: 'focus-approach-brake-early-1' } })
       .install();
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
     const summary = await findSummary(2);
-    expect(within(summary).getByText('Turn one. Brake later.')).toBeInTheDocument();
+    expect(within(summary).getByText('Turn one. Braking too early before the turn.')).toBeInTheDocument();
     expect(summary).toHaveTextContent('Focus for the next attempt');
     expect(within(summary).queryByText('A difference from the reference.')).toBeNull();
     expect(within(summary).queryByText(/mistake/i)).toBeNull();
+  });
+
+  it('summary_names_the_part_alone_and_a_turn_above_ten_in_digits', async () => {
+    setViewportWidth(390);
+    driveApi()
+      .on(`GET /api/attempts/${ATTEMPT_ID}`, { ...ATTEMPT, focus: { turn: 11, part: 'exit', cause: null, clip: null } })
+      .install();
+    await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
+    const summary = await findSummary(2);
+    expect(within(summary).getByText('Turn 11. Time lost on exit.')).toBeInTheDocument();
+  });
+
+  it('summary_says_a_late_brake_before_the_turn_also_for_an_exit_part', async () => {
+    setViewportWidth(390);
+    driveApi()
+      .on(`GET /api/attempts/${ATTEMPT_ID}`, { ...ATTEMPT, focus: { turn: 2, part: 'exit', cause: 'brake-late', clip: 'focus-approach-brake-late-2' } })
+      .install();
+    await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
+    const summary = await findSummary(2);
+    expect(within(summary).getByText('Turn two. Braking too late before the turn.')).toBeInTheDocument();
   });
 
   it('summary_title_is_the_attempt_number_without_voice_text', async () => {
@@ -411,16 +431,16 @@ describe('drive mode', () => {
   it('drive_header_shows_the_attempt_number_of_the_exercise', async () => {
     driveApi().install();
     const { socket } = await openDrive(DRIVE_PATH, driving({ attemptNumber: 4 }));
-    expect(screen.getByText('Attempt 4 · Yangwang Experience / Racing Lines')).toBeInTheDocument();
+    expect(screen.getByText('Attempt 4 · Yangwang, EXP-1')).toBeInTheDocument();
     send(socket, driving({ attemptNumber: 5 }));
-    expect(screen.getByText('Attempt 5 · Yangwang Experience / Racing Lines')).toBeInTheDocument();
+    expect(screen.getByText('Attempt 5 · Yangwang, EXP-1')).toBeInTheDocument();
   });
 
   it('drive_header_names_only_the_exercise_before_the_start', async () => {
     driveApi().install();
     await openDrive(DRIVE_PATH, driving({ mode: 'armed', attemptNumber: null, sM: null, speedMps: null }));
     const sub = document.querySelector('.stage-top .race-status-sub');
-    expect(sub).toHaveTextContent(/^Yangwang Experience \/ Racing Lines$/);
+    expect(sub).toHaveTextContent(/^Yangwang, EXP-1$/);
     const status = document.querySelector('.stage-top .race-status-word')!;
     expect([...status.querySelectorAll('.race-dot')].map(dot => dot.className)).toEqual(['race-dot green', 'race-dot red']);
     expect(status).toHaveTextContent(/^TelemetryVoice$/);
@@ -455,7 +475,7 @@ describe('drive mode', () => {
     await openDrive(DRIVE_PATH, driving({ lastCue: cue({ id: 'c1', eventKey: 'brake@332', kind: 'hard-brake', targetSpeedKph: 85, clip: 'hard-brake' }) }));
     expect(screen.getByRole('button', { name: 'Stop training' })).toBeInTheDocument();
     for (const name of ['Start now', 'Finish now', 'Abort attempt']) expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
-    expect(screen.getByText('Attempt 2 · Yangwang Experience / Racing Lines')).toBeInTheDocument();
+    expect(screen.getByText('Attempt 2 · Yangwang, EXP-1')).toBeInTheDocument();
     expect(await screen.findByText('Cue 1 of 3 · before T1')).toBeInTheDocument();
     expect(screen.getByText('m of 20')).toBeInTheDocument();
   });

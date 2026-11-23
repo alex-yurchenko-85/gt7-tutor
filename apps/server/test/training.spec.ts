@@ -3,14 +3,15 @@ import { Writable } from 'node:stream';
 import type { INestApplication } from '@nestjs/common';
 import knex, { type Knex } from 'knex';
 import request from 'supertest';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OpenStream } from '@gt7/capture';
 import { ENGLISH, type RawDatagram, type Sample, type ServerMsg } from '@gt7/contracts';
-import { DEFAULT_CONFIG, DEFAULT_SIDE_CUE_DISTANCE_M, analyseReference, estimatedPhraseMs, replayCoach, toSample } from '@gt7/core';
+import { COMPARISON_VERSION, DEFAULT_CONFIG, DEFAULT_SIDE_CUE_DISTANCE_M, analyseReference, estimatedPhraseMs, replayCoach, toSample } from '@gt7/core';
 import { RAW_STREAM_OPENER } from '../src/captures/capture.service.js';
 import { SampleCache } from '../src/captures/sample-cache.js';
 import { MONO_CLOCK } from '../src/clock/mono-clock.js';
 import { LiveHub } from '../src/live/live-hub.service.js';
+import { ReferencesService } from '../src/references/references.service.js';
 import { TrainingService } from '../src/training/training.service.js';
 import { DEMONSTRATION, TestApi, createReplayApp, type Range } from './support/api.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
@@ -312,13 +313,70 @@ describe('training pipeline and live protocol', () => {
     expect(voice.of('cue').filter(message => message.cue.kind === 'focus')).toEqual([]);
     source.emit(slowRun.slice(finishIndex - 20));
     const focus = await voice.waitFor('cue', message => message.cue.eventKey === 'focus');
-    expect(focus.cue).toMatchObject({ kind: 'focus', clip: 'focus-brake-late-1', followClip: null, priority: 10 });
+    expect(focus.cue).toMatchObject({ kind: 'focus', clip: 'focus-approach-brake-late-1', followClip: null, priority: 10 });
     await voice.waitFor('state', message => message.state.mode === 'finished');
     await new Promise(resolve => setTimeout(resolve, 300));
     expect(voice.of('cue').filter(message => message.cue.kind === 'focus')).toHaveLength(1);
     const [attempt] = await storedAttempts();
     const stored = (await cueEvents(attempt.id)).filter(row => row.event_key === 'focus');
     expect(stored).toEqual([expect.objectContaining({ kind: 'focus', outcome: 'sent' })]);
+  });
+
+  it('focus_cue_uses_the_stored_comparisons_and_reads_no_raw_file', async () => {
+    await completeRun(slowRun);
+    await completeRun(slowRun);
+    const earlier = await storedAttempts(2);
+    for (const row of earlier) {
+      const comparison = await db('attempt_comparisons').where({ attempt_id: row.id }).first();
+      const [first] = comparison.turn_losses as { turn: number; fromSM: number }[];
+      await db('attempt_findings').where({ attempt_id: row.id }).delete();
+      await db('attempt_findings').insert({ attempt_id: row.id, reference_id: referenceId, kind: 'brake-early', event_key: `brake@${first!.fromSM + 1}`, s_m: first!.fromSM + 1, size: 3, unit: 'm' });
+    }
+    const voice = await voiceDevice();
+    const source = new ManualSource();
+    await arm(source).then(response => expect(response.status).toBe(201));
+    const samplesOf = vi.spyOn(app.get(ReferencesService), 'samplesOf');
+    source.emit(slowRun);
+    const focus = await voice.waitFor('cue', message => message.cue.eventKey === 'focus');
+    expect(focus.cue).toMatchObject({ kind: 'focus', clip: 'focus-approach-brake-early-1' });
+    await storedAttempts(3);
+    expect(samplesOf).not.toHaveBeenCalled();
+  });
+
+  it('arm_calculates_old_comparisons_of_the_focus_window_again', async () => {
+    await completeRun(slowRun);
+    const [earlier] = await storedAttempts(1);
+    await db('attempt_comparisons').where({ attempt_id: earlier!.id }).update({ version: 1, turn_losses: JSON.stringify([]) });
+    const source = new ManualSource();
+    await arm(source).then(response => expect(response.status).toBe(201));
+    const refreshed = await eventually(async () => {
+      const row = await db('attempt_comparisons').where({ attempt_id: earlier!.id }).first();
+      return row.version === COMPARISON_VERSION ? row : null;
+    });
+    expect(refreshed.turn_losses.length).toBeGreaterThan(0);
+    await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
+  });
+
+  it('focus_cue_waits_for_the_focus_window_to_be_calculated_again', async () => {
+    await completeRun(slowRun);
+    const [earlier] = await storedAttempts(1);
+    await db('attempt_comparisons').where({ attempt_id: earlier!.id }).update({ version: 1, turn_losses: JSON.stringify([]) });
+    const voice = await voiceDevice();
+    samples.close();
+    try {
+      const source = new ManualSource();
+      await arm(source).then(response => expect(response.status).toBe(201));
+      source.emit(slowRun);
+      await voice.waitFor('state', message => message.state.mode === 'finished');
+      await new Promise(resolve => setTimeout(resolve, 300));
+      expect(voice.of('cue').filter(message => message.cue.kind === 'focus')).toEqual([]);
+    } finally {
+      samples.open();
+    }
+    await voice.waitFor('cue', message => message.cue.eventKey === 'focus');
+    expect(await db('attempt_comparisons').where({ attempt_id: earlier!.id }).first()).toMatchObject({ version: COMPARISON_VERSION });
+    await storedAttempts(2);
+    await http().post('/api/training/disarm').set('Cookie', cookie).expect(201);
   });
 
   it('manual_training_route_does_not_exist', async () => {

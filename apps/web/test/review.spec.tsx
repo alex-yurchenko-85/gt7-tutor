@@ -5,6 +5,7 @@ import { KPH_PER_MPS } from '@gt7/contracts';
 import { exercise, exerciseApi, reference, EXERCISE_ID } from './fixtures.ts';
 import { attemptSummary, review, withGap, ATTEMPT_ID, REVIEW_PATH } from './review-fixtures.ts';
 import * as chartSegments from '../src/charts/geometry.ts';
+import { trackTargetSave } from '../src/features/exercise/target-save.ts';
 import { renderApp, setViewportWidth, USER, type ApiStub, el, maybeEl, findEl, sectionOf, maybeSection, findSection, findDialog, els, turnGroupName } from './support.tsx';
 
 vi.mock('../src/charts/geometry.ts', async importOriginal => {
@@ -40,8 +41,8 @@ function mapCursor(): string | null {
 function sideReview() {
   const base = review({
     corners: [
-      { number: 1, turnInSM: 0, apexSM: 4, radiusM: 40, apexSpeedMps: 25, zoneFromSM: 0, zoneToSM: 8, outsideM: 5, speedMps: 24 },
-      { number: 2, turnInSM: 10, apexSM: 14, radiusM: 40, apexSpeedMps: 25, zoneFromSM: 10, zoneToSM: 16, outsideM: 1.2, speedMps: 24 }
+      { number: 1, turnInSM: 0, apexSM: 4, radiusM: 40, apexSpeedMps: 25, zoneFromSM: 0, zoneToSM: 8, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 5, speedMps: 24, attemptLowSM: null, attemptLowMps: null },
+      { number: 2, turnInSM: 10, apexSM: 14, radiusM: 40, apexSpeedMps: 25, zoneFromSM: 10, zoneToSM: 16, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 1.2, speedMps: 24, attemptLowSM: null, attemptLowMps: null }
     ]
   });
   const lat = [1, 1, -2.5, -5, 1, 1, 1, 1.2, 0.4, 0, 0];
@@ -175,10 +176,10 @@ describe('attempt review', () => {
 
   it('review_lists_corners_inside_or_outside', async () => {
     const corners = [
-      { number: 1, turnInSM: 461, apexSM: 519, radiusM: 43, apexSpeedMps: 89 / KPH_PER_MPS, zoneFromSM: 461, zoneToSM: 577, outsideM: 4.84, speedMps: 84.2 / KPH_PER_MPS },
-      { number: 2, turnInSM: 691, apexSM: 737, radiusM: 66, apexSpeedMps: 110 / KPH_PER_MPS, zoneFromSM: 691, zoneToSM: 783, outsideM: 0.4, speedMps: 111 / KPH_PER_MPS },
-      { number: 3, turnInSM: 834, apexSM: 870, radiusM: 84, apexSpeedMps: 123 / KPH_PER_MPS, zoneFromSM: 834, zoneToSM: 900, outsideM: -1.26, speedMps: null },
-      { number: 4, turnInSM: 900, apexSM: 950, radiusM: 84, apexSpeedMps: 123 / KPH_PER_MPS, zoneFromSM: 900, zoneToSM: 1000, outsideM: null, speedMps: null }
+      { number: 1, turnInSM: 461, apexSM: 519, radiusM: 43, apexSpeedMps: 89 / KPH_PER_MPS, zoneFromSM: 461, zoneToSM: 577, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 4.84, speedMps: 84.2 / KPH_PER_MPS, attemptLowSM: null, attemptLowMps: null },
+      { number: 2, turnInSM: 691, apexSM: 737, radiusM: 66, apexSpeedMps: 110 / KPH_PER_MPS, zoneFromSM: 691, zoneToSM: 783, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 0.4, speedMps: 111 / KPH_PER_MPS, attemptLowSM: null, attemptLowMps: null },
+      { number: 3, turnInSM: 834, apexSM: 870, radiusM: 84, apexSpeedMps: 123 / KPH_PER_MPS, zoneFromSM: 834, zoneToSM: 900, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: -1.26, speedMps: null, attemptLowSM: null, attemptLowMps: null },
+      { number: 4, turnInSM: 900, apexSM: 950, radiusM: 84, apexSpeedMps: 123 / KPH_PER_MPS, zoneFromSM: 900, zoneToSM: 1000, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: null, speedMps: null, attemptLowSM: null, attemptLowMps: null }
     ];
     reviewApi(review({ corners }));
     renderApp({ path: REVIEW_PATH });
@@ -194,7 +195,7 @@ describe('attempt review', () => {
   });
 
   it('review_shows_the_same_corner_speed_after_the_unit_change', async () => {
-    const corners = [{ number: 1, turnInSM: 2, apexSM: 4, radiusM: 43, apexSpeedMps: 88.6 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 6, outsideM: 0, speedMps: 84.2 / KPH_PER_MPS }];
+    const corners = [{ number: 1, turnInSM: 2, apexSM: 4, radiusM: 43, apexSpeedMps: 88.6 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 6, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 0, speedMps: 84.2 / KPH_PER_MPS, attemptLowSM: null, attemptLowMps: null }];
     const findings = [{ kind: 'slow-corner' as const, eventKey: 'brake@4', sM: 4, size: 15.6 / KPH_PER_MPS, unit: 'm/s' as const, turn: 1 }];
     reviewApi(review({ corners, findings }));
     renderApp({ path: REVIEW_PATH });
@@ -329,10 +330,49 @@ describe('attempt review', () => {
     expect(list).not.toHaveTextContent(/346|462/);
   });
 
+  it('low_point_row_says_where_the_lowest_speed_is', async () => {
+    reviewApi(review({ corners: [{ number: 1, turnInSM: 2, apexSM: 10, radiusM: 40, apexSpeedMps: 67 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 18, brakeToSM: 8, brakeAtTurnIn: 0.35, lowSpeedSM: 12, lowSpeedMps: 66 / KPH_PER_MPS, lowSpeedAtApex: true, outsideM: 0, speedMps: 65 / KPH_PER_MPS, attemptLowSM: 6, attemptLowMps: 63 / KPH_PER_MPS }], findings: [{ kind: 'low-point-early', eventKey: 'corner-1', sM: 6, size: 53, unit: 'm', turn: 1 }] }));
+    renderApp({ path: REVIEW_PATH });
+    const list = await findSection('Differences by turn');
+    expect(within(list).getByText('Lowest speed 53 m before the apex')).toBeInTheDocument();
+    expect(list).not.toHaveTextContent(/released|Hold the brake|Release the brake/i);
+  });
+
+  it('speed_chart_rings_the_lowest_speed_of_each_line_in_a_turn_with_a_brake_zone', async () => {
+    reviewApi(review({ corners: [{ number: 1, turnInSM: 2, apexSM: 10, radiusM: 40, apexSpeedMps: 67 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 18, brakeToSM: 8, brakeAtTurnIn: 0.35, lowSpeedSM: 12, lowSpeedMps: 66 / KPH_PER_MPS, lowSpeedAtApex: true, outsideM: 0, speedMps: 65 / KPH_PER_MPS, attemptLowSM: 6, attemptLowMps: 63 / KPH_PER_MPS }, { ...{ number: 1, turnInSM: 2, apexSM: 10, radiusM: 40, apexSpeedMps: 67 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 18, brakeToSM: 8, brakeAtTurnIn: 0.35, lowSpeedSM: 12, lowSpeedMps: 66 / KPH_PER_MPS, lowSpeedAtApex: true, outsideM: 0, speedMps: 65 / KPH_PER_MPS, attemptLowSM: 6, attemptLowMps: 63 / KPH_PER_MPS }, number: 2, zoneFromSM: 18, zoneToSM: 20, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, attemptLowSM: null, attemptLowMps: null }] }));
+    renderApp({ path: REVIEW_PATH });
+    await findEl('[data-chart="speed"]');
+    const rings = els('[data-chart="speed"] .chart-ring');
+    expect(rings.map(ring => [ring.dataset.tone, ring.style.left, ring.textContent, ring.dataset.side, ring.dataset.label])).toEqual([
+      ['ref', '60%', '66 km/h', 'right', 'above'],
+      ['you', '30%', '63 km/h', 'left', 'above']
+    ]);
+    expect(document.querySelectorAll('[data-chart="throttle"] .chart-ring, [data-chart="brake"] .chart-ring')).toHaveLength(0);
+    expect(el('.ring-legend')).toHaveTextContent('lowest speed in the turn');
+  });
+
+  it('speed_chart_rings_have_no_value_label_with_more_than_three_turns', async () => {
+    const corner = (number: number) => ({ ...{ number: 1, turnInSM: 2, apexSM: 10, radiusM: 40, apexSpeedMps: 67 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 18, brakeToSM: 8, brakeAtTurnIn: 0.35, lowSpeedSM: 12, lowSpeedMps: 66 / KPH_PER_MPS, lowSpeedAtApex: true, outsideM: 0, speedMps: 65 / KPH_PER_MPS, attemptLowSM: 6, attemptLowMps: 63 / KPH_PER_MPS }, number, lowSpeedSM: number * 4, attemptLowSM: number * 4 + 1 });
+    reviewApi(review({ corners: [corner(1), corner(2), corner(3), corner(4)] }));
+    renderApp({ path: REVIEW_PATH });
+    await findEl('[data-chart="speed"]');
+    const rings = els('[data-chart="speed"] .chart-ring');
+    expect(rings).toHaveLength(8);
+    expect(rings.every(ring => ring.textContent === '')).toBe(true);
+  });
+
+  it('speed_chart_has_no_ring_and_no_ring_legend_without_a_brake_zone', async () => {
+    reviewApi();
+    renderApp({ path: REVIEW_PATH });
+    await findEl('[data-chart="speed"]');
+    expect(document.querySelectorAll('.chart-ring')).toHaveLength(0);
+    expect(maybeEl('.ring-legend')).toBeNull();
+  });
+
   it('charts_shade_the_turn_zone_of_each_corner', async () => {
     const corners = [
-      { number: 1, turnInSM: 2, apexSM: 4, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 6, outsideM: 0, speedMps: 88 / KPH_PER_MPS },
-      { number: 2, turnInSM: 12, apexSM: 16, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 12, zoneToSM: 18, outsideM: 0, speedMps: 88 / KPH_PER_MPS }
+      { number: 1, turnInSM: 2, apexSM: 4, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 6, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 0, speedMps: 88 / KPH_PER_MPS, attemptLowSM: null, attemptLowMps: null },
+      { number: 2, turnInSM: 12, apexSM: 16, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 12, zoneToSM: 18, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 0, speedMps: 88 / KPH_PER_MPS, attemptLowSM: null, attemptLowMps: null }
     ];
     reviewApi(review({ corners }));
     renderApp({ path: REVIEW_PATH });
@@ -348,9 +388,9 @@ describe('attempt review', () => {
 
   it('empty_turn_zone_has_no_band_and_no_label', async () => {
     const corners = [
-      { number: 1, turnInSM: 2, apexSM: 4, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 6, outsideM: 0, speedMps: 88 / KPH_PER_MPS },
-      { number: 2, turnInSM: 12, apexSM: 16, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 12, zoneToSM: 12, outsideM: 0, speedMps: 88 / KPH_PER_MPS },
-      { number: 3, turnInSM: 14, apexSM: 16, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 14, zoneToSM: 13, outsideM: 0, speedMps: 88 / KPH_PER_MPS }
+      { number: 1, turnInSM: 2, apexSM: 4, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 6, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 0, speedMps: 88 / KPH_PER_MPS, attemptLowSM: null, attemptLowMps: null },
+      { number: 2, turnInSM: 12, apexSM: 16, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 12, zoneToSM: 12, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 0, speedMps: 88 / KPH_PER_MPS, attemptLowSM: null, attemptLowMps: null },
+      { number: 3, turnInSM: 14, apexSM: 16, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 14, zoneToSM: 13, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 0, speedMps: 88 / KPH_PER_MPS, attemptLowSM: null, attemptLowMps: null }
     ];
     reviewApi(review({ corners }));
     renderApp({ path: REVIEW_PATH });
@@ -361,8 +401,8 @@ describe('attempt review', () => {
 
   it('two_bands_two_labels', async () => {
     const corners = [
-      { number: 1, turnInSM: 2, apexSM: 4, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 6, outsideM: 0, speedMps: 88 / KPH_PER_MPS },
-      { number: 2, turnInSM: 12, apexSM: 16, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 12, zoneToSM: 18, outsideM: 0, speedMps: 88 / KPH_PER_MPS }
+      { number: 1, turnInSM: 2, apexSM: 4, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 2, zoneToSM: 6, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 0, speedMps: 88 / KPH_PER_MPS, attemptLowSM: null, attemptLowMps: null },
+      { number: 2, turnInSM: 12, apexSM: 16, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: 12, zoneToSM: 18, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 0, speedMps: 88 / KPH_PER_MPS, attemptLowSM: null, attemptLowMps: null }
     ];
     reviewApi(review({ corners }));
     renderApp({ path: REVIEW_PATH });
@@ -377,7 +417,7 @@ describe('attempt review', () => {
   });
 
   it('drops_a_turn_label_that_fits_in_no_row', async () => {
-    const corner = (number: number, fromSM: number, toSM: number) => ({ number, turnInSM: fromSM, apexSM: fromSM, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: fromSM, zoneToSM: toSM, outsideM: 0, speedMps: 88 / KPH_PER_MPS });
+    const corner = (number: number, fromSM: number, toSM: number) => ({ number, turnInSM: fromSM, apexSM: fromSM, radiusM: 40, apexSpeedMps: 90 / KPH_PER_MPS, zoneFromSM: fromSM, zoneToSM: toSM, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: 0, speedMps: 88 / KPH_PER_MPS, attemptLowSM: null, attemptLowMps: null });
     reviewApi(review({ corners: [corner(1, 9, 9.2), corner(2, 9.2, 9.4), corner(3, 9.4, 9.6)] }));
     renderApp({ path: REVIEW_PATH });
     await findEl('[data-chart="speed"]');
@@ -640,7 +680,7 @@ describe('attempt review', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'Attempt 1 · 0:27.100 +1.63 s' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'All attempts' })).toBeNull();
     const crumbs = await findEl('nav.breadcrumb');
-    expect(crumbs).toHaveTextContent('Exercises / Yangwang Experience / Racing Lines');
+    expect(crumbs).toHaveTextContent('Exercises / Yangwang, EXP-1');
     expect(within(crumbs).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
   });
 
@@ -736,6 +776,17 @@ describe('attempt review', () => {
     for (const button of screen.getAllByRole('button')) expect(button.textContent).not.toMatch(/…$/);
   });
 
+  it('review_reads_the_exercise_after_a_pending_target_save', async () => {
+    let finish: (value: unknown) => void = () => undefined;
+    void trackTargetSave(new Promise(resolve => (finish = resolve)));
+    const api = reviewApi();
+    renderApp({ path: REVIEW_PATH });
+    await screen.findByRole('heading', { level: 2, name: /^Attempt \d+ · / });
+    expect(api.calls.some(call => call.method === 'GET' && call.path === `/api/exercises/${EXERCISE_ID}`)).toBe(false);
+    finish(undefined);
+    await findEl('nav.exercise-tabs');
+  });
+
   it('review_keeps_the_exercise_tabs', async () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
@@ -743,10 +794,10 @@ describe('attempt review', () => {
     expect(within(tabs).getByRole('link', { name: /^Attempts/ })).toHaveAttribute('aria-current', 'page');
     expect(within(tabs).getByRole('link', { name: 'Cues' })).toHaveAttribute('href', expect.stringMatching(/\/cues$/));
     expect(screen.queryByRole('link', { name: 'All attempts' })).toBeNull();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(exercise().name);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Yangwang, EXP-1');
     expect(screen.getByRole('heading', { level: 2, name: /^Attempt \d+ · / })).toBeInTheDocument();
     const crumb = el('nav.breadcrumb');
-    expect(crumb).toHaveTextContent(`Exercises / ${exercise().name}`);
+    expect(crumb).toHaveTextContent('Exercises / Yangwang, EXP-1');
   });
 
   it('review_shows_without_the_exercise', async () => {

@@ -1,10 +1,10 @@
+import { cornerBrake, type CornerBrake } from './brake-shape.ts';
 import type { CoreConfig } from './config.ts';
 import type { ReferenceCueEvent } from './cue-events.ts';
 import { pointAt, type ReferencePath } from './reference.ts';
 import { StepCursor } from './step-cursor.ts';
 
-export type Corner = {
-  number: number;
+export type CornerShape = {
   zoneStartSM: number;
   turnInSM: number;
   apexSM: number;
@@ -12,6 +12,8 @@ export type Corner = {
   apexSpeedMps: number;
   insideSign: 1 | -1;
 };
+
+export type Corner = CornerShape & CornerBrake & { number: number };
 
 type Bend = { sM: number; curvature: number; sign: 1 | -1 };
 
@@ -62,7 +64,7 @@ function turnIn(curve: Bend[], apex: Bend, config: CoreConfig): number {
 
 export function findCorners(path: ReferencePath, events: ReferenceCueEvent[], config: CoreConfig): Corner[] {
   const curve = bends(path, config);
-  const corners: Omit<Corner, 'number'>[] = [];
+  const corners: CornerShape[] = [];
   for (const window of apexWindows(events, path, config)) {
     const apex = sharpest(curve, window);
     if (!apex || apex.curvature === 0 || 1 / apex.curvature > config.corners.maxRadiusM) continue;
@@ -76,11 +78,12 @@ export function findCorners(path: ReferencePath, events: ReferenceCueEvent[], co
       insideSign: apex.sign
     });
   }
-  return joinCorners(corners.sort((a, b) => a.apexSM - b.apexSM)).map((corner, index) => ({ number: index + 1, ...corner }));
+  const joined = joinCorners(corners.sort((a, b) => a.apexSM - b.apexSM));
+  return joined.map((corner, index) => ({ number: index + 1, ...corner, ...cornerBrake(path, joined, index, config) }));
 }
 
-export function joinCorners(ordered: Omit<Corner, 'number'>[]): Omit<Corner, 'number'>[] {
-  const joined: Omit<Corner, 'number'>[] = [];
+export function joinCorners(ordered: CornerShape[]): CornerShape[] {
+  const joined: CornerShape[] = [];
   let lastApexSM = -Infinity;
   for (const corner of ordered) {
     const last = joined.at(-1);

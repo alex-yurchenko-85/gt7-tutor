@@ -7,7 +7,6 @@ import { ConfigModule } from '@nestjs/config';
 import { KNEX } from '../src/storage/knex.provider.js';
 import { StorageModule } from '../src/storage/storage.module.js';
 import { exerciseStatuses } from '../src/exercises/exercise-status.js';
-import { exerciseStep } from '../src/exercises/exercise-step.js';
 import { createDisposableDatabase, createMigratedDatabase, migrationConfig, migrationsDirectory, type DisposableDatabase } from './support/database.js';
 
 const applicationTables = ['users', 'sessions', 'settings', 'exercises', 'captures', 'references', 'attempts', 'cue_events', 'attempt_findings', 'attempt_comparisons', 'races', 'race_laps', 'race_events'];
@@ -150,6 +149,120 @@ describe('database schema', () => {
     });
   });
 
+  it('comparison_version_migration_marks_stored_comparisons_old_and_rolls_back', async () => {
+    await withDatabase(async db => {
+      await migrateUpTo(db, '010-best-lap-without-pit.cjs');
+      const { exercise, capture } = await seedOwner(db, 'G-2');
+      const [reference] = await db('references').insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 10, last_raw_index: 15, origin: 'demo' }).returning('id');
+      const [attempt] = await db('attempts')
+        .insert({ exercise_id: exercise.id, capture_id: capture.id, reference_id: reference.id, first_raw_index: 0, last_raw_index: 5, completion: 'complete', game_ms: 1000, started_at: db.fn.now() })
+        .returning('id');
+      await db('attempt_comparisons').insert({ attempt_id: attempt.id, reference_id: reference.id });
+      await db('attempt_findings').insert({ attempt_id: attempt.id, reference_id: reference.id, kind: 'wide-apex', event_key: 'corner-2', s_m: 110, size: 3.3, unit: 'm' });
+      await db.migrate.latest(migrationConfig());
+      expect(await db('attempt_comparisons').select('attempt_id', 'version')).toEqual([{ attempt_id: attempt.id, version: 0 }]);
+      expect(await db('attempt_findings').where({ attempt_id: attempt.id })).toHaveLength(1);
+      await migrateDownTo(db, '010-best-lap-without-pit.cjs');
+      expect(await db('attempt_comparisons').select('attempt_id')).toEqual([{ attempt_id: attempt.id }]);
+      expect(await db('attempt_findings').where({ attempt_id: attempt.id })).toHaveLength(1);
+      await db.migrate.latest(migrationConfig());
+      expect(await db('attempt_comparisons').select('version')).toEqual([{ version: 0 }]);
+    });
+  });
+
+  it('side_cue_default_migration_keeps_stored_distances_and_rolls_back', async () => {
+    await withDatabase(async db => {
+      await migrateUpTo(db, '012-add-comparison-turn-losses.cjs');
+      const { exercise } = await seedOwner(db, 'S-1');
+      const [user] = await db('users').insert({ name: 'side-two', password_hash: 'x' }).returning('id');
+      const [chosen] = await db('exercises').insert({ user_id: user.id, family: 'Licence', name: 'S-2', side_cue_distance_m: 1 }).returning('id');
+      const distances = async () => (await db('exercises').whereIn('id', [exercise.id, chosen.id]).orderBy('name').select('side_cue_distance_m')).map(row => row.side_cue_distance_m);
+      expect(await distances()).toEqual([2, 1]);
+      await db.migrate.latest(migrationConfig());
+      expect(await distances()).toEqual([2, 1]);
+      const [fresh] = await db('exercises').insert({ user_id: user.id, family: 'Licence', name: 'S-3' }).returning('side_cue_distance_m');
+      expect(fresh.side_cue_distance_m).toBeNull();
+      await migrateDownTo(db, '012-add-comparison-turn-losses.cjs');
+      expect(await distances()).toEqual([2, 1]);
+      const [older] = await db('exercises').insert({ user_id: user.id, family: 'Licence', name: 'S-4' }).returning('side_cue_distance_m');
+      expect(older.side_cue_distance_m).toBe(2);
+    });
+  });
+
+  it('one_target_migration_keeps_the_gold_time_and_rolls_back', async () => {
+    await withDatabase(async db => {
+      await migrateUpTo(db, '013-side-cues-off-by-default.cjs');
+      const { user, exercise: medals } = await seedOwner(db, 'B-1');
+      await db('exercises').where({ id: medals.id }).update({ targets: JSON.stringify({ goldMs: 16400, silverMs: 16700, bronzeMs: 17800 }) });
+      const [none] = await db('exercises').insert({ user_id: user.id, family: 'Circuit Experience', name: 'Tsukuba Circuit' }).returning('id');
+      const ids = [medals.id, none.id];
+      await db.migrate.up({ ...migrationConfig(), name: '014-one-exercise-target.cjs' });
+      expect(Object.keys(await db('exercises').columnInfo())).not.toContain('targets');
+      expect(await db('exercises').whereIn('id', ids).orderBy('name').pluck('target_ms')).toEqual([16400, null]);
+      await migrateDownTo(db, '013-side-cues-off-by-default.cjs');
+      expect(Object.keys(await db('exercises').columnInfo())).not.toContain('target_ms');
+      expect(await db('exercises').whereIn('id', ids).orderBy('name').pluck('targets')).toEqual([{ goldMs: 16400 }, {}]);
+      await db.migrate.latest(migrationConfig());
+      expect(await db('exercises').whereIn('id', ids).orderBy('name').pluck('target_ms')).toEqual([16400, null]);
+    });
+  });
+
+  it('circuit_experience_sector_migration_renames_the_two_known_exercises_and_rolls_back', async () => {
+    await withDatabase(async db => {
+      await migrateUpTo(db, '014-one-exercise-target.cjs');
+      const { user, capture } = await seedOwner(db, 'B-1');
+      const insert = async (catalogueId: string, name: string) =>
+        (await db('exercises').insert({ user_id: user.id, catalogue_id: catalogueId, family: 'Circuit Experience', name, target_ms: catalogueId === 'ce-autodromo-de-interlagos' ? 16400 : null }).returning('id'))[0].id as string;
+      const tsukuba = await insert('ce-tsukuba-circuit', 'Tsukuba Circuit');
+      const interlagos = await insert('ce-autodromo-de-interlagos', 'Autódromo de Interlagos');
+      const other = await insert('ce-suzuka-circuit', 'Suzuka Circuit');
+      const [reference] = await db('references').insert({ exercise_id: tsukuba, capture_id: capture.id, first_raw_index: 10, last_raw_index: 15, origin: 'demo' }).returning('id');
+      await db('exercises').where({ id: tsukuba }).update({ active_reference_id: reference.id });
+      await db('attempts').insert({ exercise_id: tsukuba, capture_id: capture.id, reference_id: reference.id, first_raw_index: 0, last_raw_index: 5, completion: 'complete', game_ms: 17071, started_at: db.fn.now() });
+      const rows = async () =>
+        db('exercises').whereIn('id', [tsukuba, interlagos, other]).orderBy('created_at').select('id', 'catalogue_id', 'name', 'target_ms', 'active_reference_id');
+      await db.migrate.up({ ...migrationConfig(), name: '015-circuit-experience-sectors.cjs' });
+      expect(await rows()).toEqual([
+        { id: tsukuba, catalogue_id: 'ce-tsukuba-circuit-s1', name: 'Tsukuba Circuit · Sector 1', target_ms: null, active_reference_id: reference.id },
+        { id: interlagos, catalogue_id: 'ce-autodromo-de-interlagos-s2', name: 'Autódromo de Interlagos · Sector 2', target_ms: 16400, active_reference_id: null },
+        { id: other, catalogue_id: 'ce-suzuka-circuit', name: 'Suzuka Circuit', target_ms: null, active_reference_id: null }
+      ]);
+      expect(await db('attempts').where({ exercise_id: tsukuba }).pluck('game_ms')).toEqual([17071]);
+      expect(await db('references').where({ exercise_id: tsukuba })).toHaveLength(1);
+      await migrateDownTo(db, '014-one-exercise-target.cjs');
+      expect((await rows()).map(row => [row.catalogue_id, row.name])).toEqual([
+        ['ce-tsukuba-circuit', 'Tsukuba Circuit'],
+        ['ce-autodromo-de-interlagos', 'Autódromo de Interlagos'],
+        ['ce-suzuka-circuit', 'Suzuka Circuit']
+      ]);
+      expect(await db('attempts').where({ exercise_id: tsukuba })).toHaveLength(1);
+    });
+  });
+
+  it('turn_losses_migration_keeps_stored_comparisons_and_rolls_back', async () => {
+    await withDatabase(async db => {
+      await migrateUpTo(db, '011-add-comparison-version.cjs');
+      const { exercise, capture } = await seedOwner(db, 'G-3');
+      const [reference] = await db('references').insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 10, last_raw_index: 15, origin: 'demo' }).returning('id');
+      const [attempt] = await db('attempts')
+        .insert({ exercise_id: exercise.id, capture_id: capture.id, reference_id: reference.id, first_raw_index: 0, last_raw_index: 5, completion: 'complete', game_ms: 1000, started_at: db.fn.now() })
+        .returning('id');
+      await db('attempt_comparisons').insert({ attempt_id: attempt.id, reference_id: reference.id, version: 1 });
+      await db('attempt_findings').insert({ attempt_id: attempt.id, reference_id: reference.id, kind: 'wide-apex', event_key: 'corner-2', s_m: 110, size: 3.3, unit: 'm' });
+      await db.migrate.latest(migrationConfig());
+      expect(await db('attempt_comparisons').select('attempt_id', 'version', 'turn_losses')).toEqual([{ attempt_id: attempt.id, version: 1, turn_losses: [] }]);
+      const losses = [{ turn: 1, fromSM: 0, toSM: 120, lostMs: 85 }];
+      await db('attempt_comparisons').where({ attempt_id: attempt.id }).update({ version: 2, turn_losses: JSON.stringify(losses) });
+      expect(await db('attempt_comparisons').pluck('turn_losses')).toEqual([losses]);
+      await migrateDownTo(db, '011-add-comparison-version.cjs');
+      expect(await db('attempt_comparisons').select('attempt_id', 'version')).toEqual([{ attempt_id: attempt.id, version: 1 }]);
+      expect(Object.keys(await db('attempt_comparisons').columnInfo())).not.toContain('turn_losses');
+      expect(await db('attempt_findings').where({ attempt_id: attempt.id })).toHaveLength(1);
+      await db.migrate.latest(migrationConfig());
+      expect(await db('attempt_comparisons').select('version', 'turn_losses')).toEqual([{ version: 1, turn_losses: [] }]);
+    });
+  });
+
   it('attempt_comparisons_migration_fills_pairs_with_findings_and_rolls_back', async () => {
     await withDatabase(async db => {
       const pairs = async () => (await db('attempt_comparisons').select('attempt_id', 'reference_id')).map(row => `${row.attempt_id}/${row.reference_id}`).sort();
@@ -188,7 +301,7 @@ describe('database schema', () => {
       const columns = async () => Object.keys(await db('attempts').columnInfo());
       const stored = async () => db('attempts').orderBy('first_raw_index').select('first_raw_index', 'last_raw_index', 'completion', 'game_ms');
       await migrateUpTo(db, '005-add-attempt-comparisons.cjs');
-      const { exercise, capture } = await seedOwner(db, 'H-1');
+      const { user, exercise, capture } = await seedOwner(db, 'H-1');
       const [reference] = await db('references').insert({ exercise_id: exercise.id, capture_id: capture.id, first_raw_index: 100, last_raw_index: 110, origin: 'demo', start_kind: 'flying' }).returning('id');
       await db('exercises').where({ id: exercise.id }).update({ active_reference_id: reference.id });
       const old = [
@@ -201,21 +314,15 @@ describe('database schema', () => {
       await db.migrate.up({ ...migrationConfig(), name: '006-remove-attempt-mode.cjs' });
       expect(await columns()).not.toContain('mode');
       expect(await stored()).toEqual(kept);
-      const found = await request(db, exercise.id);
-      expect(found).toEqual({ completeAttempts: 2, step: 2 });
       await db.migrate.down(migrationConfig());
       expect(await columns()).toContain('mode');
       expect(await db('attempts').pluck('mode')).toEqual(['guided', 'guided', 'guided']);
       await expect(db('attempts').insert({ exercise_id: exercise.id, capture_id: capture.id, reference_id: reference.id, first_raw_index: 30, last_raw_index: 35, mode: 'other', completion: 'aborted', started_at: db.fn.now() })).rejects.toMatchObject({ code: '23514' });
       await db.migrate.latest(migrationConfig());
       expect(await stored()).toEqual(kept);
+      const [summary] = await exerciseStatuses(db, user.id, exercise.id);
+      expect(summary).toMatchObject({ completeAttempts: 2 });
     });
-
-    async function request(db: Knex, exerciseId: string) {
-      const rows = await exerciseStatuses(db, (await db('exercises').where({ id: exerciseId }).first()).user_id, exerciseId);
-      const summary = rows[0]!;
-      return { completeAttempts: summary.activeReferenceAttempts, step: exerciseStep({ hasActiveReference: summary.activeReferenceId !== null, activeReferenceAttempts: summary.activeReferenceAttempts }) };
-    }
   });
 
   it('reference_start_kind_migration_keeps_old_rows_and_rolls_back', async () => {
@@ -406,10 +513,10 @@ describe('database schema', () => {
       expect((await db('captures').where({ id: capture.id }).first()).exercise_id).toBeNull();
     });
 
-    it('side_cue_distance_defaults_to_two_metres_in_the_schema', async () => {
+    it('side_cue_distance_defaults_to_off_in_the_schema', async () => {
       const [user] = await db('users').insert({ name: 'sider', password_hash: 'x' }).returning('id');
       const [exercise] = await db('exercises').insert({ user_id: user.id, family: 'Licence', name: 'E-1' }).returning('id');
-      expect((await db('exercises').where({ id: exercise.id }).first()).side_cue_distance_m).toBe(2);
+      expect((await db('exercises').where({ id: exercise.id }).first()).side_cue_distance_m).toBeNull();
     });
 
     it('reference_range_must_be_ordered', async () => {

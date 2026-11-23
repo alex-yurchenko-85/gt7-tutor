@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { medalSchema, type Exercise, type MedalName } from '@gt7/contracts';
+import type { Exercise } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { deletionErrorText } from '../../app/busy.ts';
 import { ConfirmDialog } from '../../app/ConfirmDialog.tsx';
@@ -9,10 +9,9 @@ import { useSession } from '../../app/session.tsx';
 import { useTrainingGate } from '../../app/use-training.ts';
 import { t } from '../../app/i18n.ts';
 import { Rich } from '../../app/rich-text.tsx';
+import { exerciseTitle } from '../exercise/use-exercise-where.ts';
 
-const MEDALS = new Set<string>(medalSchema.options);
-
-function hasHistory(exercise: Exercise): boolean {
+export function hasHistory(exercise: Exercise): boolean {
   return exercise.attemptCount > 0 || exercise.referenceCount > 0;
 }
 
@@ -49,11 +48,7 @@ function OneExercise({ exercise }: { exercise: Exercise }) {
         ) : null}
         {exercise.bestMs !== null ? (
           <li>
-            {MEDALS.has(exercise.status) ? (
-              <Rich k="exercises.delete.best-medal" params={{ medal: t(`exercises.medal.${exercise.status as MedalName}`) }} parts={{ time: <b>{formatTime(exercise.bestMs)}</b> }} />
-            ) : (
-              <Rich k="exercises.delete.best" parts={{ time: <b>{formatTime(exercise.bestMs)}</b> }} />
-            )}
+            <Rich k="exercises.delete.best" parts={{ time: <b>{formatTime(exercise.bestMs)}</b> }} />
           </li>
         ) : null}
       </ul>
@@ -69,7 +64,7 @@ function SeveralExercises({ exercises }: { exercises: Exercise[] }) {
       <ul>
         {exercises.map(exercise => (
           <li key={exercise.id}>
-            <b>{exercise.name}</b>, {historyText(exercise)}
+            <b>{exerciseTitle(exercise).title}</b>, {historyText(exercise)}
           </li>
         ))}
       </ul>
@@ -121,7 +116,7 @@ export function DeleteExercisesDialog({ exercises, currentId, onKeep, onDeleted 
 
   return (
     <ConfirmDialog
-      title={one ? t('exercises.delete.title-one', { name: exercises[0]!.name }) : t('exercises.delete.title-many', { count: exercises.length })}
+      title={one ? t('exercises.delete.title-one', { name: exerciseTitle(exercises[0]!).title }) : t('exercises.delete.title-many', { count: exercises.length })}
       keepLabel={one ? t('exercises.delete.keep-it') : t('exercises.delete.keep-them')}
       confirmLabel={gate.label(one ? t('exercises.delete.confirm-one') : t('exercises.delete.confirm-many', { count: exercises.length }))}
       working={working}
@@ -132,7 +127,7 @@ export function DeleteExercisesDialog({ exercises, currentId, onKeep, onDeleted 
       onConfirm={confirm}
     >
       {one ? <OneExercise exercise={exercises[0]!} /> : <SeveralExercises exercises={exercises} />}
-      {current ? <p>{t('exercises.delete.current', { name: current.name })}</p> : null}
+      {current ? <p>{t('exercises.delete.current', { name: exerciseTitle(current).title })}</p> : null}
       <p>{catalogueText(exercises)}</p>
       {withHistory ? (
         <label className="confirm-check">

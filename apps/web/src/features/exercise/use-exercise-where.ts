@@ -1,31 +1,39 @@
-import type { CatalogueListEntry, Exercise, Progress } from '@gt7/contracts';
+import type { CatalogueListEntry, Exercise } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { useResource } from '../../app/resource.ts';
+import { t } from '../../app/i18n.ts';
+
+export const CIRCUIT_EXPERIENCE = 'Circuit Experience';
+
+export type ExerciseNaming = Pick<Exercise, 'catalogueId' | 'family' | 'name' | 'collection' | 'code'>;
+
+export type ExerciseTitle = { title: string; detail: string | null };
 
 export type WhereDetails = {
   family?: string | null | undefined;
-  collection: string | null;
-  code?: string | null | undefined;
+  detail: string | null;
   track?: string | null | undefined;
-  car?: string | null | undefined;
 };
 
-export function whereText(details: WhereDetails): string {
-  const collection = [details.collection, details.code].filter(Boolean).join(', ');
-  return [details.family, collection, details.track, details.car].filter(Boolean).join(' · ');
+export function placeParts(family: string | null | undefined, collection: string | null | undefined, code: string | null | undefined): string[] {
+  return family === CIRCUIT_EXPERIENCE ? [] : [collection, code].filter((part): part is string => Boolean(part));
 }
 
-type Sources = { progress: Progress | null; catalogue: CatalogueListEntry[] };
+export function exerciseTitle(exercise: ExerciseNaming): ExerciseTitle {
+  const place = placeParts(exercise.family, exercise.collection, exercise.code).join(', ');
+  if (exercise.code && place) return { title: place, detail: exercise.name };
+  return { title: exercise.name, detail: place || (exercise.catalogueId === null ? t('exercises.own-collection') : null) };
+}
+
+export function whereText(details: WhereDetails): string {
+  return [details.family, details.detail, details.track].filter(Boolean).join(' · ');
+}
 
 export function useExerciseWhere(exercise: Exercise): string {
-  const sources = useResource(
-    (): Promise<Sources> =>
-      exercise.catalogueId
-        ? Promise.all([api.progress(), api.catalogue()]).then(([progress, catalogue]) => ({ progress, catalogue }))
-        : Promise.resolve({ progress: null, catalogue: [] }),
+  const catalogue = useResource(
+    (): Promise<CatalogueListEntry[]> => (exercise.catalogueId ? api.catalogue() : Promise.resolve([])),
     [exercise.id, exercise.catalogueId]
   );
-  const entry = sources.data?.catalogue.find(item => item.id === exercise.catalogueId) ?? null;
-  const collection = sources.data?.progress?.exercises.find(item => item.id === exercise.id)?.collection ?? null;
-  return whereText({ family: exercise.family, collection, code: entry?.code, track: entry?.track });
+  const entry = catalogue.data?.find(item => item.id === exercise.catalogueId) ?? null;
+  return whereText({ family: exercise.family, detail: exerciseTitle(exercise).detail, track: entry?.track });
 }

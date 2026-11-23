@@ -53,25 +53,30 @@ describe('cue text', () => {
     expect(clipKey('hard-brake')).toBe('hard-brake');
     expect(() => clipText(ENGLISH, 'no-such-clip')).toThrow(RangeError);
     expect(() => clipText(ENGLISH, 'speed-82')).toThrow(RangeError);
-    expect(() => clipText(ENGLISH, 'focus-brake-late-11')).toThrow(RangeError);
+    expect(() => clipText(ENGLISH, 'focus-entry-slow-11')).toThrow(RangeError);
   });
 
-  it('focus_text_names_the_turn', () => {
-    expect(clipText(ENGLISH, 'focus-brake-early-1')).toBe('Turn one. Brake later.');
-    expect(clipText(ENGLISH, 'focus-brake-late-2')).toBe('Turn two. Brake earlier.');
-    expect(clipText(ENGLISH, 'focus-brake-late-3')).toBe('Turn three. Brake earlier.');
-    expect(clipText(ENGLISH, 'focus-slow-corner-3')).toBe('Turn three. Carry more speed.');
-    expect(clipText(ENGLISH, 'focus-throttle-late-4')).toBe('Turn four. Throttle earlier.');
-    expect(clipText(ENGLISH, 'focus-wide-apex-10')).toBe('Turn ten. Closer to the apex.');
-    expect(focusText(ENGLISH, 'off-line', 11)).toBe('Turn 11. Stay on the line.');
-    expect(focusText(ENGLISH, 'brake-late', 11)).toBe('Turn 11. Brake earlier.');
+  it('focus_text_names_the_turn_the_part_and_the_cause', () => {
+    expect(clipText(ENGLISH, 'focus-approach-brake-early-1')).toBe('Turn one. Braking too early before the turn.');
+    expect(clipText(ENGLISH, 'focus-approach-brake-late-2')).toBe('Turn two. Braking too late before the turn.');
+    expect(clipText(ENGLISH, 'focus-approach-off-line-3')).toBe('Turn three. Off the line before the turn.');
+    expect(clipText(ENGLISH, 'focus-approach-4')).toBe('Turn four. Time lost before the turn.');
+    expect(clipText(ENGLISH, 'focus-entry-slow-1')).toBe('Turn one. Too slow on entry.');
+    expect(clipText(ENGLISH, 'focus-entry-fast-2')).toBe('Turn two. Too fast on entry.');
+    expect(clipText(ENGLISH, 'focus-entry-wide-apex-3')).toBe('Turn three. Far from the apex on entry.');
+    expect(clipText(ENGLISH, 'focus-entry-off-line-4')).toBe('Turn four. Off the line on entry.');
+    expect(clipText(ENGLISH, 'focus-entry-5')).toBe('Turn five. Time lost on entry.');
+    expect(clipText(ENGLISH, 'focus-exit-throttle-late-6')).toBe('Turn six. Late on the throttle on exit.');
+    expect(clipText(ENGLISH, 'focus-exit-off-line-7')).toBe('Turn seven. Off the line on exit.');
+    expect(clipText(ENGLISH, 'focus-exit-10')).toBe('Turn ten. Time lost on exit.');
+    expect(focusText(ENGLISH, 'exit-off-line', 11)).toBe('Turn 11. Off the line on exit.');
+    expect(() => clipText(ENGLISH, 'focus-brake-late-1')).toThrow(RangeError);
   });
 
   it('focus_clip_only_up_to_ten', () => {
-    expect(focusClipKey('brake-late', 10)).toBe('focus-brake-late-10');
-    expect(focusClipKey('brake-early', 1)).toBe('focus-brake-early-1');
-    expect(focusClipKey('brake-late', 11)).toBeNull();
-    expect(clipText(ENGLISH, 'focus-wide-apex-1')).toBe('Turn one. Closer to the apex.');
+    expect(focusClipKey('entry-slow', 10)).toBe('focus-entry-slow-10');
+    expect(focusClipKey('approach', 1)).toBe('focus-approach-1');
+    expect(focusClipKey('exit-throttle-late', 11)).toBeNull();
   });
 
   it('speed_clips_say_the_number', () => {
@@ -87,14 +92,14 @@ describe('cue text', () => {
   it('clip_keys_cover_all_phrases', () => {
     expect(SUPPORTED_TARGETS_KPH).toHaveLength(65);
     const keys = allClipKeys();
-    expect(keys).toHaveLength(138);
-    expect(new Set(keys).size).toBe(138);
+    expect(keys).toHaveLength(198);
+    expect(new Set(keys).size).toBe(198);
     expect(keys.filter(key => key.startsWith('speed-'))).toHaveLength(65);
-    expect(keys.filter(key => key.startsWith('focus-'))).toHaveLength(60);
+    expect(keys.filter(key => key.startsWith('focus-'))).toHaveLength(120);
     expect(keys.filter(key => /^(brake|throttle)-\d+$/.test(key))).toEqual([]);
     for (const key of keys) expect(clipText(ENGLISH, key).length).toBeGreaterThan(0);
     expect(estimatedPhraseMs(ENGLISH, 'hard-brake')).toBe(640);
-    expect(estimatedPhraseMs(ENGLISH, 'focus-brake-late-3')).toBe(1080);
+    expect(estimatedPhraseMs(ENGLISH, 'focus-approach-brake-early-3')).toBe(1960);
   });
 
   it('event_clips_of_a_cue', () => {
@@ -129,7 +134,9 @@ describe('cue text', () => {
       expect(played.filter(clip => !clips.has(clip))).toEqual([]);
     }
     for (const clip of ['voice-check', 'keep-left', 'keep-right', 'guidance-paused', 'guidance-resumed', 'tighter']) expect(clips).toContain(clip);
-    expect([...clips].filter(clip => clip.startsWith('focus-'))).toHaveLength(6 * Math.min(10, corners.length));
+    expect([...clips].filter(clip => clip.startsWith('focus-'))).toHaveLength(12 * Math.min(10, corners.length));
+    expect(clips).toContain('focus-entry-slow-1');
+    expect(clips).toContain('focus-exit-1');
     expect(clips.size).toBe(clipsOf(events, corners).length);
   });
 });

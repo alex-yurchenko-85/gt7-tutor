@@ -12,6 +12,8 @@ export type ChartSeries = { name: 'ref' | 'you' | 'ink' | 'lap'; values: (number
 
 export type ChartBand = { fromSM: number; toSM: number; label: string };
 
+export type ChartRing = { sM: number; value: number; tone: 'ref' | 'you'; label: string | null; side: 'left' | 'right'; place: 'above' | 'below' };
+
 export type ChartTick = { value: number; label: string; tone?: 'ref' };
 
 export type ChartField = { title: string | null; unit: string | null };
@@ -35,6 +37,7 @@ type ChannelChartProps = {
   bands?: ChartBand[];
   turnLabels?: boolean | 'fit';
   marks?: number[];
+  rings?: ChartRing[];
   area?: boolean;
   legend?: ReactNode;
   box?: ChartBoxRow[];
@@ -49,6 +52,22 @@ const BOX_MAX_COLUMNS = 4;
 const BOX_COLUMN_GAP_PX = 16;
 const NO_BANDS: ChartBand[] = [];
 const NO_MARKS: number[] = [];
+const NO_RINGS: ChartRing[] = [];
+const RING_EDGE_SHARE = 0.15;
+const RING_LOW_SHARE = 0.8;
+const RING_HIGH_SHARE = 0.2;
+
+function ringSide(side: ChartRing['side'], x: number): ChartRing['side'] {
+  if (side === 'right' && x > 1 - RING_EDGE_SHARE) return 'left';
+  if (side === 'left' && x < RING_EDGE_SHARE) return 'right';
+  return side;
+}
+
+function ringPlace(place: ChartRing['place'], y: number): ChartRing['place'] {
+  if (place === 'below' && y > RING_LOW_SHARE) return 'above';
+  if (place === 'above' && y < RING_HIGH_SHARE) return 'below';
+  return place;
+}
 const DistanceAxis = memo(function DistanceAxis({ lengthM }: { lengthM: number }) {
   return (
     <div className="distance-axis">
@@ -178,7 +197,7 @@ function CursorBox({ rows, title, share, dots, underLabels }: CursorBoxProps) {
   );
 }
 
-export function ChannelChart({ id, label, series, min, max, gridM, lengthM, cursorSM, onCursor, onScrub = onCursor, readout, ticks, height = CHART_HEIGHT, bands = NO_BANDS, turnLabels = false, marks = NO_MARKS, area = false, legend = null, box, field, fieldAction = null }: ChannelChartProps) {
+export function ChannelChart({ id, label, series, min, max, gridM, lengthM, cursorSM, onCursor, onScrub = onCursor, readout, ticks, height = CHART_HEIGHT, bands = NO_BANDS, turnLabels = false, marks = NO_MARKS, rings = NO_RINGS, area = false, legend = null, box, field, fieldAction = null }: ChannelChartProps) {
   const zones = useMemo(() => bands.filter(band => band.toSM > band.fromSM), [bands]);
   const span = max - min || 1;
   const toY = (value: number) => height - 4 - ((value - min) / span) * (height - 8);
@@ -262,6 +281,15 @@ export function ChannelChart({ id, label, series, min, max, gridM, lengthM, curs
           <PlotLayer series={series} ticks={ticks} bands={zones} marks={marks} area={area} min={min} max={max} gridM={gridM} lengthM={lengthM} height={height} />
           <line className="chart-cursor" x1={cursorX.toFixed(1)} x2={cursorX.toFixed(1)} y1={0} y2={height} />
         </svg>
+        {rings.map((ring, index) => {
+          const x = ring.sM / lengthM;
+          const y = toY(ring.value) / height;
+          return (
+            <i key={`${index}-${ring.tone}`} className="chart-ring" data-tone={ring.tone} data-side={ringSide(ring.side, x)} data-label={ringPlace(ring.place, y)} style={{ left: percent(x), top: percent(y) }}>
+              {ring.label === null ? null : <span>{ring.label}</span>}
+            </i>
+          );
+        })}
         {dots.map(dot => (
           <i key={dot.key} className="chart-dot" style={{ left: percent(share), top: percent(dot.top) }} />
         ))}

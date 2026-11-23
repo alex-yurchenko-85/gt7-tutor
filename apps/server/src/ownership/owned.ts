@@ -9,7 +9,7 @@ export type ExerciseRow = {
   family: string;
   name: string;
   car_id: number | null;
-  targets: Record<string, number>;
+  target_ms: number | null;
   muted_cues: string[];
   speak_targets: boolean;
   cue_offsets: Record<string, number>;

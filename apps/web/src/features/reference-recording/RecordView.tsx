@@ -12,6 +12,7 @@ import { Link, paths, useRouter } from '../../app/router.tsx';
 import { consoleState, type ConsoleState, type Status } from '../../app/status.ts';
 import { DriveAction } from '../drive/DriveButton.tsx';
 import { useExercise } from '../exercise/use-exercise.ts';
+import { exerciseTitle } from '../exercise/use-exercise-where.ts';
 import { formatLocale, t } from '../../app/i18n.ts';
 import './record.css';
 
@@ -526,7 +527,7 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
           <div className="record-top">
             <div>
               <p>
-                {t(checkId ? 'record.phone.check' : 'record.phone.reference', { name: exercise.data.name })}
+                {t(checkId ? 'record.phone.check' : 'record.phone.reference', { name: exerciseTitle(exercise.data).title })}
               </p>
               <ul className="record-dots">
                 <li title={consoleChip.text}>
@@ -555,7 +556,7 @@ export function RecordView({ exerciseId }: { exerciseId: string }) {
   return (
     <section className="record">
       <nav className="breadcrumb">
-        <Link to={paths.exercises()}>{t('record.breadcrumb.exercises')}</Link> / <Link to={paths.exercise(exerciseId)}>{exercise.data.name}</Link> / {t('record.breadcrumb.reference')}
+        <Link to={paths.exercises()}>{t('record.breadcrumb.exercises')}</Link> / <Link to={paths.exercise(exerciseId)}>{exerciseTitle(exercise.data).title}</Link> / {t('record.breadcrumb.reference')}
       </nav>
       <h1>{title}</h1>
       <p className="lede">{lede}</p>

@@ -1,4 +1,4 @@
-import type { Car, CatalogueEntry, Circuit, MedalTargetTimes } from '@gt7/contracts';
+import type { Car, CatalogueEntry, Circuit } from '@gt7/contracts';
 
 export type CsvRow = Record<string, string>;
 
@@ -142,14 +142,6 @@ function listField(body: string, label: string): string | null {
   return match ? nonEmpty(plainWikiText(match[1]!)) : null;
 }
 
-function medalTargets(body: string): MedalTargetTimes | null {
-  const goldMs = lapTimeMs(listField(body, 'Gold'));
-  const silverMs = lapTimeMs(listField(body, 'Silver'));
-  const bronzeMs = lapTimeMs(listField(body, 'Bronze'));
-  if (goldMs === null || silverMs === null || bronzeMs === null) return null;
-  return { bronzeMs, silverMs, goldMs };
-}
-
 function levelTwoSections(wikitext: string): { heading: string; body: string }[] {
   const parts = wikitext.split(/^==([^=].*?)==\s*$/m).slice(1);
   const sections: { heading: string; body: string }[] = [];
@@ -171,8 +163,7 @@ export function parseLicencePage(wikitext: string, licence: LicencePage, findCir
         track,
         circuitId: track ? findCircuit(track) : null,
         car: listField(body, 'Car'),
-        targets: medalTargets(body),
-        sections: null,
+        targetMs: lapTimeMs(listField(body, 'Gold')),
         source: `Gran Turismo Wiki: ${licence.page}`
       };
     });
@@ -184,6 +175,13 @@ function gt7Section(wikitext: string): string {
   const rest = wikitext.slice(start);
   const next = rest.slice(2).search(/^==[^=].*==\s*$/m);
   return next < 0 ? rest : rest.slice(0, next + 2);
+}
+
+const LAP_ATTACK = '1 Lap Attack';
+
+function circuitExperienceTasks(sections: number): { id: string; code: string }[] {
+  const sectors = Array.from({ length: Math.max(sections - 1, 0) }, (_, index) => ({ id: `s${index + 1}`, code: `Sector ${index + 1}` }));
+  return [...sectors, { id: 'lap', code: LAP_ATTACK }];
 }
 
 export function parseCircuitExperience(wikitext: string, findCircuit: CircuitLookup): CatalogueEntry[] {
@@ -198,19 +196,18 @@ export function parseCircuitExperience(wikitext: string, findCircuit: CircuitLoo
     const row = line.match(/^\|\s*(.+?)\s*\|\|\s*(\d+)\s*\|\|\s*(.+?)\s*\|\|/);
     if (!row) continue;
     const track = plainWikiText(row[1]!);
-    entries.push({
-      id: `ce-${slug(track)}`,
+    const base = {
       family: 'Circuit Experience',
       collection: region || 'Circuit Experience',
-      code: null,
-      name: track,
       track,
       circuitId: findCircuit(track),
       car: nonEmpty(plainWikiText(row[3]!)),
-      targets: null,
-      sections: Number(row[2]),
+      targetMs: null,
       source: `Gran Turismo Wiki: ${CIRCUIT_EXPERIENCE_PAGE}`
-    });
+    };
+    for (const task of circuitExperienceTasks(Number(row[2]))) {
+      entries.push({ id: `ce-${slug(track)}-${task.id}`, code: task.code, name: `${track} · ${task.code}`, ...base });
+    }
   }
   return entries;
 }

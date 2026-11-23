@@ -1,4 +1,5 @@
 export * from './attempts.ts';
+export * from './brake-shape.ts';
 export * from './coach-replay.ts';
 export * from './coach.ts';
 export * from './compare.ts';

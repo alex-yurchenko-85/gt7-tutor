@@ -26,7 +26,7 @@ export function AttemptSummary({ attemptId, onDriveAgain }: { attemptId: string;
       {data.focus ? (
         <div className="summary-focus">
           <span>{t('exercises.summary.focus')}</span>
-          <b>{focusText(data.focus.kind, data.focus.turn)}</b>
+          <b>{focusText(data.focus)}</b>
         </div>
       ) : null}
       {complete ? (

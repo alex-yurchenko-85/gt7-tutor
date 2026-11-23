@@ -22,7 +22,6 @@ export type GoldenSector = {
   spreadMs: number;
   cleanLaps: number;
   bestJoins: boolean;
-  slipstream: boolean;
 };
 
 export type GoldenExclusion = { lap: number; reason: 'first' | 'pit' | 'open' };
@@ -33,7 +32,7 @@ export type GoldenLap =
   | { state: 'gap'; cleanLaps: number[]; turn: number | null }
   | { state: 'no-chain'; cleanLaps: number[] };
 
-type Point = { sM: number; tMs: number; v: number; sideM: number; position: number };
+type Point = { sM: number; tMs: number; v: number; sideM: number };
 
 type Edge = { tMs: number; v: number; sideM: number };
 
@@ -45,7 +44,6 @@ type Chain = { ms: number; laps: number[] };
 
 const JUMP_M = 50;
 const NARROW_M = 4;
-const MIN_STRAIGHT_M = 100;
 const LIMIT_EPSILON = 1e-9;
 
 function packetTimes(samples: Sample[]): number[] {
@@ -70,7 +68,7 @@ function traceOf(samples: Sample[], lap: LapFacts, analysis: RaceAnalysis, path:
     if (sample.paused || sample.loading) return;
     const match = matcher.step(sample);
     if (match === null) return;
-    points.push({ sM: match.sM, tMs: times[index]!, v: sample.speedMps, sideM: match.lateralM, position: sample.racePosition });
+    points.push({ sM: match.sM, tMs: times[index]!, v: sample.speedMps, sideM: match.lateralM });
   });
   if (points.length > 0 && points[0]!.sM > path.lengthM / 2) points[0] = { ...points[0]!, sM: 0 };
   return { lap, points, lapMs: times.at(-1)!, endV: end?.speedMps ?? null };
@@ -209,27 +207,6 @@ function chainOf(cells: Cell[][], usable: boolean[][], config: CoreConfig): Chai
   return best;
 }
 
-function slipstreams(corners: Corner[], zonesEnd: number[], edges: number[], traces: Trace[], config: CoreConfig): Set<string> {
-  const flagged = new Set<string>();
-  for (let index = 0; index + 1 < corners.length; index++) {
-    const fromM = zonesEnd[index]!;
-    const toM = corners[index + 1]!.zoneStartSM;
-    if (toM - fromM < MIN_STRAIGHT_M) continue;
-    const tops = traces.flatMap(trace => {
-      let top: Point | null = null;
-      for (const point of trace.points) if (point.sM >= fromM && point.sM <= toM && (top === null || point.v > top.v)) top = point;
-      return top ? [{ lap: trace.lap.number, top }] : [];
-    });
-    const middle = median(tops.map(({ top }) => top.v));
-    for (const { lap, top } of tops) {
-      if (top.v - middle <= config.race.goldenSlipstreamMps || top.position === 1) continue;
-      const sector = edges.findIndex((edge, k) => k < edges.length - 1 && top.sM >= edge && top.sM < edges[k + 1]!);
-      flagged.add(`${sector}:${lap}`);
-    }
-  }
-  return flagged;
-}
-
 function exclusionOf(lap: LapFacts, analysis: RaceAnalysis): GoldenExclusion['reason'] | null {
   if (lap.number === analysis.firstLap || lap.number === 1) return 'first';
   if (lap.pitIn || lap.pitOut) return 'pit';
@@ -274,7 +251,6 @@ export function goldenLap(samples: Sample[], analysis: RaceAnalysis, exerciseCon
   const chain = chainOf(full, usable, config);
   if (chain === null) return { state: 'no-chain', cleanLaps: clean };
 
-  const flagged = slipstreams(corners, zones.map(zone => zone.toSM), edges, traces, config);
   const sectors = full.map((row, k): GoldenSector => {
     const times = row.flatMap((cell, index) => (usable[k]![index] ? [{ lap: clean[index]!, ms: cell.tMs }] : []));
     const best = times.reduce((fastest, time) => (time.ms < fastest.ms ? time : fastest));
@@ -292,8 +268,7 @@ export function goldenLap(samples: Sample[], analysis: RaceAnalysis, exerciseCon
       medianMs: middle,
       spreadMs: middle - best.ms,
       cleanLaps: times.length,
-      bestJoins: ms <= best.ms,
-      slipstream: flagged.has(`${k}:${clean[index]}`)
+      bestJoins: ms <= best.ms
     };
   });
   const bestClean = fastestLap(traces.map(trace => trace.lap))!;

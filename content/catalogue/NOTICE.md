@@ -10,8 +10,8 @@ A catalogue entry does not state that the application supports that exercise.
 - Pages: `GT7 B-License`, `GT7 A-License`, `GT7 International B-License`, `GT7 International A-License`, `GT7 S-License`, `GT7 Master B-License`, `GT7 Master A-License`, `GT7 Master International B-License`, `GT7 Master International A-License`, `GT7 Master S-License` and `Circuit Experience`.
 - Authors: the contributors to these pages. The page history on the wiki lists them.
 - Licence: Creative Commons Attribution-Share Alike (CC BY-SA), <https://www.fandom.com/licensing>.
-- Data taken: licence test codes, names, cars, tracks and gold, silver and bronze target times. Also Circuit Experience tracks, regions, cars and section counts.
-- Changes: the build command extracts these fields and converts target times to milliseconds. It adds circuit identifiers from gt7info.
+- Data taken: licence test codes, names, cars, tracks and the gold time of each licence test. Also Circuit Experience tracks, regions, cars and section counts.
+- Changes: the build command extracts these fields and converts the gold time to milliseconds. The gold time is the target of the licence test. The command makes one entry for each Circuit Experience section. The section count includes the lap, so a track with N sections gives the sectors 1 to N−1 and the lap. It adds circuit identifiers from gt7info.
 
 The licence test and Circuit Experience entries in `catalogue.json` are an adaptation of this content.
 You can use them under the terms of CC BY-SA.
@@ -29,11 +29,10 @@ The `Brand Central` entries are manual entries. `packages/catalogue/src/manual.t
 They are the Experience exercises `EXP-1` to `EXP-5` of Hyundai, Polestar, Xiaomi and Yangwang.
 `brand-yangwang-racing-lines` is Yangwang `EXP-1`. It keeps its earlier identifier.
 
-- Track, car and target times come from the game screen (17 November 2026).
+- Track and car come from the game screen.
 - Track names and car labels use the spelling of the gt7info tables.
 - The English exercise names come from the section `Experience` of the Gran Turismo Wiki page of each track. The entry field `source` names the page. The names are an adaptation of that content under CC BY-SA.
 - Yangwang `EXP-4` is not in the wiki. Its name follows the other exercises that have the same label on the game screen.
-- The `EXP-5` entries have no target times. The game screen shows the times only after the exercise is unlocked.
-- The wiki lists other target times for Xiaomi `EXP-4`. The catalogue uses the times from the game screen.
+- The `Brand Central` entries have no target time.
 
 `aliases.json` maps wiki track names to gt7info layout IDs where the names differ. The project maintainer wrote it.

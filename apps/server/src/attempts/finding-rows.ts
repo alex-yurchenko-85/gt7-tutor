@@ -1,4 +1,4 @@
-import type { Finding } from '@gt7/core';
+import { COMPARISON_VERSION, type Finding, type FocusAttempt } from '@gt7/core';
 import type { Knex } from 'knex';
 
 export type FindingRow = {
@@ -29,7 +29,17 @@ export function findingRow(attemptId: string, referenceId: string, finding: Find
   };
 }
 
-export async function saveComparison(trx: Knex.Transaction, attemptId: string, referenceId: string, findings: Finding[]): Promise<void> {
-  const inserted = await trx('attempt_comparisons').insert({ attempt_id: attemptId, reference_id: referenceId }).onConflict(['attempt_id', 'reference_id']).ignore().returning('attempt_id');
-  if (inserted.length > 0 && findings.length > 0) await trx('attempt_findings').insert(findings.map(finding => findingRow(attemptId, referenceId, finding)));
+export async function saveComparison(trx: Knex.Transaction, attemptId: string, referenceId: string, comparison: FocusAttempt): Promise<void> {
+  const { findings, losses } = comparison;
+  const written = await trx.raw<{ rows: { inserted: boolean }[] }>(
+    `insert into attempt_comparisons (attempt_id, reference_id, version, turn_losses) values (?, ?, ?, ?::jsonb)
+     on conflict (attempt_id, reference_id) do update set version = excluded.version, turn_losses = excluded.turn_losses
+     where attempt_comparisons.version < excluded.version
+     returning (xmax = 0) as inserted`,
+    [attemptId, referenceId, COMPARISON_VERSION, JSON.stringify(losses)]
+  );
+  const [row] = written.rows;
+  if (!row) return;
+  if (!row.inserted) await trx('attempt_findings').where({ attempt_id: attemptId, reference_id: referenceId }).delete();
+  if (findings.length > 0) await trx('attempt_findings').insert(findings.map(finding => findingRow(attemptId, referenceId, finding)));
 }

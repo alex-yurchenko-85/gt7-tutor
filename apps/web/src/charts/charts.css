@@ -562,6 +562,55 @@
   font-weight: 700;
 }
 
+.legend .ring {
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.chart-ring {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--ref);
+  border-radius: 50%;
+  background: var(--paper);
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.chart-ring[data-tone='you'] {
+  border-color: var(--you);
+}
+
+.chart-ring span {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  padding: 1px 2px;
+  background: var(--paper);
+  font: 700 11px/1 var(--font-body);
+  color: var(--ref);
+  white-space: nowrap;
+}
+
+.chart-ring[data-label='above'] span {
+  top: auto;
+  bottom: 10px;
+}
+
+.chart-ring[data-side='left'] span {
+  left: auto;
+  right: 12px;
+}
+
+.chart-ring[data-tone='you'] span {
+  color: var(--you);
+}
+
 .legend .dash {
   height: 0;
   border-top: 2px dashed var(--mute);

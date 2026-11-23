@@ -1,4 +1,5 @@
 import { KPH_PER_MPS, type FindingKindName } from '@gt7/contracts';
+import { turnRange } from './brake-shape.ts';
 import type { Review } from './compare.ts';
 import type { CoreConfig } from './config.ts';
 import { outsideM, type Corner } from './corners.ts';
@@ -8,6 +9,8 @@ import { median } from './statistics.ts';
 export type Finding = { kind: FindingKindName; eventKey: string | null; sM: number; size: number; unit: 'm' | 'm/s' };
 
 export type Recurring = Finding & { count: number; of: number; medianSize: number };
+
+export const COMPARISON_VERSION = 6;
 
 const EPSILON = 1e-9;
 
@@ -127,13 +130,43 @@ function wideApexFindings(review: Review, config: CoreConfig): Finding[] {
   });
 }
 
+export function attemptLowPoint(review: Review, index: number, config: CoreConfig): { sM: number; speedMps: number } | null {
+  const corner = review.corners[index]!;
+  const range = turnRange(review.corners, index, review.lengthM, config);
+  const nextZoneSM = review.corners[index + 1]?.zoneStartSM;
+  const fromCell = Math.ceil(Math.max(range.fromSM, corner.zoneStartSM) / review.gridM);
+  const toCell = Math.min(Math.floor(range.toSM / review.gridM), nextZoneSM === undefined ? Number.POSITIVE_INFINITY : Math.ceil(nextZoneSM / review.gridM) - 1, review.attempt.v.length - 1);
+  if (review.attempt.v.slice(fromCell, toCell + 1).some(value => value === null)) return null;
+  const attempt = minimumIn(review.attempt.v, fromCell, toCell);
+  if (!attempt || attempt.cell === fromCell || attempt.cell === toCell) return null;
+  return { sM: attempt.cell * review.gridM, speedMps: attempt.value };
+}
+
+export function lowSpeedNearApex(corner: Pick<Corner, 'lowSpeedSM' | 'apexSM'>, config: CoreConfig): boolean {
+  return corner.lowSpeedSM !== null && !exceeds(Math.abs(corner.lowSpeedSM - corner.apexSM), config.cues.apexNearM);
+}
+
+function lowPointFindings(review: Review, config: CoreConfig): Finding[] {
+  return review.corners.flatMap((corner, index) => {
+    const referenceLowSM = corner.lowSpeedSM;
+    if (referenceLowSM === null || !lowSpeedNearApex(corner, config)) return [];
+    const attempt = attemptLowPoint(review, index, config);
+    if (!attempt) return [];
+    const differenceM = attempt.sM - referenceLowSM;
+    if (!exceeds(Math.abs(differenceM), config.findings.lowPointM)) return [];
+    const kind: FindingKindName = differenceM < 0 ? 'low-point-early' : 'low-point-late';
+    return [{ kind, eventKey: cornerKey(corner), sM: attempt.sM, size: Math.abs(attempt.sM - corner.apexSM), unit: 'm' as const }];
+  });
+}
+
 export function findDifferences(review: Review, config: CoreConfig): Finding[] {
   return [
     ...brakeFindings(review, config),
     ...slowCornerFindings(review, config),
     ...throttleFindings(review, config),
     ...offLineFindings(review, config),
-    ...wideApexFindings(review, config)
+    ...wideApexFindings(review, config),
+    ...lowPointFindings(review, config)
   ].sort((a, b) => a.sM - b.sM);
 }
 
@@ -168,7 +201,7 @@ export function recurring(perAttempt: Finding[][], config: CoreConfig): Recurrin
       return {
         kind: group.kind,
         eventKey: group.eventKey,
-        sM: group.eventKey === null ? median(group.sMs) : group.sMs[0]!,
+        sM: median(group.sMs),
         size: medianSize,
         unit: group.unit,
         count: group.attempts.size,

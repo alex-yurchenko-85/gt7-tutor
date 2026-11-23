@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDateTime, formatGap, formatTime, signedSeconds } from '../src/app/format.ts';
+import { formatDateTime, formatGap, formatTime, parseTargetTime, signedSeconds } from '../src/app/format.ts';
 
 describe('format', () => {
   it('signed_seconds_rounds_and_has_no_sign_at_zero', () => {
@@ -31,5 +31,35 @@ describe('format', () => {
     expect(formatTime(6000725)).toBe('1:40:00.725');
     expect(formatTime(6000725, 1)).toBe('1:40:00.7');
     expect(formatTime(3599960, 1)).toBe('1:00:00.0');
+  });
+
+  it('target_time_reads_seconds_and_minutes', () => {
+    expect(parseTargetTime('23.8')).toBe(23800);
+    expect(parseTargetTime('0:23.800')).toBe(23800);
+    expect(parseTargetTime('1:02.345')).toBe(62345);
+    expect(parseTargetTime(' 0:23.8 ')).toBe(23800);
+    expect(parseTargetTime('75')).toBe(75000);
+    expect(parseTargetTime('1:02')).toBe(62000);
+  });
+
+  it('target_time_reads_what_a_phone_number_pad_can_type', () => {
+    expect(parseTargetTime('102.5')).toBe(102500);
+    expect(parseTargetTime('23,8')).toBe(23800);
+    expect(parseTargetTime('1:02,345')).toBe(62345);
+    expect(parseTargetTime('3600')).toBe(3_600_000);
+    expect(parseTargetTime('3600.001')).toBeUndefined();
+  });
+
+  it('target_time_is_null_when_empty_and_undefined_when_not_a_time', () => {
+    expect(parseTargetTime('')).toBeNull();
+    expect(parseTargetTime('   ')).toBeNull();
+    expect(parseTargetTime('abc')).toBeUndefined();
+    expect(parseTargetTime('0')).toBeUndefined();
+    expect(parseTargetTime('0:00.000')).toBeUndefined();
+    expect(parseTargetTime('0:75.000')).toBeUndefined();
+    expect(parseTargetTime('23.8.1')).toBeUndefined();
+    expect(parseTargetTime('-23.8')).toBeUndefined();
+    expect(parseTargetTime('23.8456')).toBeUndefined();
+    expect(parseTargetTime('61:00.000')).toBeUndefined();
   });
 });

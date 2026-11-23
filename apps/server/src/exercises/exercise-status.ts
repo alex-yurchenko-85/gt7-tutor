@@ -1,4 +1,4 @@
-import type { ExerciseStatusName, ExerciseTargets } from '@gt7/contracts';
+import type { ExerciseStatusName } from '@gt7/contracts';
 import { exerciseStatus } from '@gt7/core';
 import type { Knex } from 'knex';
 
@@ -9,7 +9,6 @@ export type ExerciseStatusSummary = {
   attemptCount: number;
   referenceCount: number;
   completeAttempts: number;
-  activeReferenceAttempts: number;
   bestMs: number | null;
   createdAt: Date;
   activeReferenceId: string | null;
@@ -19,12 +18,11 @@ type StatusRow = {
   id: string;
   catalogue_id: string | null;
   active_reference_id: string | null;
-  targets: ExerciseTargets;
+  target_ms: number | null;
   created_at: Date;
   attempt_count: number;
   reference_count: number;
   complete_attempts: number;
-  active_reference_attempts: number;
   best_ms: number | null;
 };
 
@@ -41,12 +39,11 @@ export async function exerciseStatuses(db: Knex, userId: string, exerciseId?: st
       'e.id',
       'e.catalogue_id',
       'e.active_reference_id',
-      'e.targets',
+      'e.target_ms',
       'e.created_at',
       db.raw('count(a.id)::int as attempt_count'),
       db.raw('(select count(*) from "references" r where r.exercise_id = e.id)::int as reference_count'),
       db.raw("(count(a.id) filter (where a.completion = 'complete'))::int as complete_attempts"),
-      db.raw("(count(a.id) filter (where a.completion = 'complete' and a.reference_id = e.active_reference_id))::int as active_reference_attempts"),
       db.raw("min(a.game_ms) filter (where a.completion = 'complete') as best_ms")
     );
   return rows.map(row => ({
@@ -55,15 +52,13 @@ export async function exerciseStatuses(db: Knex, userId: string, exerciseId?: st
     attemptCount: row.attempt_count,
     referenceCount: row.reference_count,
     completeAttempts: row.complete_attempts,
-    activeReferenceAttempts: row.active_reference_attempts,
     bestMs: row.best_ms,
     createdAt: row.created_at,
     activeReferenceId: row.active_reference_id,
     status: exerciseStatus({
       hasActiveReference: row.active_reference_id !== null,
-      completeAttempts: row.complete_attempts,
       bestMs: row.best_ms,
-      targets: row.targets
+      targetMs: row.target_ms
     })
   }));
 }

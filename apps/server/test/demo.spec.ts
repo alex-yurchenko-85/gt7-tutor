@@ -64,8 +64,8 @@ describe('demo mode', () => {
 
   it('seed_creates_profile_exercise_and_active_reference', async () => {
     const exercise = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
-    expect(exercise.catalogueId).toBe('ce-autodromo-de-interlagos');
-    expect(exercise.targets).toEqual({ goldMs: 16400, silverMs: 16700, bronzeMs: 17800 });
+    expect(exercise).toMatchObject({ catalogueId: 'ce-autodromo-de-interlagos-s2', name: 'Autódromo de Interlagos · Sector 2', targetMs: 16400 });
+    expect(exercise.targetMs).toBe(16400);
     const references = (await http().get(`/api/exercises/${exerciseId}/references`).set('Cookie', cookie).expect(200)).body;
     expect(references).toHaveLength(1);
     expect(references[0]).toMatchObject({ first: 457, last: 1422, active: true });
@@ -73,6 +73,8 @@ describe('demo mode', () => {
     expect(cues).toHaveLength(6);
     const corners = (await http().get(`/api/references/${references[0].id}/corners`).set('Cookie', cookie).expect(200)).body;
     expect(corners).toHaveLength(1);
+    expect(corners[0]).toMatchObject({ apexSM: 404, brakeToSM: 377, lowSpeedSM: 410, lowSpeedAtApex: true });
+    expect(corners[0].brakeAtTurnIn).toBeCloseTo(0.87, 2);
   });
 
   it('seed_stores_three_complete_attempts', async () => {

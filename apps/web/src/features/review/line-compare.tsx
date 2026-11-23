@@ -1,6 +1,6 @@
 import { Fragment, memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { KPH_PER_MPS, type AttemptReview, type Difference, type ReviewSeries, type TurnLossInfo } from '@gt7/contracts';
-import { ChannelChart, type ChartBand, type ChartBoxRow, type ChartField, type ChartSeries, type ChartTick } from '../../charts/ChannelChart.tsx';
+import { ChannelChart, type ChartBand, type ChartBoxRow, type ChartField, type ChartRing, type ChartSeries, type ChartTick } from '../../charts/ChannelChart.tsx';
 import { labelledTicks, signedTickLabel, tickLabel, tickStep, valueTicks } from '../../charts/ticks.ts';
 import { MapDialog, type MapDialogItem } from '../../charts/MapDialog.tsx';
 import { MapPanel } from '../../charts/MapPanel.tsx';
@@ -97,7 +97,31 @@ function sideText(lateral: number | null): string {
   return t(lateral > 0 ? 'exercises.compare.side-right' : 'exercises.compare.side-left', { metres: Math.abs(lateral).toFixed(1) });
 }
 
-function SideLegend({ words, sideCueDistanceM }: { words: LineWords; sideCueDistanceM: number | null }) {
+const RING_LABEL_MAX_TURNS = 3;
+
+function lowestSpeedRings(review: LineComparison): ChartRing[] {
+  const labelled = review.corners.filter(corner => corner.lowSpeedSM !== null).length <= RING_LABEL_MAX_TURNS;
+  const ring = (sM: number, mps: number, tone: ChartRing['tone'], side: ChartRing['side'], place: ChartRing['place']): ChartRing => ({
+    sM,
+    value: mps * KPH_PER_MPS,
+    tone,
+    label: labelled ? t('app.unit.kph', { value: Math.round(mps * KPH_PER_MPS) }) : null,
+    side,
+    place
+  });
+  return review.corners.flatMap(corner => {
+    if (corner.lowSpeedSM === null || corner.lowSpeedMps === null) return [];
+    if (corner.attemptLowSM === null || corner.attemptLowMps === null) return [ring(corner.lowSpeedSM, corner.lowSpeedMps, 'ref', 'right', 'below')];
+    const referenceFirst = corner.lowSpeedSM <= corner.attemptLowSM;
+    const referenceHigher = corner.lowSpeedMps >= corner.attemptLowMps;
+    return [
+      ring(corner.lowSpeedSM, corner.lowSpeedMps, 'ref', referenceFirst ? 'left' : 'right', referenceHigher ? 'above' : 'below'),
+      ring(corner.attemptLowSM, corner.attemptLowMps, 'you', referenceFirst ? 'right' : 'left', referenceHigher ? 'below' : 'above')
+    ];
+  });
+}
+
+function SideLegend({ words, sideCueDistanceM, rings }: { words: LineWords; sideCueDistanceM: number | null; rings: boolean }) {
   return (
     <div className="legend side-legend">
       <span>
@@ -114,11 +138,17 @@ function SideLegend({ words, sideCueDistanceM }: { words: LineWords; sideCueDist
           {t('exercises.compare.side-cue', { metres: sideCueDistanceM })}
         </span>
       )}
+      {rings ? (
+        <span className="ring-legend">
+          <i className="ring" />
+          {t('charts.legend.lowest-speed')}
+        </span>
+      ) : null}
     </div>
   );
 }
 
-type Channel = { id: string; label?: string; series: ChartSeries[]; min: number; max: number; ticks: ChartTick[]; turnLabels?: boolean | 'fit'; marks?: number[]; height?: number; area?: boolean };
+type Channel = { id: string; label?: string; series: ChartSeries[]; min: number; max: number; ticks: ChartTick[]; turnLabels?: boolean | 'fit'; marks?: number[]; rings?: ChartRing[]; height?: number; area?: boolean };
 
 type Derived = { refSpeed: (number | null)[]; youSpeed: (number | null)[]; loss: (number | null)[]; bands: ChartBand[]; channels: Channel[] };
 
@@ -155,7 +185,7 @@ function derive(review: LineComparison, words: LineWords, side: boolean, sideCue
     loss,
     bands: turnBands(review),
     channels: [
-      { id: 'speed', label: t('exercises.compare.speed-chart'), series: pair(refSpeed, youSpeed), min: speedMin, max: speedMax, ticks: ticksOf(speedMin, speedMax, tickLabel), turnLabels: 'fit' },
+      { id: 'speed', label: t('exercises.compare.speed-chart'), series: pair(refSpeed, youSpeed), min: speedMin, max: speedMax, ticks: ticksOf(speedMin, speedMax, tickLabel), turnLabels: 'fit', rings: lowestSpeedRings(review) },
       { id: 'throttle', label: t('exercises.compare.throttle-chart'), series: pair(review.reference.th, review.attempt.th), min: 0, max: 1, ticks: shareTicks() },
       { id: 'brake', label: t('exercises.compare.brake-chart'), series: pair(review.reference.br, review.attempt.br), min: 0, max: 1, ticks: shareTicks() },
       ...(side ? [sideChannel] : []),
@@ -189,9 +219,10 @@ export function CompareCharts({ review, words, side, sideCueDistanceM, cursorSM,
     brake: rows({ ref: percent(at(review.reference.br, index)), you: percent(at(review.attempt.br, index)) }),
     side: rows({ you: sideText(lateral) })
   };
+  const rings = channels.some(channel => (channel.rings ?? []).length > 0);
   const legendFor = (id: string): ReactNode => {
-    if (side && id === 'side') return <SideLegend words={words} sideCueDistanceM={sideCueDistanceM} />;
-    if (!side && id === 'time') return <SideLegend words={words} sideCueDistanceM={null} />;
+    if (side && id === 'side') return <SideLegend words={words} sideCueDistanceM={sideCueDistanceM} rings={rings} />;
+    if (!side && id === 'time') return <SideLegend words={words} sideCueDistanceM={null} rings={rings} />;
     return null;
   };
   return (

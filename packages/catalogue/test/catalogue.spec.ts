@@ -26,6 +26,15 @@ function recordedFetch(seen: { url: string; headers: Headers }[] = []): typeof f
   };
 }
 
+function gt7CircuitExperienceText(): string {
+  const raw = readFileSync(new URL(index[Object.keys(index).find(url => url.includes('page=Circuit%20Experience'))!]!, sourcesDir), 'utf8');
+  const wikitext = (JSON.parse(raw) as { parse: { wikitext: { '*': string } } }).parse.wikitext['*'];
+  const start = wikitext.search(/^==\s*Gran Turismo 7\s*==\s*$/m);
+  const rest = wikitext.slice(start);
+  const next = rest.slice(2).search(/^==[^=].*==\s*$/m);
+  return next < 0 ? rest : rest.slice(0, next + 2);
+}
+
 const fixedNow = () => new Date('2026-11-16T12:00:00.000Z');
 
 describe('catalogue sources', () => {
@@ -48,15 +57,16 @@ describe('catalogue sources', () => {
     const catalogue = await fetchCatalogue({ fetch: recordedFetch(seen), aliases, timeoutMs: 1000, now: fixedNow });
     const licences = catalogue.entries.filter(entry => entry.family === 'Licence');
     expect(licences).toHaveLength(100);
-    expect(licences.every(entry => entry.targets !== null)).toBe(true);
-    expect(catalogue.entries.filter(entry => entry.family === 'Circuit Experience').length).toBeGreaterThanOrEqual(56);
+    expect(licences.every(entry => entry.targetMs !== null)).toBe(true);
+    expect(catalogue.entries.every(entry => !('targets' in entry) && !('sections' in entry))).toBe(true);
+    expect(catalogue.schemaVersion).toBe(2);
     expect(catalogue.circuits.length).toBeGreaterThanOrEqual(122);
     expect(catalogue.cars.find(car => car.id === 3602)?.name).toBe("Yangwang U9 '24");
     expect(catalogue.entries.find(entry => entry.id === 'licence-b-1')).toMatchObject({
       code: 'B-1',
       track: 'High Speed Ring',
       circuitId: 11,
-      targets: { bronzeMs: 22800, silverMs: 21400, goldMs: 20800 }
+      targetMs: 20800
     });
     expect(catalogue.entries.filter(entry => 'support' in entry)).toEqual([]);
     const brandCentral = catalogue.entries.filter(entry => entry.family === 'Brand Central');
@@ -73,8 +83,7 @@ describe('catalogue sources', () => {
       track: 'SUGO International Racing Course',
       circuitId: null,
       car: "Yangwang U9 '24",
-      targets: { bronzeMs: 26000, silverMs: 24200, goldMs: 23500 },
-      sections: null,
+      targetMs: null,
       source: 'Game screen and Gran Turismo Wiki: SUGO International Racing Course'
     });
     expect(brandCentral.find(entry => entry.id === 'brand-xiaomi-exp-4')).toMatchObject({
@@ -82,12 +91,12 @@ describe('catalogue sources', () => {
       track: 'Alsace - Village',
       circuitId: 358,
       car: 'Xiaomi Xiaomi VGT',
-      targets: { bronzeMs: 39700, silverMs: 36600, goldMs: 35600 }
+      targetMs: null
     });
     expect(brandCentral.find(entry => entry.id === 'brand-yangwang-exp-4')).toMatchObject({
       name: 'Cornering: Expert',
       track: 'Trial Mountain Circuit',
-      targets: { bronzeMs: 44400, silverMs: 41300, goldMs: 40000 },
+      targetMs: null,
       source: 'Game screen'
     });
     expect(brandCentral.find(entry => entry.id === 'brand-hyundai-exp-5')).toMatchObject({
@@ -95,10 +104,9 @@ describe('catalogue sources', () => {
       track: 'Alsace - Village Reverse',
       circuitId: 439,
       car: "Hyundai IONIQ 6N '25",
-      targets: null
+      targetMs: null
     });
-    expect(brandCentral.filter(entry => entry.code === 'EXP-5' && entry.targets !== null)).toEqual([]);
-    expect(brandCentral.filter(entry => entry.code !== 'EXP-5' && entry.targets === null)).toEqual([]);
+    expect(brandCentral.filter(entry => entry.targetMs !== null)).toEqual([]);
     expect(catalogue.entries.filter(entry => entry.family === 'Brand Experience')).toEqual([]);
     expect(brandCentral[0]).toEqual({
       id: 'brand-hyundai-exp-1',
@@ -109,16 +117,14 @@ describe('catalogue sources', () => {
       track: 'Suzuka Circuit',
       circuitId: 10,
       car: "Hyundai IONIQ 5 N '24",
-      targets: { bronzeMs: 20400, silverMs: 18900, goldMs: 18400 },
-      sections: null,
+      targetMs: null,
       source: 'Game screen and Gran Turismo Wiki: Suzuka Circuit'
     });
     expect(brandCentral[3]).toMatchObject({
       code: 'EXP-4',
       name: 'Cornering: Expert',
       track: 'SUGO International Racing Course',
-      car: "Hyundai IONIQ 6N '25",
-      targets: { bronzeMs: 37000, silverMs: 34400, goldMs: 33400 }
+      car: "Hyundai IONIQ 6N '25"
     });
     const carNames = new Set(catalogue.cars.map(car => car.name));
     expect(brandCentral.filter(entry => entry.car === null || !carNames.has(entry.car))).toEqual([]);
@@ -126,6 +132,42 @@ describe('catalogue sources', () => {
     expect(brandCentral.filter(entry => entry.circuitId !== null && !circuitIds.has(entry.circuitId))).toEqual([]);
     expect(seen.every(request => [...request.headers.keys()].join() === 'user-agent')).toBe(true);
     expect(seen.every(request => request.headers.get('user-agent') === CLIENT_HEADERS['User-Agent'])).toBe(true);
+  });
+
+  it('each_circuit_experience_task_is_an_entry', async () => {
+    const catalogue = await fetchCatalogue({ fetch: recordedFetch(), aliases, timeoutMs: 1000, now: fixedNow });
+    const experience = catalogue.entries.filter(entry => entry.family === 'Circuit Experience');
+    const tsukuba = experience.filter(entry => entry.track === 'Tsukuba Circuit');
+    expect(tsukuba.map(entry => [entry.id, entry.code, entry.name, entry.targetMs])).toEqual([
+      ['ce-tsukuba-circuit-s1', 'Sector 1', 'Tsukuba Circuit · Sector 1', null],
+      ['ce-tsukuba-circuit-s2', 'Sector 2', 'Tsukuba Circuit · Sector 2', null],
+      ['ce-tsukuba-circuit-s3', 'Sector 3', 'Tsukuba Circuit · Sector 3', null],
+      ['ce-tsukuba-circuit-lap', '1 Lap Attack', 'Tsukuba Circuit · 1 Lap Attack', null]
+    ]);
+    expect(tsukuba.every(entry => entry.collection === 'Asia/Oceania' && entry.circuitId !== null && entry.car !== null)).toBe(true);
+    expect(experience.filter(entry => entry.track === 'Northern Isle Speedway').map(entry => entry.id)).toEqual(['ce-northern-isle-speedway-lap']);
+    expect(experience.find(entry => entry.id === 'ce-autodromo-de-interlagos-s2')).toMatchObject({ code: 'Sector 2', name: 'Autódromo de Interlagos · Sector 2', collection: 'Americas' });
+    const sectionCounts = [...gt7CircuitExperienceText().matchAll(/^\|\s*.+?\s*\|\|\s*(\d+)\s*\|\|/gm)].reduce((sum, match) => sum + Number(match[1]), 0);
+    expect(sectionCounts).toBe(270);
+    expect(experience).toHaveLength(sectionCounts);
+    expect(experience.every(entry => entry.targetMs === null)).toBe(true);
+  });
+
+  it('licence_collections_follow_the_game_order', async () => {
+    const catalogue = await fetchCatalogue({ fetch: recordedFetch(), aliases, timeoutMs: 1000, now: fixedNow });
+    const collections = [...new Set(catalogue.entries.filter(entry => entry.family === 'Licence').map(entry => entry.collection))];
+    expect(collections).toEqual([
+      'National B',
+      'National A',
+      'International B',
+      'International A',
+      'Super',
+      'Master B',
+      'Master A',
+      'Master International B',
+      'Master International A',
+      'Master Super'
+    ]);
   });
 
   it('failed_source_names_the_page', async () => {
@@ -143,8 +185,8 @@ describe('catalogue sources', () => {
   });
 
   it('validation_names_the_failing_path', () => {
-    expect(() => validateCatalogue({ schemaVersion: 1, retrieved: 'yesterday' })).toThrow(CatalogueValidationError);
-    expect(() => validateCatalogue({ schemaVersion: 1, retrieved: 'yesterday' })).toThrow(/retrieved/);
+    expect(() => validateCatalogue({ schemaVersion: 2, retrieved: 'yesterday' })).toThrow(CatalogueValidationError);
+    expect(() => validateCatalogue({ schemaVersion: 2, retrieved: 'yesterday' })).toThrow(/retrieved/);
   });
 
   it('diff_reports_added_removed_changed_and_family_loss', async () => {

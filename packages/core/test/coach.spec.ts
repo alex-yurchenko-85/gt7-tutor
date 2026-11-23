@@ -309,8 +309,9 @@ describe('Coach', () => {
     const sideKinds = (run: ReturnType<typeof runCoach>) =>
       run.cues.filter(decision => decision.cue.kind === 'keep-left' || decision.cue.kind === 'keep-right').map(decision => decision.cue.kind);
 
-    it('side_cues_are_enabled_by_default', () => {
-      expect(DEFAULT_SIDE_CUE_DISTANCE_M).toBe(2);
+    it('side_cues_are_off_by_default', () => {
+      expect(DEFAULT_SIDE_CUE_DISTANCE_M).toBeNull();
+      expect(runCoach(steady, [], aside(2.5)).cues).toEqual([]);
     });
 
     it('side_cue_below_the_distance_is_silent', () => {

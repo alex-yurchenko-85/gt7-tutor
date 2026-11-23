@@ -7,7 +7,7 @@ import { drivenLap, type LapFacts } from './race-laps.ts';
 import { analysisOf, type ReferenceAnalysis } from './reference-analysis.ts';
 import { distance } from './geometry.ts';
 import { nearestSM, pointAt, type ReferencePath } from './reference.ts';
-import { turnLosses, turnZones, type TurnLoss, type TurnZone } from './turns.ts';
+import { reviewLosses, turnZones, type TurnLoss, type TurnZone } from './turns.ts';
 
 export type LapCompare = { review: Review; findings: Finding[]; turnLosses: TurnLoss[]; lapMs: number; withMs: number };
 
@@ -94,7 +94,7 @@ export function compareLaps(samples: Sample[], analysis: RaceAnalysis, lap: numb
   return {
     review,
     findings: findDifferences(review, config),
-    turnLosses: turnLosses(reference.corners, review.lengthM, review.gridM, review.attempt.t, review.reference.t),
+    turnLosses: reviewLosses(review, reference.corners),
     lapMs: compared.timeMs,
     withMs: withFacts.timeMs
   };

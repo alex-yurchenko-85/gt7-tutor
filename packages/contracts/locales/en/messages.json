@@ -668,6 +668,11 @@
     "note": "Map legend: a turn zone.",
     "maxChars": 20
   },
+  "charts.legend.lowest-speed": {
+    "text": "lowest speed in the turn",
+    "note": "Legend of the Speed chart: the ring at the lowest speed of each line in a turn.",
+    "maxChars": 28
+  },
   "charts.legend.cue": {
     "text": "voice cue",
     "note": "Map legend: the place of a voice cue.",
@@ -1847,47 +1852,15 @@
     "text": "Sources:",
     "note": "Label before the list of catalogue sources."
   },
-  "exercises.next.1": {
-    "text": "Next: record the reference",
-    "note": "Next step of an exercise that has no reference yet."
-  },
-  "exercises.next.2": {
-    "text": "Next: drive attempts",
-    "note": "Next step of an exercise that has a reference."
-  },
-  "exercises.next.3": {
-    "text": "Next: review your attempts",
-    "note": "Next step of an exercise that has attempts."
-  },
   "exercises.status.new": {
     "text": "New",
     "note": "Status badge of an exercise without a reference.",
     "maxChars": 12
   },
-  "exercises.status.ready": {
-    "text": "Ready",
-    "note": "Status badge of an exercise with a reference and no attempt.",
-    "maxChars": 12
-  },
-  "exercises.status.practising": {
-    "text": "Practising",
-    "note": "Status badge of an exercise with attempts and no medal.",
-    "maxChars": 12
-  },
-  "exercises.status.bronze": {
-    "text": "Bronze",
-    "note": "Status badge of an exercise with a bronze medal time.",
-    "maxChars": 12
-  },
-  "exercises.status.silver": {
-    "text": "Silver",
-    "note": "Status badge of an exercise with a silver medal time.",
-    "maxChars": 12
-  },
-  "exercises.status.gold": {
-    "text": "Gold",
-    "note": "Status badge of an exercise with a gold medal time.",
-    "maxChars": 12
+  "exercises.status.target-reached": {
+    "text": "Target reached",
+    "note": "Status badge of an exercise. The best time is equal to the target or less than the target.",
+    "maxChars": 16
   },
   "exercises.history": {
     "text": "{attempts}, {references}",
@@ -1928,25 +1901,6 @@
   "exercises.delete.best": {
     "text": "your best time {time}",
     "note": "List item of the exercise delete. {time} is the best time in bold. Lower case: it is a list item."
-  },
-  "exercises.delete.best-medal": {
-    "text": "your best time {time} and the {medal} medal",
-    "note": "List item of the exercise delete. {time} is the best time in bold, {medal} the medal name in lower case."
-  },
-  "exercises.medal.bronze": {
-    "text": "bronze",
-    "note": "Medal name inside a sentence. Lower case.",
-    "maxChars": 12
-  },
-  "exercises.medal.silver": {
-    "text": "silver",
-    "note": "Medal name inside a sentence. Lower case.",
-    "maxChars": 12
-  },
-  "exercises.medal.gold": {
-    "text": "gold",
-    "note": "Medal name inside a sentence. Lower case.",
-    "maxChars": 12
   },
   "exercises.delete.with-them_one": {
     "text": "With them go {attempts} with its cues and differences, and {references}.",
@@ -2006,6 +1960,10 @@
     "note": "Family filter choice that shows all exercises.",
     "maxChars": 20
   },
+  "exercises.own-collection": {
+    "text": "Own exercises",
+    "note": "Part of the line under the title of an exercise that the player made. It replaces the name of a game collection."
+  },
   "exercises.home.continue": {
     "text": "Continue",
     "note": "First part of the line above the current exercise on the Continue card.",
@@ -2015,18 +1973,18 @@
     "text": "best {time}",
     "note": "Best time on the Continue card on a phone. {time} is the time in bold. Lower case: it follows a dot."
   },
-  "exercises.home.to-medal": {
-    "text": "{gap} to {medal}",
-    "note": "Time to the next medal on the Continue card on a phone. {gap} is the time, {medal} the medal name in lower case."
-  },
   "exercises.home.your-best": {
-    "text": "your best, from the game",
+    "text": "your best time",
     "note": "Caption under the best time on the Continue card.",
     "maxChars": 32
   },
-  "exercises.home.to-medal-time": {
-    "text": "to {medal}, {time}",
-    "note": "Caption under the time to the next medal. {medal} is the medal name in lower case, {time} the medal time."
+  "exercises.home.to-target": {
+    "text": "{gap} to the target",
+    "note": "Time to the target on the Continue card on a phone. {gap} is the time."
+  },
+  "exercises.home.to-target-time": {
+    "text": "to the target, {time}",
+    "note": "Caption under the time to the target on the Continue card. {time} is the target time."
   },
   "drive.button": {
     "text": "Drive",
@@ -2122,6 +2080,26 @@
   "exercises.times.best": {
     "text": "your best",
     "note": "Caption under the best time of the exercise.",
+    "maxChars": 20
+  },
+  "exercises.times.target": {
+    "text": "target",
+    "note": "Caption under the target time of the exercise.",
+    "maxChars": 12
+  },
+  "exercises.times.edit": {
+    "text": "edit",
+    "note": "Button next to the target caption. It changes the target time into a text field.",
+    "maxChars": 8
+  },
+  "exercises.times.no-target": {
+    "text": "–",
+    "note": "Shows in place of the target time when the exercise has no target.",
+    "maxChars": 3
+  },
+  "exercises.times.target-gap": {
+    "text": "gap to the target",
+    "note": "Caption under the gap between the best time and the target.",
     "maxChars": 20
   },
   "exercises.times.reference": {
@@ -2425,21 +2403,13 @@
     "text": "No attempts yet. Select Drive, then drive the exercise in the game.",
     "note": "Text when the exercise has no attempt."
   },
-  "exercises.attempts.day-none": {
-    "text": "no complete attempt",
-    "note": "Line beside a day without a complete attempt. Lower case."
-  },
-  "exercises.attempts.day-best": {
-    "text": "best {time}",
-    "note": "Line beside a day with its best time. Lower case."
-  },
   "exercises.attempts.number": {
     "text": "#",
     "note": "Column heading of the attempt number.",
     "maxChars": 4
   },
   "exercises.attempts.time": {
-    "text": "Time from the game",
+    "text": "Time",
     "note": "Column heading of the attempt time.",
     "maxChars": 20
   },
@@ -2447,11 +2417,6 @@
     "text": "Gap to best",
     "note": "Column heading of the gap to the best attempt.",
     "maxChars": 16
-  },
-  "exercises.attempts.difference": {
-    "text": "Largest difference",
-    "note": "Column heading of the largest difference of an attempt.",
-    "maxChars": 20
   },
   "exercises.summary.reading": {
     "text": "Reading the attempt…",
@@ -2508,21 +2473,12 @@
     "note": "Button that starts the next attempt.",
     "maxChars": 26
   },
-  "exercises.add.not-listed": {
-    "text": "Not listed",
-    "note": "Medal targets of a catalogue entry without targets.",
-    "maxChars": 20
-  },
-  "exercises.add.targets": {
-    "text": "Gold {gold} · Silver {silver} · Bronze {bronze}",
-    "note": "Medal targets of a catalogue entry. The values are the medal times."
-  },
   "exercises.add.sources": {
     "text": "Sources: {sources}.",
     "note": "List of catalogue sources at the end of Add exercise. {sources} is the list."
   },
   "exercises.add.added": {
-    "text": "Added · open",
+    "text": "View",
     "note": "Link of an entry that the player already added.",
     "maxChars": 16
   },
@@ -2611,11 +2567,6 @@
   },
   "exercises.add.track-and-car": {
     "text": "Track and car",
-    "note": "Column heading of the catalogue table.",
-    "maxChars": 20
-  },
-  "exercises.add.medal-targets": {
-    "text": "Medal targets",
     "note": "Column heading of the catalogue table.",
     "maxChars": 20
   },
@@ -2712,6 +2663,14 @@
     "text": "Wide at the apex",
     "note": "Name of the difference: the player was far from the apex."
   },
+  "exercises.difference.low-point-early": {
+    "text": "Lowest speed before the apex",
+    "note": "Name of the difference: the lowest speed of the player was before the apex."
+  },
+  "exercises.difference.low-point-late": {
+    "text": "Lowest speed after the apex",
+    "note": "Name of the difference: the lowest speed of the player was after the apex."
+  },
   "exercises.difference.text.brake-early": {
     "text": "Braked {amount} earlier",
     "note": "Difference sentence. {amount} is the distance with its unit."
@@ -2735,6 +2694,14 @@
   "exercises.difference.text.wide-apex": {
     "text": "{metres} m outside at the apex",
     "note": "Difference sentence. {metres} is the distance with one decimal."
+  },
+  "exercises.difference.text.low-point-early": {
+    "text": "Lowest speed {amount} before the apex",
+    "note": "Difference sentence. The lowest speed of the player was before the apex of the reference. {amount} is the distance from that apex, for example 53 m."
+  },
+  "exercises.difference.text.low-point-late": {
+    "text": "Lowest speed {amount} after the apex",
+    "note": "Difference sentence. The lowest speed of the player was after the apex of the reference. {amount} is the distance from that apex, for example 53 m."
   },
   "exercises.difference.recurring": {
     "text": "{name} in {count} of {of} attempts, median {size}",
@@ -2825,6 +2792,18 @@
   "exercises.cues.turn-in": {
     "text": "Turn-in {turnIn} m. Apex {apex} m. Radius {radius} m. Not spoken.",
     "note": "Details of a turn row. The values are distances in metres."
+  },
+  "exercises.cues.brake-plan.at-apex": {
+    "text": "Brake to {to} m, {share} % at the turn-in. Lowest speed at the apex.",
+    "note": "Line in the turn row of the cue list. How the reference brakes for the turn. {to} is the end of the brake zone in metres, {share} is the brake at the turn-in in percent."
+  },
+  "exercises.cues.brake-plan.before": {
+    "text": "Brake to {to} m, {share} % at the turn-in. Lowest speed {metres} m before the apex.",
+    "note": "Line in the turn row of the cue list when the lowest speed of the reference is before the apex. {metres} is the distance to the apex."
+  },
+  "exercises.cues.brake-plan.after": {
+    "text": "Brake to {to} m, {share} % at the turn-in. Lowest speed {metres} m after the apex.",
+    "note": "Line in the turn row of the cue list when the lowest speed of the reference is after the apex. {metres} is the distance from the apex."
   },
   "exercises.cues.apex-speed": {
     "text": "{speed} km/h at the apex",

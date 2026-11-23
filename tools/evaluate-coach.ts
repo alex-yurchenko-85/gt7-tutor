@@ -27,7 +27,7 @@ function readArguments() {
       first: { type: 'string' },
       last: { type: 'string' },
       delay: { type: 'string', default: '60' },
-      'side-distance': { type: 'string', default: String(DEFAULT_SIDE_CUE_DISTANCE_M) },
+      'side-distance': { type: 'string', default: String(DEFAULT_SIDE_CUE_DISTANCE_M ?? 'off') },
       out: { type: 'string' }
     }
   });

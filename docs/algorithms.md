@@ -41,6 +41,7 @@ Fixed limits outside `DEFAULT_CONFIG`:
 | --- | --- |
 | `cue-text.ts` | Target speeds 30 to 350 km/h, `estimatedPhraseMs`: 200 ms + 220 ms per word |
 | `match.ts` | Minimum travel for a travel direction: 0.05 m |
+| `findings.ts` | `COMPARISON_VERSION` 6: the version of the rules of the differences, the turns and the stored time lost per turn and per part |
 | `@gt7/contracts` | Cue offsets −500 to +1000 ms in steps of 100 ms, side cue distances 0.5 to 3 m, `WIDE_APEX_M` 2, `RECURRING_MIN_ATTEMPTS` 3, `MAX_SPOKEN_TURN` 10 |
 
 ## 1. Start and finish of an attempt
@@ -226,6 +227,12 @@ Guidance uses only trusted matches.
 4. Turn-in: the last point before the apex with a curvature below one third of the apex curvature.
 5. Sort the corners by apex. A corner with a turn-in at or before the last apex of the previous corner joins the previous corner. The last apex is the largest apex of all the corners that joined. The joined corner keeps the sharpest apex, the earliest turn-in and the earliest opening.
 6. Number the corners by apex order from 1.
+7. Brake facts of each corner, `cornerBrake(path, corners, index)`:
+   - Turn range: from 30 m before `zoneStartSM` to 60 m after `apex + (apex − turn-in)`. It does not start before 0 m or before the apex of the previous corner. It ends earlier at `zoneStartSM` of the next corner or at the path end.
+   - Brake zone: the last run of 3 or more points with brake > 0.10 in the turn range that starts at or before the apex. No such run: the corner has no brake zone, and all four facts are `null`.
+   - `brakeToSM`: the last point of the brake zone.
+   - `brakeAtTurnIn`: the brake of the path at the turn-in, 0 to 1.
+   - `lowSpeedSM` and `lowSpeedMps`: the place and the speed of the lowest speed in the turn range.
 
 `outsideM(corner, lateralM)` = `−insideSign × lateralM`. Positive: outside.
 
@@ -233,9 +240,9 @@ Guidance uses only trusted matches.
 
 `turnOf(corners, sM)`: the last corner whose `zoneStartSM` (its opening `brake` or `ease-off`) is ≤ `sM`. Before turn 1: turn 1. No corners: `null`.
 
-**Output.** The events with their keys, voice kinds and targets. The corners with turn-in, apex, inside side and zone.
+**Output.** The events with their keys, voice kinds and targets. The corners with turn-in, apex, inside side, zone and brake facts.
 
-**Parameters.** `events`: `consecutiveSamples` 3, `brakeOn` 0.1, `liftFrom` 0.5, `liftTo` 0.1, `throttleOn` 0.5, `mergeWithinM` 5, `liftBrakeWindowMs` 1000, `endMarginM` 20. `findings.cornerExtensionM` 40. `target`: `roundDownKph` 5, `throttleLookAheadMs` 2000. `voice`: `hardBrakeShare` 0.4, `brakeShare` 0.15, `fullThrottle` 0.95, `bigStopEntryMps` 200 km/h, `bigStopLossMps` 100 km/h. `corners`: `curvatureSpanM` 10, `maxRadiusM` 150, `turnInShare` 1/3, `apexAfterThrottleM` 40.
+**Parameters.** `events`: `consecutiveSamples` 3, `brakeOn` 0.1, `liftFrom` 0.5, `liftTo` 0.1, `throttleOn` 0.5, `mergeWithinM` 5, `liftBrakeWindowMs` 1000, `endMarginM` 20. `findings.cornerExtensionM` 40. `target`: `roundDownKph` 5, `throttleLookAheadMs` 2000. `voice`: `hardBrakeShare` 0.4, `brakeShare` 0.15, `fullThrottle` 0.95, `bigStopEntryMps` 200 km/h, `bigStopLossMps` 100 km/h. `corners`: `curvatureSpanM` 10, `maxRadiusM` 150, `turnInShare` 1/3, `apexAfterThrottleM` 40, `rangeBeforeM` 30, `rangeAfterM` 60.
 
 ## 5. Voice cues
 
@@ -325,7 +332,7 @@ With `a` = 0: `t = d / v`. `a` = the speed change over the last 300 ms, never ne
 
 **Method: closer to apex.** More than 2 m outside for ≥ 300 ms between turn-in and apex. Once per corner.
 
-**Method: side cues.** The distance comes from `CoachSettings`: off, or 0.5 to 3 m. Default `DEFAULT_SIDE_CUE_DISTANCE_M` 2 m.
+**Method: side cues.** The distance comes from `CoachSettings`: off, or 0.5 to 3 m. Default `DEFAULT_SIDE_CUE_DISTANCE_M`: off.
 
 - `|lateralM|` above the distance for 300 ms: `More left` for positive, `More right` for negative.
 - Once per excursion. The car must return within the distance first. A side cue that loses to another cue or to cooldown does not repeat in that excursion.
@@ -335,8 +342,8 @@ With `a` = 0: `t = d / v`. `a` = the speed change over the last 300 ms, never ne
 
 - Clip = phrase key, for example `hard-brake`. The voice pack key is `voice.<clip>`, for example `voice.hard-brake`. The keys keep the kind names: `ease-off` says `Lift off`, `big-stop` says `Big brake ahead`, `tighter` says `Closer to apex`, `keep-left` and `keep-right` say `More left` and `More right`.
 - The follow clip of a brake with a target is `speed-<km/h>`. It plays only with `Speak target speeds`. The voice pack gives the words of each speed: `voice.speed-30` to `voice.speed-350`.
-- A focus clip is `focus-<kind>-<turn>`, up to turn 10. Its text is `voice.focus` with the turn (`voice.turn-1` to `voice.turn-10`) and the action (`voice.focus-action.<kind>`). Above turn 10, the focus has no clip, and the screen shows the turn with `voice.turn` and digits.
-- `eventClips(event, speakTargets)` gives the clips of a cue row: the clip, then the follow clip if targets are on. The next cue of the live state has its clip. The focus of an attempt has its kind, its turn and its clip.
+- A focus clip is `focus-<phrase>-<turn>`, up to turn 10. The phrase comes from the part and the cause (section 7), for example `entry-slow` or `exit`. Its text is `voice.focus` with the turn (`voice.turn-1` to `voice.turn-10`) and the problem (`voice.focus-problem.<phrase>`). Above turn 10, the focus has no clip, and the screen shows the turn with `voice.turn` and digits.
+- `eventClips(event, speakTargets)` gives the clips of a cue row: the clip, then the follow clip if targets are on. The next cue of the live state has its clip. The focus of an attempt has its turn, its part, its cause and its clip.
 - The web makes the shown text from the voice pack. A brake with a target shows `voice.brake-with-target`, with the speed words after the action.
 - The Drive stage shows the words of `drive.cue.<kind>` from the message pack.
 - `clipText(pack, clip)` gives the spoken text of a clip. `estimatedPhraseMs(pack, clip)` gives the phrase time when the voice manifest has no duration for the clip.
@@ -377,31 +384,73 @@ With `a` = 0: `t = d / v`. `a` = the speed change over the last 300 ms, never ne
 | `throttle-late` | Attempt throttle more than 10 m after the reference throttle, within 60 m | m |
 | `off-line` | More than 1.5 m to one side for more than 500 ms | largest distance, m |
 | `wide-apex` | More than 2 m outside at an apex | m |
+| `low-point-early`, `low-point-late` | The lowest speed of the attempt is more than 20 m before or after `lowSpeedSM` of the reference. The search goes from `zoneStartSM` to the end of the turn range (section 4), and stops before `zoneStartSM` of the next corner. The corner must have a brake zone, and its `lowSpeedSM` must be 6 m or less from its apex. No difference when the lowest speed is on the first or the last cell of the search. No difference when a cell of the search has no attempt speed. Place: the lowest speed of the attempt. | m from the apex of the reference |
 
 An attempt brake more than 60 m from the reference brake is not matched. The finder then uses the nearest brake inside 60 m.
 
-**Method: time lost per turn.** `turnLosses(corners, lengthM, gridM, attemptT, referenceT)`: per turn zone (section 4), the gap at the last grid point with both times − the gap at the first. Gap = attempt time − reference time. Fewer than two points: no value. Negative: time gained.
+**Method: time lost per turn.** `turnLosses(corners, lengthM, gridM, attemptT, referenceT)`:
 
-**Method: recurring differences.** `recurring(perAttempt, config)`: empty with fewer than 3 attempts. A difference recurs in at least half of the attempts. Group by kind and event key, `off-line` by place within 20 m. Size: the median. Sort by count, then place.
+1. Gap at a grid cell = attempt time − reference time. A cell without both times has no gap.
+2. `lossRanges(corners, lengthM)` gives one loss range per turn. The loss range of turn N goes from `zoneStartSM` of turn N to `zoneStartSM` of turn N + 1. The range of turn 1 starts at 0 m. The range of the last turn stops at the path end.
+3. Each range boundary goes to the nearest grid cell. Two neighbour ranges share that cell.
+4. Carried gap at a cell: the gap of the last cell with a gap at or before that cell. A cell before the first gap takes the first gap.
+5. Time lost of a turn = carried gap at the range end − carried gap at the range start. A range has no value when it has no gap after its start cell. The range of turn 1 also counts its start cell. Negative: time gained.
+6. Sum of the time lost of all turns = last gap − first gap. These are the gaps of the last and the first cell with a gap.
+7. Each loss range has three parts. The `approach` goes from the range start to `turnInSM` of the reference. The `entry` goes from `turnInSM` to `apexSM`. The `exit` goes from `apexSM` to the range end. A `turnInSM` or an `apexSM` outside the range moves to the nearest range boundary. Then the part before it has a length of 0 m. The time lost of a turn keeps the two boundaries as `entrySM` and `exitSM`.
+8. Time lost of a part = carried gap at the part end − carried gap at the part start, with the cells of step 3. The three parts add up to the time lost of the turn. A turn without a value has no part values.
 
-**Method: focus.** `focusSentence(recurring, latest, corners)`: the most frequent recurring difference, else the largest difference of the last attempt. `comparableSize` makes 1 m/s count as 3.6. No corner at its place (`cornerAt`): no sentence. Text: the turn number and the action from `FOCUS_ACTIONS`.
+The other calculations use the turn zones of section 4, not the loss ranges.
 
-| Kind | Action |
+**Method: recurring differences.** `recurring(perAttempt, config)`: empty with fewer than 3 attempts. A difference recurs in at least half of the attempts. Group by kind and event key, `off-line` by place within 20 m. Size and place: the median. Sort by count, then place.
+
+**Method: focus.** `focusFor(latestFirst, config)`. Each attempt gives its differences and its time lost per turn and per part.
+
+1. Window: the last `focus.attempts` complete attempts of the exercise with the same reference. One attempt is enough.
+2. For each turn, take the median of its time lost. Use only the attempts of the window that have a value for the turn.
+3. Put the turns in order of this median, the largest first. Equal medians: the lower turn number first.
+4. The focus turn is the first turn with a median of `focus.turnMinMs` or more. The turn does not need a difference.
+5. For each part of the focus turn, take the median of its time lost over the window. Use only the attempts with a value.
+6. The focus part is the first part, in the order `approach`, `entry`, `exit`, with a median above `focus.partMinMs` and above `focus.partMinShare` × the median of the turn.
+7. Sometimes no part passes step 6. Then the focus part is the part with the largest median above 0 ms. Equal medians: the first part in the order of step 6. A turn without such a part goes to the next turn.
+8. A difference belongs to the loss range that holds its place. The range starts at its `fromSM`. A place at the shared boundary belongs to the next range.
+9. Each difference kind belongs to parts by its kind, not by its place. `brake-late` belongs to all parts. An `off-line` difference belongs to the part that holds its place: before `entrySM` the `approach`, before `exitSM` the `entry`, else the `exit`.
+
+| Part | Kinds |
 | --- | --- |
-| `brake-early` | `Brake later.` |
-| `brake-late` | `Brake earlier.` |
-| `slow-corner` | `Carry more speed.` |
-| `throttle-late` | `Throttle earlier.` |
-| `off-line` | `Stay on the line.` |
-| `wide-apex` | `Closer to the apex.` |
+| `approach` | `brake-early`, `brake-late` |
+| `entry` | `brake-late`, `low-point-early`, `low-point-late`, `slow-corner`, `wide-apex` |
+| `exit` | `brake-late`, `throttle-late` |
+
+10. For each kind of the focus part, count the attempts of the window that have it in the loss range of the focus turn.
+11. The cause is the kind of the focus part in the most attempts. It must be in half or more of the attempts of the window. Equal counts: the first kind of `FOCUS_KIND_ORDER`: `brake-early`, `brake-late`, `low-point-early`, `low-point-late`, `slow-corner`, `wide-apex`, `throttle-late`, `off-line`.
+12. Sometimes no kind of the focus part is in half or more of the attempts. Then the cause is `off-line` if an `off-line` difference in the focus part is in half or more of the attempts. Else the focus has no cause.
+13. No turn with a median of `focus.turnMinMs` or more, or a path without a turn: no focus.
+
+Text: the turn name and the problem of the part and the cause. A turn above 10 has a shown text and no voice clip.
+
+| Part | Cause | Problem |
+| --- | --- | --- |
+| `approach` | `brake-early` | `Braking too early before the turn.` |
+| `approach` | `brake-late` | `Braking too late before the turn.` |
+| `approach` | `off-line` | `Off the line before the turn.` |
+| `approach` | none | `Time lost before the turn.` |
+| `entry` | `low-point-early`, `slow-corner` | `Too slow on entry.` |
+| `entry` | `low-point-late` | `Too fast on entry.` |
+| `entry` | `wide-apex` | `Far from the apex on entry.` |
+| `entry` | `off-line` | `Off the line on entry.` |
+| `entry` | none | `Time lost on entry.` |
+| `entry`, `exit` | `brake-late` | `Braking too late before the turn.` |
+| `exit` | `throttle-late` | `Late on the throttle on exit.` |
+| `exit` | `off-line` | `Off the line on exit.` |
+| `exit` | none | `Time lost on exit.` |
 
 **Method: brake reaction.** `brakeReactions(samples, cues)`: the time from the clip start to the brake rise above 0.10. Brake above 0.10 at the clip start: the last rise before the clip. Else: the first rise after it. More than 3000 ms away: no value. Negative: braked before the cue.
 
 **Method: review gap.** Game time of the attempt − reference time.
 
-**Output.** The grid series, the differences with their turns, the time lost per turn, the recurring differences, the focus sentence, the brake reactions, the review gap.
+**Output.** The grid series and the differences with their turns. For each corner with a brake zone, the lowest speed of the attempt and its place. They come from the search of `low-point-*`, without the apex limit. The time lost per turn with its loss range. The time lost per part is only for the focus. The recurring differences, the focus sentence, the brake reactions and the review gap.
 
-**Parameters.** `reviewGridM` 2, `reviewMaxBridgeM` 10. `findings`: `eventWindowM` 60, `brakeM` 8, `slowCornerMps` 8 km/h, `throttleLateM` 10, `offLineM` 1.5, `offLineMs` 500, `cornerExtensionM` 40. `corners.wideApexM` 2. `recurring`: `minAttempts` 3, `minShare` 0.5, `placeWithinM` 20. `brakeReaction`: `onThreshold` 0.1, `windowMs` 3000.
+**Parameters.** `reviewGridM` 2, `reviewMaxBridgeM` 10. `findings`: `eventWindowM` 60, `brakeM` 8, `slowCornerMps` 8 km/h, `throttleLateM` 10, `lowPointM` 20, `offLineM` 1.5, `offLineMs` 500, `cornerExtensionM` 40. `corners.wideApexM` 2. `cues.apexNearM` 6. `recurring`: `minAttempts` 3, `minShare` 0.5, `placeWithinM` 20. `focus`: `attempts` 5, `turnMinMs` 100, `partMinMs` 100, `partMinShare` 0.2. `brakeReaction`: `onThreshold` 0.1, `windowMs` 3000.
 
 ## 8. Race
 
@@ -546,6 +595,7 @@ A **closed lap** (`isClosedLap`) starts and ends at the lap line: it is not lap 
 - One lap is an out-lap and the other lap is an in-lap: the attempt time moves. The time lost is then 0 at the first matched cell.
 - An in-lap against a lap without a pit stop does not move. Its curve starts at 0 at the lap line and stops at the pit entry.
 - The move does not change the time lost per turn.
+- The time lost of turn 1 of an out-lap starts at the first matched cell (section 7, carried gap). The time in the pit lane is in no turn.
 
 Two laps of a race use larger limits (`raceCompareConfig(config)`). The race functions `compareLaps`, `goldenLap`, `lapsSpeed` and `offTrackView` use them. No other code reads them.
 
@@ -575,16 +625,15 @@ Two laps of a race use larger limits (`raceCompareConfig(config)`). The race fun
 6. A boundary value is the linear interpolation between two matches at the first crossing of the boundary `sM`. Two matches with 50 m or more between them give no crossing. At the lap line, the end of a lap takes the first match of the next lap when the next lap is clean. Otherwise, the end takes the speed of the first sample of the next lap. It takes the side position of the last match.
 7. Two sectors of the same lap always join. Two sectors of different laps join when the speed difference at the boundary is not more than `goldenJoinMps` and the side difference is not more than `goldenJoinSideM`.
 8. The chain is the shortest path over the sectors and the clean laps (dynamic programming). The method calculates one chain for each lap of the first sector. A chain is valid only when its last sector joins its first sector at the lap line. The golden lap is the valid chain with the smallest sum of sector times.
-9. A straight is the range from the zone end of turn N to the zone start of turn N + 1, at least 100 m long. For each clean lap, the method finds the match with the top speed on the straight. A slipstream hint is a top speed more than `goldenSlipstreamMps` above the median of the clean laps. The race position at that match must not be 1. The hint goes to the sector of that match.
 
 **Output.** `GoldenLap` with one of four states:
 
-- `ok`: the best clean lap and its time of the game, the golden time, the source laps, the clean laps and one row per sector. A row has the turn, the range in metres, the source lap and its sector time. It also has the best sector time and its lap, the median, the spread (median − best) and the count of usable laps. The last fields are `bestJoins` and `slipstream`. `bestJoins` is false when the best sector time is not in the golden lap. `slipstream` is true when the source lap of the sector has a slipstream hint in that sector.
+- `ok`: the best clean lap and its time of the game, the golden time, the source laps, the clean laps and one row per sector. A row has the turn, the range in metres, the source lap and its sector time. It also has the best sector time and its lap, the median, the spread (median − best) and the count of usable laps. The last field is `bestJoins`. It is false when the best sector time is not in the golden lap.
 - `too-few`: fewer clean laps than `goldenMinLaps`. The output gives the clean laps and the reason for each other lap (`first`, `pit` or `open`).
 - `gap`: a sector has no usable lap. The output gives the clean laps and the turn of that sector.
 - `no-chain`: no valid chain. The output gives the clean laps.
 
-**Parameters.** `race`: `goldenMinLaps` 3, `goldenJoinMps` 5 km/h, `goldenJoinSideM` 1.5 m, `goldenSlipstreamMps` 3 km/h. Fixed values: the narrow range 4 m, the crossing step 50 m, the straight 100 m.
+**Parameters.** `race`: `goldenMinLaps` 3, `goldenJoinMps` 5 km/h, `goldenJoinSideM` 1.5 m. Fixed values: the narrow range 4 m, the crossing step 50 m.
 
 ### 8.11 Speed of all laps and the off-track view
 
@@ -600,15 +649,17 @@ Two laps of a race use larger limits (`raceCompareConfig(config)`). The race fun
 
 **Parameters.** `race`: `minLaps` 2, `sessionLostMs` 1000, `unsupportedAfterMs` 5000, `afterFinishMs` 2000, `silenceEndMs` 10 000, `pitStoppedMps` 0.1, `fuelStepMs` 2000, `distanceStepMs` 250, `offTrackMinWheels` 2, `offTrackJoinMs` 1000, `recurringWithinM` 80, `recurringLaps` 3, `trackWithinM` 60, and the compare limits above. Minimum fuel use for the estimate: 0.5 per lap.
 
-## 9. Exercise status and medal
+## 9. Exercise status and target gap
 
-**Task.** Give the status of an exercise and the next medal to drive for.
+**Task.** Give the status of an exercise and the gap from the best time to the target.
 
-**Input.** The number of complete attempts, the best game time, the targets of the medals, the active reference.
+**Input.** The best game time of the complete attempts, the target of the exercise, the active reference.
 
 **Method.**
 
-- `exerciseStatus`: no complete attempt → `ready` with an active reference, else `new`. Else the medal of the best game time against the targets, or `practising`.
-- `nextMedal`: the first of bronze, silver, gold with a target below the best time.
+- `exerciseStatus`: a best time and a target, and the best time is equal to the target or less → `target-reached`. Else an active reference → `practising`. Else `new`.
+- `targetGap`: the best time minus the target, when the best time is more than the target.
 
-**Output.** The status. The next medal with its target and the gap in ms, or `null` without a best time or when the best time reaches every target.
+**Output.** The status. The gap in ms, or `null` without a best time, without a target, or when the best time is equal to the target or less.
+
+**Parameters.** The target is one time in ms per exercise, or `null`. A new exercise from the catalogue takes the gold time of its entry, if the entry has a gold time. Other exercises have no target until the player sets one.

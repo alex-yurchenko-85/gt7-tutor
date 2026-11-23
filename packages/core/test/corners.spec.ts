@@ -1,7 +1,7 @@
 import { KPH_PER_MPS, type Vec3 } from '@gt7/contracts';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../src/config.ts';
-import { cornerAt, cornerCursor, findCorners, joinCorners, outsideM, type Corner } from '../src/corners.ts';
+import { cornerAt, cornerCursor, findCorners, joinCorners, outsideM, type Corner, type CornerShape } from '../src/corners.ts';
 import { buildCueEvents } from '../src/cue-events.ts';
 import { Matcher } from '../src/match.ts';
 import type { ReferencePath } from '../src/reference.ts';
@@ -16,7 +16,7 @@ function interlagosCorners(): Corner[] {
   return findCorners(path, buildCueEvents(path, DEFAULT_CONFIG), DEFAULT_CONFIG);
 }
 
-function bend(zoneStartSM: number, turnInSM: number, apexSM: number, radiusM: number): Omit<Corner, 'number'> {
+function bend(zoneStartSM: number, turnInSM: number, apexSM: number, radiusM: number): CornerShape {
   return { zoneStartSM, turnInSM, apexSM, radiusM, apexSpeedMps: 20, insideSign: 1 };
 }
 
@@ -142,7 +142,11 @@ describe('corners', () => {
       apexSM: zoneStartSM + 40,
       radiusM: 60,
       apexSpeedMps: kph(90),
-      insideSign: 1
+      insideSign: 1,
+      brakeToSM: null,
+      brakeAtTurnIn: null,
+      lowSpeedSM: null,
+      lowSpeedMps: null
     });
     const corners = [zoneCorner(1, 300), zoneCorner(2, 600), zoneCorner(3, 900)];
     expect([100, 300, 599, 600, 899, 900, 1200].map(sM => cornerAt(corners, sM)!.number)).toEqual([1, 1, 1, 2, 2, 3, 3]);
@@ -156,7 +160,11 @@ describe('corners', () => {
       apexSM: zoneStartSM + 40,
       radiusM: 60,
       apexSpeedMps: kph(90),
-      insideSign: 1
+      insideSign: 1,
+      brakeToSM: null,
+      brakeAtTurnIn: null,
+      lowSpeedSM: null,
+      lowSpeedMps: null
     });
     const sets = [[], [corner(1, 300)], [corner(1, 300), corner(2, 600), corner(3, 900)], [corner(1, 400), corner(2, 250), corner(3, 250), corner(4, 700), corner(5, 650)]];
     const forwards = Array.from({ length: 1201 }, (_, index) => index);

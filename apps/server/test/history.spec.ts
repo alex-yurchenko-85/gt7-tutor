@@ -270,7 +270,7 @@ describe('deleting attempts and history', () => {
     const { exerciseId } = await exerciseWithAttempts(1);
     const entry = async () =>
       (await http().get('/api/catalogue').query({ q: 'Interlagos' }).set('Cookie', cookie).expect(200)).body.find(
-        (item: { id: string }) => item.id === 'ce-autodromo-de-interlagos'
+        (item: { id: string }) => item.id === 'ce-autodromo-de-interlagos-s2'
       );
     expect((await entry()).exerciseId).toBe(exerciseId);
     await http().post('/api/exercises/remove').set('Cookie', cookie).send({ ids: [exerciseId], cleanup: false }).expect(200);

@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "retrieved": "2026-11-16T17:01:33.588Z",
+  "schemaVersion": 2,
+  "retrieved": "2026-11-23T15:51:23.795Z",
   "gameVersionNote": "Target times as listed by the Gran Turismo Wiki on the retrieval date. The game version of these times is not confirmed.",
   "circuits": [
     {
@@ -3718,12 +3718,7 @@
       "track": "Suzuka Circuit",
       "circuitId": 10,
       "car": "Hyundai IONIQ 5 N '24",
-      "targets": {
-        "bronzeMs": 20400,
-        "silverMs": 18900,
-        "goldMs": 18400
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Suzuka Circuit"
     },
     {
@@ -3735,12 +3730,7 @@
       "track": "Mount Panorama Motor Racing Circuit",
       "circuitId": 116,
       "car": "Hyundai IONIQ 5 N '24",
-      "targets": {
-        "bronzeMs": 46700,
-        "silverMs": 43400,
-        "goldMs": 42000
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Mount Panorama"
     },
     {
@@ -3752,12 +3742,7 @@
       "track": "Nürburgring GP",
       "circuitId": 349,
       "car": "Hyundai IONIQ 6N '25",
-      "targets": {
-        "bronzeMs": 51100,
-        "silverMs": 47500,
-        "goldMs": 46200
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Nürburgring GP"
     },
     {
@@ -3769,12 +3754,7 @@
       "track": "SUGO International Racing Course",
       "circuitId": null,
       "car": "Hyundai IONIQ 6N '25",
-      "targets": {
-        "bronzeMs": 37000,
-        "silverMs": 34400,
-        "goldMs": 33400
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: SUGO International Racing Course"
     },
     {
@@ -3786,8 +3766,7 @@
       "track": "Alsace - Village Reverse",
       "circuitId": 439,
       "car": "Hyundai IONIQ 6N '25",
-      "targets": null,
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Alsace - Village"
     },
     {
@@ -3799,12 +3778,7 @@
       "track": "Dragon Trail - Gardens",
       "circuitId": 847,
       "car": "Polestar Polestar 5 Performance",
-      "targets": {
-        "bronzeMs": 17200,
-        "silverMs": 15800,
-        "goldMs": 15300
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Dragon Trail - Gardens"
     },
     {
@@ -3816,12 +3790,7 @@
       "track": "Brands Hatch Grand Prix Circuit",
       "circuitId": 119,
       "car": "Polestar Polestar 5 Performance",
-      "targets": {
-        "bronzeMs": 42300,
-        "silverMs": 39000,
-        "goldMs": 38000
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Brands Hatch GP"
     },
     {
@@ -3833,12 +3802,7 @@
       "track": "Autódromo de Interlagos",
       "circuitId": 152,
       "car": "Polestar Polestar 5 Performance",
-      "targets": {
-        "bronzeMs": 38000,
-        "silverMs": 34800,
-        "goldMs": 33700
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Autódromo de Interlagos"
     },
     {
@@ -3850,12 +3814,7 @@
       "track": "Fuji International Speedway",
       "circuitId": 16,
       "car": "Polestar Polestar 5 Performance",
-      "targets": {
-        "bronzeMs": 37300,
-        "silverMs": 34700,
-        "goldMs": 33700
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Fuji International Speedway"
     },
     {
@@ -3867,8 +3826,7 @@
       "track": "Deep Forest Raceway",
       "circuitId": 51,
       "car": "Polestar Polestar 5 Performance",
-      "targets": null,
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Deep Forest Raceway"
     },
     {
@@ -3880,12 +3838,7 @@
       "track": "Deep Forest Raceway",
       "circuitId": 51,
       "car": "Xiaomi SU7 Ultra '25",
-      "targets": {
-        "bronzeMs": 21000,
-        "silverMs": 19300,
-        "goldMs": 18700
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Deep Forest Raceway"
     },
     {
@@ -3897,12 +3850,7 @@
       "track": "Nürburgring Nordschleife",
       "circuitId": 95,
       "car": "Xiaomi SU7 Ultra '25",
-      "targets": {
-        "bronzeMs": 28000,
-        "silverMs": 26300,
-        "goldMs": 25500
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Nürburgring Nordschleife"
     },
     {
@@ -3914,12 +3862,7 @@
       "track": "24 Heures du Mans race track",
       "circuitId": 454,
       "car": "Xiaomi SU7 Ultra '25",
-      "targets": {
-        "bronzeMs": 37000,
-        "silverMs": 34200,
-        "goldMs": 32800
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Circuit de la Sarthe"
     },
     {
@@ -3931,12 +3874,7 @@
       "track": "Alsace - Village",
       "circuitId": 358,
       "car": "Xiaomi Xiaomi VGT",
-      "targets": {
-        "bronzeMs": 39700,
-        "silverMs": 36600,
-        "goldMs": 35600
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Alsace - Village"
     },
     {
@@ -3948,8 +3886,7 @@
       "track": "Autodrome Lago Maggiore - Full Course",
       "circuitId": 365,
       "car": "Xiaomi Xiaomi VGT",
-      "targets": null,
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Autodrome Lago Maggiore - Full Course"
     },
     {
@@ -3961,12 +3898,7 @@
       "track": "SUGO International Racing Course",
       "circuitId": null,
       "car": "Yangwang U9 '24",
-      "targets": {
-        "bronzeMs": 26000,
-        "silverMs": 24200,
-        "goldMs": 23500
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: SUGO International Racing Course"
     },
     {
@@ -3978,12 +3910,7 @@
       "track": "Suzuka Circuit",
       "circuitId": 10,
       "car": "Yangwang U9 '24",
-      "targets": {
-        "bronzeMs": 31800,
-        "silverMs": 29300,
-        "goldMs": 28000
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Suzuka Circuit"
     },
     {
@@ -3995,12 +3922,7 @@
       "track": "Tokyo Expressway - East Clockwise",
       "circuitId": 361,
       "car": "Yangwang U9 '24",
-      "targets": {
-        "bronzeMs": 26800,
-        "silverMs": 24600,
-        "goldMs": 23900
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Tokyo Expressway - East Clockwise"
     },
     {
@@ -4012,12 +3934,7 @@
       "track": "Trial Mountain Circuit",
       "circuitId": 1024,
       "car": "Yangwang U9 '24",
-      "targets": {
-        "bronzeMs": 44400,
-        "silverMs": 41300,
-        "goldMs": 40000
-      },
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen"
     },
     {
@@ -4029,8 +3946,7 @@
       "track": "Yas Marina Circuit",
       "circuitId": 2003,
       "car": "Yangwang U9 '24",
-      "targets": null,
-      "sections": null,
+      "targetMs": null,
       "source": "Game screen and Gran Turismo Wiki: Yas Marina Circuit"
     },
     {
@@ -4042,12 +3958,7 @@
       "track": "High Speed Ring",
       "circuitId": 11,
       "car": "Mazda Demio XD Touring '15",
-      "targets": {
-        "bronzeMs": 22800,
-        "silverMs": 21400,
-        "goldMs": 20800
-      },
-      "sections": null,
+      "targetMs": 20800,
       "source": "Gran Turismo Wiki: GT7 B-License"
     },
     {
@@ -4059,12 +3970,7 @@
       "track": "High Speed Ring",
       "circuitId": 11,
       "car": "Mitsubishi GTO Twin Turbo '91",
-      "targets": {
-        "bronzeMs": 18800,
-        "silverMs": 17800,
-        "goldMs": 17600
-      },
-      "sections": null,
+      "targetMs": 17600,
       "source": "Gran Turismo Wiki: GT7 B-License"
     },
     {
@@ -4076,12 +3982,7 @@
       "track": "Alsace - Village",
       "circuitId": 358,
       "car": "Daihatsu Copen Active Top '02",
-      "targets": {
-        "bronzeMs": 16300,
-        "silverMs": 15100,
-        "goldMs": 14700
-      },
-      "sections": null,
+      "targetMs": 14700,
       "source": "Gran Turismo Wiki: GT7 B-License"
     },
     {
@@ -4093,12 +3994,7 @@
       "track": "Alsace - Village",
       "circuitId": 358,
       "car": "Audi TT Coupe 3.2 quattro '03",
-      "targets": {
-        "bronzeMs": 13600,
-        "silverMs": 12400,
-        "goldMs": 12000
-      },
-      "sections": null,
+      "targetMs": 12000,
       "source": "Gran Turismo Wiki: GT7 B-License"
     },
     {
@@ -4110,12 +4006,7 @@
       "track": "Tsukuba Circuit",
       "circuitId": 471,
       "car": "Autobianchi A112 Abarth '85",
-      "targets": {
-        "bronzeMs": 14400,
-        "silverMs": 13500,
-        "goldMs": 13100
-      },
-      "sections": null,
+      "targetMs": 13100,
       "source": "Gran Turismo Wiki: GT7 B-License"
     },
     {
@@ -4127,12 +4018,7 @@
       "track": "Tsukuba Circuit",
       "circuitId": 471,
       "car": "Nissan Fairlady Z (Z34) '08",
-      "targets": {
-        "bronzeMs": 12000,
-        "silverMs": 11200,
-        "goldMs": 10900
-      },
-      "sections": null,
+      "targetMs": 10900,
       "source": "Gran Turismo Wiki: GT7 B-License"
     },
     {
@@ -4144,12 +4030,7 @@
       "track": "Trial Mountain Circuit",
       "circuitId": 1024,
       "car": "Toyota GR86 RZ '21",
-      "targets": {
-        "bronzeMs": 19600,
-        "silverMs": 18400,
-        "goldMs": 17800
-      },
-      "sections": null,
+      "targetMs": 17800,
       "source": "Gran Turismo Wiki: GT7 B-License"
     },
     {
@@ -4161,12 +4042,7 @@
       "track": "Mount Panorama",
       "circuitId": 116,
       "car": "Mitsubishi Lancer Evolution IV GSR '96",
-      "targets": {
-        "bronzeMs": 15200,
-        "silverMs": 14100,
-        "goldMs": 13700
-      },
-      "sections": null,
+      "targetMs": 13700,
       "source": "Gran Turismo Wiki: GT7 B-License"
     },
     {
@@ -4178,12 +4054,7 @@
       "track": "Dragon Trail - Seaside",
       "circuitId": 363,
       "car": "Honda Civic Type R Limited Edition (FK8) '20",
-      "targets": {
-        "bronzeMs": 19500,
-        "silverMs": 18200,
-        "goldMs": 17800
-      },
-      "sections": null,
+      "targetMs": 17800,
       "source": "Gran Turismo Wiki: GT7 B-License"
     },
     {
@@ -4195,12 +4066,7 @@
       "track": "Tsukuba Circuit",
       "circuitId": 471,
       "car": "Renault Sport Clio R.S. 220 EDC Trophy '16",
-      "targets": {
-        "bronzeMs": 27800,
-        "silverMs": 26300,
-        "goldMs": 25300
-      },
-      "sections": null,
+      "targetMs": 25300,
       "source": "Gran Turismo Wiki: GT7 B-License"
     },
     {
@@ -4212,12 +4078,7 @@
       "track": "Tsukuba Circuit",
       "circuitId": 471,
       "car": "Subaru BRZ STI Sport '18",
-      "targets": {
-        "bronzeMs": 19100,
-        "silverMs": 18900,
-        "goldMs": 17700
-      },
-      "sections": null,
+      "targetMs": 17700,
       "source": "Gran Turismo Wiki: GT7 A-License"
     },
     {
@@ -4229,12 +4090,7 @@
       "track": "Dragon Trail - Gardens",
       "circuitId": 847,
       "car": "Volkswagen Scirocco R '10",
-      "targets": {
-        "bronzeMs": 20300,
-        "silverMs": 19000,
-        "goldMs": 18500
-      },
-      "sections": null,
+      "targetMs": 18500,
       "source": "Gran Turismo Wiki: GT7 A-License"
     },
     {
@@ -4246,12 +4102,7 @@
       "track": "Autodromo Nazionale Monza",
       "circuitId": 469,
       "car": "Abarth 500 '09",
-      "targets": {
-        "bronzeMs": 24100,
-        "silverMs": 22500,
-        "goldMs": 21900
-      },
-      "sections": null,
+      "targetMs": 21900,
       "source": "Gran Turismo Wiki: GT7 A-License"
     },
     {
@@ -4263,12 +4114,7 @@
       "track": "Tokyo Expressway - Central Clockwise",
       "circuitId": 351,
       "car": "Honda CIVIC TYPE R (EK) '98",
-      "targets": {
-        "bronzeMs": 33000,
-        "silverMs": 30800,
-        "goldMs": 29900
-      },
-      "sections": null,
+      "targetMs": 29900,
       "source": "Gran Turismo Wiki: GT7 A-License"
     },
     {
@@ -4280,12 +4126,7 @@
       "track": "Circuit de Spa-Francorchamps",
       "circuitId": 462,
       "car": "Nissan 180SX Type X '96",
-      "targets": {
-        "bronzeMs": 33200,
-        "silverMs": 30900,
-        "goldMs": 30000
-      },
-      "sections": null,
+      "targetMs": 30000,
       "source": "Gran Turismo Wiki: GT7 A-License"
     },
     {
@@ -4297,12 +4138,7 @@
       "track": "Autodromo Nazionale Monza",
       "circuitId": 469,
       "car": "Alfa Romeo 4C '14",
-      "targets": {
-        "bronzeMs": 20100,
-        "silverMs": 18700,
-        "goldMs": 18100
-      },
-      "sections": null,
+      "targetMs": 18100,
       "source": "Gran Turismo Wiki: GT7 A-License"
     },
     {
@@ -4314,12 +4150,7 @@
       "track": "Circuit de Barcelona-Catalunya Grand Prix",
       "circuitId": 874,
       "car": "BMW M3 '03",
-      "targets": {
-        "bronzeMs": 28000,
-        "silverMs": 26300,
-        "goldMs": 25500
-      },
-      "sections": null,
+      "targetMs": 25500,
       "source": "Gran Turismo Wiki: GT7 A-License"
     },
     {
@@ -4331,12 +4162,7 @@
       "track": "Colorado Springs - Lake",
       "circuitId": 372,
       "car": "Toyota Tundra TRD Pro '19",
-      "targets": {
-        "bronzeMs": 27100,
-        "silverMs": 25300,
-        "goldMs": 24600
-      },
-      "sections": null,
+      "targetMs": 24600,
       "source": "Gran Turismo Wiki: GT7 A-License"
     },
     {
@@ -4348,12 +4174,7 @@
       "track": "Suzuka Circuit",
       "circuitId": 10,
       "car": "Honda NSX Type R '92",
-      "targets": {
-        "bronzeMs": 18900,
-        "silverMs": 17700,
-        "goldMs": 17200
-      },
-      "sections": null,
+      "targetMs": 17200,
       "source": "Gran Turismo Wiki: GT7 A-License"
     },
     {
@@ -4365,12 +4186,7 @@
       "track": "Autopolis International Racing Course",
       "circuitId": 896,
       "car": "Toyota SUPRA RZ '97",
-      "targets": {
-        "bronzeMs": 31200,
-        "silverMs": 29200,
-        "goldMs": 28400
-      },
-      "sections": null,
+      "targetMs": 28400,
       "source": "Gran Turismo Wiki: GT7 A-License"
     },
     {
@@ -4382,12 +4198,7 @@
       "track": "Willow Springs International Raceway: Big Willow",
       "circuitId": 122,
       "car": "Chevrolet Corvette Stingray (C7) '14",
-      "targets": {
-        "bronzeMs": 19400,
-        "silverMs": 18000,
-        "goldMs": 17500
-      },
-      "sections": null,
+      "targetMs": 17500,
       "source": "Gran Turismo Wiki: GT7 International B-License"
     },
     {
@@ -4399,12 +4210,7 @@
       "track": "Daytona Road Course",
       "circuitId": 1163,
       "car": "Ferrari F430 '06",
-      "targets": {
-        "bronzeMs": 16700,
-        "silverMs": 15500,
-        "goldMs": 15000
-      },
-      "sections": null,
+      "targetMs": 15000,
       "source": "Gran Turismo Wiki: GT7 International B-License"
     },
     {
@@ -4416,12 +4222,7 @@
       "track": "Fuji International Speedway",
       "circuitId": 16,
       "car": "Lexus RC F '14",
-      "targets": {
-        "bronzeMs": 41000,
-        "silverMs": 38300,
-        "goldMs": 37200
-      },
-      "sections": null,
+      "targetMs": 37200,
       "source": "Gran Turismo Wiki: GT7 International B-License"
     },
     {
@@ -4433,12 +4234,7 @@
       "track": "Tokyo Expressway - East Clockwise",
       "circuitId": 361,
       "car": "Nissan SKYLINE GT-R V • spec II Nür (R34) '02",
-      "targets": {
-        "bronzeMs": 34700,
-        "silverMs": 32500,
-        "goldMs": 31600
-      },
-      "sections": null,
+      "targetMs": 31600,
       "source": "Gran Turismo Wiki: GT7 International B-License"
     },
     {
@@ -4450,12 +4246,7 @@
       "track": "Sardegna - Windmills",
       "circuitId": 453,
       "car": "Mitsubishi Lancer Evolution V GSR '98",
-      "targets": {
-        "bronzeMs": 42200,
-        "silverMs": 39200,
-        "goldMs": 38100
-      },
-      "sections": null,
+      "targetMs": 38100,
       "source": "Gran Turismo Wiki: GT7 International B-License"
     },
     {
@@ -4467,12 +4258,7 @@
       "track": "Red Bull Ring",
       "circuitId": 470,
       "car": "BMW M3 Sport Evolution '89",
-      "targets": {
-        "bronzeMs": 43000,
-        "silverMs": 40000,
-        "goldMs": 38800
-      },
-      "sections": null,
+      "targetMs": 38800,
       "source": "Gran Turismo Wiki: GT7 International B-License"
     },
     {
@@ -4484,12 +4270,7 @@
       "track": "Nürburgring Nordschleife",
       "circuitId": 95,
       "car": "Porsche Taycan Turbo S '19",
-      "targets": {
-        "bronzeMs": 30800,
-        "silverMs": 28900,
-        "goldMs": 28100
-      },
-      "sections": null,
+      "targetMs": 28100,
       "source": "Gran Turismo Wiki: GT7 International B-License"
     },
     {
@@ -4501,12 +4282,7 @@
       "track": "Dragon Trail - Gardens",
       "circuitId": 847,
       "car": "Mercedes-AMG C 63 S '15",
-      "targets": {
-        "bronzeMs": 21600,
-        "silverMs": 20300,
-        "goldMs": 19600
-      },
-      "sections": null,
+      "targetMs": 19600,
       "source": "Gran Turismo Wiki: GT7 International B-License"
     },
     {
@@ -4518,12 +4294,7 @@
       "track": "Alsace - Test Course",
       "circuitId": 1224,
       "car": "BMW 3.0 CSL '73",
-      "targets": {
-        "bronzeMs": 20800,
-        "silverMs": 19500,
-        "goldMs": 18900
-      },
-      "sections": null,
+      "targetMs": 18900,
       "source": "Gran Turismo Wiki: GT7 International B-License"
     },
     {
@@ -4535,12 +4306,7 @@
       "track": "Trial Mountain Circuit",
       "circuitId": 1024,
       "car": "Nissan SKYLINE GT-R V • spec II (R32) '94",
-      "targets": {
-        "bronzeMs": 45900,
-        "silverMs": 43000,
-        "goldMs": 41800
-      },
-      "sections": null,
+      "targetMs": 41800,
       "source": "Gran Turismo Wiki: GT7 International B-License"
     },
     {
@@ -4552,12 +4318,7 @@
       "track": "Suzuka Circuit",
       "circuitId": 10,
       "car": "Aston Martin DB11 '16",
-      "targets": {
-        "bronzeMs": 19400,
-        "silverMs": 18100,
-        "goldMs": 17500
-      },
-      "sections": null,
+      "targetMs": 17500,
       "source": "Gran Turismo Wiki: GT7 International A-License"
     },
     {
@@ -4569,12 +4330,7 @@
       "track": "Tokyo Expressway - South Counterclockwise",
       "circuitId": 915,
       "car": "Lamborghini Diablo GT '00",
-      "targets": {
-        "bronzeMs": 28200,
-        "silverMs": 26300,
-        "goldMs": 25500
-      },
-      "sections": null,
+      "targetMs": 25500,
       "source": "Gran Turismo Wiki: GT7 International A-License"
     },
     {
@@ -4586,12 +4342,7 @@
       "track": "Fisherman's Ranch",
       "circuitId": 353,
       "car": "Ford Focus Gr.B Rally Car",
-      "targets": {
-        "bronzeMs": 39700,
-        "silverMs": 36800,
-        "goldMs": 35800
-      },
-      "sections": null,
+      "targetMs": 35800,
       "source": "Gran Turismo Wiki: GT7 International A-License"
     },
     {
@@ -4603,12 +4354,7 @@
       "track": "Autodrome Lago Maggiore - GP",
       "circuitId": 365,
       "car": "Ferrari Testarossa '91",
-      "targets": {
-        "bronzeMs": 37000,
-        "silverMs": 34700,
-        "goldMs": 33700
-      },
-      "sections": null,
+      "targetMs": 33700,
       "source": "Gran Turismo Wiki: GT7 International A-License"
     },
     {
@@ -4620,12 +4366,7 @@
       "track": "24 Heures du Mans race track",
       "circuitId": 454,
       "car": "Nissan R92CP '92",
-      "targets": {
-        "bronzeMs": 32000,
-        "silverMs": 29900,
-        "goldMs": 29000
-      },
-      "sections": null,
+      "targetMs": 29000,
       "source": "Gran Turismo Wiki: GT7 International A-License"
     },
     {
@@ -4637,12 +4378,7 @@
       "track": "WeatherTech Raceway Laguna Seca",
       "circuitId": 41,
       "car": "Dodge Viper GTS '02",
-      "targets": {
-        "bronzeMs": 22200,
-        "silverMs": 20800,
-        "goldMs": 20200
-      },
-      "sections": null,
+      "targetMs": 20200,
       "source": "Gran Turismo Wiki: GT7 International A-License"
     },
     {
@@ -4654,12 +4390,7 @@
       "track": "Tsukuba Circuit",
       "circuitId": 471,
       "car": "Alpine A110 '17",
-      "targets": {
-        "bronzeMs": 31400,
-        "silverMs": 29300,
-        "goldMs": 28400
-      },
-      "sections": null,
+      "targetMs": 28400,
       "source": "Gran Turismo Wiki: GT7 International A-License"
     },
     {
@@ -4671,12 +4402,7 @@
       "track": "Autodrome Lago Maggiore - East End Reverse",
       "circuitId": 790,
       "car": "Toyota GR Supra RZ '20",
-      "targets": {
-        "bronzeMs": 25500,
-        "silverMs": 23700,
-        "goldMs": 23000
-      },
-      "sections": null,
+      "targetMs": 23000,
       "source": "Gran Turismo Wiki: GT7 International A-License"
     },
     {
@@ -4688,12 +4414,7 @@
       "track": "Deep Forest Raceway",
       "circuitId": 51,
       "car": "Renault Sport Mégane Trophy '11",
-      "targets": {
-        "bronzeMs": 42800,
-        "silverMs": 40000,
-        "goldMs": 38800
-      },
-      "sections": null,
+      "targetMs": 38800,
       "source": "Gran Turismo Wiki: GT7 International A-License"
     },
     {
@@ -4705,12 +4426,7 @@
       "track": "Nürburgring Nordschleife",
       "circuitId": 95,
       "car": "Mercedes-AMG GT R '17",
-      "targets": {
-        "bronzeMs": 62300,
-        "silverMs": 58100,
-        "goldMs": 56300
-      },
-      "sections": null,
+      "targetMs": 56300,
       "source": "Gran Turismo Wiki: GT7 International A-License"
     },
     {
@@ -4722,12 +4438,7 @@
       "track": "High Speed Ring",
       "circuitId": 11,
       "car": "Lamborghini Aventador LP 750-4 Superveloce '15",
-      "targets": {
-        "bronzeMs": 80700,
-        "silverMs": 75200,
-        "goldMs": 73000
-      },
-      "sections": null,
+      "targetMs": 73000,
       "source": "Gran Turismo Wiki: GT7 S-License"
     },
     {
@@ -4739,12 +4450,7 @@
       "track": "Autodromo Nazionale Monza",
       "circuitId": 469,
       "car": "Ferrari F50 '95",
-      "targets": {
-        "bronzeMs": 132200,
-        "silverMs": 123900,
-        "goldMs": 120000
-      },
-      "sections": null,
+      "targetMs": 120000,
       "source": "Gran Turismo Wiki: GT7 S-License"
     },
     {
@@ -4756,12 +4462,7 @@
       "track": "Tsukuba Circuit",
       "circuitId": 471,
       "car": "Nissan SILVIA spec-R AERO (S15) Touring Car",
-      "targets": {
-        "bronzeMs": 64600,
-        "silverMs": 60300,
-        "goldMs": 58500
-      },
-      "sections": null,
+      "targetMs": 58500,
       "source": "Gran Turismo Wiki: GT7 S-License"
     },
     {
@@ -4773,12 +4474,7 @@
       "track": "Tokyo Expressway - South Counterclockwise",
       "circuitId": 915,
       "car": "Toyota Supra GT500 '97",
-      "targets": {
-        "bronzeMs": 132200,
-        "silverMs": 123500,
-        "goldMs": 120000
-      },
-      "sections": null,
+      "targetMs": 120000,
       "source": "Gran Turismo Wiki: GT7 S-License"
     },
     {
@@ -4790,12 +4486,7 @@
       "track": "Sardegna - Windmills",
       "circuitId": 453,
       "car": "Toyota GR Yaris 1st Edition RZ \"High Performance\" '20",
-      "targets": {
-        "bronzeMs": 104300,
-        "silverMs": 97800,
-        "goldMs": 95400
-      },
-      "sections": null,
+      "targetMs": 95400,
       "source": "Gran Turismo Wiki: GT7 S-License"
     },
     {
@@ -4807,12 +4498,7 @@
       "track": "Trial Mountain Circuit",
       "circuitId": 1024,
       "car": "Ford Shelby GT350R '16",
-      "targets": {
-        "bronzeMs": 143300,
-        "silverMs": 134300,
-        "goldMs": 130500
-      },
-      "sections": null,
+      "targetMs": 130500,
       "source": "Gran Turismo Wiki: GT7 S-License"
     },
     {
@@ -4824,12 +4510,7 @@
       "track": "WeatherTech Raceway Laguna Seca",
       "circuitId": 41,
       "car": "Dallara SF19 Super Formula / Honda '19",
-      "targets": {
-        "bronzeMs": 73000,
-        "silverMs": 68400,
-        "goldMs": 66300
-      },
-      "sections": null,
+      "targetMs": 66300,
       "source": "Gran Turismo Wiki: GT7 S-License"
     },
     {
@@ -4841,12 +4522,7 @@
       "track": "Autódromo de Interlagos",
       "circuitId": 152,
       "car": "Pagani Zonda R '09",
-      "targets": {
-        "bronzeMs": 100800,
-        "silverMs": 94100,
-        "goldMs": 91400
-      },
-      "sections": null,
+      "targetMs": 91400,
       "source": "Gran Turismo Wiki: GT7 S-License"
     },
     {
@@ -4858,12 +4534,7 @@
       "track": "Deep Forest Raceway",
       "circuitId": 51,
       "car": "Nissan GT-R GT500 '08",
-      "targets": {
-        "bronzeMs": 92700,
-        "silverMs": 86500,
-        "goldMs": 82700
-      },
-      "sections": null,
+      "targetMs": 82700,
       "source": "Gran Turismo Wiki: GT7 S-License"
     },
     {
@@ -4875,12 +4546,7 @@
       "track": "Circuit de Spa-Francorchamps (wet)",
       "circuitId": 462,
       "car": "Porsche 917K '70",
-      "targets": {
-        "bronzeMs": 163300,
-        "silverMs": 152200,
-        "goldMs": 145600
-      },
-      "sections": null,
+      "targetMs": 145600,
       "source": "Gran Turismo Wiki: GT7 S-License"
     },
     {
@@ -4892,12 +4558,7 @@
       "track": "High Speed Ring (wet)",
       "circuitId": 11,
       "car": "Mazda3 X Burgundy Selection '19",
-      "targets": {
-        "bronzeMs": 22700,
-        "silverMs": 21100,
-        "goldMs": 20460
-      },
-      "sections": null,
+      "targetMs": 20460,
       "source": "Gran Turismo Wiki: GT7 Master B-License"
     },
     {
@@ -4909,12 +4570,7 @@
       "track": "High Speed Ring (wet)",
       "circuitId": 11,
       "car": "Dodge Viper GTS '13",
-      "targets": {
-        "bronzeMs": 19100,
-        "silverMs": 17700,
-        "goldMs": 17170
-      },
-      "sections": null,
+      "targetMs": 17170,
       "source": "Gran Turismo Wiki: GT7 Master B-License"
     },
     {
@@ -4926,12 +4582,7 @@
       "track": "Circuit de Sainte-Croix - B",
       "circuitId": 827,
       "car": "Honda S660 '15",
-      "targets": {
-        "bronzeMs": 19600,
-        "silverMs": 18400,
-        "goldMs": 17890
-      },
-      "sections": null,
+      "targetMs": 17890,
       "source": "Gran Turismo Wiki: GT7 Master B-License"
     },
     {
@@ -4943,12 +4594,7 @@
       "track": "Circuit de Sainte-Croix - B",
       "circuitId": 827,
       "car": "Honda S2000 '99",
-      "targets": {
-        "bronzeMs": 18300,
-        "silverMs": 17200,
-        "goldMs": 16690
-      },
-      "sections": null,
+      "targetMs": 16690,
       "source": "Gran Turismo Wiki: GT7 Master B-License"
     },
     {
@@ -4960,12 +4606,7 @@
       "track": "Red Bull Ring",
       "circuitId": 470,
       "car": "Nissan SILVIA spec-R AERO (S15) '02",
-      "targets": {
-        "bronzeMs": 18100,
-        "silverMs": 17000,
-        "goldMs": 16570
-      },
-      "sections": null,
+      "targetMs": 16570,
       "source": "Gran Turismo Wiki: GT7 Master B-License"
     },
     {
@@ -4977,12 +4618,7 @@
       "track": "Circuit de Spa-Francorchamps",
       "circuitId": 462,
       "car": "Porsche 911 Carrera RS (964) '92",
-      "targets": {
-        "bronzeMs": 19100,
-        "silverMs": 18000,
-        "goldMs": 17460
-      },
-      "sections": null,
+      "targetMs": 17460,
       "source": "Gran Turismo Wiki: GT7 Master B-License"
     },
     {
@@ -4994,12 +4630,7 @@
       "track": "Deep Forest Raceway",
       "circuitId": 51,
       "car": "Mercedes-Benz 190 E 2.5 - 16 Evolution II '91",
-      "targets": {
-        "bronzeMs": 19900,
-        "silverMs": 18700,
-        "goldMs": 18500
-      },
-      "sections": null,
+      "targetMs": 18500,
       "source": "Gran Turismo Wiki: GT7 Master B-License"
     },
     {
@@ -5011,12 +4642,7 @@
       "track": "Suzuka Circuit",
       "circuitId": 10,
       "car": "Mazda RX-8 Spirit R '12",
-      "targets": {
-        "bronzeMs": 20400,
-        "silverMs": 19100,
-        "goldMs": 18520
-      },
-      "sections": null,
+      "targetMs": 18520,
       "source": "Gran Turismo Wiki: GT7 Master B-License"
     },
     {
@@ -5028,12 +4654,7 @@
       "track": "Michelin Raceway Road Atlanta",
       "circuitId": 1007,
       "car": "Ford Sierra RS 500 Cosworth '87",
-      "targets": {
-        "bronzeMs": 23000,
-        "silverMs": 21500,
-        "goldMs": 20780
-      },
-      "sections": null,
+      "targetMs": 20780,
       "source": "Gran Turismo Wiki: GT7 Master B-License"
     },
     {
@@ -5045,12 +4666,7 @@
       "track": "WeatherTech Raceway Laguna Seca",
       "circuitId": 41,
       "car": "1932 Ford Roadster '63",
-      "targets": {
-        "bronzeMs": 34100,
-        "silverMs": 31900,
-        "goldMs": 31050
-      },
-      "sections": null,
+      "targetMs": 31050,
       "source": "Gran Turismo Wiki: GT7 Master B-License"
     },
     {
@@ -5062,12 +4678,7 @@
       "track": "Dragon Trail - Seaside",
       "circuitId": 363,
       "car": "Peugeot 208 GTi by Peugeot Sport '14",
-      "targets": {
-        "bronzeMs": 29700,
-        "silverMs": 27900,
-        "goldMs": 27080
-      },
-      "sections": null,
+      "targetMs": 27080,
       "source": "Gran Turismo Wiki: GT7 Master A-License"
     },
     {
@@ -5079,12 +4690,7 @@
       "track": "Dragon Trail - Seaside",
       "circuitId": 363,
       "car": "Mazda RX-7 Spirit R Type A (FD) '02",
-      "targets": {
-        "bronzeMs": 28700,
-        "silverMs": 26800,
-        "goldMs": 26060
-      },
-      "sections": null,
+      "targetMs": 26060,
       "source": "Gran Turismo Wiki: GT7 Master A-License"
     },
     {
@@ -5096,12 +4702,7 @@
       "track": "Autopolis International Racing Course",
       "circuitId": 896,
       "car": "Alfa Romeo Giulia GTAm '20",
-      "targets": {
-        "bronzeMs": 21300,
-        "silverMs": 19800,
-        "goldMs": 19310
-      },
-      "sections": null,
+      "targetMs": 19310,
       "source": "Gran Turismo Wiki: GT7 Master A-License"
     },
     {
@@ -5113,12 +4714,7 @@
       "track": "Tokyo Expressway - Central Clockwise",
       "circuitId": 351,
       "car": "Ferrari F12berlinetta '12",
-      "targets": {
-        "bronzeMs": 30400,
-        "silverMs": 28500,
-        "goldMs": 27780
-      },
-      "sections": null,
+      "targetMs": 27780,
       "source": "Gran Turismo Wiki: GT7 Master A-License"
     },
     {
@@ -5130,12 +4726,7 @@
       "track": "Lake Louise Tri-Oval",
       "circuitId": 1273,
       "car": "Ford Focus RS '18",
-      "targets": {
-        "bronzeMs": 22100,
-        "silverMs": 20300,
-        "goldMs": 19690
-      },
-      "sections": null,
+      "targetMs": 19690,
       "source": "Gran Turismo Wiki: GT7 Master A-License"
     },
     {
@@ -5147,12 +4738,7 @@
       "track": "Grand Valley Highway 1",
       "circuitId": 1292,
       "car": "Genesis G70 3.3T AWD Prestige Package '22",
-      "targets": {
-        "bronzeMs": 30800,
-        "silverMs": 29000,
-        "goldMs": 28280
-      },
-      "sections": null,
+      "targetMs": 28280,
       "source": "Gran Turismo Wiki: GT7 Master A-License"
     },
     {
@@ -5164,12 +4750,7 @@
       "track": "Dragon Trail - Gardens",
       "circuitId": 847,
       "car": "BMW M3 Coupé '07",
-      "targets": {
-        "bronzeMs": 20500,
-        "silverMs": 19200,
-        "goldMs": 18630
-      },
-      "sections": null,
+      "targetMs": 18630,
       "source": "Gran Turismo Wiki: GT7 Master A-License"
     },
     {
@@ -5181,12 +4762,7 @@
       "track": "Autodrome Lago Maggiore - Full Course",
       "circuitId": 365,
       "car": "Nissan SKYLINE GT-R V • spec (R33) '97",
-      "targets": {
-        "bronzeMs": 28500,
-        "silverMs": 26500,
-        "goldMs": 25810
-      },
-      "sections": null,
+      "targetMs": 25810,
       "source": "Gran Turismo Wiki: GT7 Master A-License"
     },
     {
@@ -5198,12 +4774,7 @@
       "track": "Tokyo Expressway - East Clockwise",
       "circuitId": 361,
       "car": "Porsche 911 Carrera RS (993) '95",
-      "targets": {
-        "bronzeMs": 37300,
-        "silverMs": 35000,
-        "goldMs": 33940
-      },
-      "sections": null,
+      "targetMs": 33940,
       "source": "Gran Turismo Wiki: GT7 Master A-License"
     },
     {
@@ -5215,12 +4786,7 @@
       "track": "Autopolis International Racing Course",
       "circuitId": 896,
       "car": "Mercedes-AMG GT Black Series '20",
-      "targets": {
-        "bronzeMs": 52400,
-        "silverMs": 49100,
-        "goldMs": 47680
-      },
-      "sections": null,
+      "targetMs": 47680,
       "source": "Gran Turismo Wiki: GT7 Master A-License"
     },
     {
@@ -5232,12 +4798,7 @@
       "track": "Autodromo Nazionale Monza",
       "circuitId": 469,
       "car": "Ferrari GTO '84",
-      "targets": {
-        "bronzeMs": 24200,
-        "silverMs": 22700,
-        "goldMs": 22020
-      },
-      "sections": null,
+      "targetMs": 22020,
       "source": "Gran Turismo Wiki: GT7 Master International B-License"
     },
     {
@@ -5249,12 +4810,7 @@
       "track": "Willow Springs International Raceway: Big Willow",
       "circuitId": 122,
       "car": "Chevrolet Corvette ZR-1 (C4) '89",
-      "targets": {
-        "bronzeMs": 32400,
-        "silverMs": 30200,
-        "goldMs": 29300
-      },
-      "sections": null,
+      "targetMs": 29300,
       "source": "Gran Turismo Wiki: GT7 Master International B-License"
     },
     {
@@ -5266,12 +4822,7 @@
       "track": "Lake Louise Long Track",
       "circuitId": 1309,
       "car": "Subaru IMPREZA Premium Sport Coupe 22B-STi Version '98",
-      "targets": {
-        "bronzeMs": 45100,
-        "silverMs": 42200,
-        "goldMs": 40890
-      },
-      "sections": null,
+      "targetMs": 40890,
       "source": "Gran Turismo Wiki: GT7 Master International B-License"
     },
     {
@@ -5283,12 +4834,7 @@
       "track": "Suzuka Circuit",
       "circuitId": 10,
       "car": "Honda NSX Type R '02",
-      "targets": {
-        "bronzeMs": 32500,
-        "silverMs": 30500,
-        "goldMs": 29550
-      },
-      "sections": null,
+      "targetMs": 29550,
       "source": "Gran Turismo Wiki: GT7 Master International B-License"
     },
     {
@@ -5300,12 +4846,7 @@
       "track": "Watkins Glen Long Course",
       "circuitId": 1240,
       "car": "Lexus LC500 '17",
-      "targets": {
-        "bronzeMs": 56100,
-        "silverMs": 52600,
-        "goldMs": 51000
-      },
-      "sections": null,
+      "targetMs": 51000,
       "source": "Gran Turismo Wiki: GT7 Master International B-License"
     },
     {
@@ -5317,12 +4858,7 @@
       "track": "Autodrome Lago Maggiore - Full Course",
       "circuitId": 365,
       "car": "Porsche Cayman GT4 '16",
-      "targets": {
-        "bronzeMs": 49300,
-        "silverMs": 46200,
-        "goldMs": 44850
-      },
-      "sections": null,
+      "targetMs": 44850,
       "source": "Gran Turismo Wiki: GT7 Master International B-License"
     },
     {
@@ -5334,12 +4870,7 @@
       "track": "Circuit de Spa-Francorchamps",
       "circuitId": 462,
       "car": "Maserati MC20 '20",
-      "targets": {
-        "bronzeMs": 43400,
-        "silverMs": 40200,
-        "goldMs": 39080
-      },
-      "sections": null,
+      "targetMs": 39080,
       "source": "Gran Turismo Wiki: GT7 Master International B-License"
     },
     {
@@ -5351,12 +4882,7 @@
       "track": "Suzuka Circuit",
       "circuitId": 10,
       "car": "BMW M2 Competition '18",
-      "targets": {
-        "bronzeMs": 31100,
-        "silverMs": 28900,
-        "goldMs": 28000
-      },
-      "sections": null,
+      "targetMs": 28000,
       "source": "Gran Turismo Wiki: GT7 Master International B-License"
     },
     {
@@ -5368,12 +4894,7 @@
       "track": "Lake Louise Long Track Reverse",
       "circuitId": 1318,
       "car": "Porsche 959 '87",
-      "targets": {
-        "bronzeMs": 33400,
-        "silverMs": 31000,
-        "goldMs": 29900
-      },
-      "sections": null,
+      "targetMs": 29900,
       "source": "Gran Turismo Wiki: GT7 Master International B-License"
     },
     {
@@ -5385,12 +4906,7 @@
       "track": "Fuji International Speedway",
       "circuitId": 16,
       "car": "Lexus LFA '10",
-      "targets": {
-        "bronzeMs": 60400,
-        "silverMs": 56100,
-        "goldMs": 54500
-      },
-      "sections": null,
+      "targetMs": 54500,
       "source": "Gran Turismo Wiki: GT7 Master International B-License"
     },
     {
@@ -5402,12 +4918,7 @@
       "track": "Michelin Raceway Road Atlanta",
       "circuitId": 1007,
       "car": "Chevrolet Corvette C7 ZR1 '19",
-      "targets": {
-        "bronzeMs": 36700,
-        "silverMs": 34200,
-        "goldMs": 33330
-      },
-      "sections": null,
+      "targetMs": 33330,
       "source": "Gran Turismo Wiki: GT7 Master International A-License"
     },
     {
@@ -5419,12 +4930,7 @@
       "track": "Grand Valley Highway 1",
       "circuitId": 1292,
       "car": "Chevrolet Corvette (C1) '58",
-      "targets": {
-        "bronzeMs": 29800,
-        "silverMs": 27800,
-        "goldMs": 27000
-      },
-      "sections": null,
+      "targetMs": 27000,
       "source": "Gran Turismo Wiki: GT7 Master International A-License"
     },
     {
@@ -5436,12 +4942,7 @@
       "track": "Tokyo Expressway - South Clockwise",
       "circuitId": 362,
       "car": "Subaru Impreza Sedan WRX STi '04",
-      "targets": {
-        "bronzeMs": 30700,
-        "silverMs": 28800,
-        "goldMs": 27980
-      },
-      "sections": null,
+      "targetMs": 27980,
       "source": "Gran Turismo Wiki: GT7 Master International A-License"
     },
     {
@@ -5453,12 +4954,7 @@
       "track": "Nürburgring Nordschleife",
       "circuitId": 95,
       "car": "Mercedes-Benz SLR McLaren '09",
-      "targets": {
-        "bronzeMs": 56500,
-        "silverMs": 52600,
-        "goldMs": 51000
-      },
-      "sections": null,
+      "targetMs": 51000,
       "source": "Gran Turismo Wiki: GT7 Master International A-License"
     },
     {
@@ -5470,12 +4966,7 @@
       "track": "Mount Panorama Motor Racing Circuit",
       "circuitId": 116,
       "car": "Nissan SKYLINE 2000GT-R (KPGC110) '73",
-      "targets": {
-        "bronzeMs": 42200,
-        "silverMs": 39500,
-        "goldMs": 38500
-      },
-      "sections": null,
+      "targetMs": 38500,
       "source": "Gran Turismo Wiki: GT7 Master International A-License"
     },
     {
@@ -5487,12 +4978,7 @@
       "track": "24 Heures du Mans race track",
       "circuitId": 454,
       "car": "Ferrari 512 BB '76",
-      "targets": {
-        "bronzeMs": 42400,
-        "silverMs": 39700,
-        "goldMs": 38750
-      },
-      "sections": null,
+      "targetMs": 38750,
       "source": "Gran Turismo Wiki: GT7 Master International A-License"
     },
     {
@@ -5504,12 +4990,7 @@
       "track": "Circuit de Barcelona-Catalunya Grand Prix No Chicane",
       "circuitId": 1249,
       "car": "Dallara SF23 Super Formula / Honda '23",
-      "targets": {
-        "bronzeMs": 29300,
-        "silverMs": 27500,
-        "goldMs": 26750
-      },
-      "sections": null,
+      "targetMs": 26750,
       "source": "Gran Turismo Wiki: GT7 Master International A-License"
     },
     {
@@ -5521,12 +5002,7 @@
       "track": "Grand Valley Highway 1",
       "circuitId": 1292,
       "car": "Lamborghini Countach LP400 '74",
-      "targets": {
-        "bronzeMs": 42200,
-        "silverMs": 39400,
-        "goldMs": 38380
-      },
-      "sections": null,
+      "targetMs": 38380,
       "source": "Gran Turismo Wiki: GT7 Master International A-License"
     },
     {
@@ -5538,12 +5014,7 @@
       "track": "Lake Louise Long Track",
       "circuitId": 1309,
       "car": "Toyota CELICA GT-FOUR Rally Car (ST205) '95",
-      "targets": {
-        "bronzeMs": 61500,
-        "silverMs": 57200,
-        "goldMs": 55700
-      },
-      "sections": null,
+      "targetMs": 55700,
       "source": "Gran Turismo Wiki: GT7 Master International A-License"
     },
     {
@@ -5555,12 +5026,7 @@
       "track": "Nürburgring Nordschleife",
       "circuitId": 95,
       "car": "Porsche 962 C '88",
-      "targets": {
-        "bronzeMs": 65500,
-        "silverMs": 61500,
-        "goldMs": 59700
-      },
-      "sections": null,
+      "targetMs": 59700,
       "source": "Gran Turismo Wiki: GT7 Master International A-License"
     },
     {
@@ -5572,12 +5038,7 @@
       "track": "Mount Panorama Motor Racing Circuit",
       "circuitId": 116,
       "car": "Honda Civic Type R (FL5) '22",
-      "targets": {
-        "bronzeMs": 165400,
-        "silverMs": 153800,
-        "goldMs": 149750
-      },
-      "sections": null,
+      "targetMs": 149750,
       "source": "Gran Turismo Wiki: GT7 Master S-License"
     },
     {
@@ -5589,12 +5050,7 @@
       "track": "Circuit de Barcelona-Catalunya Rallycross Layout",
       "circuitId": 1265,
       "car": "Porsche 911 Turbo (930) '81",
-      "targets": {
-        "bronzeMs": 52900,
-        "silverMs": 49400,
-        "goldMs": 47750
-      },
-      "sections": null,
+      "targetMs": 47750,
       "source": "Gran Turismo Wiki: GT7 Master S-License"
     },
     {
@@ -5606,12 +5062,7 @@
       "track": "Circuit de Barcelona-Catalunya Grand Prix No Chicane",
       "circuitId": 1249,
       "car": "Honda RA272 '65",
-      "targets": {
-        "bronzeMs": 121500,
-        "silverMs": 113000,
-        "goldMs": 110000
-      },
-      "sections": null,
+      "targetMs": 110000,
       "source": "Gran Turismo Wiki: GT7 Master S-License"
     },
     {
@@ -5623,12 +5074,7 @@
       "track": "Grand Valley Highway 1",
       "circuitId": 1292,
       "car": "Jaguar XJ220 '92",
-      "targets": {
-        "bronzeMs": 134400,
-        "silverMs": 125300,
-        "goldMs": 122000
-      },
-      "sections": null,
+      "targetMs": 122000,
       "source": "Gran Turismo Wiki: GT7 Master S-License"
     },
     {
@@ -5640,12 +5086,7 @@
       "track": "Lake Louise Long Track",
       "circuitId": 1309,
       "car": "Peugeot 205 Turbo 16 Evolution 2 '86",
-      "targets": {
-        "bronzeMs": 129100,
-        "silverMs": 121000,
-        "goldMs": 117500
-      },
-      "sections": null,
+      "targetMs": 117500,
       "source": "Gran Turismo Wiki: GT7 Master S-License"
     },
     {
@@ -5657,12 +5098,7 @@
       "track": "Michelin Raceway Road Atlanta",
       "circuitId": 1007,
       "car": "Porsche 911 GT1 Strassenversion '97",
-      "targets": {
-        "bronzeMs": 96900,
-        "silverMs": 90800,
-        "goldMs": 88400
-      },
-      "sections": null,
+      "targetMs": 88400,
       "source": "Gran Turismo Wiki: GT7 Master S-License"
     },
     {
@@ -5674,12 +5110,7 @@
       "track": "Watkins Glen Long Course",
       "circuitId": 1240,
       "car": "Shelby Cobra Daytona Coupe '64",
-      "targets": {
-        "bronzeMs": 136900,
-        "silverMs": 127700,
-        "goldMs": 124300
-      },
-      "sections": null,
+      "targetMs": 124300,
       "source": "Gran Turismo Wiki: GT7 Master S-License"
     },
     {
@@ -5691,12 +5122,7 @@
       "track": "Circuit de Spa-Francorchamps",
       "circuitId": 462,
       "car": "Mercedes-Benz CLK-LM '98",
-      "targets": {
-        "bronzeMs": 143200,
-        "silverMs": 133500,
-        "goldMs": 128750
-      },
-      "sections": null,
+      "targetMs": 128750,
       "source": "Gran Turismo Wiki: GT7 Master S-License"
     },
     {
@@ -5708,12 +5134,7 @@
       "track": "Red Bull Ring",
       "circuitId": 470,
       "car": "Aston Martin Valkyrie '21",
-      "targets": {
-        "bronzeMs": 87500,
-        "silverMs": 82000,
-        "goldMs": 79550
-      },
-      "sections": null,
+      "targetMs": 79550,
       "source": "Gran Turismo Wiki: GT7 Master S-License"
     },
     {
@@ -5725,766 +5146,3247 @@
       "track": "Suzuka Circuit",
       "circuitId": 10,
       "car": "McLaren MP4/4 '88",
-      "targets": {
-        "bronzeMs": 116000,
-        "silverMs": 107700,
-        "goldMs": 103500
-      },
-      "sections": null,
+      "targetMs": 103500,
       "source": "Gran Turismo Wiki: GT7 Master S-License"
     },
     {
-      "id": "ce-northern-isle-speedway",
+      "id": "ce-northern-isle-speedway-lap",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Northern Isle Speedway",
+      "code": "1 Lap Attack",
+      "name": "Northern Isle Speedway · 1 Lap Attack",
       "track": "Northern Isle Speedway",
       "circuitId": 354,
       "car": "Chevrolet Corvette StingRay Racer Concept '59",
-      "targets": null,
-      "sections": 1,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-blue-moon-bay-speedway",
+      "id": "ce-blue-moon-bay-speedway-s1",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Blue Moon Bay Speedway",
+      "code": "Sector 1",
+      "name": "Blue Moon Bay Speedway · Sector 1",
       "track": "Blue Moon Bay Speedway",
       "circuitId": 356,
       "car": "Aston Martin DBR9 GT1 '10",
-      "targets": null,
-      "sections": 3,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-blue-moon-bay-speedway-infield-a",
+      "id": "ce-blue-moon-bay-speedway-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Blue Moon Bay Speedway - Infield A",
+      "code": "Sector 2",
+      "name": "Blue Moon Bay Speedway · Sector 2",
+      "track": "Blue Moon Bay Speedway",
+      "circuitId": 356,
+      "car": "Aston Martin DBR9 GT1 '10",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-blue-moon-bay-speedway-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Blue Moon Bay Speedway · 1 Lap Attack",
+      "track": "Blue Moon Bay Speedway",
+      "circuitId": 356,
+      "car": "Aston Martin DBR9 GT1 '10",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-blue-moon-bay-speedway-infield-a-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Blue Moon Bay Speedway - Infield A · Sector 1",
       "track": "Blue Moon Bay Speedway - Infield A",
       "circuitId": 820,
       "car": "Ford Mustang Gr.3",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-fishermans-ranch",
+      "id": "ce-blue-moon-bay-speedway-infield-a-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Fisherman's Ranch",
+      "code": "Sector 2",
+      "name": "Blue Moon Bay Speedway - Infield A · Sector 2",
+      "track": "Blue Moon Bay Speedway - Infield A",
+      "circuitId": 820,
+      "car": "Ford Mustang Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-blue-moon-bay-speedway-infield-a-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Blue Moon Bay Speedway - Infield A · Sector 3",
+      "track": "Blue Moon Bay Speedway - Infield A",
+      "circuitId": 820,
+      "car": "Ford Mustang Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-blue-moon-bay-speedway-infield-a-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Blue Moon Bay Speedway - Infield A · 1 Lap Attack",
+      "track": "Blue Moon Bay Speedway - Infield A",
+      "circuitId": 820,
+      "car": "Ford Mustang Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Fisherman's Ranch · Sector 1",
       "track": "Fisherman's Ranch",
       "circuitId": 353,
       "car": "Mitsubishi Lancer Evolution Final Edition Gr.B Rally Car",
-      "targets": null,
-      "sections": 8,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-fishermans-ranch-reverse",
+      "id": "ce-fishermans-ranch-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Fisherman's Ranch Reverse",
+      "code": "Sector 2",
+      "name": "Fisherman's Ranch · Sector 2",
+      "track": "Fisherman's Ranch",
+      "circuitId": 353,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Fisherman's Ranch · Sector 3",
+      "track": "Fisherman's Ranch",
+      "circuitId": 353,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-s4",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 4",
+      "name": "Fisherman's Ranch · Sector 4",
+      "track": "Fisherman's Ranch",
+      "circuitId": 353,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-s5",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 5",
+      "name": "Fisherman's Ranch · Sector 5",
+      "track": "Fisherman's Ranch",
+      "circuitId": 353,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-s6",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 6",
+      "name": "Fisherman's Ranch · Sector 6",
+      "track": "Fisherman's Ranch",
+      "circuitId": 353,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-s7",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 7",
+      "name": "Fisherman's Ranch · Sector 7",
+      "track": "Fisherman's Ranch",
+      "circuitId": 353,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Fisherman's Ranch · 1 Lap Attack",
+      "track": "Fisherman's Ranch",
+      "circuitId": 353,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-reverse-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Fisherman's Ranch Reverse · Sector 1",
       "track": "Fisherman's Ranch Reverse",
       "circuitId": 443,
       "car": "Lancia Delta HF Integrale Rally Car '92",
-      "targets": null,
-      "sections": 8,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-colorado-springs-lake",
+      "id": "ce-fishermans-ranch-reverse-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Colorado Springs - Lake",
+      "code": "Sector 2",
+      "name": "Fisherman's Ranch Reverse · Sector 2",
+      "track": "Fisherman's Ranch Reverse",
+      "circuitId": 443,
+      "car": "Lancia Delta HF Integrale Rally Car '92",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-reverse-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Fisherman's Ranch Reverse · Sector 3",
+      "track": "Fisherman's Ranch Reverse",
+      "circuitId": 443,
+      "car": "Lancia Delta HF Integrale Rally Car '92",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-reverse-s4",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 4",
+      "name": "Fisherman's Ranch Reverse · Sector 4",
+      "track": "Fisherman's Ranch Reverse",
+      "circuitId": 443,
+      "car": "Lancia Delta HF Integrale Rally Car '92",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-reverse-s5",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 5",
+      "name": "Fisherman's Ranch Reverse · Sector 5",
+      "track": "Fisherman's Ranch Reverse",
+      "circuitId": 443,
+      "car": "Lancia Delta HF Integrale Rally Car '92",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-reverse-s6",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 6",
+      "name": "Fisherman's Ranch Reverse · Sector 6",
+      "track": "Fisherman's Ranch Reverse",
+      "circuitId": 443,
+      "car": "Lancia Delta HF Integrale Rally Car '92",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-reverse-s7",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 7",
+      "name": "Fisherman's Ranch Reverse · Sector 7",
+      "track": "Fisherman's Ranch Reverse",
+      "circuitId": 443,
+      "car": "Lancia Delta HF Integrale Rally Car '92",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fishermans-ranch-reverse-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Fisherman's Ranch Reverse · 1 Lap Attack",
+      "track": "Fisherman's Ranch Reverse",
+      "circuitId": 443,
+      "car": "Lancia Delta HF Integrale Rally Car '92",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-colorado-springs-lake-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Colorado Springs - Lake · Sector 1",
       "track": "Colorado Springs - Lake",
       "circuitId": 372,
       "car": "Ford Focus Gr.B Rally Car",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-willow-springs-international-raceway-streets-of-willow",
+      "id": "ce-colorado-springs-lake-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Willow Springs International Raceway: Streets of Willow",
+      "code": "Sector 2",
+      "name": "Colorado Springs - Lake · Sector 2",
+      "track": "Colorado Springs - Lake",
+      "circuitId": 372,
+      "car": "Ford Focus Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-colorado-springs-lake-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Colorado Springs - Lake · Sector 3",
+      "track": "Colorado Springs - Lake",
+      "circuitId": 372,
+      "car": "Ford Focus Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-colorado-springs-lake-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Colorado Springs - Lake · 1 Lap Attack",
+      "track": "Colorado Springs - Lake",
+      "circuitId": 372,
+      "car": "Ford Focus Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-willow-springs-international-raceway-streets-of-willow-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Willow Springs International Raceway: Streets of Willow · Sector 1",
       "track": "Willow Springs International Raceway: Streets of Willow",
       "circuitId": 123,
       "car": "Ford Mustang Gr.4",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-willow-springs-international-raceway-horse-thief-mile",
+      "id": "ce-willow-springs-international-raceway-streets-of-willow-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Willow Springs International Raceway: Horse Thief Mile",
+      "code": "Sector 2",
+      "name": "Willow Springs International Raceway: Streets of Willow · Sector 2",
+      "track": "Willow Springs International Raceway: Streets of Willow",
+      "circuitId": 123,
+      "car": "Ford Mustang Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-willow-springs-international-raceway-streets-of-willow-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Willow Springs International Raceway: Streets of Willow · Sector 3",
+      "track": "Willow Springs International Raceway: Streets of Willow",
+      "circuitId": 123,
+      "car": "Ford Mustang Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-willow-springs-international-raceway-streets-of-willow-s4",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 4",
+      "name": "Willow Springs International Raceway: Streets of Willow · Sector 4",
+      "track": "Willow Springs International Raceway: Streets of Willow",
+      "circuitId": 123,
+      "car": "Ford Mustang Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-willow-springs-international-raceway-streets-of-willow-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Willow Springs International Raceway: Streets of Willow · 1 Lap Attack",
+      "track": "Willow Springs International Raceway: Streets of Willow",
+      "circuitId": 123,
+      "car": "Ford Mustang Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-willow-springs-international-raceway-horse-thief-mile-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Willow Springs International Raceway: Horse Thief Mile · Sector 1",
       "track": "Willow Springs International Raceway: Horse Thief Mile",
       "circuitId": 125,
       "car": "Lancia DELTA HF Integrale Evoluzione '91",
-      "targets": null,
-      "sections": 3,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-willow-springs-international-raceway-big-willow",
+      "id": "ce-willow-springs-international-raceway-horse-thief-mile-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Willow Springs International Raceway: Big Willow",
+      "code": "Sector 2",
+      "name": "Willow Springs International Raceway: Horse Thief Mile · Sector 2",
+      "track": "Willow Springs International Raceway: Horse Thief Mile",
+      "circuitId": 125,
+      "car": "Lancia DELTA HF Integrale Evoluzione '91",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-willow-springs-international-raceway-horse-thief-mile-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Willow Springs International Raceway: Horse Thief Mile · 1 Lap Attack",
+      "track": "Willow Springs International Raceway: Horse Thief Mile",
+      "circuitId": 125,
+      "car": "Lancia DELTA HF Integrale Evoluzione '91",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-willow-springs-international-raceway-big-willow-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Willow Springs International Raceway: Big Willow · Sector 1",
       "track": "Willow Springs International Raceway: Big Willow",
       "circuitId": 122,
       "car": "Chevrolet Corvette C7 Gr.3",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-autodromo-de-interlagos",
+      "id": "ce-willow-springs-international-raceway-big-willow-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Autódromo de Interlagos",
+      "code": "Sector 2",
+      "name": "Willow Springs International Raceway: Big Willow · Sector 2",
+      "track": "Willow Springs International Raceway: Big Willow",
+      "circuitId": 122,
+      "car": "Chevrolet Corvette C7 Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-willow-springs-international-raceway-big-willow-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Willow Springs International Raceway: Big Willow · Sector 3",
+      "track": "Willow Springs International Raceway: Big Willow",
+      "circuitId": 122,
+      "car": "Chevrolet Corvette C7 Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-willow-springs-international-raceway-big-willow-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Willow Springs International Raceway: Big Willow · 1 Lap Attack",
+      "track": "Willow Springs International Raceway: Big Willow",
+      "circuitId": 122,
+      "car": "Chevrolet Corvette C7 Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodromo-de-interlagos-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Autódromo de Interlagos · Sector 1",
       "track": "Autódromo de Interlagos",
       "circuitId": 152,
       "car": "Nissan GT-R NISMO GT3 '13",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-weathertech-raceway-laguna-seca",
+      "id": "ce-autodromo-de-interlagos-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "WeatherTech Raceway Laguna Seca",
+      "code": "Sector 2",
+      "name": "Autódromo de Interlagos · Sector 2",
+      "track": "Autódromo de Interlagos",
+      "circuitId": 152,
+      "car": "Nissan GT-R NISMO GT3 '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodromo-de-interlagos-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Autódromo de Interlagos · Sector 3",
+      "track": "Autódromo de Interlagos",
+      "circuitId": 152,
+      "car": "Nissan GT-R NISMO GT3 '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodromo-de-interlagos-s4",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 4",
+      "name": "Autódromo de Interlagos · Sector 4",
+      "track": "Autódromo de Interlagos",
+      "circuitId": 152,
+      "car": "Nissan GT-R NISMO GT3 '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodromo-de-interlagos-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Autódromo de Interlagos · 1 Lap Attack",
+      "track": "Autódromo de Interlagos",
+      "circuitId": 152,
+      "car": "Nissan GT-R NISMO GT3 '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-weathertech-raceway-laguna-seca-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "WeatherTech Raceway Laguna Seca · Sector 1",
       "track": "WeatherTech Raceway Laguna Seca",
       "circuitId": 41,
       "car": "Dodge Viper Gr.4",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-daytona-road-course",
+      "id": "ce-weathertech-raceway-laguna-seca-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Daytona Road Course",
+      "code": "Sector 2",
+      "name": "WeatherTech Raceway Laguna Seca · Sector 2",
+      "track": "WeatherTech Raceway Laguna Seca",
+      "circuitId": 41,
+      "car": "Dodge Viper Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-weathertech-raceway-laguna-seca-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "WeatherTech Raceway Laguna Seca · Sector 3",
+      "track": "WeatherTech Raceway Laguna Seca",
+      "circuitId": 41,
+      "car": "Dodge Viper Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-weathertech-raceway-laguna-seca-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "WeatherTech Raceway Laguna Seca · 1 Lap Attack",
+      "track": "WeatherTech Raceway Laguna Seca",
+      "circuitId": 41,
+      "car": "Dodge Viper Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-daytona-road-course-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Daytona Road Course · Sector 1",
       "track": "Daytona Road Course",
       "circuitId": 1163,
       "car": "Ford GT Race Car '18",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-trial-mountain-circuit",
+      "id": "ce-daytona-road-course-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Trial Mountain Circuit",
+      "code": "Sector 2",
+      "name": "Daytona Road Course · Sector 2",
+      "track": "Daytona Road Course",
+      "circuitId": 1163,
+      "car": "Ford GT Race Car '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-daytona-road-course-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Daytona Road Course · Sector 3",
+      "track": "Daytona Road Course",
+      "circuitId": 1163,
+      "car": "Ford GT Race Car '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-daytona-road-course-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Daytona Road Course · 1 Lap Attack",
+      "track": "Daytona Road Course",
+      "circuitId": 1163,
+      "car": "Ford GT Race Car '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-trial-mountain-circuit-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Trial Mountain Circuit · Sector 1",
       "track": "Trial Mountain Circuit",
       "circuitId": 1024,
       "car": "Mazda RX-Vision GT3 Concept",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-watkins-glen-international-long-course",
+      "id": "ce-trial-mountain-circuit-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Watkins Glen International Long Course",
+      "code": "Sector 2",
+      "name": "Trial Mountain Circuit · Sector 2",
+      "track": "Trial Mountain Circuit",
+      "circuitId": 1024,
+      "car": "Mazda RX-Vision GT3 Concept",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-trial-mountain-circuit-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Trial Mountain Circuit · Sector 3",
+      "track": "Trial Mountain Circuit",
+      "circuitId": 1024,
+      "car": "Mazda RX-Vision GT3 Concept",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-trial-mountain-circuit-s4",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 4",
+      "name": "Trial Mountain Circuit · Sector 4",
+      "track": "Trial Mountain Circuit",
+      "circuitId": 1024,
+      "car": "Mazda RX-Vision GT3 Concept",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-trial-mountain-circuit-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Trial Mountain Circuit · 1 Lap Attack",
+      "track": "Trial Mountain Circuit",
+      "circuitId": 1024,
+      "car": "Mazda RX-Vision GT3 Concept",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-watkins-glen-international-long-course-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Watkins Glen International Long Course · Sector 1",
       "track": "Watkins Glen International Long Course",
       "circuitId": 1240,
       "car": "Genesis X GR3",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-michelin-raceway-road-atlanta",
+      "id": "ce-watkins-glen-international-long-course-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Michelin Raceway Road Atlanta",
+      "code": "Sector 2",
+      "name": "Watkins Glen International Long Course · Sector 2",
+      "track": "Watkins Glen International Long Course",
+      "circuitId": 1240,
+      "car": "Genesis X GR3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-watkins-glen-international-long-course-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Watkins Glen International Long Course · Sector 3",
+      "track": "Watkins Glen International Long Course",
+      "circuitId": 1240,
+      "car": "Genesis X GR3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-watkins-glen-international-long-course-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Watkins Glen International Long Course · 1 Lap Attack",
+      "track": "Watkins Glen International Long Course",
+      "circuitId": 1240,
+      "car": "Genesis X GR3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-michelin-raceway-road-atlanta-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Michelin Raceway Road Atlanta · Sector 1",
       "track": "Michelin Raceway Road Atlanta",
       "circuitId": 1007,
       "car": "Volkswagen Beetle Gr.3",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-grand-valley-highway-1",
+      "id": "ce-michelin-raceway-road-atlanta-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Grand Valley Highway 1",
+      "code": "Sector 2",
+      "name": "Michelin Raceway Road Atlanta · Sector 2",
+      "track": "Michelin Raceway Road Atlanta",
+      "circuitId": 1007,
+      "car": "Volkswagen Beetle Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-michelin-raceway-road-atlanta-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Michelin Raceway Road Atlanta · Sector 3",
+      "track": "Michelin Raceway Road Atlanta",
+      "circuitId": 1007,
+      "car": "Volkswagen Beetle Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-michelin-raceway-road-atlanta-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Michelin Raceway Road Atlanta · 1 Lap Attack",
+      "track": "Michelin Raceway Road Atlanta",
+      "circuitId": 1007,
+      "car": "Volkswagen Beetle Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-grand-valley-highway-1-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Grand Valley Highway 1 · Sector 1",
       "track": "Grand Valley Highway 1",
       "circuitId": 1292,
       "car": "Nissan GT-R NISMO GT3 '18",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-grand-valley-south",
+      "id": "ce-grand-valley-highway-1-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Grand Valley - South",
+      "code": "Sector 2",
+      "name": "Grand Valley Highway 1 · Sector 2",
+      "track": "Grand Valley Highway 1",
+      "circuitId": 1292,
+      "car": "Nissan GT-R NISMO GT3 '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-grand-valley-highway-1-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Grand Valley Highway 1 · Sector 3",
+      "track": "Grand Valley Highway 1",
+      "circuitId": 1292,
+      "car": "Nissan GT-R NISMO GT3 '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-grand-valley-highway-1-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Grand Valley Highway 1 · 1 Lap Attack",
+      "track": "Grand Valley Highway 1",
+      "circuitId": 1292,
+      "car": "Nissan GT-R NISMO GT3 '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-grand-valley-south-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Grand Valley - South · Sector 1",
       "track": "Grand Valley - South",
       "circuitId": 1299,
       "car": "Mine's BNR34 GT-R N1 base",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-lake-louise-long-track",
+      "id": "ce-grand-valley-south-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Lake Louise Long Track",
+      "code": "Sector 2",
+      "name": "Grand Valley - South · Sector 2",
+      "track": "Grand Valley - South",
+      "circuitId": 1299,
+      "car": "Mine's BNR34 GT-R N1 base",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-grand-valley-south-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Grand Valley - South · Sector 3",
+      "track": "Grand Valley - South",
+      "circuitId": 1299,
+      "car": "Mine's BNR34 GT-R N1 base",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-grand-valley-south-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Grand Valley - South · 1 Lap Attack",
+      "track": "Grand Valley - South",
+      "circuitId": 1299,
+      "car": "Mine's BNR34 GT-R N1 base",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-lake-louise-long-track-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Lake Louise Long Track · Sector 1",
       "track": "Lake Louise Long Track",
       "circuitId": 1309,
       "car": "Peugeot RCZ Gr.B Rally Car",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-circuit-gilles-villeneuve",
+      "id": "ce-lake-louise-long-track-s2",
       "family": "Circuit Experience",
       "collection": "Americas",
-      "code": null,
-      "name": "Circuit Gilles-Villeneuve",
+      "code": "Sector 2",
+      "name": "Lake Louise Long Track · Sector 2",
+      "track": "Lake Louise Long Track",
+      "circuitId": 1309,
+      "car": "Peugeot RCZ Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-lake-louise-long-track-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Lake Louise Long Track · Sector 3",
+      "track": "Lake Louise Long Track",
+      "circuitId": 1309,
+      "car": "Peugeot RCZ Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-lake-louise-long-track-s4",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 4",
+      "name": "Lake Louise Long Track · Sector 4",
+      "track": "Lake Louise Long Track",
+      "circuitId": 1309,
+      "car": "Peugeot RCZ Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-lake-louise-long-track-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Lake Louise Long Track · 1 Lap Attack",
+      "track": "Lake Louise Long Track",
+      "circuitId": 1309,
+      "car": "Peugeot RCZ Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-gilles-villeneuve-s1",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 1",
+      "name": "Circuit Gilles-Villeneuve · Sector 1",
       "track": "Circuit Gilles-Villeneuve",
       "circuitId": 2004,
       "car": "Mercedes-AMG GT3 '20",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-nurburgring-nordschleife",
+      "id": "ce-circuit-gilles-villeneuve-s2",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 2",
+      "name": "Circuit Gilles-Villeneuve · Sector 2",
+      "track": "Circuit Gilles-Villeneuve",
+      "circuitId": 2004,
+      "car": "Mercedes-AMG GT3 '20",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-gilles-villeneuve-s3",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 3",
+      "name": "Circuit Gilles-Villeneuve · Sector 3",
+      "track": "Circuit Gilles-Villeneuve",
+      "circuitId": 2004,
+      "car": "Mercedes-AMG GT3 '20",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-gilles-villeneuve-s4",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "Sector 4",
+      "name": "Circuit Gilles-Villeneuve · Sector 4",
+      "track": "Circuit Gilles-Villeneuve",
+      "circuitId": 2004,
+      "car": "Mercedes-AMG GT3 '20",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-gilles-villeneuve-lap",
+      "family": "Circuit Experience",
+      "collection": "Americas",
+      "code": "1 Lap Attack",
+      "name": "Circuit Gilles-Villeneuve · 1 Lap Attack",
+      "track": "Circuit Gilles-Villeneuve",
+      "circuitId": 2004,
+      "car": "Mercedes-AMG GT3 '20",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-nordschleife-s1",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Nürburgring Nordschleife",
+      "code": "Sector 1",
+      "name": "Nürburgring Nordschleife · Sector 1",
       "track": "Nürburgring Nordschleife",
       "circuitId": 95,
       "car": "BMW M6 GT3 Endurance Model '16",
-      "targets": null,
-      "sections": 12,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-nurburgring-gp",
+      "id": "ce-nurburgring-nordschleife-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Nürburgring GP",
+      "code": "Sector 2",
+      "name": "Nürburgring Nordschleife · Sector 2",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "BMW M6 GT3 Endurance Model '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-nordschleife-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Nürburgring Nordschleife · Sector 3",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "BMW M6 GT3 Endurance Model '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-nordschleife-s4",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 4",
+      "name": "Nürburgring Nordschleife · Sector 4",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "BMW M6 GT3 Endurance Model '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-nordschleife-s5",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 5",
+      "name": "Nürburgring Nordschleife · Sector 5",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "BMW M6 GT3 Endurance Model '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-nordschleife-s6",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 6",
+      "name": "Nürburgring Nordschleife · Sector 6",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "BMW M6 GT3 Endurance Model '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-nordschleife-s7",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 7",
+      "name": "Nürburgring Nordschleife · Sector 7",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "BMW M6 GT3 Endurance Model '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-nordschleife-s8",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 8",
+      "name": "Nürburgring Nordschleife · Sector 8",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "BMW M6 GT3 Endurance Model '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-nordschleife-s9",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 9",
+      "name": "Nürburgring Nordschleife · Sector 9",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "BMW M6 GT3 Endurance Model '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-nordschleife-s10",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 10",
+      "name": "Nürburgring Nordschleife · Sector 10",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "BMW M6 GT3 Endurance Model '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-nordschleife-s11",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 11",
+      "name": "Nürburgring Nordschleife · Sector 11",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "BMW M6 GT3 Endurance Model '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-nordschleife-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Nürburgring Nordschleife · 1 Lap Attack",
+      "track": "Nürburgring Nordschleife",
+      "circuitId": 95,
+      "car": "BMW M6 GT3 Endurance Model '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-gp-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Nürburgring GP · Sector 1",
       "track": "Nürburgring GP",
       "circuitId": 349,
       "car": "Mercedes-AMG GT3 '16",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-nurburgring-endurance-ii",
+      "id": "ce-nurburgring-gp-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Nürburgring Endurance II",
+      "code": "Sector 2",
+      "name": "Nürburgring GP · Sector 2",
+      "track": "Nürburgring GP",
+      "circuitId": 349,
+      "car": "Mercedes-AMG GT3 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-gp-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Nürburgring GP · Sector 3",
+      "track": "Nürburgring GP",
+      "circuitId": 349,
+      "car": "Mercedes-AMG GT3 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-gp-s4",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 4",
+      "name": "Nürburgring GP · Sector 4",
+      "track": "Nürburgring GP",
+      "circuitId": 349,
+      "car": "Mercedes-AMG GT3 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-gp-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Nürburgring GP · 1 Lap Attack",
+      "track": "Nürburgring GP",
+      "circuitId": 349,
+      "car": "Mercedes-AMG GT3 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-endurance-ii-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Nürburgring Endurance II · Sector 1",
       "track": "Nürburgring Endurance II",
       "circuitId": null,
       "car": "Porsche 911 RSR (991) '17",
-      "targets": null,
-      "sections": 12,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-autodrome-lago-maggiore-gp",
+      "id": "ce-nurburgring-endurance-ii-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Autodrome Lago Maggiore - GP",
+      "code": "Sector 2",
+      "name": "Nürburgring Endurance II · Sector 2",
+      "track": "Nürburgring Endurance II",
+      "circuitId": null,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-endurance-ii-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Nürburgring Endurance II · Sector 3",
+      "track": "Nürburgring Endurance II",
+      "circuitId": null,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-endurance-ii-s4",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 4",
+      "name": "Nürburgring Endurance II · Sector 4",
+      "track": "Nürburgring Endurance II",
+      "circuitId": null,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-endurance-ii-s5",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 5",
+      "name": "Nürburgring Endurance II · Sector 5",
+      "track": "Nürburgring Endurance II",
+      "circuitId": null,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-endurance-ii-s6",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 6",
+      "name": "Nürburgring Endurance II · Sector 6",
+      "track": "Nürburgring Endurance II",
+      "circuitId": null,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-endurance-ii-s7",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 7",
+      "name": "Nürburgring Endurance II · Sector 7",
+      "track": "Nürburgring Endurance II",
+      "circuitId": null,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-endurance-ii-s8",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 8",
+      "name": "Nürburgring Endurance II · Sector 8",
+      "track": "Nürburgring Endurance II",
+      "circuitId": null,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-endurance-ii-s9",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 9",
+      "name": "Nürburgring Endurance II · Sector 9",
+      "track": "Nürburgring Endurance II",
+      "circuitId": null,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-endurance-ii-s10",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 10",
+      "name": "Nürburgring Endurance II · Sector 10",
+      "track": "Nürburgring Endurance II",
+      "circuitId": null,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-endurance-ii-s11",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 11",
+      "name": "Nürburgring Endurance II · Sector 11",
+      "track": "Nürburgring Endurance II",
+      "circuitId": null,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-nurburgring-endurance-ii-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Nürburgring Endurance II · 1 Lap Attack",
+      "track": "Nürburgring Endurance II",
+      "circuitId": null,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodrome-lago-maggiore-gp-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Autodrome Lago Maggiore - GP · Sector 1",
       "track": "Autodrome Lago Maggiore - GP",
       "circuitId": 365,
       "car": "Alfa Romeo 4C Gr.3",
-      "targets": null,
-      "sections": 6,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-dragon-trail-gardens",
+      "id": "ce-autodrome-lago-maggiore-gp-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Dragon Trail - Gardens",
+      "code": "Sector 2",
+      "name": "Autodrome Lago Maggiore - GP · Sector 2",
+      "track": "Autodrome Lago Maggiore - GP",
+      "circuitId": 365,
+      "car": "Alfa Romeo 4C Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodrome-lago-maggiore-gp-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Autodrome Lago Maggiore - GP · Sector 3",
+      "track": "Autodrome Lago Maggiore - GP",
+      "circuitId": 365,
+      "car": "Alfa Romeo 4C Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodrome-lago-maggiore-gp-s4",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 4",
+      "name": "Autodrome Lago Maggiore - GP · Sector 4",
+      "track": "Autodrome Lago Maggiore - GP",
+      "circuitId": 365,
+      "car": "Alfa Romeo 4C Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodrome-lago-maggiore-gp-s5",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 5",
+      "name": "Autodrome Lago Maggiore - GP · Sector 5",
+      "track": "Autodrome Lago Maggiore - GP",
+      "circuitId": 365,
+      "car": "Alfa Romeo 4C Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodrome-lago-maggiore-gp-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Autodrome Lago Maggiore - GP · 1 Lap Attack",
+      "track": "Autodrome Lago Maggiore - GP",
+      "circuitId": 365,
+      "car": "Alfa Romeo 4C Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-dragon-trail-gardens-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Dragon Trail - Gardens · Sector 1",
       "track": "Dragon Trail - Gardens",
       "circuitId": 847,
       "car": "Peugeot RCZ Gr.4",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-dragon-trail-seaside",
+      "id": "ce-dragon-trail-gardens-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Dragon Trail - Seaside",
+      "code": "Sector 2",
+      "name": "Dragon Trail - Gardens · Sector 2",
+      "track": "Dragon Trail - Gardens",
+      "circuitId": 847,
+      "car": "Peugeot RCZ Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-dragon-trail-gardens-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Dragon Trail - Gardens · Sector 3",
+      "track": "Dragon Trail - Gardens",
+      "circuitId": 847,
+      "car": "Peugeot RCZ Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-dragon-trail-gardens-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Dragon Trail - Gardens · 1 Lap Attack",
+      "track": "Dragon Trail - Gardens",
+      "circuitId": 847,
+      "car": "Peugeot RCZ Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-dragon-trail-seaside-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Dragon Trail - Seaside · Sector 1",
       "track": "Dragon Trail - Seaside",
       "circuitId": 363,
       "car": "Jaguar F-Type Gr.3",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-alsace-village",
+      "id": "ce-dragon-trail-seaside-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Alsace - Village",
+      "code": "Sector 2",
+      "name": "Dragon Trail - Seaside · Sector 2",
+      "track": "Dragon Trail - Seaside",
+      "circuitId": 363,
+      "car": "Jaguar F-Type Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-dragon-trail-seaside-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Dragon Trail - Seaside · Sector 3",
+      "track": "Dragon Trail - Seaside",
+      "circuitId": 363,
+      "car": "Jaguar F-Type Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-dragon-trail-seaside-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Dragon Trail - Seaside · 1 Lap Attack",
+      "track": "Dragon Trail - Seaside",
+      "circuitId": 363,
+      "car": "Jaguar F-Type Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-alsace-village-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Alsace - Village · Sector 1",
       "track": "Alsace - Village",
       "circuitId": 358,
       "car": "Renault Sport R.S.01 GT3 '16",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-sardegna-windmills",
+      "id": "ce-alsace-village-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Sardegna - Windmills",
+      "code": "Sector 2",
+      "name": "Alsace - Village · Sector 2",
+      "track": "Alsace - Village",
+      "circuitId": 358,
+      "car": "Renault Sport R.S.01 GT3 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-alsace-village-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Alsace - Village · Sector 3",
+      "track": "Alsace - Village",
+      "circuitId": 358,
+      "car": "Renault Sport R.S.01 GT3 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-alsace-village-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Alsace - Village · 1 Lap Attack",
+      "track": "Alsace - Village",
+      "circuitId": 358,
+      "car": "Renault Sport R.S.01 GT3 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-sardegna-windmills-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Sardegna - Windmills · Sector 1",
       "track": "Sardegna - Windmills",
       "circuitId": 453,
       "car": "Subaru WRX Gr.B Rally Car",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-sardegna-road-track-a",
+      "id": "ce-sardegna-windmills-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Sardegna - Road Track - A",
+      "code": "Sector 2",
+      "name": "Sardegna - Windmills · Sector 2",
+      "track": "Sardegna - Windmills",
+      "circuitId": 453,
+      "car": "Subaru WRX Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-sardegna-windmills-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Sardegna - Windmills · Sector 3",
+      "track": "Sardegna - Windmills",
+      "circuitId": 453,
+      "car": "Subaru WRX Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-sardegna-windmills-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Sardegna - Windmills · 1 Lap Attack",
+      "track": "Sardegna - Windmills",
+      "circuitId": 453,
+      "car": "Subaru WRX Gr.B Rally Car",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-sardegna-road-track-a-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Sardegna - Road Track - A · Sector 1",
       "track": "Sardegna - Road Track - A",
       "circuitId": 921,
       "car": "Audi R18 TDI '11",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-24-heures-du-mans-race-track",
+      "id": "ce-sardegna-road-track-a-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "24 Heures du Mans race track",
+      "code": "Sector 2",
+      "name": "Sardegna - Road Track - A · Sector 2",
+      "track": "Sardegna - Road Track - A",
+      "circuitId": 921,
+      "car": "Audi R18 TDI '11",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-sardegna-road-track-a-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Sardegna - Road Track - A · Sector 3",
+      "track": "Sardegna - Road Track - A",
+      "circuitId": 921,
+      "car": "Audi R18 TDI '11",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-sardegna-road-track-a-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Sardegna - Road Track - A · 1 Lap Attack",
+      "track": "Sardegna - Road Track - A",
+      "circuitId": 921,
+      "car": "Audi R18 TDI '11",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-24-heures-du-mans-race-track-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "24 Heures du Mans race track · Sector 1",
       "track": "24 Heures du Mans race track",
       "circuitId": 454,
       "car": "Peugeot 908 HDi FAP '10",
-      "targets": null,
-      "sections": 6,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-circuit-de-sainte-croix-a",
+      "id": "ce-24-heures-du-mans-race-track-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Circuit de Sainte-Croix - A",
+      "code": "Sector 2",
+      "name": "24 Heures du Mans race track · Sector 2",
+      "track": "24 Heures du Mans race track",
+      "circuitId": 454,
+      "car": "Peugeot 908 HDi FAP '10",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-24-heures-du-mans-race-track-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "24 Heures du Mans race track · Sector 3",
+      "track": "24 Heures du Mans race track",
+      "circuitId": 454,
+      "car": "Peugeot 908 HDi FAP '10",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-24-heures-du-mans-race-track-s4",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 4",
+      "name": "24 Heures du Mans race track · Sector 4",
+      "track": "24 Heures du Mans race track",
+      "circuitId": 454,
+      "car": "Peugeot 908 HDi FAP '10",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-24-heures-du-mans-race-track-s5",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 5",
+      "name": "24 Heures du Mans race track · Sector 5",
+      "track": "24 Heures du Mans race track",
+      "circuitId": 454,
+      "car": "Peugeot 908 HDi FAP '10",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-24-heures-du-mans-race-track-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "24 Heures du Mans race track · 1 Lap Attack",
+      "track": "24 Heures du Mans race track",
+      "circuitId": 454,
+      "car": "Peugeot 908 HDi FAP '10",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-sainte-croix-a-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Circuit de Sainte-Croix - A · Sector 1",
       "track": "Circuit de Sainte-Croix - A",
       "circuitId": 825,
       "car": "Renault Espace F1 '95",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-circuit-de-sainte-croix-c",
+      "id": "ce-circuit-de-sainte-croix-a-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Circuit de Sainte-Croix - C",
+      "code": "Sector 2",
+      "name": "Circuit de Sainte-Croix - A · Sector 2",
+      "track": "Circuit de Sainte-Croix - A",
+      "circuitId": 825,
+      "car": "Renault Espace F1 '95",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-sainte-croix-a-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Circuit de Sainte-Croix - A · Sector 3",
+      "track": "Circuit de Sainte-Croix - A",
+      "circuitId": 825,
+      "car": "Renault Espace F1 '95",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-sainte-croix-a-s4",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 4",
+      "name": "Circuit de Sainte-Croix - A · Sector 4",
+      "track": "Circuit de Sainte-Croix - A",
+      "circuitId": 825,
+      "car": "Renault Espace F1 '95",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-sainte-croix-a-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Circuit de Sainte-Croix - A · 1 Lap Attack",
+      "track": "Circuit de Sainte-Croix - A",
+      "circuitId": 825,
+      "car": "Renault Espace F1 '95",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-sainte-croix-c-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Circuit de Sainte-Croix - C · Sector 1",
       "track": "Circuit de Sainte-Croix - C",
       "circuitId": 829,
       "car": "Bugatti Vision Gran Turismo Gr.1",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-red-bull-ring",
+      "id": "ce-circuit-de-sainte-croix-c-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Red Bull Ring",
+      "code": "Sector 2",
+      "name": "Circuit de Sainte-Croix - C · Sector 2",
+      "track": "Circuit de Sainte-Croix - C",
+      "circuitId": 829,
+      "car": "Bugatti Vision Gran Turismo Gr.1",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-sainte-croix-c-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Circuit de Sainte-Croix - C · Sector 3",
+      "track": "Circuit de Sainte-Croix - C",
+      "circuitId": 829,
+      "car": "Bugatti Vision Gran Turismo Gr.1",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-sainte-croix-c-s4",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 4",
+      "name": "Circuit de Sainte-Croix - C · Sector 4",
+      "track": "Circuit de Sainte-Croix - C",
+      "circuitId": 829,
+      "car": "Bugatti Vision Gran Turismo Gr.1",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-sainte-croix-c-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Circuit de Sainte-Croix - C · 1 Lap Attack",
+      "track": "Circuit de Sainte-Croix - C",
+      "circuitId": 829,
+      "car": "Bugatti Vision Gran Turismo Gr.1",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-red-bull-ring-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Red Bull Ring · Sector 1",
       "track": "Red Bull Ring",
       "circuitId": 470,
       "car": "Red Bull X2014 Junior",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-autodromo-nazionale-monza",
+      "id": "ce-red-bull-ring-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Autodromo Nazionale Monza",
+      "code": "Sector 2",
+      "name": "Red Bull Ring · Sector 2",
+      "track": "Red Bull Ring",
+      "circuitId": 470,
+      "car": "Red Bull X2014 Junior",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-red-bull-ring-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Red Bull Ring · Sector 3",
+      "track": "Red Bull Ring",
+      "circuitId": 470,
+      "car": "Red Bull X2014 Junior",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-red-bull-ring-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Red Bull Ring · 1 Lap Attack",
+      "track": "Red Bull Ring",
+      "circuitId": 470,
+      "car": "Red Bull X2014 Junior",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodromo-nazionale-monza-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Autodromo Nazionale Monza · Sector 1",
       "track": "Autodromo Nazionale Monza",
       "circuitId": 469,
       "car": "Ferrari 458 Italia GT3 '13",
-      "targets": null,
-      "sections": 6,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-brands-hatch-grand-prix-circuit",
+      "id": "ce-autodromo-nazionale-monza-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Brands Hatch Grand Prix Circuit",
+      "code": "Sector 2",
+      "name": "Autodromo Nazionale Monza · Sector 2",
+      "track": "Autodromo Nazionale Monza",
+      "circuitId": 469,
+      "car": "Ferrari 458 Italia GT3 '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodromo-nazionale-monza-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Autodromo Nazionale Monza · Sector 3",
+      "track": "Autodromo Nazionale Monza",
+      "circuitId": 469,
+      "car": "Ferrari 458 Italia GT3 '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodromo-nazionale-monza-s4",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 4",
+      "name": "Autodromo Nazionale Monza · Sector 4",
+      "track": "Autodromo Nazionale Monza",
+      "circuitId": 469,
+      "car": "Ferrari 458 Italia GT3 '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodromo-nazionale-monza-s5",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 5",
+      "name": "Autodromo Nazionale Monza · Sector 5",
+      "track": "Autodromo Nazionale Monza",
+      "circuitId": 469,
+      "car": "Ferrari 458 Italia GT3 '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autodromo-nazionale-monza-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Autodromo Nazionale Monza · 1 Lap Attack",
+      "track": "Autodromo Nazionale Monza",
+      "circuitId": 469,
+      "car": "Ferrari 458 Italia GT3 '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-brands-hatch-grand-prix-circuit-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Brands Hatch Grand Prix Circuit · Sector 1",
       "track": "Brands Hatch Grand Prix Circuit",
       "circuitId": 119,
       "car": "Radical SR3 SL '13",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-goodwood-motor-circuit",
+      "id": "ce-brands-hatch-grand-prix-circuit-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Goodwood Motor Circuit",
+      "code": "Sector 2",
+      "name": "Brands Hatch Grand Prix Circuit · Sector 2",
+      "track": "Brands Hatch Grand Prix Circuit",
+      "circuitId": 119,
+      "car": "Radical SR3 SL '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-brands-hatch-grand-prix-circuit-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Brands Hatch Grand Prix Circuit · Sector 3",
+      "track": "Brands Hatch Grand Prix Circuit",
+      "circuitId": 119,
+      "car": "Radical SR3 SL '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-brands-hatch-grand-prix-circuit-s4",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 4",
+      "name": "Brands Hatch Grand Prix Circuit · Sector 4",
+      "track": "Brands Hatch Grand Prix Circuit",
+      "circuitId": 119,
+      "car": "Radical SR3 SL '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-brands-hatch-grand-prix-circuit-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Brands Hatch Grand Prix Circuit · 1 Lap Attack",
+      "track": "Brands Hatch Grand Prix Circuit",
+      "circuitId": 119,
+      "car": "Radical SR3 SL '13",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-goodwood-motor-circuit-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Goodwood Motor Circuit · Sector 1",
       "track": "Goodwood Motor Circuit",
       "circuitId": 154,
       "car": "Aston Martin Vantage Gr.4",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-circuit-de-barcelona-catalunya-grand-prix-layout",
+      "id": "ce-goodwood-motor-circuit-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Circuit de Barcelona-Catalunya Grand Prix Layout",
+      "code": "Sector 2",
+      "name": "Goodwood Motor Circuit · Sector 2",
+      "track": "Goodwood Motor Circuit",
+      "circuitId": 154,
+      "car": "Aston Martin Vantage Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-goodwood-motor-circuit-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Goodwood Motor Circuit · Sector 3",
+      "track": "Goodwood Motor Circuit",
+      "circuitId": 154,
+      "car": "Aston Martin Vantage Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-goodwood-motor-circuit-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Goodwood Motor Circuit · 1 Lap Attack",
+      "track": "Goodwood Motor Circuit",
+      "circuitId": 154,
+      "car": "Aston Martin Vantage Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-barcelona-catalunya-grand-prix-layout-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Circuit de Barcelona-Catalunya Grand Prix Layout · Sector 1",
       "track": "Circuit de Barcelona-Catalunya Grand Prix Layout",
       "circuitId": 874,
       "car": "Lamborghini Huracán GT3 '15",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-circuit-de-barcelona-catalunya-rallycross-layout",
+      "id": "ce-circuit-de-barcelona-catalunya-grand-prix-layout-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Circuit de Barcelona-Catalunya Rallycross Layout",
+      "code": "Sector 2",
+      "name": "Circuit de Barcelona-Catalunya Grand Prix Layout · Sector 2",
+      "track": "Circuit de Barcelona-Catalunya Grand Prix Layout",
+      "circuitId": 874,
+      "car": "Lamborghini Huracán GT3 '15",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-barcelona-catalunya-grand-prix-layout-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Circuit de Barcelona-Catalunya Grand Prix Layout · Sector 3",
+      "track": "Circuit de Barcelona-Catalunya Grand Prix Layout",
+      "circuitId": 874,
+      "car": "Lamborghini Huracán GT3 '15",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-barcelona-catalunya-grand-prix-layout-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Circuit de Barcelona-Catalunya Grand Prix Layout · 1 Lap Attack",
+      "track": "Circuit de Barcelona-Catalunya Grand Prix Layout",
+      "circuitId": 874,
+      "car": "Lamborghini Huracán GT3 '15",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-barcelona-catalunya-rallycross-layout-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Circuit de Barcelona-Catalunya Rallycross Layout · 1 Lap Attack",
       "track": "Circuit de Barcelona-Catalunya Rallycross Layout",
       "circuitId": 1265,
       "car": "Mitsubishi Lancer Evolution V GSR '98",
-      "targets": null,
-      "sections": 1,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-circuit-de-spa-francorchamps",
+      "id": "ce-circuit-de-spa-francorchamps-s1",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Circuit de Spa-Francorchamps",
+      "code": "Sector 1",
+      "name": "Circuit de Spa-Francorchamps · Sector 1",
       "track": "Circuit de Spa-Francorchamps",
       "circuitId": 462,
       "car": "Porsche 911 RSR (991) '17",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-deep-forest-raceway",
+      "id": "ce-circuit-de-spa-francorchamps-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Deep Forest Raceway",
+      "code": "Sector 2",
+      "name": "Circuit de Spa-Francorchamps · Sector 2",
+      "track": "Circuit de Spa-Francorchamps",
+      "circuitId": 462,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-spa-francorchamps-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Circuit de Spa-Francorchamps · Sector 3",
+      "track": "Circuit de Spa-Francorchamps",
+      "circuitId": 462,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-spa-francorchamps-s4",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 4",
+      "name": "Circuit de Spa-Francorchamps · Sector 4",
+      "track": "Circuit de Spa-Francorchamps",
+      "circuitId": 462,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-circuit-de-spa-francorchamps-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Circuit de Spa-Francorchamps · 1 Lap Attack",
+      "track": "Circuit de Spa-Francorchamps",
+      "circuitId": 462,
+      "car": "Porsche 911 RSR (991) '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-deep-forest-raceway-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Deep Forest Raceway · Sector 1",
       "track": "Deep Forest Raceway",
       "circuitId": 51,
       "car": "Audi R8 LMS Evo '19",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-eiger-nordwand",
+      "id": "ce-deep-forest-raceway-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Eiger Nordwand",
+      "code": "Sector 2",
+      "name": "Deep Forest Raceway · Sector 2",
+      "track": "Deep Forest Raceway",
+      "circuitId": 51,
+      "car": "Audi R8 LMS Evo '19",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-deep-forest-raceway-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Deep Forest Raceway · Sector 3",
+      "track": "Deep Forest Raceway",
+      "circuitId": 51,
+      "car": "Audi R8 LMS Evo '19",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-deep-forest-raceway-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Deep Forest Raceway · 1 Lap Attack",
+      "track": "Deep Forest Raceway",
+      "circuitId": 51,
+      "car": "Audi R8 LMS Evo '19",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-eiger-nordwand-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Eiger Nordwand · Sector 1",
       "track": "Eiger Nordwand",
       "circuitId": 2001,
       "car": "Alfa Romeo 4C Gr.4",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-eiger-nordwand-reverse",
+      "id": "ce-eiger-nordwand-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Eiger Nordwand Reverse",
+      "code": "Sector 2",
+      "name": "Eiger Nordwand · Sector 2",
+      "track": "Eiger Nordwand",
+      "circuitId": 2001,
+      "car": "Alfa Romeo 4C Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-eiger-nordwand-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Eiger Nordwand · Sector 3",
+      "track": "Eiger Nordwand",
+      "circuitId": 2001,
+      "car": "Alfa Romeo 4C Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-eiger-nordwand-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Eiger Nordwand · 1 Lap Attack",
+      "track": "Eiger Nordwand",
+      "circuitId": 2001,
+      "car": "Alfa Romeo 4C Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-eiger-nordwand-reverse-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Eiger Nordwand Reverse · Sector 1",
       "track": "Eiger Nordwand Reverse",
       "circuitId": 2002,
       "car": "Alpine A110 Première Édition '17",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-yas-marina-circuit",
+      "id": "ce-eiger-nordwand-reverse-s2",
       "family": "Circuit Experience",
       "collection": "Europe/Middle East",
-      "code": null,
-      "name": "Yas Marina Circuit",
+      "code": "Sector 2",
+      "name": "Eiger Nordwand Reverse · Sector 2",
+      "track": "Eiger Nordwand Reverse",
+      "circuitId": 2002,
+      "car": "Alpine A110 Première Édition '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-eiger-nordwand-reverse-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Eiger Nordwand Reverse · Sector 3",
+      "track": "Eiger Nordwand Reverse",
+      "circuitId": 2002,
+      "car": "Alpine A110 Première Édition '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-eiger-nordwand-reverse-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Eiger Nordwand Reverse · 1 Lap Attack",
+      "track": "Eiger Nordwand Reverse",
+      "circuitId": 2002,
+      "car": "Alpine A110 Première Édition '17",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-yas-marina-circuit-s1",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 1",
+      "name": "Yas Marina Circuit · Sector 1",
       "track": "Yas Marina Circuit",
       "circuitId": 2003,
       "car": "Ferrari 296 GT3 '23",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-suzuka-circuit",
+      "id": "ce-yas-marina-circuit-s2",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 2",
+      "name": "Yas Marina Circuit · Sector 2",
+      "track": "Yas Marina Circuit",
+      "circuitId": 2003,
+      "car": "Ferrari 296 GT3 '23",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-yas-marina-circuit-s3",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "Sector 3",
+      "name": "Yas Marina Circuit · Sector 3",
+      "track": "Yas Marina Circuit",
+      "circuitId": 2003,
+      "car": "Ferrari 296 GT3 '23",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-yas-marina-circuit-lap",
+      "family": "Circuit Experience",
+      "collection": "Europe/Middle East",
+      "code": "1 Lap Attack",
+      "name": "Yas Marina Circuit · 1 Lap Attack",
+      "track": "Yas Marina Circuit",
+      "circuitId": 2003,
+      "car": "Ferrari 296 GT3 '23",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-suzuka-circuit-s1",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Suzuka Circuit",
+      "code": "Sector 1",
+      "name": "Suzuka Circuit · Sector 1",
       "track": "Suzuka Circuit",
       "circuitId": 10,
       "car": "Honda NSX CONCEPT-GT '16",
-      "targets": null,
-      "sections": 6,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-autopolis-international-racing-course",
+      "id": "ce-suzuka-circuit-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Autopolis International Racing Course",
+      "code": "Sector 2",
+      "name": "Suzuka Circuit · Sector 2",
+      "track": "Suzuka Circuit",
+      "circuitId": 10,
+      "car": "Honda NSX CONCEPT-GT '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-suzuka-circuit-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Suzuka Circuit · Sector 3",
+      "track": "Suzuka Circuit",
+      "circuitId": 10,
+      "car": "Honda NSX CONCEPT-GT '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-suzuka-circuit-s4",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 4",
+      "name": "Suzuka Circuit · Sector 4",
+      "track": "Suzuka Circuit",
+      "circuitId": 10,
+      "car": "Honda NSX CONCEPT-GT '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-suzuka-circuit-s5",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 5",
+      "name": "Suzuka Circuit · Sector 5",
+      "track": "Suzuka Circuit",
+      "circuitId": 10,
+      "car": "Honda NSX CONCEPT-GT '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-suzuka-circuit-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Suzuka Circuit · 1 Lap Attack",
+      "track": "Suzuka Circuit",
+      "circuitId": 10,
+      "car": "Honda NSX CONCEPT-GT '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autopolis-international-racing-course-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Autopolis International Racing Course · Sector 1",
       "track": "Autopolis International Racing Course",
       "circuitId": 896,
       "car": "Nissan GT-R NISMO GT500 '16",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-kyoto-driving-park-miyabi",
+      "id": "ce-autopolis-international-racing-course-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Kyoto Driving Park - Miyabi",
+      "code": "Sector 2",
+      "name": "Autopolis International Racing Course · Sector 2",
+      "track": "Autopolis International Racing Course",
+      "circuitId": 896,
+      "car": "Nissan GT-R NISMO GT500 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autopolis-international-racing-course-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Autopolis International Racing Course · Sector 3",
+      "track": "Autopolis International Racing Course",
+      "circuitId": 896,
+      "car": "Nissan GT-R NISMO GT500 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-autopolis-international-racing-course-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Autopolis International Racing Course · 1 Lap Attack",
+      "track": "Autopolis International Racing Course",
+      "circuitId": 896,
+      "car": "Nissan GT-R NISMO GT500 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-kyoto-driving-park-miyabi-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Kyoto Driving Park - Miyabi · Sector 1",
       "track": "Kyoto Driving Park - Miyabi",
       "circuitId": 440,
       "car": "Audi TT Cup '16",
-      "targets": null,
-      "sections": 3,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-kyoto-driving-park-yamagiwa",
+      "id": "ce-kyoto-driving-park-miyabi-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Kyoto Driving Park - Yamagiwa",
+      "code": "Sector 2",
+      "name": "Kyoto Driving Park - Miyabi · Sector 2",
+      "track": "Kyoto Driving Park - Miyabi",
+      "circuitId": 440,
+      "car": "Audi TT Cup '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-kyoto-driving-park-miyabi-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Kyoto Driving Park - Miyabi · 1 Lap Attack",
+      "track": "Kyoto Driving Park - Miyabi",
+      "circuitId": 440,
+      "car": "Audi TT Cup '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-kyoto-driving-park-yamagiwa-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Kyoto Driving Park - Yamagiwa · Sector 1",
       "track": "Kyoto Driving Park - Yamagiwa",
       "circuitId": 376,
       "car": "Mitsubishi Lancer Evolution Final Edition Gr.3",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-tokyo-expressway-central-clockwise",
+      "id": "ce-kyoto-driving-park-yamagiwa-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Tokyo Expressway - Central Clockwise",
+      "code": "Sector 2",
+      "name": "Kyoto Driving Park - Yamagiwa · Sector 2",
+      "track": "Kyoto Driving Park - Yamagiwa",
+      "circuitId": 376,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-kyoto-driving-park-yamagiwa-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Kyoto Driving Park - Yamagiwa · Sector 3",
+      "track": "Kyoto Driving Park - Yamagiwa",
+      "circuitId": 376,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-kyoto-driving-park-yamagiwa-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Kyoto Driving Park - Yamagiwa · 1 Lap Attack",
+      "track": "Kyoto Driving Park - Yamagiwa",
+      "circuitId": 376,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-central-clockwise-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Tokyo Expressway - Central Clockwise · Sector 1",
       "track": "Tokyo Expressway - Central Clockwise",
       "circuitId": 351,
       "car": "Subaru WRX Gr.3",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-tokyo-expressway-east-clockwise",
+      "id": "ce-tokyo-expressway-central-clockwise-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Tokyo Expressway - East Clockwise",
+      "code": "Sector 2",
+      "name": "Tokyo Expressway - Central Clockwise · Sector 2",
+      "track": "Tokyo Expressway - Central Clockwise",
+      "circuitId": 351,
+      "car": "Subaru WRX Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-central-clockwise-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Tokyo Expressway - Central Clockwise · Sector 3",
+      "track": "Tokyo Expressway - Central Clockwise",
+      "circuitId": 351,
+      "car": "Subaru WRX Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-central-clockwise-s4",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 4",
+      "name": "Tokyo Expressway - Central Clockwise · Sector 4",
+      "track": "Tokyo Expressway - Central Clockwise",
+      "circuitId": 351,
+      "car": "Subaru WRX Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-central-clockwise-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Tokyo Expressway - Central Clockwise · 1 Lap Attack",
+      "track": "Tokyo Expressway - Central Clockwise",
+      "circuitId": 351,
+      "car": "Subaru WRX Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-east-clockwise-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Tokyo Expressway - East Clockwise · Sector 1",
       "track": "Tokyo Expressway - East Clockwise",
       "circuitId": 361,
       "car": "BMW Z4 GT3 '11",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-tokyo-expressway-south-clockwise",
+      "id": "ce-tokyo-expressway-east-clockwise-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Tokyo Expressway - South Clockwise",
+      "code": "Sector 2",
+      "name": "Tokyo Expressway - East Clockwise · Sector 2",
+      "track": "Tokyo Expressway - East Clockwise",
+      "circuitId": 361,
+      "car": "BMW Z4 GT3 '11",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-east-clockwise-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Tokyo Expressway - East Clockwise · Sector 3",
+      "track": "Tokyo Expressway - East Clockwise",
+      "circuitId": 361,
+      "car": "BMW Z4 GT3 '11",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-east-clockwise-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Tokyo Expressway - East Clockwise · 1 Lap Attack",
+      "track": "Tokyo Expressway - East Clockwise",
+      "circuitId": 361,
+      "car": "BMW Z4 GT3 '11",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-south-clockwise-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Tokyo Expressway - South Clockwise · Sector 1",
       "track": "Tokyo Expressway - South Clockwise",
       "circuitId": 362,
       "car": "Toyota GR Supra Racing Concept '18",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-tokyo-expressway-central-counterclockwise",
+      "id": "ce-tokyo-expressway-south-clockwise-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Tokyo Expressway - Central Counterclockwise",
+      "code": "Sector 2",
+      "name": "Tokyo Expressway - South Clockwise · Sector 2",
+      "track": "Tokyo Expressway - South Clockwise",
+      "circuitId": 362,
+      "car": "Toyota GR Supra Racing Concept '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-south-clockwise-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Tokyo Expressway - South Clockwise · Sector 3",
+      "track": "Tokyo Expressway - South Clockwise",
+      "circuitId": 362,
+      "car": "Toyota GR Supra Racing Concept '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-south-clockwise-s4",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 4",
+      "name": "Tokyo Expressway - South Clockwise · Sector 4",
+      "track": "Tokyo Expressway - South Clockwise",
+      "circuitId": 362,
+      "car": "Toyota GR Supra Racing Concept '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-south-clockwise-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Tokyo Expressway - South Clockwise · 1 Lap Attack",
+      "track": "Tokyo Expressway - South Clockwise",
+      "circuitId": 362,
+      "car": "Toyota GR Supra Racing Concept '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-central-counterclockwise-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Tokyo Expressway - Central Counterclockwise · Sector 1",
       "track": "Tokyo Expressway - Central Counterclockwise",
       "circuitId": 450,
       "car": "Subaru WRX Gr.3",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-tokyo-expressway-east-counterclockwise",
+      "id": "ce-tokyo-expressway-central-counterclockwise-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Tokyo Expressway - East Counterclockwise",
+      "code": "Sector 2",
+      "name": "Tokyo Expressway - Central Counterclockwise · Sector 2",
+      "track": "Tokyo Expressway - Central Counterclockwise",
+      "circuitId": 450,
+      "car": "Subaru WRX Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-central-counterclockwise-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Tokyo Expressway - Central Counterclockwise · Sector 3",
+      "track": "Tokyo Expressway - Central Counterclockwise",
+      "circuitId": 450,
+      "car": "Subaru WRX Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-central-counterclockwise-s4",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 4",
+      "name": "Tokyo Expressway - Central Counterclockwise · Sector 4",
+      "track": "Tokyo Expressway - Central Counterclockwise",
+      "circuitId": 450,
+      "car": "Subaru WRX Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-central-counterclockwise-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Tokyo Expressway - Central Counterclockwise · 1 Lap Attack",
+      "track": "Tokyo Expressway - Central Counterclockwise",
+      "circuitId": 450,
+      "car": "Subaru WRX Gr.3",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-east-counterclockwise-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Tokyo Expressway - East Counterclockwise · Sector 1",
       "track": "Tokyo Expressway - East Counterclockwise",
       "circuitId": 451,
       "car": "BMW Z4 GT3 '11",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-tokyo-expressway-south-counterclockwise",
+      "id": "ce-tokyo-expressway-east-counterclockwise-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Tokyo Expressway - South Counterclockwise",
+      "code": "Sector 2",
+      "name": "Tokyo Expressway - East Counterclockwise · Sector 2",
+      "track": "Tokyo Expressway - East Counterclockwise",
+      "circuitId": 451,
+      "car": "BMW Z4 GT3 '11",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-east-counterclockwise-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Tokyo Expressway - East Counterclockwise · Sector 3",
+      "track": "Tokyo Expressway - East Counterclockwise",
+      "circuitId": 451,
+      "car": "BMW Z4 GT3 '11",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-east-counterclockwise-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Tokyo Expressway - East Counterclockwise · 1 Lap Attack",
+      "track": "Tokyo Expressway - East Counterclockwise",
+      "circuitId": 451,
+      "car": "BMW Z4 GT3 '11",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-south-counterclockwise-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Tokyo Expressway - South Counterclockwise · Sector 1",
       "track": "Tokyo Expressway - South Counterclockwise",
       "circuitId": 915,
       "car": "Toyota GR Supra Racing Concept '18",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-bb-raceway",
+      "id": "ce-tokyo-expressway-south-counterclockwise-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "BB Raceway",
+      "code": "Sector 2",
+      "name": "Tokyo Expressway - South Counterclockwise · Sector 2",
+      "track": "Tokyo Expressway - South Counterclockwise",
+      "circuitId": 915,
+      "car": "Toyota GR Supra Racing Concept '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-south-counterclockwise-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Tokyo Expressway - South Counterclockwise · Sector 3",
+      "track": "Tokyo Expressway - South Counterclockwise",
+      "circuitId": 915,
+      "car": "Toyota GR Supra Racing Concept '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-south-counterclockwise-s4",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 4",
+      "name": "Tokyo Expressway - South Counterclockwise · Sector 4",
+      "track": "Tokyo Expressway - South Counterclockwise",
+      "circuitId": 915,
+      "car": "Toyota GR Supra Racing Concept '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tokyo-expressway-south-counterclockwise-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Tokyo Expressway - South Counterclockwise · 1 Lap Attack",
+      "track": "Tokyo Expressway - South Counterclockwise",
+      "circuitId": 915,
+      "car": "Toyota GR Supra Racing Concept '18",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-bb-raceway-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "BB Raceway · Sector 1",
       "track": "BB Raceway",
       "circuitId": 357,
       "car": "Mazda Atenza Gr.4",
-      "targets": null,
-      "sections": 3,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-fuji-international-speedway",
+      "id": "ce-bb-raceway-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Fuji International Speedway",
+      "code": "Sector 2",
+      "name": "BB Raceway · Sector 2",
+      "track": "BB Raceway",
+      "circuitId": 357,
+      "car": "Mazda Atenza Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-bb-raceway-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "BB Raceway · 1 Lap Attack",
+      "track": "BB Raceway",
+      "circuitId": 357,
+      "car": "Mazda Atenza Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fuji-international-speedway-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Fuji International Speedway · Sector 1",
       "track": "Fuji International Speedway",
       "circuitId": 16,
       "car": "Lexus RC F GT500 '16",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-tsukuba-circuit",
+      "id": "ce-fuji-international-speedway-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Tsukuba Circuit",
+      "code": "Sector 2",
+      "name": "Fuji International Speedway · Sector 2",
+      "track": "Fuji International Speedway",
+      "circuitId": 16,
+      "car": "Lexus RC F GT500 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fuji-international-speedway-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Fuji International Speedway · Sector 3",
+      "track": "Fuji International Speedway",
+      "circuitId": 16,
+      "car": "Lexus RC F GT500 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-fuji-international-speedway-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Fuji International Speedway · 1 Lap Attack",
+      "track": "Fuji International Speedway",
+      "circuitId": 16,
+      "car": "Lexus RC F GT500 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tsukuba-circuit-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Tsukuba Circuit · Sector 1",
       "track": "Tsukuba Circuit",
       "circuitId": 471,
       "car": "Mitsubishi Lancer Evolution Final Edition Gr.4",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-high-speed-ring",
+      "id": "ce-tsukuba-circuit-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "High Speed Ring",
+      "code": "Sector 2",
+      "name": "Tsukuba Circuit · Sector 2",
+      "track": "Tsukuba Circuit",
+      "circuitId": 471,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tsukuba-circuit-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Tsukuba Circuit · Sector 3",
+      "track": "Tsukuba Circuit",
+      "circuitId": 471,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-tsukuba-circuit-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Tsukuba Circuit · 1 Lap Attack",
+      "track": "Tsukuba Circuit",
+      "circuitId": 471,
+      "car": "Mitsubishi Lancer Evolution Final Edition Gr.4",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-high-speed-ring-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "High Speed Ring · Sector 1",
       "track": "High Speed Ring",
       "circuitId": 11,
       "car": "Pagani Zonda R '09",
-      "targets": null,
-      "sections": 4,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-mount-panorama",
+      "id": "ce-high-speed-ring-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "Mount Panorama",
+      "code": "Sector 2",
+      "name": "High Speed Ring · Sector 2",
+      "track": "High Speed Ring",
+      "circuitId": 11,
+      "car": "Pagani Zonda R '09",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-high-speed-ring-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "High Speed Ring · Sector 3",
+      "track": "High Speed Ring",
+      "circuitId": 11,
+      "car": "Pagani Zonda R '09",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-high-speed-ring-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "High Speed Ring · 1 Lap Attack",
+      "track": "High Speed Ring",
+      "circuitId": 11,
+      "car": "Pagani Zonda R '09",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-mount-panorama-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "Mount Panorama · Sector 1",
       "track": "Mount Panorama",
       "circuitId": 116,
       "car": "McLaren 650S GT3 '15",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     },
     {
-      "id": "ce-sugo-international-racing-course",
+      "id": "ce-mount-panorama-s2",
       "family": "Circuit Experience",
       "collection": "Asia/Oceania",
-      "code": null,
-      "name": "SUGO International Racing Course",
+      "code": "Sector 2",
+      "name": "Mount Panorama · Sector 2",
+      "track": "Mount Panorama",
+      "circuitId": 116,
+      "car": "McLaren 650S GT3 '15",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-mount-panorama-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "Mount Panorama · Sector 3",
+      "track": "Mount Panorama",
+      "circuitId": 116,
+      "car": "McLaren 650S GT3 '15",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-mount-panorama-s4",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 4",
+      "name": "Mount Panorama · Sector 4",
+      "track": "Mount Panorama",
+      "circuitId": 116,
+      "car": "McLaren 650S GT3 '15",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-mount-panorama-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "Mount Panorama · 1 Lap Attack",
+      "track": "Mount Panorama",
+      "circuitId": 116,
+      "car": "McLaren 650S GT3 '15",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-sugo-international-racing-course-s1",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 1",
+      "name": "SUGO International Racing Course · Sector 1",
       "track": "SUGO International Racing Course",
       "circuitId": null,
       "car": "Nissan GT-R NISMO GT500 '16",
-      "targets": null,
-      "sections": 5,
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-sugo-international-racing-course-s2",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 2",
+      "name": "SUGO International Racing Course · Sector 2",
+      "track": "SUGO International Racing Course",
+      "circuitId": null,
+      "car": "Nissan GT-R NISMO GT500 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-sugo-international-racing-course-s3",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 3",
+      "name": "SUGO International Racing Course · Sector 3",
+      "track": "SUGO International Racing Course",
+      "circuitId": null,
+      "car": "Nissan GT-R NISMO GT500 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-sugo-international-racing-course-s4",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "Sector 4",
+      "name": "SUGO International Racing Course · Sector 4",
+      "track": "SUGO International Racing Course",
+      "circuitId": null,
+      "car": "Nissan GT-R NISMO GT500 '16",
+      "targetMs": null,
+      "source": "Gran Turismo Wiki: Circuit Experience"
+    },
+    {
+      "id": "ce-sugo-international-racing-course-lap",
+      "family": "Circuit Experience",
+      "collection": "Asia/Oceania",
+      "code": "1 Lap Attack",
+      "name": "SUGO International Racing Course · 1 Lap Attack",
+      "track": "SUGO International Racing Course",
+      "circuitId": null,
+      "car": "Nissan GT-R NISMO GT500 '16",
+      "targetMs": null,
       "source": "Gran Turismo Wiki: Circuit Experience"
     }
   ]

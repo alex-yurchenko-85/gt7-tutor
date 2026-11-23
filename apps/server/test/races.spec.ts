@@ -767,7 +767,25 @@ describe('race recorder', () => {
     expect(compare.findings).toContainEqual(expect.objectContaining({ kind: 'brake-late', turn: expect.anything() }));
     expect(compare.referenceEvents.length).toBeGreaterThan(0);
     expect(compare.corners.length).toBeGreaterThan(0);
-    expect(Object.keys(compare.corners[0]).sort()).toEqual(['apexSM', 'apexSpeedMps', 'number', 'outsideM', 'radiusM', 'speedMps', 'turnInSM', 'zoneFromSM', 'zoneToSM']);
+    expect(Object.keys(compare.corners[0]).sort()).toEqual([
+      'apexSM',
+      'apexSpeedMps',
+      'attemptLowMps',
+      'attemptLowSM',
+      'brakeAtTurnIn',
+      'brakeToSM',
+      'lowSpeedAtApex',
+      'lowSpeedMps',
+      'lowSpeedSM',
+      'number',
+      'outsideM',
+      'radiusM',
+      'speedMps',
+      'turnInSM',
+      'zoneFromSM',
+      'zoneToSM'
+    ]);
+    expect(compare.corners[0]).toMatchObject({ brakeToSM: expect.any(Number), lowSpeedSM: expect.any(Number) });
     expect(compare.turnLosses.length).toBe(compare.corners.length);
     expect(compare.turnLosses[0]).toEqual({ turn: expect.any(Number), fromSM: expect.any(Number), toSM: expect.any(Number), lostMs: expect.any(Number) });
   });
@@ -845,7 +863,7 @@ describe('race recorder', () => {
     const raceId = await recordRace(watcher, raceOf({ laps: [0, 0, 0, 0, 0], lapsInRace: 5, timedLaps: true, pace: [{ lap: 3, from: 20, to: 100, factor: 1.1 }] }));
     const golden = (await http().get(`/api/races/${raceId}/golden`).set('Cookie', cookie).expect(200)).body;
     expect(golden).toMatchObject({ state: 'ok', bestLap: 3, sourceLaps: [3], cleanLaps: [2, 3, 4, 5] });
-    expect(Object.keys(golden.sectors[0]).sort()).toEqual(['bestJoins', 'bestLap', 'bestMs', 'cleanLaps', 'fromM', 'lap', 'medianMs', 'ms', 'slipstream', 'spreadMs', 'toM', 'turn']);
+    expect(Object.keys(golden.sectors[0]).sort()).toEqual(['bestJoins', 'bestLap', 'bestMs', 'cleanLaps', 'fromM', 'lap', 'medianMs', 'ms', 'spreadMs', 'toM', 'turn']);
     const view = (await http().get(`/api/races/${raceId}/off-track`).set('Cookie', cookie).expect(200)).body;
     expect(golden.line).toEqual({ gridM: view.gridM, x: view.x, z: view.z });
     const short = await recordRace(watcher, raceOf(BRAKE_RACE));

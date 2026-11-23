@@ -41,6 +41,58 @@ describe('channel chart', () => {
     expect(channel.querySelector('.field-unit')!.textContent).toBe('km/h');
   });
 
+  it('draws_a_ring_with_its_value_at_a_place_and_a_value', () => {
+    render(
+      <ChannelChart
+        id="speed"
+        series={[{ name: 'ref', values: [100, 120, 140] }]}
+        min={0}
+        max={200}
+        gridM={2}
+        lengthM={4}
+        cursorSM={0}
+        onCursor={() => undefined}
+        ticks={[]}
+        height={104}
+        rings={[{ sM: 1, value: 100, tone: 'ref', label: '100 km/h', side: 'left', place: 'below' }]}
+      />
+    );
+    const ring = el('[data-chart="speed"] .chart-ring');
+    expect(ring.dataset.tone).toBe('ref');
+    expect(ring.dataset.side).toBe('left');
+    expect(ring.style.left).toBe('25%');
+    expect(ring.style.top).toBe('50%');
+    expect(ring.textContent).toBe('100 km/h');
+  });
+
+  it('keeps_ring_labels_inside_the_plot_and_draws_two_rings_at_one_place', () => {
+    render(
+      <ChannelChart
+        id="speed"
+        series={[{ name: 'ref', values: [100, 120, 140] }]}
+        min={0}
+        max={200}
+        gridM={2}
+        lengthM={4}
+        cursorSM={0}
+        onCursor={() => undefined}
+        ticks={[]}
+        height={104}
+        rings={[
+          { sM: 3.9, value: 5, tone: 'ref', label: 'a', side: 'right', place: 'below' },
+          { sM: 0.1, value: 195, tone: 'you', label: 'b', side: 'left', place: 'above' },
+          { sM: 0.1, value: 195, tone: 'you', label: 'c', side: 'left', place: 'above' }
+        ]}
+      />
+    );
+    const rings = [...document.querySelectorAll<HTMLElement>('[data-chart="speed"] .chart-ring')];
+    expect(rings.map(ring => [ring.textContent, ring.dataset.side, ring.dataset.label])).toEqual([
+      ['a', 'left', 'above'],
+      ['b', 'right', 'below'],
+      ['c', 'right', 'below']
+    ]);
+  });
+
   it('keeps_the_chart_without_a_field_as_before', () => {
     const channel = chart();
     expect(channel.querySelector('.chart-field')).toBeNull();

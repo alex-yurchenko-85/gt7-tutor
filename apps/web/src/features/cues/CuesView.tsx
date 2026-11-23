@@ -26,6 +26,7 @@ import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths } from '../../app/router.tsx';
 import { ExerciseHeader } from '../exercise/ExerciseHeader.tsx';
 import { useExercise } from '../exercise/use-exercise.ts';
+import { exerciseTitle } from '../exercise/use-exercise-where.ts';
 import {
   attemptsText,
   offsetText,
@@ -171,7 +172,16 @@ function CueRow({ cue, phrase, number, muted, offsetMs, recurring, reaction, not
   );
 }
 
+function brakePlanText(corner: CornerInfo): string | null {
+  if (corner.brakeToSM === null || corner.brakeAtTurnIn === null || corner.lowSpeedSM === null) return null;
+  const values = { to: Math.round(corner.brakeToSM), share: Math.round(corner.brakeAtTurnIn * 100) };
+  if (corner.lowSpeedAtApex) return t('exercises.cues.brake-plan.at-apex', values);
+  const offsetM = corner.lowSpeedSM - corner.apexSM;
+  return t(offsetM < 0 ? 'exercises.cues.brake-plan.before' : 'exercises.cues.brake-plan.after', { ...values, metres: Math.ceil(Math.abs(offsetM)) });
+}
+
 function TurnRow({ corner }: { corner: CornerInfo }) {
+  const plan = brakePlanText(corner);
   return (
     <li className="note turn" data-turn={corner.number}>
       <span className="n">{t('charts.turn.badge', { turn: corner.number })}</span>
@@ -184,6 +194,7 @@ function TurnRow({ corner }: { corner: CornerInfo }) {
       <span className="phrase">
         <b>{t('charts.turn.title', { turn: corner.number })}</b>
         <small>{t('exercises.cues.turn-in', { turnIn: Math.round(corner.turnInSM), apex: Math.round(corner.apexSM), radius: Math.round(corner.radiusM) })}</small>
+        {plan ? <small className="brake-plan">{plan}</small> : null}
       </span>
       <span className="target">
         <Rich k="exercises.cues.apex-speed" parts={{ speed: <b>{Math.round(corner.apexSpeedMps * KPH_PER_MPS)}</b> }} />
@@ -444,7 +455,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
       <MapDialog
         open={viewing}
         onClose={() => setViewing(false)}
-        title={exercise.name}
+        title={exerciseTitle(exercise).title}
         lengthM={trace.lengthM}
         reference={trace}
         corners={corners}
@@ -513,7 +524,7 @@ export function CuesView({ exerciseId }: { exerciseId: string }) {
       {exercise.data.activeReferenceId ? (
         <CueList exercise={exercise.data} referenceId={exercise.data.activeReferenceId} />
       ) : (
-        <div className="panel">
+        <div className="panel cues-start">
           <p className="lede">{t('exercises.cues.no-reference')}</p>
           <Link to={paths.record(exercise.data.id)} className="btn inline">
             {t('exercises.cues.record')}

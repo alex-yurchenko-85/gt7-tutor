@@ -80,14 +80,6 @@ tr.selectable:not(.picked):hover td {
   font-size: 15px;
 }
 
-.phone-difference {
-  display: block;
-  margin-top: 4px;
-  font-size: 14px;
-  line-height: 1.4;
-  font-weight: 400;
-}
-
 tr.aborted td {
   color: var(--mute);
 }

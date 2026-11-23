@@ -58,245 +58,485 @@
       "file": "clips/voice-check.wav",
       "durationMs": 729
     },
-    "focus-brake-early-1": {
-      "file": "clips/focus-brake-early-1.wav",
-      "durationMs": 1280
+    "focus-approach-brake-early-1": {
+      "file": "clips/focus-approach-brake-early-1.wav",
+      "durationMs": 2309
     },
-    "focus-brake-early-2": {
-      "file": "clips/focus-brake-early-2.wav",
-      "durationMs": 1341
+    "focus-approach-brake-early-2": {
+      "file": "clips/focus-approach-brake-early-2.wav",
+      "durationMs": 2379
     },
-    "focus-brake-early-3": {
-      "file": "clips/focus-brake-early-3.wav",
-      "durationMs": 1431
+    "focus-approach-brake-early-3": {
+      "file": "clips/focus-approach-brake-early-3.wav",
+      "durationMs": 2505
     },
-    "focus-brake-early-4": {
-      "file": "clips/focus-brake-early-4.wav",
-      "durationMs": 1451
+    "focus-approach-brake-early-4": {
+      "file": "clips/focus-approach-brake-early-4.wav",
+      "durationMs": 2505
     },
-    "focus-brake-early-5": {
-      "file": "clips/focus-brake-early-5.wav",
-      "durationMs": 1442
+    "focus-approach-brake-early-5": {
+      "file": "clips/focus-approach-brake-early-5.wav",
+      "durationMs": 2499
     },
-    "focus-brake-early-6": {
-      "file": "clips/focus-brake-early-6.wav",
-      "durationMs": 1500
+    "focus-approach-brake-early-6": {
+      "file": "clips/focus-approach-brake-early-6.wav",
+      "durationMs": 2502
     },
-    "focus-brake-early-7": {
-      "file": "clips/focus-brake-early-7.wav",
-      "durationMs": 1552
+    "focus-approach-brake-early-7": {
+      "file": "clips/focus-approach-brake-early-7.wav",
+      "durationMs": 2554
     },
-    "focus-brake-early-8": {
-      "file": "clips/focus-brake-early-8.wav",
-      "durationMs": 1381
+    "focus-approach-brake-early-8": {
+      "file": "clips/focus-approach-brake-early-8.wav",
+      "durationMs": 2427
     },
-    "focus-brake-early-9": {
-      "file": "clips/focus-brake-early-9.wav",
-      "durationMs": 1524
+    "focus-approach-brake-early-9": {
+      "file": "clips/focus-approach-brake-early-9.wav",
+      "durationMs": 2553
     },
-    "focus-brake-early-10": {
-      "file": "clips/focus-brake-early-10.wav",
-      "durationMs": 1411
+    "focus-approach-brake-early-10": {
+      "file": "clips/focus-approach-brake-early-10.wav",
+      "durationMs": 2455
     },
-    "focus-brake-late-1": {
-      "file": "clips/focus-brake-late-1.wav",
-      "durationMs": 1346
+    "focus-approach-brake-late-1": {
+      "file": "clips/focus-approach-brake-late-1.wav",
+      "durationMs": 2265
     },
-    "focus-brake-late-2": {
-      "file": "clips/focus-brake-late-2.wav",
-      "durationMs": 1403
+    "focus-approach-brake-late-2": {
+      "file": "clips/focus-approach-brake-late-2.wav",
+      "durationMs": 2311
     },
-    "focus-brake-late-3": {
-      "file": "clips/focus-brake-late-3.wav",
-      "durationMs": 1486
+    "focus-approach-brake-late-3": {
+      "file": "clips/focus-approach-brake-late-3.wav",
+      "durationMs": 2406
     },
-    "focus-brake-late-4": {
-      "file": "clips/focus-brake-late-4.wav",
-      "durationMs": 1486
+    "focus-approach-brake-late-4": {
+      "file": "clips/focus-approach-brake-late-4.wav",
+      "durationMs": 2406
     },
-    "focus-brake-late-5": {
-      "file": "clips/focus-brake-late-5.wav",
-      "durationMs": 1479
+    "focus-approach-brake-late-5": {
+      "file": "clips/focus-approach-brake-late-5.wav",
+      "durationMs": 2405
     },
-    "focus-brake-late-6": {
-      "file": "clips/focus-brake-late-6.wav",
-      "durationMs": 1537
+    "focus-approach-brake-late-6": {
+      "file": "clips/focus-approach-brake-late-6.wav",
+      "durationMs": 2409
     },
-    "focus-brake-late-7": {
-      "file": "clips/focus-brake-late-7.wav",
-      "durationMs": 1608
+    "focus-approach-brake-late-7": {
+      "file": "clips/focus-approach-brake-late-7.wav",
+      "durationMs": 2511
     },
-    "focus-brake-late-8": {
-      "file": "clips/focus-brake-late-8.wav",
-      "durationMs": 1436
+    "focus-approach-brake-late-8": {
+      "file": "clips/focus-approach-brake-late-8.wav",
+      "durationMs": 2340
     },
-    "focus-brake-late-9": {
-      "file": "clips/focus-brake-late-9.wav",
-      "durationMs": 1545
+    "focus-approach-brake-late-9": {
+      "file": "clips/focus-approach-brake-late-9.wav",
+      "durationMs": 2460
     },
-    "focus-brake-late-10": {
-      "file": "clips/focus-brake-late-10.wav",
-      "durationMs": 1529
+    "focus-approach-brake-late-10": {
+      "file": "clips/focus-approach-brake-late-10.wav",
+      "durationMs": 2363
     },
-    "focus-slow-corner-1": {
-      "file": "clips/focus-slow-corner-1.wav",
-      "durationMs": 1552
+    "focus-approach-off-line-1": {
+      "file": "clips/focus-approach-off-line-1.wav",
+      "durationMs": 2103
     },
-    "focus-slow-corner-2": {
-      "file": "clips/focus-slow-corner-2.wav",
-      "durationMs": 1597
+    "focus-approach-off-line-2": {
+      "file": "clips/focus-approach-off-line-2.wav",
+      "durationMs": 2105
     },
-    "focus-slow-corner-3": {
-      "file": "clips/focus-slow-corner-3.wav",
-      "durationMs": 1675
+    "focus-approach-off-line-3": {
+      "file": "clips/focus-approach-off-line-3.wav",
+      "durationMs": 2134
     },
-    "focus-slow-corner-4": {
-      "file": "clips/focus-slow-corner-4.wav",
-      "durationMs": 1675
+    "focus-approach-off-line-4": {
+      "file": "clips/focus-approach-off-line-4.wav",
+      "durationMs": 2158
     },
-    "focus-slow-corner-5": {
-      "file": "clips/focus-slow-corner-5.wav",
-      "durationMs": 1659
+    "focus-approach-off-line-5": {
+      "file": "clips/focus-approach-off-line-5.wav",
+      "durationMs": 2203
     },
-    "focus-slow-corner-6": {
-      "file": "clips/focus-slow-corner-6.wav",
-      "durationMs": 1695
+    "focus-approach-off-line-6": {
+      "file": "clips/focus-approach-off-line-6.wav",
+      "durationMs": 2204
     },
-    "focus-slow-corner-7": {
-      "file": "clips/focus-slow-corner-7.wav",
-      "durationMs": 1724
+    "focus-approach-off-line-7": {
+      "file": "clips/focus-approach-off-line-7.wav",
+      "durationMs": 2280
     },
-    "focus-slow-corner-8": {
-      "file": "clips/focus-slow-corner-8.wav",
-      "durationMs": 1553
+    "focus-approach-off-line-8": {
+      "file": "clips/focus-approach-off-line-8.wav",
+      "durationMs": 2108
     },
-    "focus-slow-corner-9": {
-      "file": "clips/focus-slow-corner-9.wav",
-      "durationMs": 1704
+    "focus-approach-off-line-9": {
+      "file": "clips/focus-approach-off-line-9.wav",
+      "durationMs": 2205
     },
-    "focus-slow-corner-10": {
-      "file": "clips/focus-slow-corner-10.wav",
-      "durationMs": 1649
+    "focus-approach-off-line-10": {
+      "file": "clips/focus-approach-off-line-10.wav",
+      "durationMs": 2133
     },
-    "focus-throttle-late-1": {
-      "file": "clips/focus-throttle-late-1.wav",
-      "durationMs": 1600
+    "focus-approach-1": {
+      "file": "clips/focus-approach-1.wav",
+      "durationMs": 2133
     },
-    "focus-throttle-late-2": {
-      "file": "clips/focus-throttle-late-2.wav",
-      "durationMs": 1634
+    "focus-approach-2": {
+      "file": "clips/focus-approach-2.wav",
+      "durationMs": 2127
     },
-    "focus-throttle-late-3": {
-      "file": "clips/focus-throttle-late-3.wav",
-      "durationMs": 1688
+    "focus-approach-3": {
+      "file": "clips/focus-approach-3.wav",
+      "durationMs": 2155
     },
-    "focus-throttle-late-4": {
-      "file": "clips/focus-throttle-late-4.wav",
-      "durationMs": 1694
+    "focus-approach-4": {
+      "file": "clips/focus-approach-4.wav",
+      "durationMs": 2154
     },
-    "focus-throttle-late-5": {
-      "file": "clips/focus-throttle-late-5.wav",
-      "durationMs": 1664
+    "focus-approach-5": {
+      "file": "clips/focus-approach-5.wav",
+      "durationMs": 2199
     },
-    "focus-throttle-late-6": {
-      "file": "clips/focus-throttle-late-6.wav",
-      "durationMs": 1720
+    "focus-approach-6": {
+      "file": "clips/focus-approach-6.wav",
+      "durationMs": 2226
     },
-    "focus-throttle-late-7": {
-      "file": "clips/focus-throttle-late-7.wav",
-      "durationMs": 1786
+    "focus-approach-7": {
+      "file": "clips/focus-approach-7.wav",
+      "durationMs": 2297
     },
-    "focus-throttle-late-8": {
-      "file": "clips/focus-throttle-late-8.wav",
-      "durationMs": 1625
+    "focus-approach-8": {
+      "file": "clips/focus-approach-8.wav",
+      "durationMs": 2105
     },
-    "focus-throttle-late-9": {
-      "file": "clips/focus-throttle-late-9.wav",
-      "durationMs": 1711
+    "focus-approach-9": {
+      "file": "clips/focus-approach-9.wav",
+      "durationMs": 2202
     },
-    "focus-throttle-late-10": {
-      "file": "clips/focus-throttle-late-10.wav",
-      "durationMs": 1687
+    "focus-approach-10": {
+      "file": "clips/focus-approach-10.wav",
+      "durationMs": 2154
     },
-    "focus-off-line-1": {
-      "file": "clips/focus-off-line-1.wav",
-      "durationMs": 1564
+    "focus-entry-slow-1": {
+      "file": "clips/focus-entry-slow-1.wav",
+      "durationMs": 1746
     },
-    "focus-off-line-2": {
-      "file": "clips/focus-off-line-2.wav",
-      "durationMs": 1628
+    "focus-entry-slow-2": {
+      "file": "clips/focus-entry-slow-2.wav",
+      "durationMs": 1790
     },
-    "focus-off-line-3": {
-      "file": "clips/focus-off-line-3.wav",
-      "durationMs": 1681
+    "focus-entry-slow-3": {
+      "file": "clips/focus-entry-slow-3.wav",
+      "durationMs": 1817
     },
-    "focus-off-line-4": {
-      "file": "clips/focus-off-line-4.wav",
-      "durationMs": 1704
+    "focus-entry-slow-4": {
+      "file": "clips/focus-entry-slow-4.wav",
+      "durationMs": 1841
     },
-    "focus-off-line-5": {
-      "file": "clips/focus-off-line-5.wav",
-      "durationMs": 1698
+    "focus-entry-slow-5": {
+      "file": "clips/focus-entry-slow-5.wav",
+      "durationMs": 1831
     },
-    "focus-off-line-6": {
-      "file": "clips/focus-off-line-6.wav",
-      "durationMs": 1677
+    "focus-entry-slow-6": {
+      "file": "clips/focus-entry-slow-6.wav",
+      "durationMs": 1840
     },
-    "focus-off-line-7": {
-      "file": "clips/focus-off-line-7.wav",
-      "durationMs": 1829
+    "focus-entry-slow-7": {
+      "file": "clips/focus-entry-slow-7.wav",
+      "durationMs": 1934
     },
-    "focus-off-line-8": {
-      "file": "clips/focus-off-line-8.wav",
-      "durationMs": 1591
+    "focus-entry-slow-8": {
+      "file": "clips/focus-entry-slow-8.wav",
+      "durationMs": 1644
     },
-    "focus-off-line-9": {
-      "file": "clips/focus-off-line-9.wav",
-      "durationMs": 1732
+    "focus-entry-slow-9": {
+      "file": "clips/focus-entry-slow-9.wav",
+      "durationMs": 1843
     },
-    "focus-off-line-10": {
-      "file": "clips/focus-off-line-10.wav",
-      "durationMs": 1705
+    "focus-entry-slow-10": {
+      "file": "clips/focus-entry-slow-10.wav",
+      "durationMs": 1842
     },
-    "focus-wide-apex-1": {
-      "file": "clips/focus-wide-apex-1.wav",
-      "durationMs": 1828
+    "focus-entry-fast-1": {
+      "file": "clips/focus-entry-fast-1.wav",
+      "durationMs": 1736
     },
-    "focus-wide-apex-2": {
-      "file": "clips/focus-wide-apex-2.wav",
-      "durationMs": 1871
+    "focus-entry-fast-2": {
+      "file": "clips/focus-entry-fast-2.wav",
+      "durationMs": 1814
     },
-    "focus-wide-apex-3": {
-      "file": "clips/focus-wide-apex-3.wav",
-      "durationMs": 1951
+    "focus-entry-fast-3": {
+      "file": "clips/focus-entry-fast-3.wav",
+      "durationMs": 1907
     },
-    "focus-wide-apex-4": {
-      "file": "clips/focus-wide-apex-4.wav",
-      "durationMs": 1909
+    "focus-entry-fast-4": {
+      "file": "clips/focus-entry-fast-4.wav",
+      "durationMs": 1882
     },
-    "focus-wide-apex-5": {
-      "file": "clips/focus-wide-apex-5.wav",
-      "durationMs": 1960
+    "focus-entry-fast-5": {
+      "file": "clips/focus-entry-fast-5.wav",
+      "durationMs": 1907
     },
-    "focus-wide-apex-6": {
-      "file": "clips/focus-wide-apex-6.wav",
-      "durationMs": 1939
+    "focus-entry-fast-6": {
+      "file": "clips/focus-entry-fast-6.wav",
+      "durationMs": 1879
     },
-    "focus-wide-apex-7": {
-      "file": "clips/focus-wide-apex-7.wav",
-      "durationMs": 1997
+    "focus-entry-fast-7": {
+      "file": "clips/focus-entry-fast-7.wav",
+      "durationMs": 2030
     },
-    "focus-wide-apex-8": {
-      "file": "clips/focus-wide-apex-8.wav",
-      "durationMs": 1853
+    "focus-entry-fast-8": {
+      "file": "clips/focus-entry-fast-8.wav",
+      "durationMs": 1713
     },
-    "focus-wide-apex-9": {
-      "file": "clips/focus-wide-apex-9.wav",
-      "durationMs": 1953
-    },
-    "focus-wide-apex-10": {
-      "file": "clips/focus-wide-apex-10.wav",
+    "focus-entry-fast-9": {
+      "file": "clips/focus-entry-fast-9.wav",
       "durationMs": 1925
+    },
+    "focus-entry-fast-10": {
+      "file": "clips/focus-entry-fast-10.wav",
+      "durationMs": 1881
+    },
+    "focus-entry-wide-apex-1": {
+      "file": "clips/focus-entry-wide-apex-1.wav",
+      "durationMs": 2261
+    },
+    "focus-entry-wide-apex-2": {
+      "file": "clips/focus-entry-wide-apex-2.wav",
+      "durationMs": 2306
+    },
+    "focus-entry-wide-apex-3": {
+      "file": "clips/focus-entry-wide-apex-3.wav",
+      "durationMs": 2408
+    },
+    "focus-entry-wide-apex-4": {
+      "file": "clips/focus-entry-wide-apex-4.wav",
+      "durationMs": 2358
+    },
+    "focus-entry-wide-apex-5": {
+      "file": "clips/focus-entry-wide-apex-5.wav",
+      "durationMs": 2383
+    },
+    "focus-entry-wide-apex-6": {
+      "file": "clips/focus-entry-wide-apex-6.wav",
+      "durationMs": 2414
+    },
+    "focus-entry-wide-apex-7": {
+      "file": "clips/focus-entry-wide-apex-7.wav",
+      "durationMs": 2482
+    },
+    "focus-entry-wide-apex-8": {
+      "file": "clips/focus-entry-wide-apex-8.wav",
+      "durationMs": 2286
+    },
+    "focus-entry-wide-apex-9": {
+      "file": "clips/focus-entry-wide-apex-9.wav",
+      "durationMs": 2412
+    },
+    "focus-entry-wide-apex-10": {
+      "file": "clips/focus-entry-wide-apex-10.wav",
+      "durationMs": 2333
+    },
+    "focus-entry-off-line-1": {
+      "file": "clips/focus-entry-off-line-1.wav",
+      "durationMs": 1824
+    },
+    "focus-entry-off-line-2": {
+      "file": "clips/focus-entry-off-line-2.wav",
+      "durationMs": 1893
+    },
+    "focus-entry-off-line-3": {
+      "file": "clips/focus-entry-off-line-3.wav",
+      "durationMs": 1996
+    },
+    "focus-entry-off-line-4": {
+      "file": "clips/focus-entry-off-line-4.wav",
+      "durationMs": 1971
+    },
+    "focus-entry-off-line-5": {
+      "file": "clips/focus-entry-off-line-5.wav",
+      "durationMs": 2021
+    },
+    "focus-entry-off-line-6": {
+      "file": "clips/focus-entry-off-line-6.wav",
+      "durationMs": 1996
+    },
+    "focus-entry-off-line-7": {
+      "file": "clips/focus-entry-off-line-7.wav",
+      "durationMs": 2093
+    },
+    "focus-entry-off-line-8": {
+      "file": "clips/focus-entry-off-line-8.wav",
+      "durationMs": 1927
+    },
+    "focus-entry-off-line-9": {
+      "file": "clips/focus-entry-off-line-9.wav",
+      "durationMs": 2049
+    },
+    "focus-entry-off-line-10": {
+      "file": "clips/focus-entry-off-line-10.wav",
+      "durationMs": 1962
+    },
+    "focus-entry-1": {
+      "file": "clips/focus-entry-1.wav",
+      "durationMs": 1912
+    },
+    "focus-entry-2": {
+      "file": "clips/focus-entry-2.wav",
+      "durationMs": 1966
+    },
+    "focus-entry-3": {
+      "file": "clips/focus-entry-3.wav",
+      "durationMs": 2008
+    },
+    "focus-entry-4": {
+      "file": "clips/focus-entry-4.wav",
+      "durationMs": 2016
+    },
+    "focus-entry-5": {
+      "file": "clips/focus-entry-5.wav",
+      "durationMs": 2057
+    },
+    "focus-entry-6": {
+      "file": "clips/focus-entry-6.wav",
+      "durationMs": 2068
+    },
+    "focus-entry-7": {
+      "file": "clips/focus-entry-7.wav",
+      "durationMs": 2106
+    },
+    "focus-entry-8": {
+      "file": "clips/focus-entry-8.wav",
+      "durationMs": 1908
+    },
+    "focus-entry-9": {
+      "file": "clips/focus-entry-9.wav",
+      "durationMs": 2034
+    },
+    "focus-entry-10": {
+      "file": "clips/focus-entry-10.wav",
+      "durationMs": 1982
+    },
+    "focus-exit-throttle-late-1": {
+      "file": "clips/focus-exit-throttle-late-1.wav",
+      "durationMs": 2378
+    },
+    "focus-exit-throttle-late-2": {
+      "file": "clips/focus-exit-throttle-late-2.wav",
+      "durationMs": 2274
+    },
+    "focus-exit-throttle-late-3": {
+      "file": "clips/focus-exit-throttle-late-3.wav",
+      "durationMs": 2450
+    },
+    "focus-exit-throttle-late-4": {
+      "file": "clips/focus-exit-throttle-late-4.wav",
+      "durationMs": 2423
+    },
+    "focus-exit-throttle-late-5": {
+      "file": "clips/focus-exit-throttle-late-5.wav",
+      "durationMs": 2468
+    },
+    "focus-exit-throttle-late-6": {
+      "file": "clips/focus-exit-throttle-late-6.wav",
+      "durationMs": 2482
+    },
+    "focus-exit-throttle-late-7": {
+      "file": "clips/focus-exit-throttle-late-7.wav",
+      "durationMs": 2547
+    },
+    "focus-exit-throttle-late-8": {
+      "file": "clips/focus-exit-throttle-late-8.wav",
+      "durationMs": 2349
+    },
+    "focus-exit-throttle-late-9": {
+      "file": "clips/focus-exit-throttle-late-9.wav",
+      "durationMs": 2479
+    },
+    "focus-exit-throttle-late-10": {
+      "file": "clips/focus-exit-throttle-late-10.wav",
+      "durationMs": 2383
+    },
+    "focus-exit-off-line-1": {
+      "file": "clips/focus-exit-off-line-1.wav",
+      "durationMs": 1817
+    },
+    "focus-exit-off-line-2": {
+      "file": "clips/focus-exit-off-line-2.wav",
+      "durationMs": 1908
+    },
+    "focus-exit-off-line-3": {
+      "file": "clips/focus-exit-off-line-3.wav",
+      "durationMs": 2008
+    },
+    "focus-exit-off-line-4": {
+      "file": "clips/focus-exit-off-line-4.wav",
+      "durationMs": 2001
+    },
+    "focus-exit-off-line-5": {
+      "file": "clips/focus-exit-off-line-5.wav",
+      "durationMs": 2031
+    },
+    "focus-exit-off-line-6": {
+      "file": "clips/focus-exit-off-line-6.wav",
+      "durationMs": 1973
+    },
+    "focus-exit-off-line-7": {
+      "file": "clips/focus-exit-off-line-7.wav",
+      "durationMs": 2123
+    },
+    "focus-exit-off-line-8": {
+      "file": "clips/focus-exit-off-line-8.wav",
+      "durationMs": 1952
+    },
+    "focus-exit-off-line-9": {
+      "file": "clips/focus-exit-off-line-9.wav",
+      "durationMs": 2087
+    },
+    "focus-exit-off-line-10": {
+      "file": "clips/focus-exit-off-line-10.wav",
+      "durationMs": 1984
+    },
+    "focus-exit-1": {
+      "file": "clips/focus-exit-1.wav",
+      "durationMs": 1948
+    },
+    "focus-exit-2": {
+      "file": "clips/focus-exit-2.wav",
+      "durationMs": 1994
+    },
+    "focus-exit-3": {
+      "file": "clips/focus-exit-3.wav",
+      "durationMs": 2022
+    },
+    "focus-exit-4": {
+      "file": "clips/focus-exit-4.wav",
+      "durationMs": 2022
+    },
+    "focus-exit-5": {
+      "file": "clips/focus-exit-5.wav",
+      "durationMs": 2071
+    },
+    "focus-exit-6": {
+      "file": "clips/focus-exit-6.wav",
+      "durationMs": 2040
+    },
+    "focus-exit-7": {
+      "file": "clips/focus-exit-7.wav",
+      "durationMs": 2170
+    },
+    "focus-exit-8": {
+      "file": "clips/focus-exit-8.wav",
+      "durationMs": 1923
+    },
+    "focus-exit-9": {
+      "file": "clips/focus-exit-9.wav",
+      "durationMs": 2099
+    },
+    "focus-exit-10": {
+      "file": "clips/focus-exit-10.wav",
+      "durationMs": 2046
     },
     "speed-30": {
       "file": "clips/speed-30.wav",

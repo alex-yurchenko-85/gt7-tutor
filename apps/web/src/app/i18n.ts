@@ -2,12 +2,13 @@ import {
   ENGLISH,
   packCatalog,
   PSEUDO_LANG,
+  focusPhrase,
   focusText as packFocusText,
   phraseText as packPhraseText,
   pseudoPack,
   spokenText,
   translate,
-  type FindingKindName,
+  type FocusSummary,
   type LanguagePack,
   type MessageKey,
   type Params
@@ -87,8 +88,8 @@ export function clipText(clip: string): string {
   return spokenText(pack, clip);
 }
 
-export function focusText(kind: FindingKindName, turn: number): string {
-  return packFocusText(pack, kind, turn);
+export function focusText(focus: Pick<FocusSummary, 'turn' | 'part' | 'cause'>): string {
+  return packFocusText(pack, focusPhrase(focus.part, focus.cause), focus.turn);
 }
 
 export function cuePhrase(cue: { phraseClips: readonly string[] | null }): string | null {

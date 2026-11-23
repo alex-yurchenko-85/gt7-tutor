@@ -1,7 +1,7 @@
 import { HttpException, Inject, Injectable, Logger, type BeforeApplicationShutdown, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ENGLISH, type ArmResponse, type ArmTrainingRequest, type ConnectionState, type CueOutcome, type LiveMode } from '@gt7/contracts';
-import { ACTIVE_GUIDANCE, DEFAULT_CONFIG, makeCue, type CoachSettings, type Cue, type Finding } from '@gt7/core';
+import { ACTIVE_GUIDANCE, DEFAULT_CONFIG, focusFor, makeCue, type CoachSettings, type Cue, type FocusAttempt } from '@gt7/core';
 import type { Knex } from 'knex';
 import { CaptureService, type CaptureReservation } from '../captures/capture.service.js';
 import { httpError } from '../http-errors.js';
@@ -11,8 +11,8 @@ import { ownedExercise, type ReferenceRow } from '../ownership/owned.js';
 import { RaceRecorder } from '../races/race-recorder.service.js';
 import { ReferencesService } from '../references/references.service.js';
 import { KNEX } from '../storage/knex.provider.js';
-import { FOCUS_ATTEMPTS, focusOf, recentFindings } from '../attempts/attempt-focus.js';
-import { attemptFindings, storeAttempt, updateCueOutcome } from './attempt-store.js';
+import { AttemptsService } from '../attempts/attempts.service.js';
+import { attemptComparison, storeAttempt, updateCueOutcome } from './attempt-store.js';
 import { phraseDurations } from './phrase-durations.js';
 import { TrainingSession, type AttemptRecord, type CueRecord, type TrainingSnapshot } from './training-session.js';
 
@@ -50,6 +50,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
   private pendingArm: PendingArm | null = null;
   private stopping = false;
   private storing: Promise<void> = Promise.resolve();
+  private refreshing: Promise<void> = Promise.resolve();
   private lastSignature = '';
 
   constructor(
@@ -58,6 +59,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     private readonly references: ReferencesService,
     private readonly hub: LiveHub,
     private readonly races: RaceRecorder,
+    private readonly attempts: AttemptsService,
     config: ConfigService
   ) {
     this.phraseMs = phraseDurations(config.getOrThrow<string>('AUDIO_DIR'), ENGLISH.lang);
@@ -76,6 +78,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     await this.pendingArm?.done.catch(() => undefined);
     if (this.training) await this.disarm(this.training.userId);
     await this.storing;
+    await this.refreshing;
   }
 
   idle(): Promise<void> {
@@ -138,6 +141,7 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
       this.training = training;
       try {
         const capture = await this.captures.beginReserved({ userId, exerciseId, purpose: 'player' }, reservation);
+        this.refreshFocusWindow(snapshot);
         this.hub.changed();
         return { captureId: capture.id, exerciseId, referenceId: reference.id };
       } catch (error) {
@@ -177,6 +181,15 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     const uses = [this.training?.session.snapshot, this.pendingArm].some(use => use?.userId === userId && use.referenceId === referenceId);
     if (uses) throw httpError(409, 'reference-in-training');
     await this.storing;
+    await this.refreshing;
+  }
+
+  private refreshFocusWindow(snapshot: TrainingSnapshot): void {
+    const scope = { exerciseId: snapshot.exerciseId, referenceId: snapshot.referenceId };
+    this.refreshing = this.refreshing
+      .then(() => this.attempts.recentComparisons(scope, DEFAULT_CONFIG.focus.attempts - 1))
+      .then(() => undefined)
+      .catch((error: unknown) => this.logger.warn(`Focus attempts not calculated again: ${error instanceof Error ? error.message : String(error)}`));
   }
 
   profileState(userId: string): ProfileState {
@@ -245,12 +258,12 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
     this.trimEndedCues();
     this.storing = this.storing
       .then(async () => {
-        const findings = attemptFindings(snapshot, record, DEFAULT_CONFIG);
-        const focus = await this.focusCue(snapshot, record, findings);
+        const comparison = attemptComparison(snapshot, record, DEFAULT_CONFIG);
+        const focus = await this.focusCue(snapshot, record, comparison);
         if (focus) ended.push({ userId: snapshot.userId, record: focus, attemptId: null });
         if (focus?.cueId) this.endedCues.set(focus.cueId, ended.at(-1)!);
         const cues = focus ? [...record.cues, focus] : record.cues;
-        const stored = await storeAttempt(this.db, snapshot, captureId, { ...record, cues }, findings, DEFAULT_CONFIG);
+        const stored = await storeAttempt(this.db, snapshot, captureId, { ...record, cues }, comparison);
         for (const entry of ended) entry.attemptId = stored.id;
         for (const [cue, outcome] of stored.storedOutcomes) {
           if (cue.cueId !== null && cue.outcome !== outcome) await updateCueOutcome(this.db, stored.id, cue);
@@ -261,11 +274,12 @@ export class TrainingService implements OnModuleInit, BeforeApplicationShutdown 
       .catch((error: unknown) => this.logger.error(`Attempt not stored: ${error instanceof Error ? error.message : String(error)}`));
   }
 
-  private async focusCue(snapshot: TrainingSnapshot, record: AttemptRecord, findings: Finding[]): Promise<CueRecord | null> {
+  private async focusCue(snapshot: TrainingSnapshot, record: AttemptRecord, comparison: FocusAttempt): Promise<CueRecord | null> {
     if (record.completion !== 'complete') return null;
     const scope = { exerciseId: snapshot.exerciseId, referenceId: snapshot.referenceId };
-    const previous = await recentFindings(this.db, scope, FOCUS_ATTEMPTS - 1);
-    const focus = focusOf([findings, ...previous], snapshot.analysis.corners);
+    await this.refreshing;
+    const previous = await this.attempts.recentComparisons(scope, DEFAULT_CONFIG.focus.attempts - 1);
+    const focus = focusFor([comparison, ...previous], DEFAULT_CONFIG);
     if (!focus?.clip) return null;
     return this.speakFocus(snapshot.userId, record, focus.clip);
   }

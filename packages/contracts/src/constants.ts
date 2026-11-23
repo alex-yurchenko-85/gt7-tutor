@@ -1,6 +1,7 @@
 export const CUE_OFFSET_MIN_MS = -500;
 export const CUE_OFFSET_MAX_MS = 1000;
 export const CUE_OFFSET_STEP_MS = 100;
+export const TARGET_MAX_MS = 3_600_000;
 export const WIDE_APEX_M = 2;
 export const RECURRING_MIN_ATTEMPTS = 3;
 export const RECURRING_DEFAULT_LAST = 8;

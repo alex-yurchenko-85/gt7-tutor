@@ -6,6 +6,7 @@ import { useTrainingGate } from '../../app/use-training.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { useSession } from '../../app/session.tsx';
 import { megabytes } from './StorageSection.tsx';
+import { exerciseTitle } from '../exercise/use-exercise-where.ts';
 import { t } from '../../app/i18n.ts';
 import { Rich } from '../../app/rich-text.tsx';
 
@@ -18,7 +19,7 @@ function scopeTexts(exercises: Exercise[], chosen: Exercise | null, races: numbe
   const references = exercises.reduce((total, exercise) => total + exercise.referenceCount, 0);
   const withAttempts = exercises.filter(exercise => exercise.attemptCount > 0).length;
   const chosenAttempts = chosen?.attemptCount ?? 0;
-  const chosenName = chosen?.name ?? t('setup.history.the-exercise');
+  const chosenName = chosen ? exerciseTitle(chosen).title : t('setup.history.the-exercise');
   return {
     exercise: {
       title: t('setup.history.exercise.title'),
@@ -144,7 +145,7 @@ export function DeleteHistoryView() {
             <select value={chosen?.id ?? ''} onChange={event => setExerciseId(event.target.value)}>
               {list.map(exercise => (
                 <option key={exercise.id} value={exercise.id}>
-                  {t('setup.history.exercise-option', { name: exercise.name, attempts: t('common.count.attempt', { count: exercise.attemptCount }) })}
+                  {t('setup.history.exercise-option', { name: exerciseTitle(exercise).title, attempts: t('common.count.attempt', { count: exercise.attemptCount }) })}
                 </option>
               ))}
             </select>

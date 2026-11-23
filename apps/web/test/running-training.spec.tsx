@@ -1,11 +1,11 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { EXERCISE_ID, exercise, exerciseApi, rememberExercise } from './fixtures.ts';
+import { EXERCISE_ID, exerciseApi, rememberExercise } from './fixtures.ts';
 import { attemptSummary, ATTEMPT_ID, REVIEW_PATH } from './review-fixtures.ts';
 import { renderApp, sendLiveState, setViewportWidth, findEl, maybeElWith, findElWith, elWith } from './support.tsx';
 
-const NAME = exercise().name;
+const NAME = 'Yangwang, EXP-1';
 
 function trainingApi() {
   rememberExercise();

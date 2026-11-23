@@ -18,7 +18,7 @@ const DRIVE_PATH = `/exercises/${EXERCISE_ID}/drive`;
 
 function driveDemoApi(): ApiStub {
   rememberExercise();
-  return withDemo(exerciseApi(exercise({ step: 3 })))
+  return withDemo(exerciseApi(exercise()))
     .on('POST /api/demo/attempt', { status: 201, body: { fixture: 'ce-clean' } })
     .on('POST /api/training/arm', { status: 201, body: ARMED })
     .install();
@@ -114,7 +114,7 @@ describe('demo mode', () => {
   it('drive_outside_demo_mode_has_no_demo_attempt', async () => {
     setViewportWidth(390);
     rememberExercise();
-    const api = withDemo(exerciseApi(exercise({ step: 3 })), { demo: null, consoleRequired: true })
+    const api = withDemo(exerciseApi(exercise()), { demo: null, consoleRequired: true })
       .on('POST /api/training/arm', { status: 201, body: ARMED })
       .install();
     const view = renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });

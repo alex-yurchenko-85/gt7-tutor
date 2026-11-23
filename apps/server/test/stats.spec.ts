@@ -4,10 +4,10 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readSamples } from '@gt7/capture';
 import type { Sample } from '@gt7/contracts';
-import { DEFAULT_CONFIG, analyseReference, buildReview, findDifferences, turnLosses, turnOf, type Review } from '@gt7/core';
+import { COMPARISON_VERSION, DEFAULT_CONFIG, analyseReference, buildReview, findDifferences, focusFor, reviewLosses, turnLosses, turnOf, type Review } from '@gt7/core';
 import { KNEX } from '../src/storage/knex.provider.js';
 import { ReferencesService } from '../src/references/references.service.js';
-import { DEMONSTRATION, INTERLAGOS, INTERLAGOS_TARGETS, TestApi, createReplayApp, insertAttempt, type Range, type StoredAttempt } from './support/api.js';
+import { DEMONSTRATION, INTERLAGOS, INTERLAGOS_TARGET_MS, TestApi, createReplayApp, insertAttempt, type Range, type StoredAttempt } from './support/api.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
 import type { FixtureReplays } from './support/replay-sources.js';
 import { fixturePath } from '../../../tools/testing/fixture-path.js';
@@ -53,7 +53,7 @@ describe('attempts, review and statistics', () => {
 
   async function interlagos(): Promise<string> {
     const id = await api.exercise({ catalogueId: INTERLAGOS });
-    await db('exercises').where({ id }).update({ targets: JSON.stringify(INTERLAGOS_TARGETS) });
+    await db('exercises').where({ id }).update({ target_ms: INTERLAGOS_TARGET_MS });
     return id;
   }
 
@@ -132,6 +132,73 @@ describe('attempts, review and statistics', () => {
     expect(stored).toHaveLength(again.body.findings.length);
   });
 
+  it.each([
+    ['one attempt', (id: string) => `/api/attempts/${id}`],
+    ['recurring differences', () => `/api/exercises/${exerciseId}/recurring`],
+    ['review', (id: string) => `/api/attempts/${id}/review`]
+  ] as [string, (id: string) => string][])('stale_comparison_is_calculated_again_before_use_in_%s', async (_, path) => {
+    const id = await attempt();
+    const fresh = (await http().get(`/api/attempts/${id}/review`).set('Cookie', cookie).expect(200)).body.findings.length;
+    await db('attempt_comparisons').where({ attempt_id: id, reference_id: referenceId }).update({ version: COMPARISON_VERSION - 1 });
+    await db('attempt_findings').insert({ attempt_id: id, reference_id: referenceId, kind: 'wide-apex', event_key: 'corner-2', s_m: 110, size: 3.3, unit: 'm' });
+    await http().get(path(id)).set('Cookie', cookie).expect(200);
+    const stored = await db('attempt_findings').where({ attempt_id: id, reference_id: referenceId });
+    expect(stored.map(row => row.event_key)).not.toContain('corner-2');
+    expect(stored).toHaveLength(fresh);
+    expect(await db('attempt_comparisons').where({ attempt_id: id, reference_id: referenceId }).first()).toMatchObject({ version: COMPARISON_VERSION });
+  });
+
+  it('attempt_list_does_not_calculate_stale_comparisons', async () => {
+    const id = await attempt();
+    await http().get(`/api/attempts/${id}/review`).set('Cookie', cookie).expect(200);
+    await db('attempt_comparisons').where({ attempt_id: id }).update({ version: COMPARISON_VERSION - 1 });
+    const samplesOf = vi.spyOn(app.get(ReferencesService), 'samplesOf');
+    await http().get(`/api/exercises/${exerciseId}/attempts`).set('Cookie', cookie).expect(200);
+    expect(samplesOf).not.toHaveBeenCalled();
+    expect(await db('attempt_comparisons').where({ attempt_id: id }).first()).toMatchObject({ version: COMPARISON_VERSION - 1 });
+  });
+
+  it('one_attempt_calculates_only_the_attempts_of_its_focus_window', async () => {
+    const base = Date.now() - 3600000;
+    const ids: string[] = [];
+    for (let index = 0; index < 7; index++) ids.push(await attempt({ startedAt: new Date(base + index * 60000) }));
+    const aborted = await attempt({ completion: 'aborted', startedAt: new Date(base + 7 * 60000) });
+    const later = await attempt({ startedAt: new Date(base + 8 * 60000) });
+    const samplesOf = vi.spyOn(app.get(ReferencesService), 'samplesOf');
+    const attemptReads = () => samplesOf.mock.calls.filter(([capture]) => capture.id === playerCapture).length;
+    await http().get(`/api/attempts/${ids[5]}`).set('Cookie', cookie).expect(200);
+    expect(attemptReads()).toBe(5);
+    const versions = async () => new Map((await db('attempt_comparisons').select('attempt_id', 'version')).map(row => [row.attempt_id as string, row.version as number]));
+    expect([...(await versions()).keys()].sort()).toEqual(ids.slice(1, 6).sort());
+    await http().get(`/api/attempts/${aborted}`).set('Cookie', cookie).expect(200);
+    expect([...(await versions()).keys()]).toContain(aborted);
+    expect([...(await versions()).keys()]).not.toContain(later);
+  });
+
+  it('stale_comparison_that_cannot_be_calculated_keeps_its_stored_differences', async () => {
+    const id = await attempt();
+    await http().get(`/api/attempts/${id}/review`).set('Cookie', cookie).expect(200);
+    const before = await http().get(`/api/attempts/${id}`).set('Cookie', cookie).expect(200);
+    await db('attempt_comparisons').where({ attempt_id: id }).update({ version: COMPARISON_VERSION - 1 });
+    const service = app.get(ReferencesService);
+    const read = service.samplesOf.bind(service);
+    vi.spyOn(service, 'samplesOf').mockImplementation((capture, range) => (capture.id === playerCapture ? Promise.reject(new Error('raw file missing')) : read(capture, range)));
+    const after = await http().get(`/api/attempts/${id}`).set('Cookie', cookie).expect(200);
+    expect(before.body.largestDifference).not.toBeNull();
+    expect(after.body.largestDifference).toEqual(before.body.largestDifference);
+    expect(await db('attempt_comparisons').where({ attempt_id: id }).first()).toMatchObject({ version: COMPARISON_VERSION - 1 });
+  });
+
+  it('stale_comparison_is_not_used_in_the_attempt_list', async () => {
+    const id = await attempt();
+    await http().get(`/api/attempts/${id}/review`).set('Cookie', cookie).expect(200);
+    await db('attempt_comparisons').where({ attempt_id: id }).update({ version: COMPARISON_VERSION - 1 });
+    await db('attempt_findings').insert({ attempt_id: id, reference_id: referenceId, kind: 'off-line', event_key: null, s_m: 600, size: 40, unit: 'm' });
+    const list = await http().get(`/api/exercises/${exerciseId}/attempts`).set('Cookie', cookie).expect(200);
+    const summary = list.body.days.flatMap((day: { attempts: { id: string }[] }) => day.attempts).find((item: { id: string }) => item.id === id);
+    expect(summary.largestDifference?.size).not.toBe(40);
+  });
+
   it('clean_attempt_is_compared_only_once', async () => {
     const id = await insertAttempt(db, { exerciseId, captureId: demoCapture, referenceId, range: DEMONSTRATION, gameMs: 16082 });
     const samplesOf = vi.spyOn(app.get(ReferencesService), 'samplesOf');
@@ -152,7 +219,7 @@ describe('attempts, review and statistics', () => {
     expect(response.body).toMatchObject(JSON.parse(JSON.stringify({ ...comparable, referenceId })));
     expect(response.body.corners.map((corner: { apexSM: number }) => corner.apexSM)).toEqual(corners.map(corner => corner.apexSM));
     expect(response.body.findings).toEqual(differencesOf(expected));
-    expect(response.body.turnLosses).toEqual(turnLosses(corners, expected.lengthM, expected.gridM, expected.attempt.t, expected.reference.t));
+    expect(response.body.turnLosses).toEqual(turnLosses(corners, expected.lengthM, expected.gridM, expected.attempt.t, expected.reference.t).map(({ turn, fromSM, toSM, lostMs }) => ({ turn, fromSM, toSM, lostMs })));
     expect(response.body.cues).toEqual([]);
     expect(response.body.referenceTimeMs).toBe(16082);
     const stored = await db('attempt_findings').where({ attempt_id: attemptId, reference_id: referenceId });
@@ -215,18 +282,18 @@ describe('attempts, review and statistics', () => {
     const create = async (body: object) => (await http().post('/api/exercises').set('Cookie', cookie).send(body).expect(201)).body.id as string;
     await create({ catalogueId: 'licence-b-1' });
     await create({ family: 'Time Trial', name: 'Tsukuba lap' });
-    const ready = await interlagos();
-    await reference(demoCapture, DEMONSTRATION, ready);
-    const gold = await interlagos();
-    const goldReference = await reference(demoCapture, DEMONSTRATION, gold);
-    await attempt({ exercise: gold, reference: goldReference, gameMs: 16300 });
+    const practising = await interlagos();
+    await reference(demoCapture, DEMONSTRATION, practising);
+    const reached = await interlagos();
+    const reachedReference = await reference(demoCapture, DEMONSTRATION, reached);
+    await attempt({ exercise: reached, reference: reachedReference, gameMs: 16400 });
     const progress = await http().get('/api/progress').set('Cookie', cookie).expect(200);
     const counts = (family: string, collection: string) =>
       progress.body.collections.find((item: { family: string; collection: string }) => item.family === family && item.collection === collection)?.counts;
-    expect(counts('Circuit Experience', 'Americas')).toEqual({ new: 0, ready: 1, practising: 0, bronze: 1, silver: 0, gold: 1 });
-    expect(counts('Licence', 'National B')).toEqual({ new: 1, ready: 0, practising: 0, bronze: 0, silver: 0, gold: 0 });
-    expect(counts('Time Trial', 'Own exercises')).toEqual({ new: 1, ready: 0, practising: 0, bronze: 0, silver: 0, gold: 0 });
-    expect(progress.body.exercises.find((item: { id: string }) => item.id === exerciseId)).toMatchObject({ status: 'bronze', bestMs: 17071 });
+    expect(counts('Circuit Experience', 'Americas')).toEqual({ new: 0, practising: 2, 'target-reached': 1 });
+    expect(counts('Licence', 'National B')).toEqual({ new: 1, practising: 0, 'target-reached': 0 });
+    expect(counts('Time Trial', 'Own exercises')).toEqual({ new: 1, practising: 0, 'target-reached': 0 });
+    expect(progress.body.exercises.find((item: { id: string }) => item.id === exerciseId)).toMatchObject({ status: 'practising', bestMs: 17071 });
   });
 
   it('best_by_day_groups_local_dates', async () => {
@@ -263,8 +330,15 @@ describe('attempts, review and statistics', () => {
         apexSpeedMps: expect.any(Number),
         zoneFromSM: expect.any(Number),
         zoneToSM: expect.any(Number),
+        brakeToSM: expect.any(Number),
+        brakeAtTurnIn: expect.any(Number),
+        lowSpeedSM: expect.any(Number),
+        lowSpeedMps: expect.any(Number),
+        lowSpeedAtApex: true,
         outsideM: expect.any(Number),
-        speedMps: expect.any(Number)
+        speedMps: expect.any(Number),
+        attemptLowSM: expect.any(Number),
+        attemptLowMps: expect.any(Number)
       });
     }
     const wide = response.body.findings.filter((finding: { kind: string }) => finding.kind === 'wide-apex');
@@ -287,9 +361,9 @@ describe('attempts, review and statistics', () => {
     }
     expect(turnLosses).toHaveLength(corners.length);
     turnLosses.forEach((loss: { fromSM: number; toSM: number }, index: number) => {
-      expect(loss.fromSM).toBe(corners[index].zoneFromSM);
-      expect(loss.toSM).toBe(corners[index].zoneToSM);
+      expect(loss.fromSM).toBe(index === 0 ? 0 : turnLosses[index - 1].toSM);
     });
+    expect(turnLosses.at(-1).toSM).toBe(response.body.lengthM);
     expect(turnLosses.map((loss: { turn: number }) => loss.turn)).toEqual(corners.map((corner: { number: number }) => corner.number));
     expect(turnLosses.some((loss: { lostMs: number | null }) => typeof loss.lostMs === 'number')).toBe(true);
   });
@@ -315,10 +389,42 @@ describe('attempts, review and statistics', () => {
     const attemptId = await attempt();
     await http().get(`/api/attempts/${attemptId}/review`).set('Cookie', cookie).expect(200);
     const summary = await http().get(`/api/attempts/${attemptId}`).set('Cookie', cookie).expect(200);
-    expect(summary.body.focus).toEqual({ kind: 'brake-early', turn: 1, clip: 'focus-brake-early-1' });
+    expect(summary.body.focus).toEqual({ turn: 1, part: 'exit', cause: 'off-line', clip: 'focus-exit-off-line-1' });
     const aborted = await attempt({ completion: 'aborted' });
     await http().get(`/api/attempts/${aborted}/review`).set('Cookie', cookie).expect(200);
     expect((await http().get(`/api/attempts/${aborted}`).set('Cookie', cookie).expect(200)).body.focus).toBeNull();
+  });
+
+  it('stored_comparison_of_an_older_version_gives_the_focus_of_the_time_lost', async () => {
+    const id = await attempt();
+    await http().get(`/api/attempts/${id}/review`).set('Cookie', cookie).expect(200);
+    await db('attempt_comparisons').where({ attempt_id: id }).update({ version: COMPARISON_VERSION - 1, turn_losses: JSON.stringify([]) });
+    await db('attempt_findings').where({ attempt_id: id }).delete();
+    await db('attempt_findings').insert({ attempt_id: id, reference_id: referenceId, kind: 'wide-apex', event_key: 'corner-1', s_m: 110, size: 9, unit: 'm' });
+    const analysis = analyseReference(await fixtureSamples('demo-a', DEMONSTRATION), DEFAULT_CONFIG);
+    const review = buildReview(await fixtureSamples('ce-clean', CLEAN_RUN), analysis, DEFAULT_CONFIG);
+    const losses = reviewLosses(review);
+    const expected = focusFor([{ findings: findDifferences(review, DEFAULT_CONFIG), losses }], DEFAULT_CONFIG);
+    expect(expected).not.toBeNull();
+    const summary = await http().get(`/api/attempts/${id}`).set('Cookie', cookie).expect(200);
+    expect(summary.body.focus).toEqual(expected);
+    const stored = await db('attempt_comparisons').where({ attempt_id: id, reference_id: referenceId }).first();
+    expect(stored).toMatchObject({ version: COMPARISON_VERSION, turn_losses: JSON.parse(JSON.stringify(losses)) });
+  });
+
+  it('attempt_list_and_one_attempt_give_the_same_focus', async () => {
+    const base = Date.now() - 3600000;
+    const ids = [];
+    for (let index = 0; index < 3; index++) ids.push(await attempt({ startedAt: new Date(base + index * 60000) }));
+    const ones = new Map<string, request.Response>();
+    for (const id of ids) ones.set(id, await http().get(`/api/attempts/${id}`).set('Cookie', cookie).expect(200));
+    const list = await http().get(`/api/exercises/${exerciseId}/attempts`).set('Cookie', cookie).expect(200);
+    const summaries = list.body.days.flatMap((day: { attempts: { id: string; focus: object | null }[] }) => day.attempts);
+    for (const id of ids) {
+      const one = ones.get(id)!;
+      expect(summaries.find((item: { id: string }) => item.id === id).focus).toEqual(one.body.focus);
+      expect(one.body.focus).toMatchObject({ turn: 1 });
+    }
   });
 
   it('other_profile_gets_404', async () => {

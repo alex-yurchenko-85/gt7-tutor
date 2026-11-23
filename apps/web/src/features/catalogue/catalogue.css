@@ -126,11 +126,6 @@
   font-size: 14px;
 }
 
-.entry-targets {
-  font-size: 14px;
-  color: var(--mute);
-}
-
 .entry-action {
   width: 180px;
 }
@@ -210,15 +205,14 @@
     border: 0;
   }
 
-  .catalogue-list td:nth-child(2),
-  .catalogue-list td:nth-child(3) {
+  .catalogue-list td:nth-child(2) {
     grid-column: 1;
     font-size: 14px;
   }
 
   .catalogue-list td.entry-action {
     grid-column: 2;
-    grid-row: 1 / span 3;
+    grid-row: 1 / span 2;
     width: auto;
     align-self: center;
   }

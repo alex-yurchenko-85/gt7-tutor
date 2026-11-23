@@ -159,7 +159,7 @@ export function raceCompare(overrides: Partial<RaceCompare> = {}): RaceCompare {
       { turn: 3, fromSM: 18, toSM: 20, lostMs: -460 }
     ],
     corners: [
-      { number: 1, turnInSM: 8, apexSM: 12, radiusM: 40, apexSpeedMps: 25, zoneFromSM: 8, zoneToSM: 15, outsideM: null, speedMps: 24 }
+      { number: 1, turnInSM: 8, apexSM: 12, radiusM: 40, apexSpeedMps: 25, zoneFromSM: 8, zoneToSM: 15, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false, outsideM: null, speedMps: 24, attemptLowSM: null, attemptLowMps: null }
     ],
     ...overrides
   };

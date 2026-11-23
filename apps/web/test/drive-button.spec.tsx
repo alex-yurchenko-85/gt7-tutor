@@ -10,12 +10,12 @@ import { liveState, openLive, playerRig, renderApp, setViewportWidth, type ApiSt
 const ATTEMPTS_PATH = `/exercises/${EXERCISE_ID}/attempts`;
 const DRIVE_PATH = `/exercises/${EXERCISE_ID}/drive`;
 const ARMED = { captureId: 'cap-9', exerciseId: EXERCISE_ID, referenceId: 'ref-demo' };
-const OTHER = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1' });
+const OTHER = exercise({ id: 'e0000000-0000-4000-8000-000000000002', family: 'Licence', name: 'Cornering Basics 1', collection: 'National B', code: 'B-3' });
 const DEMO: AppInfo = { demo: { profileName: 'demo', password: 'demodemo', ready: true }, consoleRequired: false };
 
 function startApi(): ApiStub {
   rememberExercise();
-  return exerciseApi(exercise({ step: 3, completeAttempts: 2, bestMs: 26800 }))
+  return exerciseApi(exercise({ completeAttempts: 2, bestMs: 26800 }))
     .on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST)
     .on('POST /api/training/arm', { status: 201, body: ARMED })
     .on('POST /api/training/disarm', { status: 201, body: { ok: true } });
@@ -130,7 +130,7 @@ describe('drive button', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Drive' }));
     const dialog = await screen.findByRole('alertdialog');
-    await waitFor(() => expect(within(dialog).getByRole('heading', { level: 2 })).toHaveTextContent(/^The training of Cornering Basics 1 is on\.$/));
+    await waitFor(() => expect(within(dialog).getByRole('heading', { level: 2 })).toHaveTextContent(/^The training of National B, B-3 is on\.$/));
     expect(dialog).toHaveTextContent('Stop it and start this exercise?');
     expect(within(dialog).getAllByRole('button').map(button => button.textContent)).toEqual(['Cancel', 'Stop and start']);
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
@@ -218,7 +218,7 @@ describe('drive on attempts', () => {
   });
 
   it('no_reference_shows_record_in_place_of_drive', async () => {
-    exerciseApi(exercise({ activeReferenceId: null, step: 1 })).install();
+    exerciseApi(exercise({ activeReferenceId: null })).install();
     renderApp({ path: ATTEMPTS_PATH });
     expect(await screen.findByText('Record the reference first.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Record' })).toHaveAttribute('href', `/exercises/${EXERCISE_ID}/record`);

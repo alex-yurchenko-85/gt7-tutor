@@ -1,4 +1,4 @@
-import { findingKindSchema, MAX_SPOKEN_TURN, spokenText, type FindingKindName, type LanguagePack, type WordedCueKind } from '@gt7/contracts';
+import { FOCUS_PHRASES, MAX_SPOKEN_TURN, spokenText, type FocusPhrase, type LanguagePack, type WordedCueKind } from '@gt7/contracts';
 import { DEFAULT_CONFIG } from './config.ts';
 import type { Corner } from './corners.ts';
 import type { ReferenceCueEvent } from './cue-events.ts';
@@ -29,8 +29,6 @@ const CLIP_KINDS: readonly ClipKind[] = [
   'voice-check'
 ];
 
-const FOCUS_KINDS: readonly FindingKindName[] = findingKindSchema.options;
-
 export function isSupportedTarget(kph: number): boolean {
   return SUPPORTED_TARGETS_KPH.includes(kph);
 }
@@ -52,16 +50,16 @@ function assertTurn(turn: number): void {
   if (!Number.isInteger(turn) || turn < 1) throw new RangeError(`${turn} is not a turn number`);
 }
 
-export function focusClipKey(kind: FindingKindName, turn: number): string | null {
+export function focusClipKey(phrase: FocusPhrase, turn: number): string | null {
   assertTurn(turn);
-  return turn <= MAX_SPOKEN_TURN ? `focus-${kind}-${turn}` : null;
+  return turn <= MAX_SPOKEN_TURN ? `focus-${phrase}-${turn}` : null;
 }
 
 const SPOKEN_TURNS = Array.from({ length: MAX_SPOKEN_TURN }, (_, index) => index + 1);
 
 export function allClipKeys(): string[] {
   const fixed = CLIP_KINDS.map(clipKey);
-  const focus = FOCUS_KINDS.flatMap(kind => SPOKEN_TURNS.map(turn => focusClipKey(kind, turn)!));
+  const focus = FOCUS_PHRASES.flatMap(phrase => SPOKEN_TURNS.map(turn => focusClipKey(phrase, turn)!));
   const speeds = SUPPORTED_TARGETS_KPH.map(speedClipKey);
   return [...fixed, ...focus, ...speeds];
 }
@@ -81,7 +79,7 @@ export function clipsOf(events: ReferenceCueEvent[], corners: Corner[]): string[
   const actions = events.flatMap(event => [clipKey(event.voice), targetClip(event)].filter(clip => clip !== null));
   const bigStop = events.some(event => event.bigStop) ? [clipKey('big-stop')] : [];
   const tighter = corners.length > 0 ? [clipKey('tighter')] : [];
-  const focus = FOCUS_KINDS.flatMap(kind => corners.map(corner => focusClipKey(kind, corner.number)).filter(clip => clip !== null));
+  const focus = FOCUS_PHRASES.flatMap(phrase => corners.map(corner => focusClipKey(phrase, corner.number)).filter(clip => clip !== null));
   return [...new Set([...actions, ...bigStop, ...tighter, ...ALWAYS_LOADED.map(clipKey), ...focus])];
 }
 

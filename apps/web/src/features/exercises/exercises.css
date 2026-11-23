@@ -22,10 +22,7 @@
   font: 700 34px/1.05 var(--font-display);
   margin: 4px 0 10px;
   overflow-wrap: anywhere;
-}
-
-.continue-next {
-  font-size: 17px;
+  text-wrap: balance;
 }
 
 .continue-times {
@@ -172,6 +169,7 @@
   font-size: 17px;
   font-weight: 600;
   overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .exercise-row-name span {
@@ -183,18 +181,12 @@
   font: 700 20px/1 var(--font-display);
 }
 
-.exercise-row .tag.status-practising {
-  background: var(--soft);
-}
-
 .exercise-row .tag.status-new {
   border-style: dashed;
   color: var(--mute);
 }
 
-.exercise-row .tag.status-bronze,
-.exercise-row .tag.status-silver,
-.exercise-row .tag.status-gold {
+.exercise-row .tag.status-target-reached {
   background: var(--yellow);
   color: #14181f;
   border-color: #14181f;

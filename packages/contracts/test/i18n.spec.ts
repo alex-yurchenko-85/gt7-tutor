@@ -135,7 +135,7 @@ describe('i18n', () => {
 
   it('english_voice_source_is_valid', () => {
     expect(validatePack(ENGLISH_SOURCE.voice, ENGLISH.voice, 'en')).toEqual([]);
-    expect(Object.keys(ENGLISH.voice)).toHaveLength(97);
+    expect(Object.keys(ENGLISH.voice)).toHaveLength(103);
     expect(ENGLISH.voice['voice.speed-85']).toBe('eighty five');
   });
 });

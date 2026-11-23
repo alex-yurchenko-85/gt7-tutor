@@ -12,11 +12,13 @@ const ENTRIES = [
     track: 'Tsukuba Circuit',
     car: "Mazda Demio XD Touring '15",
     collection: 'National B',
-    targets: { goldMs: 20800, silverMs: 21400, bronzeMs: 22800 }
+    targetMs: 20800
   }),
   catalogueEntry({ id: 'licence-b-3', code: 'B-3', name: 'Cornering Basics 1', track: 'Alsace - Village', collection: 'National B' }),
-  catalogueEntry({ id: 'ce-tsukuba-1', family: 'Circuit Experience', collection: 'Japan', name: 'Tsukuba Circuit Sector 1', track: 'Tsukuba Circuit' }),
-  catalogueEntry({ id: 'brand-yangwang-racing-lines', family: 'Brand Central', collection: 'Yangwang', code: 'EXP-1', name: 'Racing Lines', exerciseId: EXERCISE_ID, status: 'ready' })
+  catalogueEntry({ id: 'ce-tsukuba-circuit-s1', family: 'Circuit Experience', collection: 'Asia/Oceania', code: 'Sector 1', name: 'Tsukuba Circuit · Sector 1', track: 'Tsukuba Circuit' }),
+  catalogueEntry({ id: 'licence-a-1', code: 'A-1', name: 'Racing Line: Beginner 1', track: 'Tsukuba Circuit', collection: 'National A' }),
+  catalogueEntry({ id: 'licence-s-3', code: 'S-3', name: 'One Lap Time Attack', track: 'Tsukuba Circuit', collection: 'Super' }),
+  catalogueEntry({ id: 'brand-yangwang-racing-lines', family: 'Brand Central', collection: 'Yangwang', code: 'EXP-1', name: 'Racing Lines', exerciseId: EXERCISE_ID, status: 'practising' })
 ];
 
 function catalogueApi(): ApiStub {
@@ -53,13 +55,13 @@ describe('add exercise', () => {
     renderApp({ path: '/exercises/add' });
     const user = userEvent.setup();
     await findEl('.catalogue-list table');
-    expect(listed()).toHaveLength(4);
+    expect(listed()).toHaveLength(6);
     await user.click(screen.getByRole('button', { name: /^Licence/ }));
-    expect(listed()).toEqual(['licence-b-1', 'licence-b-3']);
+    expect(listed()).toEqual(['licence-b-1', 'licence-b-3', 'licence-a-1', 'licence-s-3']);
     await user.type(el('input[type="search"]'), 'tsukuba');
-    expect(listed()).toEqual(['licence-b-1']);
+    expect(listed()).toEqual(['licence-b-1', 'licence-a-1', 'licence-s-3']);
     await user.click(screen.getByRole('button', { name: /^All/ }));
-    expect(listed()).toEqual(['licence-b-1', 'ce-tsukuba-1']);
+    expect(listed()).toEqual(['licence-b-1', 'ce-tsukuba-circuit-s1', 'licence-a-1', 'licence-s-3']);
   });
 
   it('an_empty_search_says_to_clear_the_filters', async () => {
@@ -79,19 +81,35 @@ describe('add exercise', () => {
     expect(row('licence-b-3')).toHaveTextContent('Cornering Basics 1');
   });
 
-  it('rows_show_track_car_and_targets', async () => {
+  it('rows_show_the_heading_the_track_and_the_car', async () => {
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     await findEl('.catalogue-list table');
+    expect(within(el('.catalogue-list table')).getAllByRole('columnheader').map(header => header.textContent)).toEqual(['Exercise', 'Track and car', '']);
     const first = row('licence-b-1');
-    expect(first).toHaveTextContent('Licence · National B B-1');
+    expect(first.querySelector('.entry-name')).toHaveTextContent(/^National B, B-1$/);
+    expect(first.querySelector('.entry-where')).toHaveTextContent(/^Starting & Stopping 1$/);
     expect(first).toHaveTextContent("Mazda Demio XD Touring '15");
-    expect(first).toHaveTextContent('Gold 20.800 · Silver 21.400 · Bronze 22.800');
-    expect(row('ce-tsukuba-1')).toHaveTextContent('Not listed');
+    expect(first).not.toHaveTextContent('20.800');
+    const sector = row('ce-tsukuba-circuit-s1');
+    expect(sector.querySelector('.entry-name')).toHaveTextContent(/^Sector 1$/);
+    expect(sector.querySelector('.entry-where')).toBeNull();
+    expect(sector).not.toHaveTextContent('Asia/Oceania');
+    expect(sector).not.toHaveTextContent('Not listed');
+    expect(row('brand-yangwang-racing-lines').querySelector('.entry-name')).toHaveTextContent(/^Yangwang, EXP-1$/);
+  });
+
+  it('collections_follow_the_catalogue_order', async () => {
+    catalogueApi();
+    renderApp({ path: '/exercises/add' });
+    await findEl('.catalogue-list table');
+    const [collections, tracks] = [...document.querySelectorAll<HTMLSelectElement>('.catalogue-selects select')];
+    expect([...collections!.options].map(option => option.textContent)).toEqual(['All collections', 'National B', 'Asia/Oceania', 'National A', 'Super', 'Yangwang']);
+    expect([...tracks!.options].map(option => option.textContent)).toEqual(['All tracks', 'Alsace - Village', 'Tsukuba Circuit']);
   });
 
   it('added_exercise_becomes_the_current_one', async () => {
-    const added = exercise({ id: 'e0000000-0000-4000-8000-000000000009', name: 'Cornering Basics 1', activeReferenceId: null, step: 1 });
+    const added = exercise({ id: 'e0000000-0000-4000-8000-000000000009', name: 'Cornering Basics 1', activeReferenceId: null });
     let created = false;
     catalogueApi()
       .on('GET /api/exercises', () => (created ? [added] : []))
@@ -110,7 +128,7 @@ describe('add exercise', () => {
   it('add_navigates_to_exercise_page', async () => {
     const api = catalogueApi()
       .on('POST /api/exercises', { status: 201, body: exercise({ id: 'e0000000-0000-4000-8000-000000000009', name: 'Cornering Basics 1' }) })
-      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000009', exercise({ id: 'e0000000-0000-4000-8000-000000000009', name: 'Cornering Basics 1', activeReferenceId: null, step: 1 }));
+      .on('GET /api/exercises/e0000000-0000-4000-8000-000000000009', exercise({ id: 'e0000000-0000-4000-8000-000000000009', name: 'Cornering Basics 1', activeReferenceId: null }));
     renderApp({ path: '/exercises/add' });
     await findEl('.catalogue-list table');
     await userEvent.setup().click(within(row('licence-b-3')).getByRole('button', { name: 'Add' }));
@@ -123,7 +141,7 @@ describe('add exercise', () => {
     catalogueApi();
     renderApp({ path: '/exercises/add' });
     await findEl('.catalogue-list table');
-    const open = within(row('brand-yangwang-racing-lines')).getByRole('link', { name: 'Added · open' });
+    const open = within(row('brand-yangwang-racing-lines')).getByRole('link', { name: 'View' });
     expect(open).toHaveAttribute('href', `/exercises/${EXERCISE_ID}`);
     expect(within(row('brand-yangwang-racing-lines')).queryByRole('button')).toBeNull();
     expect(screen.queryByText(/checked/i)).not.toBeInTheDocument();
@@ -137,7 +155,7 @@ describe('add exercise', () => {
     await user.type(await findEl('input[type="search"]'), 'no such exercise');
     expect(screen.getByText('No exercise matches.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    expect(listed()).toHaveLength(4);
+    expect(listed()).toHaveLength(6);
     expect(el('input[type="search"]')).toHaveValue('');
   });
 

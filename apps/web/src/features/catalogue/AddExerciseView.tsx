@@ -2,12 +2,12 @@ import { useMemo, useState, type FormEvent } from 'react';
 import type { CatalogueListEntry, CatalogueSource } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { announceExercisesChanged, rememberExercise } from '../../app/current-exercise.ts';
-import { formatTime } from '../../app/format.ts';
 import { IconButton } from '../../app/IconButton.tsx';
 import { Icon } from '../../app/icons.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
+import { CIRCUIT_EXPERIENCE, placeParts } from '../exercise/use-exercise-where.ts';
 import { orderedFamilies } from '../exercises/next-step.ts';
 import './catalogue.css';
 import { listText, t } from '../../app/i18n.ts';
@@ -17,8 +17,6 @@ type Filters = { family: string; q: string; collection: string; track: string };
 const ALL = '';
 
 const NO_FILTERS: Filters = { family: ALL, q: '', collection: '', track: '' };
-
-const MINUTE_MS = 60000;
 
 function matches(entry: CatalogueListEntry, filters: Filters): boolean {
   const q = filters.q.trim().toLowerCase();
@@ -31,17 +29,21 @@ function matches(entry: CatalogueListEntry, filters: Filters): boolean {
   );
 }
 
-function unique(values: (string | null)[]): string[] {
-  return [...new Set(values.filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b));
+function present(values: (string | null)[]): string[] {
+  return [...new Set(values.filter((value): value is string => Boolean(value)))];
 }
 
-function targetTime(ms: number): string {
-  return ms < MINUTE_MS ? (ms / 1000).toFixed(3) : formatTime(ms, 3);
+function sorted(values: (string | null)[]): string[] {
+  return present(values).sort((a, b) => a.localeCompare(b));
 }
 
-function targetsText(entry: CatalogueListEntry): string {
-  if (!entry.targets) return t('exercises.add.not-listed');
-  return t('exercises.add.targets', { gold: targetTime(entry.targets.goldMs), silver: targetTime(entry.targets.silverMs), bronze: targetTime(entry.targets.bronzeMs) });
+function entryHeading(entry: CatalogueListEntry): string {
+  if (entry.family === CIRCUIT_EXPERIENCE) return entry.code ?? entry.name;
+  return placeParts(entry.family, entry.collection, entry.code).join(', ');
+}
+
+function entryDetail(entry: CatalogueListEntry): string | null {
+  return entry.family === CIRCUIT_EXPERIENCE ? null : entry.name;
 }
 
 function sourcesText(sources: CatalogueSource[]): string {
@@ -89,16 +91,13 @@ function EntryRow({ entry, onProblem }: { entry: CatalogueListEntry; onProblem(p
   return (
     <tr data-entry={entry.id}>
       <td>
-        <b className="entry-name">{entry.name}</b>
-        <span className="sub entry-where">
-          {entry.family} · {[entry.collection, entry.code].filter(Boolean).join(' ')}
-        </span>
+        <b className="entry-name">{entryHeading(entry)}</b>
+        {entryDetail(entry) ? <span className="sub entry-where">{entryDetail(entry)}</span> : null}
       </td>
       <td>
         {entry.track ?? t('exercises.add.no-track')}
         {entry.car ? <span className="sub entry-car">{entry.car}</span> : null}
       </td>
-      <td className="entry-targets">{targetsText(entry)}</td>
       <td className="entry-action">
         <EntryAction entry={entry} onProblem={onProblem} />
       </td>
@@ -179,13 +178,13 @@ export function AddExerciseView() {
         <div className="catalogue-selects">
           <select className="input" value={filters.collection} onChange={event => set({ collection: event.target.value })}>
             <option value="">{t('exercises.add.all-collections')}</option>
-            {unique(pool.map(entry => entry.collection)).map(value => (
+            {present(pool.map(entry => entry.collection)).map(value => (
               <option key={value}>{value}</option>
             ))}
           </select>
           <select className="input" value={filters.track} onChange={event => set({ track: event.target.value })}>
             <option value="">{t('exercises.add.all-tracks')}</option>
-            {unique(pool.map(entry => entry.track)).map(value => (
+            {sorted(pool.map(entry => entry.track)).map(value => (
               <option key={value}>{value}</option>
             ))}
           </select>
@@ -219,7 +218,6 @@ export function AddExerciseView() {
               <tr>
                 <th scope="col">{t('exercises.add.exercise')}</th>
                 <th scope="col">{t('exercises.add.track-and-car')}</th>
-                <th scope="col">{t('exercises.add.medal-targets')}</th>
                 <th scope="col" />
               </tr>
             </thead>

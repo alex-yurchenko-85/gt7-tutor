@@ -5,7 +5,7 @@ import { exercise } from './fixtures.ts';
 import { ApiStub, renderApp, sendLiveState, setViewportWidth, signedIn, USER, el, maybeSection, findSection } from './support.tsx';
 
 const RACING = exercise({ attemptCount: 6, referenceCount: 1, completeAttempts: 4, name: 'Racing Line: Intermediate' });
-const LICENCE = exercise({ id: 'e0000000-0000-4000-8000-000000000002', name: 'Cornering Basics 1', attemptCount: 2, referenceCount: 2 });
+const LICENCE = exercise({ id: 'e0000000-0000-4000-8000-000000000002', family: 'Licence', name: 'Cornering Basics 1', collection: 'National B', code: 'B-3', attemptCount: 2, referenceCount: 2 });
 
 function historyApi(): ApiStub {
   return signedIn(new ApiStub())
@@ -57,8 +57,8 @@ describe('delete history', () => {
     expect(await within(section).findByRole('status')).toHaveTextContent('Deleted 8 attempts, 3 references and 2 races.');
 
     await userEvent.click(within(section).getByRole('radio', { name: /Attempts of one exercise/ }));
-    await userEvent.selectOptions(within(section).getByLabelText('Exercise'), 'Cornering Basics 1 (2 attempts)');
-    expect(section).toHaveTextContent('This deletes: 2 attempts of Cornering Basics 1, with their cues and differences.');
+    await userEvent.selectOptions(within(section).getByLabelText('Exercise'), 'National B, B-3 (2 attempts)');
+    expect(section).toHaveTextContent('This deletes: 2 attempts of National B, B-3, with their cues and differences.');
     expect(section).toHaveTextContent('This keeps: the references, the other exercises, the races, the settings.');
     expect(within(section).getByRole('radio', { name: 'Attempts of one exercise For a fresh start on one exercise. Its references and the races stay.' })).toBeChecked();
     await userEvent.click(cleanup);
@@ -94,7 +94,7 @@ describe('delete history', () => {
     await within(section).findByRole('radio', { name: /^All attempts 1 attempt in 1 exercise/ });
     expect(section).toHaveTextContent('This deletes: the 1 attempt of this profile, with its cues and differences.');
     await userEvent.click(within(section).getByRole('radio', { name: /Attempts of one exercise/ }));
-    expect(section).toHaveTextContent('This deletes: 1 attempt of Racing Line: Intermediate, with its cues and differences.');
+    expect(section).toHaveTextContent('This deletes: 1 attempt of Yangwang, EXP-1, with its cues and differences.');
   });
 
   it('delete_history_stops_the_training_first', async () => {
@@ -102,7 +102,7 @@ describe('delete history', () => {
     const view = renderApp({ path: '/setup/delete-history' });
     await sendLiveState(view, { mode: 'armed', exerciseId: RACING.id });
     const section = await findSection('Delete history');
-    await waitFor(() => expect(section).toHaveTextContent(`The training of ${RACING.name} is on. It stops when you delete.`));
+    await waitFor(() => expect(section).toHaveTextContent('The training of Yangwang, EXP-1 is on. It stops when you delete.'));
     await typeName(USER.name);
     await userEvent.click(within(section).getByRole('button', { name: 'Stop the training and delete' }));
     await waitFor(() => expect(api.called('POST /api/history/delete')).toBe(true));

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildReview, type Review, type Series } from '../src/compare.ts';
 import { DEFAULT_CONFIG } from '../src/config.ts';
-import { findDifferences, recurring, type Finding } from '../src/findings.ts';
+import { attemptLowPoint, comparableSize, findDifferences, recurring, type Finding } from '../src/findings.ts';
 import { between, samplesOf } from './fixtures.ts';
 import { interlagosAnalysis } from './paths.ts';
 import { event } from './coaching.ts';
@@ -9,12 +9,14 @@ import type { Corner } from '../src/corners.ts';
 import { kph } from '../src/units.ts';
 import { KPH_PER_MPS } from '@gt7/contracts';
 
+const NO_BRAKE = { brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null };
+
 function syntheticCorner(number: number, apexSM: number, insideSign: 1 | -1 = 1): Corner {
-  return { number, zoneStartSM: apexSM - 60, turnInSM: apexSM - 30, apexSM, radiusM: 50, apexSpeedMps: kph(100), insideSign };
+  return { number, zoneStartSM: apexSM - 60, turnInSM: apexSM - 30, apexSM, radiusM: 50, apexSpeedMps: kph(100), insideSign, ...NO_BRAKE };
 }
 
 const GRID = 2;
-const POINTS = 201;
+const POINTS = 401;
 
 function series(fill: (index: number) => Partial<Record<keyof Series, number | null>>): Series {
   const out: Series = { t: [], v: [], th: [], br: [], x: [], z: [], lat: [] };
@@ -49,6 +51,84 @@ function finding(kind: Finding['kind'], eventKey: string | null, size: number, s
 }
 
 describe('findDifferences', () => {
+  describe('low point', () => {
+    const TSUKUBA_T1: Corner = {
+      number: 1,
+      zoneStartSM: 170,
+      turnInSM: 250,
+      apexSM: 277,
+      radiusM: 40,
+      apexSpeedMps: kph(66),
+      insideSign: 1,
+      brakeToSM: 268,
+      brakeAtTurnIn: 0.35,
+      lowSpeedSM: 280,
+      lowSpeedMps: kph(66)
+    };
+
+    function lowAt(attemptLowSM: number, corner: Corner = TSUKUBA_T1): Finding[] {
+      const dip = (lowSM: number) => series(index => ({ v: 40 - Math.max(0, 20 - Math.abs(index * GRID - lowSM) / 4) }));
+      return findDifferences(review({ corners: [corner], reference: dip(corner.lowSpeedSM ?? 280), attempt: dip(attemptLowSM) }), DEFAULT_CONFIG).filter(
+        entry => entry.kind === 'low-point-early' || entry.kind === 'low-point-late'
+      );
+    }
+
+    it('lowest_speed_before_the_apex_is_low_point_early_measured_from_the_apex', () => {
+      expect(lowAt(224)).toEqual([{ kind: 'low-point-early', eventKey: 'corner-1', sM: 224, size: 53, unit: 'm' }]);
+    });
+
+    it('lowest_speed_after_the_apex_is_low_point_late', () => {
+      expect(lowAt(320)).toEqual([{ kind: 'low-point-late', eventKey: 'corner-1', sM: 320, size: 43, unit: 'm' }]);
+    });
+
+    it('a_difference_at_the_limit_gives_no_low_point', () => {
+      expect(DEFAULT_CONFIG.findings.lowPointM).toBe(20);
+      expect(lowAt(260)).toEqual([]);
+      expect(lowAt(300)).toEqual([]);
+      expect(lowAt(258)).toHaveLength(1);
+    });
+
+    it('turn_without_a_brake_zone_gives_no_low_point', () => {
+      expect(lowAt(224, { ...TSUKUBA_T1, ...NO_BRAKE })).toEqual([]);
+    });
+
+    it('reference_lowest_speed_far_from_its_apex_gives_no_low_point', () => {
+      expect(DEFAULT_CONFIG.cues.apexNearM).toBe(6);
+      expect(lowAt(224, { ...TSUKUBA_T1, lowSpeedSM: 283 })).toHaveLength(1);
+      expect(lowAt(224, { ...TSUKUBA_T1, lowSpeedSM: 284 })).toEqual([]);
+    });
+
+    it('lowest_speed_on_the_edge_of_the_turn_gives_no_low_point', () => {
+      const slowEntry = series(index => ({ v: index * GRID <= 175 ? 10 : 40 - Math.max(0, 20 - Math.abs(index * GRID - 280) / 4) }));
+      const found = findDifferences(review({ corners: [TSUKUBA_T1], attempt: slowEntry }), DEFAULT_CONFIG);
+      expect(found.filter(entry => entry.kind.startsWith('low-point'))).toEqual([]);
+    });
+
+    it('low_point_stays_in_the_loss_range_of_its_turn', () => {
+      const next: Corner = { ...TSUKUBA_T1, number: 2, zoneStartSM: 330, turnInSM: 360, apexSM: 380, lowSpeedSM: 382 };
+      const dip = series(index => ({ v: 40 - Math.max(0, 20 - Math.abs(index * GRID - 340) / 4) }));
+      const found = findDifferences(review({ corners: [TSUKUBA_T1, next], attempt: dip }), DEFAULT_CONFIG).filter(entry => entry.kind.startsWith('low-point'));
+      expect(found.every(entry => (entry.eventKey === 'corner-1' ? entry.sM < 330 : entry.sM >= 330))).toBe(true);
+    });
+
+    it('a_gap_in_the_attempt_gives_no_low_point', () => {
+      const gap = series(index => ({ v: index * GRID >= 270 && index * GRID <= 300 ? null : 40 - Math.max(0, 20 - Math.abs(index * GRID - 310) / 4) }));
+      expect(findDifferences(review({ corners: [TSUKUBA_T1], attempt: gap }), DEFAULT_CONFIG).filter(entry => entry.kind.startsWith('low-point'))).toEqual([]);
+    });
+
+    it('attempt_low_point_does_not_use_the_apex_guard', () => {
+      const dip = series(index => ({ v: 40 - Math.max(0, 20 - Math.abs(index * GRID - 224) / 4) }));
+      const far = { ...TSUKUBA_T1, lowSpeedSM: 300 };
+      expect(attemptLowPoint(review({ corners: [far], attempt: dip }), 0, DEFAULT_CONFIG)).toEqual({ sM: 224, speedMps: 20 });
+      expect(attemptLowPoint(review({ corners: [{ ...far, ...NO_BRAKE }], attempt: dip }), 0, DEFAULT_CONFIG)).toEqual({ sM: 224, speedMps: 20 });
+    });
+
+    it('low_point_has_no_brake_release_kind', () => {
+      const kinds = findDifferences(review({ corners: [TSUKUBA_T1] }), DEFAULT_CONFIG).map(entry => entry.kind);
+      expect(kinds.some(kind => kind.startsWith('brake-release'))).toBe(false);
+    });
+  });
+
   it('pause_run_first_brake_is_early', () => {
     const findings = findDifferences(buildReview(between(samplesOf('ce-pause'), 11564, 13309), interlagosAnalysis(), DEFAULT_CONFIG), DEFAULT_CONFIG);
     const early = findings.find(entry => entry.kind === 'brake-early' && entry.eventKey === 'brake@291')!;
@@ -130,6 +210,11 @@ describe('findDifferences', () => {
 describe('recurring', () => {
   const early = (size: number) => [finding('brake-early', 'brake@332', size, 332)];
 
+  it('recurring_low_point_takes_the_median_place', () => {
+    const low = (sM: number): Finding[] => [{ kind: 'low-point-late', eventKey: 'corner-1', sM, size: 30, unit: 'm' }];
+    expect(recurring([low(335), low(300), low(318)], DEFAULT_CONFIG)[0]).toMatchObject({ kind: 'low-point-late', sM: 318, count: 3 });
+  });
+
   it('recurring_needs_three_attempts_and_half', () => {
     expect(recurring([early(10), early(12)], DEFAULT_CONFIG)).toEqual([]);
     expect(recurring([early(10), [], early(20), []], DEFAULT_CONFIG)).toEqual([
@@ -193,3 +278,10 @@ describe('wide apex', () => {
   });
 });
 
+
+describe('comparable size', () => {
+  it('comparable_size_counts_one_kmh_as_one_metre', () => {
+    expect(comparableSize(kph(12), 'm/s')).toBeCloseTo(12, 12);
+    expect(comparableSize(12, 'm')).toBe(12);
+  });
+});

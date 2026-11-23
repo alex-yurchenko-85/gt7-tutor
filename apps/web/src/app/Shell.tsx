@@ -17,6 +17,7 @@ import { TrainingNameContext } from './use-training.ts';
 import { useSession } from './session.tsx';
 import { statusLabel, telemetryStatus, voiceStatus, type Status } from './status.ts';
 import { Views } from './Views.tsx';
+import { exerciseTitle } from '../features/exercise/use-exercise-where.ts';
 import { t } from './i18n.ts';
 
 type NavItem = { label: MessageKey; to: string; icon: IconName; matches(route: Route): boolean };
@@ -105,7 +106,7 @@ function ImmersiveDemoLabel() {
 
 function useTrainingName(exercise: Exercise | null): string | null {
   const liveId = useLiveState(({ state }) => liveExerciseId(state));
-  return exercise && liveId !== null && exercise.id === liveId ? exercise.name : null;
+  return exercise && liveId !== null && exercise.id === liveId ? exerciseTitle(exercise).title : null;
 }
 
 export function Shell({ children }: { children?: ReactNode }) {

@@ -50,7 +50,7 @@ export class CatalogueUpdateService {
   }
 
   async restore(): Promise<void> {
-    if (!this.catalogue.files.hasPrevious()) throw httpError(409, 'no-previous');
+    if (!(await this.catalogue.files.hasPrevious())) throw httpError(409, 'no-previous');
     await this.exclusively(async () => {
       const previous = await this.catalogue.files.previous();
       await this.catalogue.files.restore(previous);

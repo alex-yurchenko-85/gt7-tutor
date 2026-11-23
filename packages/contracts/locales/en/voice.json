@@ -355,33 +355,57 @@
     "text": "Turn {turn}",
     "note": "Shown name of a turn above 10. It is not spoken. {turn} is the turn number in digits."
   },
-  "voice.focus-action.brake-early": {
-    "text": "Brake later.",
-    "note": "Focus action when the player brakes before the reference. It follows the turn name."
+  "voice.focus-problem.approach-brake-early": {
+    "text": "Braking too early before the turn.",
+    "note": "Focus problem when the player brakes before the reference, before the turn-in. It follows the turn name."
   },
-  "voice.focus-action.brake-late": {
-    "text": "Brake earlier.",
-    "note": "Focus action when the player brakes after the reference. It follows the turn name."
+  "voice.focus-problem.approach-brake-late": {
+    "text": "Braking too late before the turn.",
+    "note": "Focus problem when the player brakes after the reference, before the turn-in. It follows the turn name."
   },
-  "voice.focus-action.slow-corner": {
-    "text": "Carry more speed.",
-    "note": "Focus action when the player is slower than the reference in the corner. It follows the turn name."
+  "voice.focus-problem.approach-off-line": {
+    "text": "Off the line before the turn.",
+    "note": "Focus problem when the player is away from the reference line and loses most time before the turn-in. It follows the turn name."
   },
-  "voice.focus-action.throttle-late": {
-    "text": "Throttle earlier.",
-    "note": "Focus action when the player opens the throttle after the reference. It follows the turn name."
+  "voice.focus-problem.approach": {
+    "text": "Time lost before the turn.",
+    "note": "Focus problem when the player loses most time before the turn-in and no difference tells why. It follows the turn name."
   },
-  "voice.focus-action.off-line": {
-    "text": "Stay on the line.",
-    "note": "Focus action when the player leaves the reference line. It follows the turn name."
+  "voice.focus-problem.entry-slow": {
+    "text": "Too slow on entry.",
+    "note": "Focus problem when the speed of the player is too low between the turn-in and the apex. It follows the turn name."
   },
-  "voice.focus-action.wide-apex": {
-    "text": "Closer to the apex.",
-    "note": "Focus action when the player is far from the apex. It follows the turn name."
+  "voice.focus-problem.entry-fast": {
+    "text": "Too fast on entry.",
+    "note": "Focus problem when the lowest speed of the player is after the lowest speed of the reference. It follows the turn name."
+  },
+  "voice.focus-problem.entry-wide-apex": {
+    "text": "Far from the apex on entry.",
+    "note": "Focus problem when the player is far from the apex on the inside of the turn. It follows the turn name."
+  },
+  "voice.focus-problem.entry-off-line": {
+    "text": "Off the line on entry.",
+    "note": "Focus problem when the player is away from the reference line and loses most time between the turn-in and the apex. It follows the turn name."
+  },
+  "voice.focus-problem.entry": {
+    "text": "Time lost on entry.",
+    "note": "Focus problem when the player loses most time between the turn-in and the apex and no difference tells why. It follows the turn name."
+  },
+  "voice.focus-problem.exit-throttle-late": {
+    "text": "Late on the throttle on exit.",
+    "note": "Focus problem when the player opens the throttle after the reference, after the apex. It follows the turn name."
+  },
+  "voice.focus-problem.exit-off-line": {
+    "text": "Off the line on exit.",
+    "note": "Focus problem when the player is away from the reference line and loses most time after the apex. It follows the turn name."
+  },
+  "voice.focus-problem.exit": {
+    "text": "Time lost on exit.",
+    "note": "Focus problem when the player loses most time after the apex and no difference tells why. It follows the turn name."
   },
   "voice.focus": {
-    "text": "{turn}. {action}",
-    "note": "Focus sentence after an attempt, spoken and shown. {turn} is the turn name, {action} is the focus action."
+    "text": "{turn}. {problem}",
+    "note": "Focus sentence after an attempt, spoken and shown. {turn} is the turn name, {problem} is the focus problem."
   },
   "voice.brake-with-target": {
     "text": "{action}. {speed}",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CatalogueListEntry, Exercise, Progress, Settings } from '@gt7/contracts';
+import type { CatalogueListEntry, Exercise, Settings } from '@gt7/contracts';
 import { api } from '../../api/client.ts';
 import { useLiveState } from '../../api/live.tsx';
 import { currentExercise, liveExerciseId } from '../../app/current-exercise.ts';
@@ -12,58 +12,60 @@ import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths, useRouter } from '../../app/router.tsx';
 import { SelectionBar } from '../../app/SelectionBar.tsx';
 import { useSession } from '../../app/session.tsx';
+import { afterTargetSave } from '../exercise/target-save.ts';
+import { exerciseTitle, whereText } from '../exercise/use-exercise-where.ts';
 import { DriveAction } from '../drive/DriveButton.tsx';
-import { whereText } from '../exercise/use-exercise-where.ts';
 import { GetReady } from '../get-ready/GetReady.tsx';
 import { DeleteExercisesDialog, historyText } from './DeleteExercisesDialog.tsx';
-import { nextTitle, orderedFamilies, statusLabel } from './next-step.ts';
+import { orderedExercises, orderedFamilies, statusLabel } from './next-step.ts';
 import './exercises.css';
 import { t } from '../../app/i18n.ts';
 import { Rich } from '../../app/rich-text.tsx';
 
 const ALL = '';
 
-type Details = { collection: string | null; entry: CatalogueListEntry | null };
+type Details = { entry: CatalogueListEntry | null };
 
-type HomeData = { exercises: Exercise[]; progress: Progress; settings: Settings };
+type HomeData = { exercises: Exercise[]; settings: Settings };
 
-function homeWhere(details: Details): string {
-  return whereText({ collection: details.collection, code: details.entry?.code, track: details.entry?.track, car: details.entry?.car });
+function homeWhere(exercise: Exercise, details: Details): string {
+  return [exerciseTitle(exercise).detail, details.entry?.track, details.entry?.car].filter(Boolean).join(' · ');
+}
+
+function phoneWhere(exercise: Exercise): string {
+  return whereText({ family: exercise.family, detail: exerciseTitle(exercise).detail });
+}
+
+function continueKicker(exercise: Exercise, details: Details, wide: boolean): string {
+  const { title, detail } = exerciseTitle(exercise);
+  const parts = wide ? [exercise.family, detail, details.entry?.track] : [title === exercise.name ? detail : null];
+  return [t('exercises.home.continue'), ...parts].filter(Boolean).join(' · ');
+}
+
+function StatusTag({ status }: { status: Exercise['status'] }) {
+  const label = statusLabel(status);
+  return label === null ? null : <span className={`tag status-${status}`}>{label}</span>;
 }
 
 function ContinueCard({ exercise, details, wide }: { exercise: Exercise; details: Details; wide: boolean }) {
-  const gap = exercise.nextMedal;
-  const kicker = wide
-    ? [t('exercises.home.continue'), [exercise.family, details.collection].filter(Boolean).join(', '), details.entry?.track].filter(Boolean).join(' · ')
-    : [t('exercises.home.continue'), [details.collection, details.entry?.code].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+  const gapMs = exercise.targetGapMs;
+  const targetMs = exercise.targetMs;
+  const kicker = continueKicker(exercise, details, wide);
   return (
     <section className="continue">
       <div className="continue-main">
         <p className="continue-kicker">{kicker}</p>
         <h2>
           <Link to={paths.exercise(exercise.id)} className="continue-name">
-            {exercise.name}
+            {exerciseTitle(exercise).title}
           </Link>
         </h2>
-        {wide ? (
-          <p className="continue-next">{nextTitle(exercise.step)}</p>
-        ) : (
+        {!wide && exercise.bestMs !== null ? (
           <p className="continue-line">
-            {nextTitle(exercise.step)}
-            {exercise.bestMs !== null ? (
-              <>
-                {' '}
-                · <Rich k="exercises.home.best" parts={{ time: <b>{formatTime(exercise.bestMs)}</b> }} />
-              </>
-            ) : null}
-            {gap ? (
-              <span className="continue-gap">
-                {' '}
-                · {t('exercises.home.to-medal', { gap: formatSeconds(gap.gapMs), medal: t(`exercises.medal.${gap.medal}`) })}
-              </span>
-            ) : null}
+            <Rich k="exercises.home.best" parts={{ time: <b>{formatTime(exercise.bestMs)}</b> }} />
+            {gapMs !== null ? <span className="continue-gap"> · {t('exercises.home.to-target', { gap: formatSeconds(gapMs) })}</span> : null}
           </p>
-        )}
+        ) : null}
       </div>
       {wide && exercise.bestMs !== null ? (
         <div className="continue-times">
@@ -71,10 +73,10 @@ function ContinueCard({ exercise, details, wide }: { exercise: Exercise; details
             <b>{formatTime(exercise.bestMs)}</b>
             <span>{t('exercises.home.your-best')}</span>
           </div>
-          {gap ? (
+          {gapMs !== null && targetMs !== null ? (
             <div className="continue-gap">
-              <b>{formatSeconds(gap.gapMs)}</b>
-              <span>{t('exercises.home.to-medal-time', { medal: t(`exercises.medal.${gap.medal}`), time: formatTime(gap.targetMs) })}</span>
+              <b>{formatSeconds(gapMs)}</b>
+              <span>{t('exercises.home.to-target-time', { time: formatTime(targetMs) })}</span>
             </div>
           ) : null}
         </div>
@@ -102,11 +104,11 @@ function ExerciseRow({ exercise, details, wide }: { exercise: Exercise; details:
   return (
     <Link to={paths.exercise(exercise.id)} className="exercise-row">
       <span className="exercise-row-name">
-        <b>{exercise.name}</b>
-        <span>{wide ? homeWhere(details) : [exercise.family, details.collection].filter(Boolean).join(' · ')}</span>
+        <b>{exerciseTitle(exercise).title}</b>
+        <span>{wide ? homeWhere(exercise, details) : phoneWhere(exercise)}</span>
       </span>
       <span>
-        <span className={`tag status-${exercise.status}`}>{statusLabel(exercise.status)}</span>
+        <StatusTag status={exercise.status} />
       </span>
       {wide ? (
         <>
@@ -123,11 +125,11 @@ function SelectRow({ exercise, details, wide, picked, onToggle }: { exercise: Ex
     <label className={picked ? 'exercise-row selecting picked' : 'exercise-row selecting'}>
       <input type="checkbox" className="pick-box" checked={picked} onChange={onToggle} />
       <span className="exercise-row-name">
-        <b>{exercise.name}</b>
-        <span>{wide ? homeWhere(details) : historyText(exercise)}</span>
+        <b>{exerciseTitle(exercise).title}</b>
+        <span>{wide ? homeWhere(exercise, details) : historyText(exercise)}</span>
       </span>
       <span>
-        <span className={`tag status-${exercise.status}`}>{statusLabel(exercise.status)}</span>
+        <StatusTag status={exercise.status} />
       </span>
       {wide ? (
         <>
@@ -139,9 +141,9 @@ function SelectRow({ exercise, details, wide, picked, onToggle }: { exercise: Ex
   );
 }
 
-type MyExercisesProps = { exercises: Exercise[]; detailsOf(exercise: Exercise): Details; wide: boolean; currentId: string | null; onDeleted(): void };
+type MyExercisesProps = { exercises: Exercise[]; catalogueIds: string[]; detailsOf(exercise: Exercise): Details; wide: boolean; currentId: string | null; onDeleted(): void };
 
-function MyExercises({ exercises, detailsOf, wide, currentId, onDeleted }: MyExercisesProps) {
+function MyExercises({ exercises, catalogueIds, detailsOf, wide, currentId, onDeleted }: MyExercisesProps) {
   const [family, setFamily] = useState(ALL);
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
@@ -218,7 +220,7 @@ function MyExercises({ exercises, detailsOf, wide, currentId, onDeleted }: MyExe
       <div className="my-exercises-list">
         {wide ? null : quickSelect}
         {shown.map(name => {
-          const members = exercises.filter(exercise => exercise.family === name);
+          const members = orderedExercises(exercises.filter(exercise => exercise.family === name), catalogueIds);
           if (members.length === 0) return null;
           return (
             <div key={name} className="family-group">
@@ -273,7 +275,7 @@ export function ExercisesHome() {
   const demo = useDemo() !== null;
   const wide = useWideLayout();
   const data = useResource<HomeData>(
-    () => Promise.all([api.exercises(), api.progress(), api.settings()]).then(([exercises, progress, settings]) => ({ exercises, progress, settings })),
+    () => afterTargetSave().then(() => Promise.all([api.exercises(), api.settings()])).then(([exercises, settings]) => ({ exercises, settings })),
     []
   );
   const catalogue = useResource(() => api.catalogue().catch((): CatalogueListEntry[] => []), []);
@@ -282,13 +284,9 @@ export function ExercisesHome() {
     : null;
   useDriveRedirect(target, liveExerciseId(state));
   const detailsOf = useMemo(() => {
-    const collections = new Map(data.data?.progress.exercises.map(item => [item.id, item.collection]) ?? []);
     const entries = new Map(catalogue.data?.map(entry => [entry.id, entry]) ?? []);
-    return (exercise: Exercise): Details => ({
-      collection: collections.get(exercise.id) ?? null,
-      entry: exercise.catalogueId ? (entries.get(exercise.catalogueId) ?? null) : null
-    });
-  }, [data.data, catalogue.data]);
+    return (exercise: Exercise): Details => ({ entry: exercise.catalogueId ? (entries.get(exercise.catalogueId) ?? null) : null });
+  }, [catalogue.data]);
 
   if (data.error) return <p className="error">{errorText(data.error)}</p>;
   if (!data.data) return <p className="sub">{t('exercises.home.reading')}</p>;
@@ -299,7 +297,7 @@ export function ExercisesHome() {
     <div className="exercises-home">
       {wide ? <h1>{t('exercises.home.title')}</h1> : null}
       {current ? <ContinueCard exercise={current} details={detailsOf(current)} wide={wide} /> : null}
-      <MyExercises exercises={exercises} detailsOf={detailsOf} wide={wide} currentId={current?.id ?? null} onDeleted={data.reload} />
+      <MyExercises exercises={exercises} catalogueIds={catalogue.data?.map(entry => entry.id) ?? []} detailsOf={detailsOf} wide={wide} currentId={current?.id ?? null} onDeleted={data.reload} />
     </div>
   );
 }

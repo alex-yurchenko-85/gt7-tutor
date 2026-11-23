@@ -1,9 +1,9 @@
 import { t } from '../../app/i18n.ts';
-export function TurnTag({ turn, muted = false }: { turn: number | null; muted?: boolean }) {
+export function TurnTag({ turn }: { turn: number | null }) {
   if (turn === null) return null;
   return (
     <>
-      <span className={muted ? 'tag n turn-tag' : 'tag y turn-tag'}>{t('charts.turn.badge', { turn })}</span>{' '}
+      <span className="tag y turn-tag">{t('charts.turn.badge', { turn })}</span>{' '}
     </>
   );
 }

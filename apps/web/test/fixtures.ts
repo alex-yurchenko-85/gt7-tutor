@@ -1,4 +1,4 @@
-import { KPH_PER_MPS, type CatalogueListEntry, type CornerInfo, type CuePreview, type Exercise, type ExerciseStep, type ReferenceCue, type ReferenceInfo, type ReferenceTrace } from '@gt7/contracts';
+import { KPH_PER_MPS, type CatalogueListEntry, type CornerInfo, type CuePreview, type Exercise, type ReferenceCue, type ReferenceInfo, type ReferenceTrace } from '@gt7/contracts';
 import { ApiStub, signedIn, USER } from './support.tsx';
 
 export const EXERCISE_ID = 'e0000000-0000-4000-8000-000000000001';
@@ -10,27 +10,24 @@ export function exercise(overrides: Partial<Exercise> = {}): Exercise {
     catalogueId: 'brand-yangwang-racing-lines',
     family: 'Brand Central',
     name: 'Yangwang Experience / Racing Lines',
+    collection: 'Yangwang',
+    code: 'EXP-1',
     carId: 3602,
-    targets: {},
+    targetMs: null,
     mutedCues: [],
     speakTargets: true,
     cueOffsetsMs: {},
     sideCueDistanceM: 2,
     activeReferenceId: REFERENCE_ID,
-    status: 'ready',
-    step: 2,
+    status: 'practising',
     attemptCount: 0,
-    referenceCount: 0,
+    referenceCount: 1,
     completeAttempts: 0,
     bestMs: null,
-    nextMedal: null,
+    targetGapMs: null,
     createdAt: '2026-11-16T10:00:00.000Z',
     ...overrides
   };
-}
-
-export function exerciseAtStep(step: ExerciseStep): Exercise {
-  return exercise({ step, activeReferenceId: step === 1 ? null : REFERENCE_ID, status: step === 1 ? 'new' : step === 2 ? 'ready' : 'practising' });
 }
 
 export const TRACE: ReferenceTrace = {
@@ -53,9 +50,9 @@ const FOCUS_CLIPS = ['brake-early', 'brake-late', 'slow-corner', 'throttle-late'
 export const REFERENCE_CLIPS = ['hard-brake', 'speed-85', 'full-throttle', 'ease-off', 'big-stop', 'tighter', 'keep-left', 'keep-right', 'guidance-paused', 'guidance-resumed', ...FOCUS_CLIPS];
 
 export const CORNERS: CornerInfo[] = [
-  { number: 1, turnInSM: 461, apexSM: 519, radiusM: 43.05, apexSpeedMps: 88.96 / KPH_PER_MPS, zoneFromSM: 461, zoneToSM: 577 },
-  { number: 2, turnInSM: 691, apexSM: 737, radiusM: 65.8, apexSpeedMps: 109.99 / KPH_PER_MPS, zoneFromSM: 691, zoneToSM: 783 },
-  { number: 3, turnInSM: 834, apexSM: 870, radiusM: 84.2, apexSpeedMps: 122.5 / KPH_PER_MPS, zoneFromSM: 834, zoneToSM: 906 }
+  { number: 1, turnInSM: 461, apexSM: 519, radiusM: 43.05, apexSpeedMps: 88.96 / KPH_PER_MPS, zoneFromSM: 461, zoneToSM: 577, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false },
+  { number: 2, turnInSM: 691, apexSM: 737, radiusM: 65.8, apexSpeedMps: 109.99 / KPH_PER_MPS, zoneFromSM: 691, zoneToSM: 783, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false },
+  { number: 3, turnInSM: 834, apexSM: 870, radiusM: 84.2, apexSpeedMps: 122.5 / KPH_PER_MPS, zoneFromSM: 834, zoneToSM: 906, brakeToSM: null, brakeAtTurnIn: null, lowSpeedSM: null, lowSpeedMps: null, lowSpeedAtApex: false }
 ];
 
 export function reference(overrides: Partial<ReferenceInfo> = {}): ReferenceInfo {
@@ -85,8 +82,7 @@ export function catalogueEntry(overrides: Partial<CatalogueListEntry>): Catalogu
     track: null,
     circuitId: null,
     car: null,
-    targets: null,
-    sections: null,
+    targetMs: null,
     source: 'Gran Turismo Wiki',
     exerciseId: null,
     status: null,

@@ -52,7 +52,7 @@ export class CatalogueService implements OnModuleInit {
       gameVersionNote: this.active.gameVersionNote,
       counts: { entries, circuits: this.active.circuits.length, cars: this.active.cars.length },
       sources: CATALOGUE_SOURCES,
-      hasPrevious: this.files.hasPrevious(),
+      hasPrevious: await this.files.hasPrevious(),
       previousRetrieved: await this.files.previousRetrieved()
     };
   }

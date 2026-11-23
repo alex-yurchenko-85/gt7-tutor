@@ -5,6 +5,17 @@ import type { CuePreview, Exercise } from '@gt7/contracts';
 import { CORNERS, CUES, NO_DROP_PREVIEW, REFERENCE_ID, exercise, exerciseApi, EXERCISE_ID } from './fixtures.ts';
 import { el, els, findEl, findEls, findSection, mapMark, playerRig, renderApp, setViewportWidth, iconButton, findIconButton } from './support.tsx';
 
+describe('cues without a reference', () => {
+  it('panel_has_the_text_and_the_record_button_one_padding_apart', async () => {
+    exerciseApi(exercise({ activeReferenceId: null, referenceCount: 0 })).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
+    const link = await screen.findByRole('link', { name: 'Record the reference' });
+    const panel = link.closest('.panel')!;
+    expect(panel).toHaveClass('cues-start');
+    expect(panel.querySelector('p')).toHaveTextContent('The cues come from the reference. This exercise has no reference yet.');
+  });
+});
+
 describe('cue list', () => {
   it('cue_list_rows_show_distance_phrase_and_recurring_difference', async () => {
     exerciseApi()
@@ -233,6 +244,25 @@ describe('cue list', () => {
     expect(screen.queryByText(/You start to brake/)).not.toBeInTheDocument();
   });
 
+  it('turn_row_says_how_the_reference_brakes', async () => {
+    const plan = { brakeToSM: 268, brakeAtTurnIn: 0.35, lowSpeedSM: 280, lowSpeedMps: 18, lowSpeedAtApex: true };
+    exerciseApi()
+      .on('GET /api/references/ref-demo/corners', [
+        { ...CORNERS[0]!, apexSM: 277, ...plan },
+        { ...CORNERS[1]!, apexSM: 277, ...plan, lowSpeedSM: 265, lowSpeedAtApex: false },
+        { ...CORNERS[2]!, apexSM: 276.7, ...plan, lowSpeedSM: 288, lowSpeedAtApex: false },
+        { ...CORNERS[2]!, number: 4 }
+      ])
+      .install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
+    await findEl('[data-turn="4"]');
+    const line = (turn: number) => el(`[data-turn="${turn}"]`).querySelector('.brake-plan')?.textContent ?? null;
+    expect(line(1)).toBe('Brake to 268 m, 35 % at the turn-in. Lowest speed at the apex.');
+    expect(line(2)).toBe('Brake to 268 m, 35 % at the turn-in. Lowest speed 12 m before the apex.');
+    expect(line(3)).toBe('Brake to 268 m, 35 % at the turn-in. Lowest speed 12 m after the apex.');
+    expect(line(4)).toBeNull();
+  });
+
   it('cue_list_shows_corner_rows', async () => {
     exerciseApi().install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
@@ -275,6 +305,7 @@ describe('cues map frame', () => {
     await user.click(await screen.findByRole('button', { name: 'View' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('checkbox', { name: 'Voice cues' })).toBeChecked();
+    expect(within(dialog).getByRole('heading', { level: 2, name: 'Yangwang, EXP-1' })).toBeInTheDocument();
     expect(screen.queryByText('Map orientation is not confirmed')).toBeNull();
   });
 

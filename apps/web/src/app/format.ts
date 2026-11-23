@@ -1,4 +1,4 @@
-import type { MessageKey } from '@gt7/contracts';
+import { TARGET_MAX_MS, type MessageKey } from '@gt7/contracts';
 import { formatLocale, t } from './i18n.ts';
 
 const GAME_TIME_DIGITS = 3;
@@ -24,6 +24,20 @@ export function formatTime(ms: number | null, digits = GAME_TIME_DIGITS): string
   const minutes = Math.floor((wholeSeconds % 3600) / 60);
   const seconds = String(wholeSeconds % 60).padStart(2, '0');
   return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}${fraction}` : `${minutes}:${seconds}${fraction}`;
+}
+
+const TARGET_TIME = /^(?:(\d{1,2}):)?(\d{1,4})(?:[.,](\d{1,3}))?$/;
+
+export function parseTargetTime(text: string): number | null | undefined {
+  const trimmed = text.trim();
+  if (trimmed === '') return null;
+  const match = TARGET_TIME.exec(trimmed);
+  if (!match) return undefined;
+  const [, minutesText, secondsText, fractionText = ''] = match;
+  const seconds = Number(secondsText);
+  if (minutesText !== undefined && (seconds >= 60 || secondsText!.length > 2)) return undefined;
+  const ms = (Number(minutesText ?? 0) * 60 + seconds) * 1000 + Number(fractionText.padEnd(3, '0'));
+  return ms > 0 && ms <= TARGET_MAX_MS ? ms : undefined;
 }
 
 export function abortReasonText(reason: string): string {

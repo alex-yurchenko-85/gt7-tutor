@@ -55,13 +55,22 @@ export class CatalogueFiles {
     return JSON.parse(await readFile(this.aliasesPath, 'utf8')) as Record<string, number>;
   }
 
-  hasPrevious(): boolean {
-    return existsSync(this.previousPath);
+  async hasPrevious(): Promise<boolean> {
+    return (await this.previousRetrieved()) !== null;
   }
 
   async previousRetrieved(): Promise<string | null> {
-    this.knownPreviousRetrieved ??= { value: this.hasPrevious() ? (await this.previous()).retrieved : null };
+    this.knownPreviousRetrieved ??= { value: await this.validPreviousRetrieved() };
     return this.knownPreviousRetrieved.value;
+  }
+
+  private async validPreviousRetrieved(): Promise<string | null> {
+    if (!existsSync(this.previousPath)) return null;
+    try {
+      return (await this.previous()).retrieved;
+    } catch {
+      return null;
+    }
   }
 
   async save(next: Catalogue, current: Catalogue): Promise<void> {

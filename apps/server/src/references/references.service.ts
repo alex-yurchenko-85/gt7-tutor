@@ -23,6 +23,7 @@ import {
   demonstrationRuns,
   eventClips,
   findDemoRangeCandidates,
+  lowSpeedNearApex,
   matchesReference,
   pointAt,
   targetClip,
@@ -96,7 +97,12 @@ export function cornerInfos(corners: Corner[], lengthM: number): CornerInfo[] {
     radiusM: corner.radiusM,
     apexSpeedMps: corner.apexSpeedMps,
     zoneFromSM: zones[index]!.fromSM,
-    zoneToSM: zones[index]!.toSM
+    zoneToSM: zones[index]!.toSM,
+    brakeToSM: corner.brakeToSM,
+    brakeAtTurnIn: corner.brakeAtTurnIn,
+    lowSpeedSM: corner.lowSpeedSM,
+    lowSpeedMps: corner.lowSpeedMps,
+    lowSpeedAtApex: lowSpeedNearApex(corner, DEFAULT_CONFIG)
   }));
 }
 

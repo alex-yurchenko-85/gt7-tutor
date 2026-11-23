@@ -9,7 +9,7 @@
   "deviceDelayMs": 60,
   "phraseDurations": "estimatedPhraseMs",
   "speakTargets": true,
-  "sideCueDistanceM": 2,
+  "sideCueDistanceM": null,
   "events": [
     {
       "key": "brake@291",
@@ -128,19 +128,6 @@
         "ttlMs": 210
       },
       {
-        "id": "1:keep-right@456",
-        "eventKey": "keep-right@456",
-        "kind": "keep-right",
-        "targetSpeedKph": null,
-        "clip": "keep-right",
-        "followClip": null,
-        "priority": 50,
-        "rawIndex": 6121,
-        "sM": 456.23,
-        "decidedMonoMs": 102758,
-        "ttlMs": 210
-      },
-      {
         "id": "1:ease-off@564",
         "eventKey": "ease-off@564",
         "kind": "ease-off",
@@ -151,19 +138,6 @@
         "rawIndex": 6260,
         "sM": 541.97,
         "decidedMonoMs": 105077,
-        "ttlMs": 210
-      },
-      {
-        "id": "1:keep-right@720",
-        "eventKey": "keep-right@720",
-        "kind": "keep-right",
-        "targetSpeedKph": null,
-        "clip": "keep-right",
-        "followClip": null,
-        "priority": 50,
-        "rawIndex": 6509,
-        "sM": 720.45,
-        "decidedMonoMs": 109231,
         "ttlMs": 210
       },
       {
@@ -183,12 +157,6 @@
     "suppressed": [
       {
         "generation": 1,
-        "eventKey": "keep-right@272",
-        "why": "cooldown",
-        "rawIndex": 5755
-      },
-      {
-        "generation": 1,
         "eventKey": "throttle@568",
         "why": "cooldown",
         "rawIndex": 6297
@@ -198,12 +166,6 @@
         "eventKey": "throttle@796",
         "why": "already-full",
         "rawIndex": 6593
-      },
-      {
-        "generation": 1,
-        "eventKey": "keep-left@811",
-        "why": "cooldown",
-        "rawIndex": 6612
       }
     ],
     "guidance": [

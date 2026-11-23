@@ -19,7 +19,6 @@ describe('attempts', () => {
     expect(within(best).getByText('best')).toBeInTheDocument();
     const first = el('tr[data-attempt="1"]', days[1]!);
     expect(first).toHaveTextContent('+0.30 s');
-    expect(first).toHaveTextContent('332 m. Braked 14 m earlier');
     expect(within(first).queryByText('best')).not.toBeInTheDocument();
     expect(el('a.row-link', first)).toHaveAttribute('href', `/attempts/${ATTEMPT_ID}/review`);
   });
@@ -75,7 +74,7 @@ describe('attempts', () => {
       .install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const table = await findEl('.attempt-day table');
-    expect(within(table).getByRole('columnheader', { name: 'Time from the game' })).toBeInTheDocument();
+    expect(within(table).getByRole('columnheader', { name: 'Time' })).toBeInTheDocument();
     const shown = reasons.map((_, index) => el(`tr[data-attempt="${index + 1}"]`, table).querySelector('.sub')?.textContent);
     expect(shown).toEqual([
       'aborted, left the track',
@@ -116,11 +115,21 @@ describe('attempts', () => {
     expect(within(section).getByRole('button', { name: 'Show fewer' })).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('largest_difference_shows_its_turn', async () => {
+  it('rows_show_the_time_and_the_gap_without_a_largest_difference', async () => {
     exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const row = await findEl('tr[data-attempt="1"]');
-    expect(within(row).getByText('T1')).toHaveClass('tag');
+    const table = row.closest('table')!;
+    expect(within(table).getAllByRole('columnheader').map(header => header.textContent)).toEqual(['#', 'Time', 'Gap to best', '']);
+    expect(within(row).queryByText('T1')).toBeNull();
+    expect(row).not.toHaveTextContent('Braked');
+  });
+
+  it('day_heading_shows_only_the_date', async () => {
+    exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
+    const days = await findEls('.attempt-day h2');
+    expect(days.map(heading => heading.textContent)).toEqual(['17 November', '16 November']);
   });
 
   it('aborted_attempts_can_be_hidden_and_shown_again', async () => {
@@ -146,13 +155,13 @@ describe('attempts', () => {
     expect(row.querySelector('svg')).not.toBeNull();
   });
 
-  it('phone_row_shows_the_largest_difference', async () => {
+  it('phone_row_has_no_largest_difference', async () => {
     setViewportWidth(390);
     exerciseApi().on(`GET /api/exercises/${EXERCISE_ID}/attempts`, ATTEMPT_LIST).install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/attempts` });
     const row = await findEl('tr[data-attempt="1"]');
-    expect(row).toHaveTextContent('332 m. Braked 14 m earlier');
-    expect(within(row).getByText('T1')).toHaveClass('tag');
+    expect(row).not.toHaveTextContent('Braked');
+    expect(within(row).queryByText('T1')).toBeNull();
     expect(screen.queryByRole('columnheader', { name: 'Largest difference' })).toBeNull();
   });
 
@@ -310,7 +319,7 @@ describe('attempts', () => {
     await user.click(el('tr[data-attempt="1"] input[type="checkbox"]'));
     await user.click(within(el('.selection-bar')).getByRole('button', { name: 'Delete 1 attempt' }));
     const dialog = await screen.findByRole('alertdialog');
-    await waitFor(() => expect(dialog).toHaveTextContent(`The training of ${exercise().name} is on. It stops when you delete.`));
+    await waitFor(() => expect(dialog).toHaveTextContent('The training of Yangwang, EXP-1 is on. It stops when you delete.'));
     await user.click(within(dialog).getByRole('button', { name: 'Stop the training and delete' }));
     await waitFor(() => expect(api.called('POST /api/attempts/delete')).toBe(true));
     expect(api.calls.filter(call => call.method === 'POST').map(call => `${call.method} ${call.path}`).slice(0, 2)).toEqual(['POST /api/training/disarm', 'POST /api/attempts/delete']);

@@ -59,9 +59,9 @@ describe('catalogue', () => {
     return (await db('users').where({ name }).first()).id as string;
   }
 
-  async function exerciseFor(user: string, catalogueId: string, targets: object): Promise<string> {
+  async function exerciseFor(user: string, catalogueId: string, targetMs: number | null): Promise<string> {
     const [row] = await db('exercises')
-      .insert({ user_id: user, catalogue_id: catalogueId, family: 'Licence', name: catalogueId, targets: JSON.stringify(targets) })
+      .insert({ user_id: user, catalogue_id: catalogueId, family: 'Licence', name: catalogueId, target_ms: targetMs })
       .returning('id');
     return row.id as string;
   }
@@ -93,7 +93,7 @@ describe('catalogue', () => {
     const first = await signIn('Driver');
     await http().post('/api/profiles').set('Cookie', first).send({ name: 'Second', password: 'correct horse' }).expect(201);
     const second = await signIn('Second');
-    const exercise = await exerciseFor(await userId('Driver'), 'licence-b-1', {});
+    const exercise = await exerciseFor(await userId('Driver'), 'licence-b-1', null);
     const mine = await http().get('/api/catalogue').set('Cookie', first).expect(200);
     expect(mine.body.find(entryOf('licence-b-1'))).toMatchObject({ id: 'licence-b-1', exerciseId: exercise, status: 'new' });
     const theirs = await http().get('/api/catalogue').set('Cookie', second).expect(200);
@@ -262,6 +262,33 @@ describe('catalogue', () => {
     expect((await http().get('/api/catalogue').set('Cookie', cookie).expect(200)).body).toHaveLength(committed.entries.length);
   });
 
+  function schemaVersion1(retrieved: string): string {
+    const entries = committed.entries.map(({ targetMs, ...entry }) => ({ ...entry, targets: targetMs === null ? null : { goldMs: targetMs, silverMs: targetMs + 1000, bronzeMs: targetMs + 2000 }, sections: null }));
+    return JSON.stringify({ ...committed, schemaVersion: 1, retrieved, entries });
+  }
+
+  it('previous_file_of_schema_version_1_counts_as_no_previous_file', async () => {
+    mkdirSync(join(dataDir, 'catalogue'), { recursive: true });
+    writeFileSync(join(dataDir, 'catalogue', 'catalogue.previous.json'), schemaVersion1(laterThanCommitted(-1)));
+    await start();
+    const cookie = await signIn();
+    const info = await http().get('/api/catalogue/info').set('Cookie', cookie).expect(200);
+    expect(info.body).toMatchObject({ retrieved: committed.retrieved, hasPrevious: false, previousRetrieved: null });
+    expect((await http().post('/api/catalogue/update/restore').set('Cookie', cookie).expect(409)).body.code).toBe('no-previous');
+  });
+
+  it('saved_file_of_schema_version_1_falls_back_to_committed_file', async () => {
+    mkdirSync(join(dataDir, 'catalogue'), { recursive: true });
+    writeFileSync(join(dataDir, 'catalogue', 'catalogue.json'), schemaVersion1(laterThanCommitted(1)));
+    await start();
+    const cookie = await signIn();
+    const listed = (await http().get('/api/catalogue').set('Cookie', cookie).expect(200)).body as { id: string; targetMs: number | null }[];
+    expect(listed).toHaveLength(committed.entries.length);
+    expect(listed.find(entryOf('ce-tsukuba-circuit-s1'))).toBeDefined();
+    expect(listed.find(entryOf('licence-b-1'))).toMatchObject({ targetMs: 20800 });
+    expect((await http().get('/api/catalogue/info').set('Cookie', cookie).expect(200)).body.retrieved).toBe(committed.retrieved);
+  });
+
   it('exercise_keeps_working_when_its_catalogue_entry_is_gone', async () => {
     await start();
     const cookie = await signIn();
@@ -271,7 +298,7 @@ describe('catalogue', () => {
     const listed = await http().get('/api/catalogue').set('Cookie', cookie).expect(200);
     expect(listed.body.some(entryOf(entry.id))).toBe(false);
     const response = await http().get(`/api/exercises/${created.body.id}`).set('Cookie', cookie).expect(200);
-    expect(response.body).toMatchObject({ name: entry.name, family: entry.family, targets: entry.targets });
+    expect(response.body).toMatchObject({ name: entry.name, family: entry.family, targetMs: entry.targetMs });
   });
 
   it('update_needs_session', async () => {

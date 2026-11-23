@@ -168,7 +168,6 @@ export type RaceGoldenSector = {
   spreadMs: number;
   cleanLaps: number;
   bestJoins: boolean;
-  slipstream: boolean;
 };
 
 export type RaceGoldenLine = { gridM: number; x: (number | null)[]; z: (number | null)[] };

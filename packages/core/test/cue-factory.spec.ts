@@ -6,13 +6,13 @@ const base = { generation: 7, followClip: null, targetSpeedKph: null, decidedMon
 
 describe('makeCue', () => {
   it('focus_cue_uses_the_policy_priority_and_ttl', () => {
-    const focus = makeCue({ ...base, kind: 'focus', eventKey: 'focus', clip: 'focus-brake-late-1' }, DEFAULT_CONFIG);
+    const focus = makeCue({ ...base, kind: 'focus', eventKey: 'focus', clip: 'focus-approach-brake-late-1' }, DEFAULT_CONFIG);
     expect(focus).toEqual({
       id: '7:focus',
       eventKey: 'focus',
       kind: 'focus',
       targetSpeedKph: null,
-      clip: 'focus-brake-late-1',
+      clip: 'focus-approach-brake-late-1',
       followClip: null,
       generation: 7,
       priority: 10,

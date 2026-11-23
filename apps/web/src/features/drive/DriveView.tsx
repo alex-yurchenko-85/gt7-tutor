@@ -11,6 +11,7 @@ import { signedSeconds } from '../../app/format.ts';
 import { useImmersive } from '../../app/immersive.tsx';
 import { errorText } from '../../app/resource.ts';
 import { useExercise } from '../exercise/use-exercise.ts';
+import { exerciseTitle } from '../exercise/use-exercise-where.ts';
 import { paths, useRouter } from '../../app/router.tsx';
 import { useSession } from '../../app/session.tsx';
 import { telemetryStatus, voiceState, voiceStatus, type Status } from '../../app/status.ts';
@@ -196,7 +197,7 @@ function Stage({ state, exercise, reference, finishedAttempt, clipsFailed, onDri
             <StageStatus status={telemetry} label={t('drive.stage.telemetry')} />
             <StageStatus status={voice} label={t('drive.stage.voice')} />
           </p>
-          <p className="race-status-sub">{state.attemptNumber === null ? exercise.name : t('drive.stage.attempt', { number: state.attemptNumber, name: exercise.name })}</p>
+          <p className="race-status-sub">{state.attemptNumber === null ? exerciseTitle(exercise).title : t('drive.stage.attempt', { number: state.attemptNumber, name: exerciseTitle(exercise).title })}</p>
         </div>
         <button type="button" className="stage-button" onClick={onStop}>
           {t('drive.stage.stop')}

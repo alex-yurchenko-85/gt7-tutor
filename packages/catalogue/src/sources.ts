@@ -124,7 +124,7 @@ export async function fetchCatalogue(options: FetchCatalogueOptions): Promise<Ca
     parseCircuitExperience(circuitExperiencePage, findCircuit)
   );
   return validateCatalogue({
-    schemaVersion: 1,
+    schemaVersion: 2,
     retrieved: (options.now ?? (() => new Date()))().toISOString(),
     gameVersionNote: options.gameVersionNote ?? DEFAULT_GAME_VERSION_NOTE,
     circuits,

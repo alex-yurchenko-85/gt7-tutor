@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   eventKeyPlace,
   type AttemptReaction,
@@ -11,26 +11,30 @@ import {
   type StoredCueEvent
 } from '@gt7/contracts';
 import {
+  COMPARISON_VERSION,
   DEFAULT_CONFIG,
   brakeReactions,
   comparableSize,
   findDifferences,
   buildReview,
+  focusFor,
   median,
-  turnLosses,
+  reviewLosses,
   type Corner,
   type Finding,
+  type FocusAttempt,
   type PlayedBrakeCue,
-  type Review
+  type Review,
+  type TurnLoss
 } from '@gt7/core';
-import { FOCUS_ATTEMPTS, focusOf, focusSummary } from './attempt-focus.js';
+import { focusSummary, type FocusScope } from './attempt-focus.js';
 import type { Knex } from 'knex';
 import { ownedAttempt, ownedExercise, type AttemptRow, type CaptureRow, type ReferenceRow } from '../ownership/owned.js';
 import { ReferencesService } from '../references/references.service.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { FINDING_COLUMNS, saveComparison, toFinding, type FindingRow } from './finding-rows.js';
 import { localDate } from './local-date.js';
-import { reviewBody, withTurn } from './review-shapes.js';
+import { reviewBody, turnLossInfos, withTurn } from './review-shapes.js';
 import { httpError } from '../http-errors.js';
 
 export function attemptTimeMs(row: Pick<AttemptRow, 'completion' | 'game_ms'>): number | null {
@@ -55,6 +59,16 @@ function isVoicedBrake(row: Pick<CueRow, 'event_kind' | 'outcome'>): boolean {
   return row.event_kind === 'brake' && VOICED_OUTCOMES.includes(row.outcome);
 }
 
+function focusWindowOf(rows: AttemptRow[], only: string): Set<string> {
+  const index = rows.findIndex(row => row.id === only);
+  const target = rows[index]!;
+  const window = rows
+    .slice(0, index + 1)
+    .filter(row => row.reference_id === target.reference_id && row.completion === 'complete')
+    .slice(-DEFAULT_CONFIG.focus.attempts);
+  return new Set([only, ...window.map(row => row.id)]);
+}
+
 function bestOf(times: (number | null)[]): number | null {
   const known = times.filter((time): time is number => time !== null);
   return known.length > 0 ? Math.min(...known) : null;
@@ -62,6 +76,8 @@ function bestOf(times: (number | null)[]): number | null {
 
 @Injectable()
 export class AttemptsService {
+  private readonly logger = new Logger(AttemptsService.name);
+
   constructor(
     @Inject(KNEX) private readonly db: Knex,
     private readonly references: ReferencesService
@@ -90,14 +106,14 @@ export class AttemptsService {
   async review(userId: string, id: string, referenceId?: string): Promise<AttemptReview> {
     const attempt = await ownedAttempt(this.db, userId, id);
     const reference = await this.referenceFor(attempt, referenceId ?? attempt.reference_id);
-    const { review, findings, samples, referenceTimeMs } = await this.compare(attempt, reference);
+    const { review, findings, losses, samples, referenceTimeMs } = await this.compare(attempt, reference);
     const cues = await this.db('cue_events').where({ attempt_id: id }).orderBy('decided_mono_ms');
     const reactions: AttemptReaction[] = brakeReactions(samples, playedBrakeCues(cues.filter(isVoicedBrake)));
     return {
       referenceId: reference.id,
       referenceTimeMs,
       ...reviewBody(review, findings),
-      turnLosses: turnLosses(review.corners, review.lengthM, review.gridM, review.attempt.t, review.reference.t),
+      turnLosses: turnLossInfos(losses),
       reactions,
       cues: cues.map(
         (row): StoredCueEvent => ({
@@ -136,27 +152,48 @@ export class AttemptsService {
     return (await this.references.analysisOf(reference)).corners;
   }
 
-  async findingsFor(attemptIds: string[], referenceId: string): Promise<Map<string, Finding[]>> {
+  async recentComparisons(scope: FocusScope, limit: number): Promise<FocusAttempt[]> {
+    if (limit <= 0) return [];
+    const attempts = await this.db('attempts')
+      .where({ exercise_id: scope.exerciseId, reference_id: scope.referenceId, completion: 'complete' })
+      .orderBy([{ column: 'started_at', order: 'desc' }, { column: 'id', order: 'desc' }])
+      .limit(limit)
+      .select<{ id: string }[]>('id');
+    const found = await this.comparisonsFor(attempts.map(attempt => attempt.id), scope.referenceId);
+    return attempts.flatMap(attempt => {
+      const comparison = found.get(attempt.id);
+      return comparison ? [comparison] : [];
+    });
+  }
+
+  async comparisonsFor(attemptIds: string[], referenceId: string, recalculate: string[] = attemptIds): Promise<Map<string, FocusAttempt>> {
     const [rows, compared] = await Promise.all([
       this.db('attempt_findings')
         .whereIn('attempt_id', attemptIds)
         .andWhere({ reference_id: referenceId })
         .orderBy('s_m')
         .select<FindingRow[]>(...FINDING_COLUMNS),
-      this.db('attempt_comparisons').whereIn('attempt_id', attemptIds).andWhere({ reference_id: referenceId }).pluck<string[]>('attempt_id')
+      this.db('attempt_comparisons')
+        .whereIn('attempt_id', attemptIds)
+        .andWhere({ reference_id: referenceId, version: COMPARISON_VERSION })
+        .select<{ attempt_id: string; turn_losses: TurnLoss[] }[]>('attempt_id', 'turn_losses')
     ]);
-    const found = new Map(attemptIds.map((id): [string, Finding[]] => [id, []]));
-    for (const row of rows) found.get(row.attempt_id)!.push(toFinding(row));
-    const known = new Set(compared);
-    const missing = attemptIds.filter(id => !known.has(id));
+    const known = new Map(compared.map(row => [row.attempt_id, row.turn_losses]));
+    const found = new Map(attemptIds.map((id): [string, FocusAttempt] => [id, { findings: [], losses: known.get(id) ?? [] }]));
+    for (const row of rows) if (known.has(row.attempt_id)) found.get(row.attempt_id)!.findings.push(toFinding(row));
+    const allowed = new Set(recalculate);
+    const missing = attemptIds.filter(id => !known.has(id) && allowed.has(id));
+    for (const id of attemptIds) if (!known.has(id) && !allowed.has(id)) found.delete(id);
     if (missing.length === 0) return found;
     const reference = (await this.db<ReferenceRow>('references').where({ id: referenceId }).first())!;
     const attempts = await this.db<AttemptRow>('attempts').whereIn('id', missing);
-    await Promise.all(
-      attempts.map(async attempt => {
-        found.set(attempt.id, (await this.compare(attempt, reference)).findings);
-      })
-    );
+    for (const attempt of attempts) {
+      const compared = await this.compare(attempt, reference).catch((error: unknown) => {
+        this.logger.warn(`Differences of attempt ${attempt.id} not calculated: ${error instanceof Error ? error.message : String(error)}`);
+        return null;
+      });
+      found.set(attempt.id, compared ? { findings: compared.findings, losses: compared.losses } : { findings: rows.filter(row => row.attempt_id === attempt.id).map(toFinding), losses: [] });
+    }
     return found;
   }
 
@@ -165,17 +202,17 @@ export class AttemptsService {
     return this.references.samplesOf(capture!, { first: attempt.first_raw_index, last: attempt.last_raw_index });
   }
 
-  private async compare(attempt: AttemptRow, reference: ReferenceRow): Promise<{ review: Review; findings: Finding[]; samples: Sample[]; referenceTimeMs: number }> {
+  private async compare(
+    attempt: AttemptRow,
+    reference: ReferenceRow
+  ): Promise<{ review: Review; findings: Finding[]; losses: TurnLoss[]; samples: Sample[]; referenceTimeMs: number }> {
     const samples = await this.samplesFor(attempt);
     const analysis = await this.references.analysisOf(reference);
     const review = buildReview(samples, analysis, DEFAULT_CONFIG);
-    const findings = findDifferences(review, DEFAULT_CONFIG);
-    await this.recordComparison(attempt.id, reference.id, findings);
-    return { review, findings, samples, referenceTimeMs: analysis.timeMs };
-  }
-
-  private async recordComparison(attemptId: string, referenceId: string, findings: Finding[]): Promise<void> {
-    await this.db.transaction(trx => saveComparison(trx, attemptId, referenceId, findings));
+    const findings = samples.length >= 2 ? findDifferences(review, DEFAULT_CONFIG) : [];
+    const losses = reviewLosses(review);
+    await this.db.transaction(trx => saveComparison(trx, attempt.id, reference.id, { findings, losses }));
+    return { review, findings, losses, samples, referenceTimeMs: analysis.timeMs };
   }
 
   private async referenceFor(attempt: AttemptRow, referenceId: string): Promise<ReferenceRow> {
@@ -186,25 +223,24 @@ export class AttemptsService {
 
   private async summaries(exerciseId: string, only?: string): Promise<AttemptSummary[]> {
     const rows = await this.db<AttemptRow>('attempts').where({ exercise_id: exerciseId }).orderBy([{ column: 'started_at' }, { column: 'id' }]);
-    const findingRows = await this.db('attempt_findings as f')
-      .join('attempts as a', 'a.id', 'f.attempt_id')
-      .where('a.exercise_id', exerciseId)
-      .whereRaw('f.reference_id = a.reference_id')
-      .orderBy('f.s_m')
-      .select<FindingRow[]>(...FINDING_COLUMNS.map(column => `f.${column}`));
-    const findings = new Map<string, Finding[]>();
-    for (const row of findingRows) findings.set(row.attempt_id, [...(findings.get(row.attempt_id) ?? []), toFinding(row)]);
+    const comparisons = new Map<string, FocusAttempt>();
+    const needed = only === undefined ? new Set<string>() : focusWindowOf(rows, only);
+    for (const referenceId of new Set(rows.map(row => row.reference_id))) {
+      const ids = rows.filter(row => row.reference_id === referenceId).map(row => row.id);
+      for (const [id, found] of await this.comparisonsFor(ids, referenceId, ids.filter(id => needed.has(id)))) comparisons.set(id, found);
+    }
     const bestMs = bestOf(rows.map(attemptTimeMs));
     const corners = await this.cornersOf(rows);
-    const history = new Map<string, Finding[][]>();
+    const history = new Map<string, FocusAttempt[]>();
     const summaries: AttemptSummary[] = [];
     rows.forEach((row, index) => {
-      const own = findings.get(row.id) ?? [];
+      const comparison = comparisons.get(row.id) ?? { findings: [], losses: [] };
+      const own = comparison.findings;
       let focus: AttemptSummary['focus'] = null;
       if (row.completion === 'complete') {
-        const recent = [...(history.get(row.reference_id) ?? []), own];
+        const recent = [...(history.get(row.reference_id) ?? []), comparison];
         history.set(row.reference_id, recent);
-        if (only === undefined || row.id === only) focus = focusSummary(focusOf(recent.slice(-FOCUS_ATTEMPTS).reverse(), corners.get(row.reference_id)!));
+        if (only === undefined || row.id === only) focus = focusSummary(focusFor(recent.slice(-DEFAULT_CONFIG.focus.attempts).reverse(), DEFAULT_CONFIG));
       }
       if (only !== undefined && row.id !== only) return;
       const timeMs = attemptTimeMs(row);

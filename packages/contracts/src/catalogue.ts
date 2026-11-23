@@ -2,14 +2,6 @@ import { z } from 'zod';
 
 const entryIdPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-export const medalTargetsSchema = z.object({
-  bronzeMs: z.number().int().positive(),
-  silverMs: z.number().int().positive(),
-  goldMs: z.number().int().positive()
-});
-
-export type MedalTargetTimes = z.infer<typeof medalTargetsSchema>;
-
 export const catalogueEntrySchema = z.object({
   id: z.string().regex(entryIdPattern),
   family: z.string().min(1),
@@ -19,8 +11,7 @@ export const catalogueEntrySchema = z.object({
   track: z.string().min(1).nullable(),
   circuitId: z.number().int().nonnegative().nullable(),
   car: z.string().min(1).nullable(),
-  targets: medalTargetsSchema.nullable(),
-  sections: z.number().int().positive().nullable(),
+  targetMs: z.number().int().positive().nullable(),
   source: z.string().min(1)
 });
 
@@ -57,7 +48,7 @@ function uniqueIds(items: { id: string | number }[], context: z.RefinementCtx, p
 
 export const catalogueSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     retrieved: z.iso.datetime(),
     gameVersionNote: z.string(),
     circuits: z.array(circuitSchema),
@@ -81,7 +72,7 @@ export type CatalogueDiff = {
   rejected: CatalogueRejection | null;
 };
 
-export const exerciseStatusSchema = z.enum(['new', 'ready', 'practising', 'bronze', 'silver', 'gold']);
+export const exerciseStatusSchema = z.enum(['new', 'practising', 'target-reached']);
 
 export type ExerciseStatusName = z.infer<typeof exerciseStatusSchema>;
 

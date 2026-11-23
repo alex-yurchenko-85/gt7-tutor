@@ -9,7 +9,7 @@ import { DEFAULT_CONFIG, DEFAULT_SIDE_CUE_DISTANCE_M, analyseReference, clipsOf,
 import { KPH_PER_MPS, type RawDatagram } from '@gt7/contracts';
 import { cornerInfos } from '../src/references/references.service.js';
 import { KNEX } from '../src/storage/knex.provider.js';
-import { CLEAN_ATTEMPT, DEMONSTRATION, INTERLAGOS_TARGETS, TestApi, createReplayApp, insertAttempt, rawPathOf, type Range } from './support/api.js';
+import { CLEAN_ATTEMPT, DEMONSTRATION, INTERLAGOS_TARGET_MS, TestApi, createReplayApp, insertAttempt, rawPathOf, type Range } from './support/api.js';
 import { createMigratedDatabase, type DisposableDatabase } from './support/database.js';
 import { listen, openLive, type LiveConnection } from './support/live.js';
 import { testTempDir } from '../../../tools/testing/temp-root.js';
@@ -104,20 +104,22 @@ describe('exercises, captures and references', () => {
     app = null;
   });
 
-  it('exercise_from_catalogue_copies_targets_and_car', async () => {
+  it('exercise_from_catalogue_copies_the_target_and_car', async () => {
     const interlagos = await http().get(`/api/exercises/${await exercise()}`).set('Cookie', cookie).expect(200);
-    expect(interlagos.body).toMatchObject({ family: 'Circuit Experience', carId: 1905, targets: {}, status: 'new', step: 1, mutedCues: [], activeReferenceId: null });
-    await db('exercises').where({ id: interlagos.body.id }).update({ targets: JSON.stringify(INTERLAGOS_TARGETS) });
-    const targets = await http().get(`/api/exercises/${interlagos.body.id}`).set('Cookie', cookie).expect(200);
-    expect(targets.body.targets).toEqual(INTERLAGOS_TARGETS);
+    expect(interlagos.body).toMatchObject({ family: 'Circuit Experience', collection: 'Americas', code: 'Sector 2', carId: 1905, targetMs: null, targetGapMs: null, status: 'new', mutedCues: [], activeReferenceId: null });
+    expect(interlagos.body).not.toHaveProperty('step');
+    expect(interlagos.body).not.toHaveProperty('targets');
+    await db('exercises').where({ id: interlagos.body.id }).update({ target_ms: INTERLAGOS_TARGET_MS });
+    const target = await http().get(`/api/exercises/${interlagos.body.id}`).set('Cookie', cookie).expect(200);
+    expect(target.body.targetMs).toBe(INTERLAGOS_TARGET_MS);
     const licence = await http().post('/api/exercises').set('Cookie', cookie).send({ catalogueId: 'licence-b-1' }).expect(201);
-    expect(licence.body.targets).toEqual({ bronzeMs: 22800, silverMs: 21400, goldMs: 20800 });
+    expect(licence.body).toMatchObject({ targetMs: 20800, name: 'Starting & Stopping 1', collection: 'National B', code: 'B-1' });
     const own = await http()
       .post('/api/exercises')
       .set('Cookie', cookie)
       .send({ family: 'Time Trial', name: 'Tsukuba lap' })
       .expect(201);
-    expect(own.body).toMatchObject({ catalogueId: null, targets: {}, carId: null });
+    expect(own.body).toMatchObject({ catalogueId: null, targetMs: null, carId: null, collection: null, code: null });
     const patched = await http()
       .patch(`/api/exercises/${own.body.id}`)
       .set('Cookie', cookie)
@@ -239,7 +241,7 @@ describe('exercises, captures and references', () => {
     const exerciseId = await exercise();
     const first = await reference(exerciseId, await capture(exerciseId, 'demo-a'));
     const exerciseAfterFirst = await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200);
-    expect(exerciseAfterFirst.body).toMatchObject({ activeReferenceId: first, status: 'ready', step: 2 });
+    expect(exerciseAfterFirst.body).toMatchObject({ activeReferenceId: first, status: 'practising' });
     const second = await reference(exerciseId, await capture(exerciseId, 'demo-b'), { first: 738, last: 1703 });
     const history = await http().get(`/api/exercises/${exerciseId}/references`).set('Cookie', cookie).expect(200);
     expect(history.body.map((item: { id: string; active: boolean }) => [item.id, item.active])).toEqual([
@@ -370,22 +372,35 @@ describe('exercises, captures and references', () => {
     expect(body).not.toHaveProperty('bestMeasuredMs');
   });
 
-  it('next_medal_comes_from_the_best_time_and_the_targets', async () => {
+  it('target_gap_comes_from_the_best_time_and_the_target', async () => {
     const exerciseId = await exercise();
     const captureId = await capture(exerciseId, 'demo-a');
     const referenceId = await reference(exerciseId, captureId);
-    const empty = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
-    expect(empty.nextMedal).toBeNull();
     const attemptId = await storedAttempt(exerciseId, captureId, referenceId);
     await db('attempts').where({ id: attemptId }).update({ game_ms: 17071 });
-    await db('exercises').where({ id: exerciseId }).update({ targets: { goldMs: 16400, silverMs: 16700, bronzeMs: 17800 } });
-    const silver = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
-    expect(silver.nextMedal).toEqual({ medal: 'silver', targetMs: 16700, gapMs: 371 });
+    const noTarget = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
+    expect(noTarget).toMatchObject({ targetMs: null, targetGapMs: null, status: 'practising' });
+    await db('exercises').where({ id: exerciseId }).update({ target_ms: 16400 });
+    const behind = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
+    expect(behind).toMatchObject({ targetMs: 16400, targetGapMs: 671, status: 'practising' });
     const listed = (await http().get('/api/exercises').set('Cookie', cookie).expect(200)).body;
-    expect(listed[0].nextMedal).toEqual({ medal: 'silver', targetMs: 16700, gapMs: 371 });
-    await db('attempts').where({ id: attemptId }).update({ game_ms: 16300 });
-    const gold = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
-    expect(gold.nextMedal).toBeNull();
+    expect(listed[0]).toMatchObject({ targetMs: 16400, targetGapMs: 671 });
+    await db('attempts').where({ id: attemptId }).update({ game_ms: 16400 });
+    const reached = (await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body;
+    expect(reached).toMatchObject({ targetMs: 16400, targetGapMs: null, status: 'target-reached' });
+  });
+
+  it('target_is_set_removed_and_validated', async () => {
+    const exerciseId = await exercise();
+    const patch = (body: object) => http().patch(`/api/exercises/${exerciseId}`).set('Cookie', cookie).send(body);
+    expect((await patch({ targetMs: 23800 }).expect(200)).body.targetMs).toBe(23800);
+    expect((await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body.targetMs).toBe(23800);
+    expect((await patch({ targetMs: null }).expect(200)).body.targetMs).toBeNull();
+    await patch({ targetMs: 0 }).expect(400);
+    await patch({ targetMs: 23800.5 }).expect(400);
+    await patch({ targetMs: 3_600_001 }).expect(400);
+    await patch({ targetMs: '23.8' }).expect(400);
+    expect((await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200)).body.targetMs).toBeNull();
   });
 
   it('delete_reference_with_attempts_is_409', async () => {
@@ -512,7 +527,8 @@ describe('exercises, captures and references', () => {
   it('side_cue_distance_is_stored_and_validated', async () => {
     const exerciseId = await exercise();
     const created = await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200);
-    expect(created.body.sideCueDistanceM).toBe(DEFAULT_SIDE_CUE_DISTANCE_M);
+    expect(created.body.sideCueDistanceM).toBeNull();
+    expect(DEFAULT_SIDE_CUE_DISTANCE_M).toBeNull();
     const patch = (sideCueDistanceM: unknown) => http().patch(`/api/exercises/${exerciseId}`).set('Cookie', cookie).send({ sideCueDistanceM });
     for (const rejected of [0.3, 3.5, 1.2, 0, '1']) await patch(rejected).expect(400);
     for (const accepted of [0.5, 3, null]) {
@@ -575,7 +591,7 @@ describe('exercises, captures and references', () => {
     await as(http().get(`/api/exercises/${exerciseId}/reactions`));
     expect((await http().get('/api/exercises').set('Cookie', other)).body.map((item: { id: string }) => item.id)).toEqual([otherExercise]);
     expect((await http().get('/api/captures').set('Cookie', other)).body).toEqual([]);
-    expect((await db('exercises').where({ id: exerciseId }).first()).name).toBe('Autódromo de Interlagos');
+    expect((await db('exercises').where({ id: exerciseId }).first()).name).toBe('Autódromo de Interlagos · Sector 2');
   });
 
   it('cleanup_keeps_referenced_ranges_and_indices', async () => {

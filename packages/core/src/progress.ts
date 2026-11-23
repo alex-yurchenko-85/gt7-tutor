@@ -1,39 +1,17 @@
-import type { ExerciseStatusName, ExerciseTargets, MedalName } from '@gt7/contracts';
+import type { ExerciseStatusName } from '@gt7/contracts';
 
 export type StatusInput = {
   hasActiveReference: boolean;
-  completeAttempts: number;
   bestMs: number | null;
-  targets: ExerciseTargets;
+  targetMs: number | null;
 };
 
-function medalForTime(bestMs: number, targets: ExerciseTargets): MedalName | null {
-  const meets = (target: number | undefined) => target !== undefined && bestMs <= target;
-  if (meets(targets.goldMs)) return 'gold';
-  if (meets(targets.silverMs)) return 'silver';
-  if (meets(targets.bronzeMs)) return 'bronze';
-  return null;
-}
-
-export type NextMedal = { medal: MedalName; targetMs: number; gapMs: number };
-
-const MEDAL_ORDER: { medal: MedalName; target: keyof ExerciseTargets }[] = [
-  { medal: 'bronze', target: 'bronzeMs' },
-  { medal: 'silver', target: 'silverMs' },
-  { medal: 'gold', target: 'goldMs' }
-];
-
-export function nextMedal(bestMs: number | null, targets: ExerciseTargets): NextMedal | null {
-  if (bestMs === null) return null;
-  for (const { medal, target } of MEDAL_ORDER) {
-    const targetMs = targets[target];
-    if (targetMs !== undefined && bestMs > targetMs) return { medal, targetMs, gapMs: bestMs - targetMs };
-  }
-  return null;
+export function targetGap(bestMs: number | null, targetMs: number | null): number | null {
+  if (bestMs === null || targetMs === null || bestMs <= targetMs) return null;
+  return bestMs - targetMs;
 }
 
 export function exerciseStatus(input: StatusInput): ExerciseStatusName {
-  if (input.completeAttempts === 0) return input.hasActiveReference ? 'ready' : 'new';
-  const medal = input.bestMs === null ? null : medalForTime(input.bestMs, input.targets);
-  return medal ?? 'practising';
+  if (input.bestMs !== null && input.targetMs !== null && input.bestMs <= input.targetMs) return 'target-reached';
+  return input.hasActiveReference ? 'practising' : 'new';
 }

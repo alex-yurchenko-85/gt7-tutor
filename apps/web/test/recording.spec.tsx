@@ -65,7 +65,7 @@ type ProposalOptions = { runs?: ReferenceProposal[]; repeats?: ReferenceProposal
 
 function recordingApi(options: { ps5Ip?: string | null; consoleRequired?: boolean } & ProposalOptions = {}): ApiStub {
   let next = 0;
-  const api = exerciseApi(exercise({ step: 1, activeReferenceId: null }))
+  const api = exerciseApi(exercise({ activeReferenceId: null }))
     .on('GET /api/settings', { ps5Ip: options.ps5Ip === undefined ? '10.0.0.5' : options.ps5Ip, gameVersion: null })
     .on('GET /api/app-info', { demo: null, consoleRequired: options.consoleRequired ?? true })
     .on('POST /api/captures', () => ({ status: 201, body: captureInfo(`cap-${++next}`) }))
@@ -177,6 +177,19 @@ describe('reference recording', () => {
     expect(await screen.findByRole('button', { name: 'Start recording' })).toBeEnabled();
     expect(slotTexts()).toEqual(['Recording 1needed', 'Recording 2optional, a check']);
     expect(api.called('POST /api/references')).toBe(false);
+  });
+
+  it('record_page_names_the_exercise_by_its_title', async () => {
+    recordingApi();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    expect(await findEl('nav.breadcrumb')).toHaveTextContent('Exercises / Yangwang, EXP-1 / Reference');
+  });
+
+  it('record_stage_on_a_phone_names_the_exercise_by_its_title', async () => {
+    setViewportWidth(390);
+    recordingApi();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
+    expect(await screen.findByText('Reference · Yangwang, EXP-1')).toBeInTheDocument();
   });
 
   it('record_page_shows_one_needed_and_one_optional_recording', async () => {
@@ -466,7 +479,7 @@ describe('reference recording', () => {
     const view = renderApp({ path: `/exercises/${EXERCISE_ID}/record` });
     await sendLiveState(view, { mode: 'armed', exerciseId: EXERCISE_ID });
     const user = timedUser();
-    expect(await screen.findByText(`The training of ${exercise().name} is on. A recording needs it off.`)).toBeInTheDocument();
+    expect(await screen.findByText('The training of Yangwang, EXP-1 is on. A recording needs it off.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Start recording' })).toBeNull();
     await user.click(await screen.findByRole('button', { name: 'Stop the training and record' }));
     await waitFor(() => expect(api.called('POST /api/captures')).toBe(true));
