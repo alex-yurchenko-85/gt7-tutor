@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.15.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.14.0...v1.15.0) (2026-11-23)
+
+### Features
+
+* add exercise targets, Circuit Experience sectors and a focus that names the part of the turn ([54b02a8](https://github.com/alex-yurchenko-85/gt7-tutor/commit/54b02a8f5ac2ae3a51d138368e5f7980ebbdfbf7))
+
 # [1.14.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.13.0...v1.14.0) (2026-11-22)
 
 ### Features
