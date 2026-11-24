@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.16.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.15.0...v1.16.0) (2026-11-24)
+
+### Features
+
+* show your exercises and the whole catalogue on one exercises page ([8bd294c](https://github.com/alex-yurchenko-85/gt7-tutor/commit/8bd294c83b7a435c20e5f6039f870a07c1892113))
+
 # [1.15.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.14.0...v1.15.0) (2026-11-23)
 
 ### Features
