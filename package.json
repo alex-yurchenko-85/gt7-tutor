@@ -38,13 +38,13 @@
     "@semantic-release/changelog": "7.0.0",
     "@semantic-release/git": "11.0.1",
     "@types/node": "26.6.6",
-    "@vitest/coverage-v8": "5.1.0",
+    "@vitest/coverage-v8": "5.1.1",
     "husky": "9.1.7",
     "knex": "3.3.0",
     "pg": "8.23.1",
     "semantic-release": "26.0.1",
     "typescript": "6.0.3",
-    "vitest": "5.1.0"
+    "vitest": "5.1.1"
   },
   "release": {
     "branches": [
