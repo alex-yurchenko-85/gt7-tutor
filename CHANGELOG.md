@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.17.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.16.0...v1.17.0) (2026-11-24)
+
+### Features
+
+* filter the races list by track ([7b66bb0](https://github.com/alex-yurchenko-85/gt7-tutor/commit/7b66bb063b60285404dccfca08350a1259aa6b46))
+* show your focus before each attempt and make charts, cues and select mode easier on a phone ([f120e29](https://github.com/alex-yurchenko-85/gt7-tutor/commit/f120e29bfd2d1e60014f2aedbc6a924be805b85e))
+
 # [1.16.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.15.0...v1.16.0) (2026-11-24)
 
 ### Features
