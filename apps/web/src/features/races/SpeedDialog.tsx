@@ -8,6 +8,7 @@ import { SPEED_HEIGHT, SpeedChart, type LapSelection } from './SpeedChart.tsx';
 import '../../charts/map-dialog.css';
 import { t } from '../../app/i18n.ts';
 
+const LANDSCAPE = '(orientation: landscape) and (max-height: 500px)';
 const MIN_HEIGHT = 160;
 const FIELD_CHROME_PX = 72;
 
@@ -20,8 +21,12 @@ function useFreeHeight(open: boolean) {
     const element = ref.current;
     if (!open || !element) return;
     const legend = () => element.querySelector<HTMLElement>('.lap-legend');
+    const legendRoom = () => {
+      const key = legend();
+      return key && getComputedStyle(key).position !== 'absolute' ? key.offsetHeight : 0;
+    };
     const measure = () => {
-      if (element.clientHeight > 0) setHeight(Math.max(MIN_HEIGHT, element.clientHeight - (legend()?.offsetHeight ?? 0) - FIELD_CHROME_PX));
+      if (element.clientHeight > 0) setHeight(Math.max(MIN_HEIGHT, element.clientHeight - legendRoom() - FIELD_CHROME_PX));
     };
     measure();
     if (typeof ResizeObserver === 'undefined') return;
@@ -29,7 +34,12 @@ function useFreeHeight(open: boolean) {
     observer.observe(element);
     const legendElement = legend();
     if (legendElement) observer.observe(legendElement);
-    return () => observer.disconnect();
+    const landscape = typeof window.matchMedia === 'function' ? window.matchMedia(LANDSCAPE) : null;
+    landscape?.addEventListener('change', measure);
+    return () => {
+      observer.disconnect();
+      landscape?.removeEventListener('change', measure);
+    };
   }, [open]);
   return [ref, height] as const;
 }

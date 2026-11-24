@@ -4,6 +4,8 @@ import { api } from '../../api/client.ts';
 import { abortReasonText, formatDay, formatGap, formatTime } from '../../app/format.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
+import { FocusLine } from './FocusLine.tsx';
+import { latestFocus } from './latest-focus.ts';
 import { Icon } from '../../app/icons.tsx';
 import { useWideLayout } from '../../app/layout.ts';
 import { Link, paths } from '../../app/router.tsx';
@@ -75,7 +77,7 @@ function QuickSelect({ day, onPick }: { day: AttemptDay; onPick(ids: string[]): 
     { label: t('exercises.attempts.quick-aborted', { count: aborted.length }), attempts: aborted },
     { label: t('exercises.attempts.quick-day', { count: day.attempts.length }), attempts: day.attempts },
     { label: t('exercises.attempts.quick-none'), attempts: [] }
-  ];
+  ].filter((choice, index, all) => index === all.length - 1 || choice.attempts.length > 0);
   return (
     <div className="quick-select">
       <span className="sub">
@@ -131,6 +133,7 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
     exercise.reload();
   };
   const current = exercise.data;
+  const focus = latestFocus(list, current.activeReferenceId);
   const hasAttempts = list !== undefined && list !== null && list.days.length > 0;
   const tools = hasAttempts ? (
     <div className="attempts-tools">
@@ -150,6 +153,7 @@ export function AttemptsView({ exerciseId }: { exerciseId: string }) {
       <ExerciseHeader exercise={current} />
       <div className="wide attempts-layout">
         <div className="attempts-drive">
+          {focus ? <FocusLine focus={focus} /> : null}
           {current.activeReferenceId ? (
             <DriveButton exerciseId={current.id} referenceId={current.activeReferenceId} />
           ) : (

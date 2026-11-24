@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { KPH_PER_MPS, type RaceOffTrack, type RaceOffTrackView, type RaceRecurringPlace } from '@gt7/contracts';
 import './charts.css';
+import { useCursorPointer } from './cursor-pointer.ts';
 import { groupedMetres } from '../app/format.ts';
 import { t } from '../app/i18n.ts';
 
@@ -74,6 +75,7 @@ export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, curs
     if (box.width <= 0) return;
     onCursor(Math.max(0, Math.min(lengthM, ((event.clientX - box.left) / box.width) * lengthM)));
   };
+  const pointer = useCursorPointer<HTMLDivElement>(fromPointer, fromPointer);
   const fromKey = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -96,10 +98,7 @@ export function OffTrackStrip({ lengthM, laps, moments, recurring, pitLane, curs
         </div>
         <div
           className="plot strip-plot"
-          onPointerDown={fromPointer}
-          onPointerMove={event => {
-            if (event.buttons > 0 || event.pointerType === 'mouse') fromPointer(event);
-          }}
+          {...pointer}
         >
           {recurring.flatMap(place =>
             placeParts(place, lengthM).map((band, part) => (

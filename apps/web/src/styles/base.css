@@ -312,6 +312,12 @@ main.view {
   padding-bottom: calc(var(--gutter) + var(--nav-height) + 8px);
 }
 
+@media (min-width: 600px) and (max-width: 899px) {
+  main.view:not(.immersive) {
+    max-width: calc(640px + 2 * var(--gutter));
+  }
+}
+
 h1 {
   font: 700 30px/1.05 var(--font-display);
   margin-bottom: 4px;
@@ -394,6 +400,8 @@ p + p {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+  margin: 0 -3px;
+  padding: 0 3px;
   color: var(--ink);
 }
 
@@ -672,6 +680,33 @@ p + p {
   color: var(--ink);
   width: 100%;
   max-width: 100%;
+}
+
+.field select,
+select.input {
+  appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2314181f' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .field select,
+  :root:not([data-theme='light']) select.input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eef0f3' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  }
+}
+
+.record-stage .field select,
+.record-stage select.input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eef0f3' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+
+:root[data-theme='dark'] .field select,
+:root[data-theme='dark'] select.input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eef0f3' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
 
 .field-row {
@@ -1458,21 +1493,31 @@ th {
 
 @media (max-width: 899px) {
   .selection-bar {
+    flex-wrap: nowrap;
     gap: 10px;
-    padding: 12px var(--gutter);
+    min-height: 56px;
+    padding: 6px var(--gutter);
   }
 
   .selection-count {
-    flex-basis: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size: 20px;
   }
 
   .selection-bar .btn {
-    padding: 0 14px;
+    flex: none;
+  }
+
+  .selection-bar .btn {
+    min-height: 44px;
+    padding: 0 12px;
     white-space: nowrap;
   }
 
-  .selection-bar .btn.danger {
-    flex: 1;
+  .selecting-page {
+    padding-bottom: 72px;
   }
 }

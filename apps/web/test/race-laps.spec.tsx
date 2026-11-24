@@ -603,6 +603,7 @@ describe('race page, cursor on the position chart', () => {
     chart.getBoundingClientRect = () => ({ left: 0, top: 0, width: 800, height: 220, right: 800, bottom: 220, x: 0, y: 0, toJSON: () => ({}) });
     fireEvent.pointerEnter(chart, { pointerType: 'touch' });
     fireEvent.pointerDown(chart, { pointerType: 'touch', clientX: (60_000 / 1_029_768) * 800 });
+    fireEvent.pointerUp(chart, { pointerType: 'touch', clientX: (60_000 / 1_029_768) * 800 });
     fireEvent.pointerLeave(chart, { pointerType: 'touch' });
     expect(boxOf(POSITION)).toEqual(['Lap 1 · 2,535 m', 'Position 15', '20 → 15 here']);
     fireEvent.focus(chart);

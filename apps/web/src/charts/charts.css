@@ -38,6 +38,13 @@
   stroke-width: 2.5;
 }
 
+g.track-mark circle.mark-hit,
+.track-map.dark .track-mark circle.mark-hit {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
+
 .track-mark.on-attempt circle {
   stroke: var(--you);
 }
@@ -335,7 +342,7 @@
 
 .channel-plot {
   margin-top: 4px;
-  touch-action: none;
+  touch-action: pan-y;
   cursor: crosshair;
 }
 
@@ -744,7 +751,7 @@
 
 .strip-plot {
   padding-top: 26px;
-  touch-action: none;
+  touch-action: pan-y;
   cursor: crosshair;
 }
 
@@ -1049,7 +1056,7 @@
 }
 
 .race-chart-active {
-  touch-action: none;
+  touch-action: pan-y;
   cursor: crosshair;
 }
 

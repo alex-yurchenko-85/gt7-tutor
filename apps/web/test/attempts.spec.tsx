@@ -23,6 +23,24 @@ describe('attempts', () => {
     expect(el('a.row-link', first)).toHaveAttribute('href', `/attempts/${ATTEMPT_ID}/review`);
   });
 
+  it('shows_your_focus_above_drive', async () => {
+    const focus = { turn: 1, part: 'approach' as const, cause: 'brake-early' as const, clip: 'focus-approach-brake-early-1' };
+    const list = { ...ATTEMPT_LIST, days: [{ ...ATTEMPT_LIST.days[0]!, attempts: [ATTEMPT_LIST.days[0]!.attempts[0]!, { ...ATTEMPT_LIST.days[0]!.attempts[1]!, focus }] }, ...ATTEMPT_LIST.days.slice(1)] };
+    exerciseApi().on(LIST_ROUTE, list).install();
+    renderApp({ path: ATTEMPTS_PATH });
+    const line = await findEl('.attempts-drive .focus-line');
+    expect(line).toHaveTextContent('Your focusTurn one. Braking too early before the turn.');
+    const drive = el('.attempts-drive');
+    expect(drive.firstElementChild).toBe(line);
+  });
+
+  it('shows_no_focus_line_without_a_focus', async () => {
+    exerciseApi().on(LIST_ROUTE, ATTEMPT_LIST).install();
+    renderApp({ path: ATTEMPTS_PATH });
+    await findEls('.attempt-day table');
+    expect(maybeEl('.focus-line')).toBeNull();
+  });
+
   it('game_time_shows_thousandths_without_a_label', async () => {
     const timed = { ...ATTEMPT_LIST.days[0]!.attempts[1]!, timeMs: 23429 };
     const list = { ...ATTEMPT_LIST, days: [{ ...ATTEMPT_LIST.days[0]!, attempts: [timed] }] };
@@ -294,6 +312,14 @@ describe('attempts', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
     const day = el('.quick-select');
     expect(within(day).getAllByRole('button').map(button => button.textContent)).toEqual(['Aborted (1)', 'All on this day (2)', 'None']);
+  });
+
+  it('quick_select_hides_a_choice_with_no_attempts', async () => {
+    const complete = { ...ATTEMPT_LIST, days: [{ ...ATTEMPT_LIST.days[0]!, attempts: [ATTEMPT_LIST.days[0]!.attempts[1]!] }] };
+    exerciseApi().on(LIST_ROUTE, complete).install();
+    renderApp({ path: ATTEMPTS_PATH });
+    await userEvent.click(await screen.findByRole('button', { name: 'Select' }));
+    expect(within(el('.quick-select')).getAllByRole('button').map(button => button.textContent)).toEqual(['All on this day (1)', 'None']);
   });
 
   it('busy_conflict_shows_message', async () => {

@@ -57,6 +57,72 @@ describe('track map', () => {
     expect(disconnect).toHaveBeenCalled();
   });
 
+  describe('mark hit areas', () => {
+    function drawnSmall() {
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          observe() {}
+          disconnect() {}
+        }
+      );
+      vi.spyOn(SVGElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: 400, height: 1000, left: 0, top: 0, right: 400, bottom: 1000, x: 0, y: 0, toJSON: () => ({}) });
+    }
+
+    it('a_selectable_mark_has_a_transparent_hit_circle_of_44_screen_pixels', () => {
+      drawnSmall();
+      const select = vi.fn();
+      render(<TrackMap reference={LINE} marks={[{ sM: 4, title: 'Cue', label: '1', onSelect: select }]} />);
+      const hit = document.querySelector('.track-mark .mark-hit')!;
+      expect(Number(hit.getAttribute('r'))).toBeGreaterThanOrEqual(44);
+      fireEvent.click(hit);
+      expect(select).toHaveBeenCalledTimes(1);
+      expect(hit.nextElementSibling?.classList.contains('marker') || hit.parentElement!.querySelector('.marker')).toBeTruthy();
+    });
+
+    it('a_hit_circle_never_covers_a_peak_or_a_plain_mark', () => {
+      drawnSmall();
+      render(
+        <TrackMap
+          reference={LINE}
+          attempt={LINE}
+          peaks={[peak(1, 4)]}
+          marks={[
+            { sM: 4, title: 'Cue', label: '1', onSelect: () => undefined },
+            { sM: 4, title: 'Plain', label: '2' }
+          ]}
+        />
+      );
+      const hit = document.querySelector('.track-mark .mark-hit')!;
+      const dot = document.querySelector('.peak-dot')!;
+      const scale = Number(dot.getAttribute('r')) / 6;
+      const distance = Math.hypot(Number(hit.getAttribute('cx')) - Number(dot.getAttribute('cx')), Number(hit.getAttribute('cy')) - Number(dot.getAttribute('cy')));
+      expect(Number(hit.getAttribute('r'))).toBeLessThanOrEqual(Math.max(13, distance - 12 * scale) + 1e-6);
+    });
+
+    it('a_mark_without_a_select_action_has_no_hit_circle', () => {
+      drawnSmall();
+      render(<TrackMap reference={LINE} marks={[{ sM: 4, title: 'Info', label: '1' }]} />);
+      expect(document.querySelector('.mark-hit')).toBeNull();
+    });
+
+    it('two_near_marks_keep_hit_circles_that_do_not_cover_each_other', () => {
+      drawnSmall();
+      const marks = [
+        { sM: 4, title: 'A', label: '1', onSelect: () => undefined },
+        { sM: 6, title: 'B', label: '2', onSelect: () => undefined }
+      ];
+      render(<TrackMap reference={LINE} marks={marks} />);
+      const hits = [...document.querySelectorAll('.track-mark .mark-hit')];
+      expect(hits).toHaveLength(2);
+      const centre = (circle: Element) => [Number(circle.getAttribute('cx')), Number(circle.getAttribute('cy'))] as const;
+      const [a, b] = hits.map(centre) as [readonly [number, number], readonly [number, number]];
+      const gap = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      const radii = hits.map(hit => Number(hit.getAttribute('r')));
+      expect(radii[0]! + radii[1]!).toBeLessThanOrEqual(gap + 1e-6);
+    });
+  });
+
   it('peak_is_a_dot_on_the_line_named_by_its_tip_without_a_box', () => {
     render(<TrackMap reference={LINE} attempt={LINE} peaks={[peak(1, 4), peak(2, 6)]} />);
     const dots = screen.getAllByRole('button');

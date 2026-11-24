@@ -7,6 +7,7 @@ import { rememberedExerciseId } from '../../app/current-exercise.ts';
 import { LoadProblem } from '../../app/NotFound.tsx';
 import { errorText, useResource } from '../../app/resource.ts';
 import { useSession } from '../../app/session.tsx';
+import { Rich } from '../../app/rich-text.tsx';
 import { paths, useRouter } from '../../app/router.tsx';
 import { useFrameCursor } from '../../charts/use-frame-cursor.ts';
 import { apexPlaceText, apexSpeedText, differenceText, reactionText } from '../cues/cue-format.ts';
@@ -21,7 +22,7 @@ import { t } from '../../app/i18n.ts';
 
 function referenceName(reference: ReferenceInfo): string {
   const name = reference.origin === 'demo' ? t('exercises.references.demo') : t('exercises.references.own');
-  return t(reference.active ? 'exercises.review.reference-name-active' : 'exercises.review.reference-name', { name, date: formatDay(reference.createdAt) });
+  return reference.active ? t('exercises.review.reference-name-active', { name }) : t('exercises.review.reference-name', { name, date: formatDay(reference.createdAt) });
 }
 
 const Corners = memo(function Corners({ corners }: { corners: CornerReview[] }) {
@@ -189,10 +190,26 @@ function ReviewBody({ title, attempt, review, references, sideCueDistanceM, acti
   );
 }
 
-function ledeText(attempt: AttemptSummary, complete: boolean, gap: boolean): string {
+function ledeText(attempt: AttemptSummary, complete: boolean): string {
   const date = formatDateTime(attempt.startedAt);
-  if (complete) return t(gap ? 'exercises.review.lede-complete-gap' : 'exercises.review.lede-complete', { date });
+  if (complete) return t('exercises.review.lede-complete', { date });
   return attempt.reason ? t('exercises.review.lede-not-finished-reason', { date, reason: abortReasonText(attempt.reason) }) : t('exercises.review.lede-not-finished', { date });
+}
+
+function Gap({ ms }: { ms: number }) {
+  return <b className={ms > 0 ? 'review-gap slower' : 'review-gap'}>{signedSecondsText(ms)}</b>;
+}
+
+function GapLine({ toBestMs, toReferenceMs }: { toBestMs: number | null; toReferenceMs: number }) {
+  return (
+    <p className="review-gaps">
+      {toBestMs !== null && toBestMs > 0 ? (
+        <Rich k="exercises.review.gap-line" parts={{ best: <Gap ms={toBestMs} />, reference: <Gap ms={toReferenceMs} /> }} />
+      ) : (
+        <Rich k="exercises.review.gap-reference" parts={{ reference: <Gap ms={toReferenceMs} /> }} />
+      )}
+    </p>
+  );
 }
 
 function AttemptHeading({ attempt, review }: { attempt: AttemptSummary; review: AttemptReview | null }) {
@@ -204,15 +221,10 @@ function AttemptHeading({ attempt, review }: { attempt: AttemptSummary; review: 
       <div className="review-title-text">
         <h2>
           {t('exercises.review.title', { number: attempt.number, time })}
-          {gapMs === null ? null : (
-            <>
-              {' '}
-              <span className={gapMs > 0 ? 'review-gap slower' : 'review-gap'}>{signedSecondsText(gapMs)}</span>
-            </>
-          )}
         </h2>
+        {gapMs === null ? null : <GapLine toBestMs={attempt.gapToBestMs} toReferenceMs={gapMs} />}
         <p className="lede">
-          {ledeText(attempt, complete, gapMs !== null)}
+          {ledeText(attempt, complete)}
         </p>
       </div>
     </div>

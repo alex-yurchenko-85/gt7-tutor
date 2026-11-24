@@ -313,6 +313,25 @@ describe('races list', () => {
     expect(el('input', elWith('.race-row', 'High Speed Ring'))).not.toBeChecked();
   });
 
+  it('a_track_that_went_away_does_not_come_back_when_a_race_on_it_returns', async () => {
+    const api = racesApi();
+    const view = renderApp({ path: '/races' });
+    await sendLiveState(view, { mode: 'idle', lastRaceId: null });
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText('Track'), 'High Speed Ring (1)');
+    expect(screen.getByText('1 of 3 races')).toBeInTheDocument();
+    api.on('GET /api/races', [PANORAMA, OLDER]);
+    await sendLiveState(view, { mode: 'idle', lastRaceId: PANORAMA_ID, seq: 2 });
+    expect(await screen.findByRole('heading', { level: 2, name: 'My races 2' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Track')).toHaveValue('');
+    api.on('GET /api/races', [PANORAMA, RING, OLDER]);
+    await sendLiveState(view, { mode: 'idle', lastRaceId: RING_ID, seq: 3 });
+    expect(await screen.findByRole('heading', { level: 2, name: 'My races 3' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Track')).toHaveValue('');
+    expect(screen.getByText('3 races')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^High Speed Ring/ })).toBeInTheDocument();
+  });
+
   it('race_page_route_shows_not_found_for_a_bad_id', async () => {
     racesApi();
     renderApp({ path: '/races/not-a-uuid' });

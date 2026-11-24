@@ -27,7 +27,7 @@ main.view.immersive {
   --bg: #14181f;
   --line: #3d4450;
   --mute: #9aa2ad;
-  --soft: #4a4208;
+  --soft: #3a3412;
   --red: #ff7a80;
   --ref: #62a8ff;
   --you: #ff8a4c;
@@ -300,6 +300,28 @@ main.view.immersive {
   margin: 3px 0 0;
   font-size: 13px;
   color: var(--stage-mute);
+}
+
+.stage-title p.stage-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  overflow-wrap: normal;
+}
+
+.stage-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-attempt {
+  flex: none;
+  font-weight: 700;
+  color: var(--stage-ink);
+  white-space: nowrap;
 }
 
 .race-dot {

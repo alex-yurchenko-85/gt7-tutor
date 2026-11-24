@@ -183,7 +183,7 @@ describe('drive', () => {
     const { socket } = await openDrive(DRIVE_PATH, driving({ lastCue: cue({ kind: 'brake', targetSpeedKph: 85 }) }));
     expect(await screen.findByText('142')).toBeInTheDocument();
     expect(el('[role="status"].cue')).toHaveTextContent('Brake85');
-    expect(screen.getByText(/· Yangwang, EXP-1$/)).toBeInTheDocument();
+    expect(el('.stage-name')).toHaveTextContent('Yangwang, EXP-1');
   });
 
   it('drive_route_without_a_training_opens_the_attempts', async () => {
@@ -431,9 +431,11 @@ describe('drive mode', () => {
   it('drive_header_shows_the_attempt_number_of_the_exercise', async () => {
     driveApi().install();
     const { socket } = await openDrive(DRIVE_PATH, driving({ attemptNumber: 4 }));
-    expect(screen.getByText('Attempt 4 · Yangwang, EXP-1')).toBeInTheDocument();
+    expect(el('.stage-attempt')).toHaveTextContent('Attempt 4');
+    expect(el('.stage-name')).toHaveTextContent('Yangwang, EXP-1');
     send(socket, driving({ attemptNumber: 5 }));
-    expect(screen.getByText('Attempt 5 · Yangwang, EXP-1')).toBeInTheDocument();
+    expect(el('.stage-attempt')).toHaveTextContent('Attempt 5');
+    expect(el('.stage-name')).toHaveTextContent('Yangwang, EXP-1');
   });
 
   it('drive_header_names_only_the_exercise_before_the_start', async () => {
@@ -441,6 +443,7 @@ describe('drive mode', () => {
     await openDrive(DRIVE_PATH, driving({ mode: 'armed', attemptNumber: null, sM: null, speedMps: null }));
     const sub = document.querySelector('.stage-top .race-status-sub');
     expect(sub).toHaveTextContent(/^Yangwang, EXP-1$/);
+    expect(maybeEl('.stage-attempt')).toBeNull();
     const status = document.querySelector('.stage-top .race-status-word')!;
     expect([...status.querySelectorAll('.race-dot')].map(dot => dot.className)).toEqual(['race-dot green', 'race-dot red']);
     expect(status).toHaveTextContent(/^TelemetryVoice$/);
@@ -475,7 +478,7 @@ describe('drive mode', () => {
     await openDrive(DRIVE_PATH, driving({ lastCue: cue({ id: 'c1', eventKey: 'brake@332', kind: 'hard-brake', targetSpeedKph: 85, clip: 'hard-brake' }) }));
     expect(screen.getByRole('button', { name: 'Stop training' })).toBeInTheDocument();
     for (const name of ['Start now', 'Finish now', 'Abort attempt']) expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
-    expect(screen.getByText('Attempt 2 · Yangwang, EXP-1')).toBeInTheDocument();
+    expect(el('.stage-attempt')).toHaveTextContent('Attempt 2');
     expect(await screen.findByText('Cue 1 of 3 · before T1')).toBeInTheDocument();
     expect(screen.getByText('m of 20')).toBeInTheDocument();
   });

@@ -131,6 +131,9 @@ export function RacesView() {
   const filtering = tracks.length > 1;
   const activeTrack = filtering && tracks.some(item => item.name === track) ? track : '';
   const shown = useMemo(() => (activeTrack ? (list ?? []).filter(race => raceName(race) === activeTrack) : (list ?? [])), [list, activeTrack]);
+  useEffect(() => {
+    if (list && track !== activeTrack) setTrack('');
+  }, [list, track, activeTrack]);
   const shownPicked = shown.filter(race => picked.has(race.id));
   const toggle = (id: string) => {
     const next = new Set(picked);

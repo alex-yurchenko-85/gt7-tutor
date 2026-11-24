@@ -407,7 +407,28 @@ function MuteBadge({ x, y }: { x: number; y: number }) {
   );
 }
 
-const MarksLayer = memo(function MarksLayer({ marks, placed }: { marks: TrackMark[]; placed: (Placed | null)[] }) {
+function hitRadii(marks: TrackMark[], placed: (Placed | null)[], scale: number, peakAts: Point[]): number[] {
+  const radii = marks.map(markRadius);
+  const reach = MARK_HIT_PX * scale;
+  const ring = PEAK_RING_PX * scale;
+  const hits = [...radii];
+  marks.forEach((mark, index) => {
+    const own = placed[index];
+    if (!own || !mark.onSelect) return;
+    let room = reach;
+    placed.forEach((other, otherIndex) => {
+      if (!other || otherIndex === index) return;
+      const distance = Math.hypot(own.centre[0] - other.centre[0], own.centre[1] - other.centre[1]);
+      room = Math.min(room, marks[otherIndex]!.onSelect ? distance / 2 : distance - radii[otherIndex]!);
+    });
+    for (const at of peakAts) room = Math.min(room, Math.hypot(own.centre[0] - at[0], own.centre[1] - at[1]) - ring);
+    hits[index] = Math.max(radii[index]!, room);
+  });
+  return hits;
+}
+
+const MarksLayer = memo(function MarksLayer({ marks, placed, scale, peakAts }: { marks: TrackMark[]; placed: (Placed | null)[]; scale: number; peakAts: Point[] }) {
+  const hits = hitRadii(marks, placed, scale, peakAts);
   return (
     <>
       {marks.map((mark, index) => {
@@ -419,6 +440,7 @@ const MarksLayer = memo(function MarksLayer({ marks, placed }: { marks: TrackMar
         const content = (
           <>
             <title>{mark.title}</title>
+            {mark.onSelect ? <circle className="mark-hit" cx={cx} cy={cy} r={rounded(hits[index]!)} /> : null}
             {place.spread ? (
               <>
                 <line className="leader" x1={place.anchor[0]} y1={place.anchor[1]} x2={cx} y2={cy} />
@@ -464,6 +486,8 @@ const MarksLayer = memo(function MarksLayer({ marks, placed }: { marks: TrackMar
     </>
   );
 });
+
+const MARK_HIT_PX = 22;
 
 const PEAK_DOT_PX = 6;
 const PEAK_RING_PX = 12;
@@ -629,7 +653,7 @@ function useUnitsPerPixel(svg: RefObject<SVGSVGElement | null>, height: number, 
 export function TrackMap({ reference, attempt, far, peaks = NO_PEAKS, marks = NO_MARKS, segments = NO_SEGMENTS, cursorSM, dark = false, plain = false, lapLine = false }: TrackMapProps) {
   const geometry = useMemo(() => geometryOf(reference, attempt, far), [reference, attempt, far]);
   const svg = useRef<SVGSVGElement>(null);
-  const scale = useUnitsPerPixel(svg, geometry?.height ?? 1, peaks.length > 0);
+  const scale = useUnitsPerPixel(svg, geometry?.height ?? 1, peaks.length > 0 || marks.some(mark => mark.onSelect));
   const layout = useMemo(() => (geometry ? layoutOf(marks, reference, attempt, geometry, lapLine) : NO_LAYOUT), [geometry, marks, reference, attempt, lapLine]);
   const parts = useMemo(() => (geometry ? colouredParts(reference, segments, geometry.project) : []), [geometry, reference, segments]);
   const [peakState, setPeakState] = useState<PeakState>(NO_PEAK);
@@ -641,6 +665,7 @@ export function TrackMap({ reference, attempt, far, peaks = NO_PEAKS, marks = NO
       return point ? [{ peak, at: geometry.project(point[0], point[1]) }] : [];
     });
   }, [geometry, peaks, cursorLine]);
+  const peakAts = useMemo(() => places.map(place => place.at), [places]);
   const [peaksSeen, setPeaksSeen] = useState(peaks);
   if (peaksSeen !== peaks) {
     setPeaksSeen(peaks);
@@ -681,7 +706,7 @@ export function TrackMap({ reference, attempt, far, peaks = NO_PEAKS, marks = NO
       <EndsLayer geometry={geometry} ends={layout.ends} lapLine={lapLine} />
       <TurnLabelsLayer turns={layout.turns} />
       <PeaksLayer places={places} shown={shown} ring={peakState.ring} scale={scale} onShow={onShow} onHide={onHide} />
-      <MarksLayer marks={marks} placed={layout.placed} />
+      <MarksLayer marks={marks} placed={layout.placed} scale={scale} peakAts={peakAts} />
       {cursorPoint ? <circle className="track-cursor" cx={cursorPoint[0]} cy={cursorPoint[1]} r={8} /> : null}
       {shownPlace ? <PeakTip place={shownPlace} scale={scale} height={height} /> : null}
     </svg>

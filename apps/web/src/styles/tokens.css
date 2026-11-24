@@ -52,7 +52,7 @@
     --bg: #1c2028;
     --line: #3d4450;
     --mute: #9aa2ad;
-    --soft: #4a4208;
+    --soft: #3a3412;
     --red: #ff7a80;
     --ref: #62a8ff;
     --you: #ff8a4c;
@@ -90,7 +90,7 @@
   --bg: #1c2028;
   --line: #3d4450;
   --mute: #9aa2ad;
-  --soft: #4a4208;
+  --soft: #3a3412;
   --red: #ff7a80;
   --ref: #62a8ff;
   --you: #ff8a4c;
@@ -133,7 +133,7 @@
   --paper: var(--night);
   --line: var(--night-line);
   --mute: var(--night-mute);
-  --soft: #4a4208;
+  --soft: #3a3412;
   --lap-0: #62a8ff;
   --lap-1: #ff9a3c;
   --lap-2: #3ccf7f;

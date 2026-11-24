@@ -111,15 +111,17 @@ type CueRowProps = {
   reaction: BrakeReactionSummary | null;
   notSpoken: string | null;
   speaking: boolean;
+  open: boolean;
+  onOpen(): void;
   onToggle(): void;
   onOffset(next: number): void;
   onHear(): void;
 };
 
-function CueRow({ cue, phrase, number, muted, offsetMs, recurring, reaction, notSpoken, speaking, onToggle, onOffset, onHear }: CueRowProps) {
+function CueRow({ cue, phrase, number, muted, offsetMs, recurring, reaction, notSpoken, speaking, open, onOpen, onToggle, onOffset, onHear }: CueRowProps) {
   const flagged = recurring.length > 0 && !muted;
   return (
-    <li className={`note${flagged ? ' warn' : ''}${muted ? ' off' : ''}`} data-cue={number}>
+    <li className={`note${flagged ? ' warn' : ''}${muted ? ' off' : ''}${open ? ' open' : ''}`} data-cue={number}>
       <span className="n">{number}</span>
       <span className="distance">
         <Rich k="app.unit.metres" parts={{ value: <b>{Math.round(cue.sM)}</b> }} />
@@ -128,28 +130,37 @@ function CueRow({ cue, phrase, number, muted, offsetMs, recurring, reaction, not
         <Glyph kind={cue.kind} />
       </span>
       <span className="phrase">
-        <b>{phrase}</b>
-        {speaking ? <span className="tag ink">{t('exercises.cues.speaking')}</span> : null}
-        {notSpoken !== null ? (
-          <span className="tag outline">
-            <svg className="dots" viewBox="0 0 24 24">
-              <circle cx="5" cy="12" r="2.2" />
-              <circle cx="12" cy="12" r="2.2" />
-              <circle cx="19" cy="12" r="2.2" />
-            </svg>
-            {t('exercises.cues.not-spoken')}
-          </span>
-        ) : null}
-        {cue.bigStop ? <small>{t('exercises.cues.big-stop')}</small> : null}
-        {notSpoken !== null ? <small className="not-spoken">{notSpoken}</small> : null}
-        {reaction ? (
-          <small className="reaction">
-            {t('exercises.cues.reaction', { reaction: reactionText(reaction.medianMs), attempts: attemptsText(reaction.count) })}
-          </small>
-        ) : null}
-        {recurring.map(item => (
-          <em key={item.kind}>{recurringText(item)}</em>
-        ))}
+        <span className="phrase-text">
+          <button type="button" className="cue-name" aria-expanded={open} onClick={onOpen}>
+            <b>{phrase}</b>
+          </button>
+          {!open && offsetMs !== 0 ? <span className="offset-chip">{offsetText(offsetMs)}</span> : null}
+          {speaking ? <span className="tag ink">{t('exercises.cues.speaking')}</span> : null}
+          {notSpoken !== null ? (
+            <span className="tag outline">
+              <svg className="dots" viewBox="0 0 24 24">
+                <circle cx="5" cy="12" r="2.2" />
+                <circle cx="12" cy="12" r="2.2" />
+                <circle cx="19" cy="12" r="2.2" />
+              </svg>
+              {t('exercises.cues.not-spoken')}
+            </span>
+          ) : null}
+          {cue.bigStop ? <small>{t('exercises.cues.big-stop')}</small> : null}
+          {notSpoken !== null ? <small className="not-spoken">{notSpoken}</small> : null}
+          {reaction ? (
+            <small className="reaction">
+              {t('exercises.cues.reaction', { reaction: reactionText(reaction.medianMs), attempts: attemptsText(reaction.count) })}
+            </small>
+          ) : null}
+          {recurring.map(item => (
+            <em key={item.kind}>{recurringText(item)}</em>
+          ))}
+        </span>
+        <span className="pair">
+          <IconButton icon="play" label={t('exercises.cues.hear', { phrase })} onClick={onHear} />
+          <IconButton icon={muted ? 'speaker-off' : 'speaker'} label={t(muted ? 'exercises.cues.unmute' : 'exercises.cues.mute', { number })} primary={muted} pressed={muted} onClick={onToggle} />
+        </span>
       </span>
       <span className="target">
         {cue.targetSpeedKph === null ? (
@@ -161,13 +172,11 @@ function CueRow({ cue, phrase, number, muted, offsetMs, recurring, reaction, not
           </>
         )}
       </span>
-      <span className="act">
-        <span className="pair">
-          <IconButton icon="play" label={t('exercises.cues.hear', { phrase })} onClick={onHear} />
-          <IconButton icon={muted ? 'speaker-off' : 'speaker'} label={t(muted ? 'exercises.cues.unmute' : 'exercises.cues.mute', { number })} primary={muted} pressed={muted} onClick={onToggle} />
+      {open ? (
+        <span className="act">
+          <OffsetSlider number={number} offsetMs={offsetMs} onChange={onOffset} />
         </span>
-        <OffsetSlider number={number} offsetMs={offsetMs} onChange={onOffset} />
-      </span>
+      ) : null}
     </li>
   );
 }
@@ -315,6 +324,7 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
   const { player } = useLiveConnection();
   const wide = useWideLayout();
   const [viewing, setViewing] = useState(false);
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const data = useResource(
     (): Promise<CueData> =>
       Promise.all([
@@ -465,14 +475,17 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
     </MapPanel>
   );
 
+  const settingsBlock = (
+    <div className="voice-settings">
+      <SpeakTargetsSwitch on={speakTargets} onChange={changeSpeak} />
+      <SideCueDistance distanceM={sideDistanceM} onChange={changeSideDistance} />
+    </div>
+  );
+
   return (
     <div className="cols cues-layout">
-      {wide ? null : map}
       <div>
-        <div className="voice-settings">
-          <SpeakTargetsSwitch on={speakTargets} onChange={changeSpeak} />
-          <SideCueDistance distanceM={sideDistanceM} onChange={changeSideDistance} />
-        </div>
+        {wide ? settingsBlock : null}
         <p className="sub cues-intro">
           {t('exercises.cues.intro', { cues: t('common.count.cue', { count: cues.length }), turns: t('common.count.turn', { count: corners.length }) })}
           {dropped.length > 0 ? ` ${notSpokenSummary(dropped.length)}` : null}
@@ -496,6 +509,8 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
                 reaction={reactions.find(item => item.eventKey === row.cue.key) ?? null}
                 speaking={run.speaking?.rowKey === row.cue.key}
                 notSpoken={notSpoken.get(row.cue.key) ?? null}
+                open={openKey === row.cue.key}
+                onOpen={() => setOpenKey(current => (current === row.cue.key ? null : row.cue.key))}
                 onToggle={() => toggle(row.cue.key)}
                 onOffset={value => changeOffset(row.cue.key, value)}
                 onHear={() => hear(row.cue)}
@@ -509,7 +524,8 @@ function CueList({ exercise, referenceId }: { exercise: Exercise; referenceId: s
           {t('exercises.cues.footer', { tighter: clipText('tighter') })}
         </p>
       </div>
-      {wide ? map : null}
+      <div className="cues-map">{map}</div>
+      {wide ? null : settingsBlock}
     </div>
   );
 }

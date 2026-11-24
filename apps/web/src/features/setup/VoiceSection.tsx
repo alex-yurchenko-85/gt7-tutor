@@ -115,15 +115,17 @@ export function VoiceSection() {
         </span>
         <div className="pref-control">
           <span className="correction-value">{signed(correction)}</span>
-          <input
-            id="delay-correction"
-            type="range"
-            min={MIN_CORRECTION_MS}
-            max={MAX_CORRECTION_MS}
-            step={10}
-            value={correction}
-            onChange={event => changeCorrection(Number(event.target.value))}
-          />
+          <span className="slider-hit">
+            <input
+              id="delay-correction"
+              type="range"
+              min={MIN_CORRECTION_MS}
+              max={MAX_CORRECTION_MS}
+              step={10}
+              value={correction}
+              onChange={event => changeCorrection(Number(event.target.value))}
+            />
+          </span>
         </div>
       </div>
     </section>

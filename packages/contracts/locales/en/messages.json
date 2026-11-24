@@ -618,6 +618,11 @@
     "text": "{count} selected",
     "note": "Number of selected items in the selection bar."
   },
+  "app.selection.delete": {
+    "text": "Delete",
+    "note": "Button of the selection bar on a phone. It deletes the selected items. The bar shows their number next to it.",
+    "maxChars": 12
+  },
   "app.capture.bar.text": {
     "text": "A recording is running. While it runs, you cannot record, start an attempt or check reception.",
     "note": "Bar text while a reference recording runs."
@@ -2519,6 +2524,11 @@
     "text": "Focus for the next attempt",
     "note": "Label above the focus sentence."
   },
+  "exercises.focus.label": {
+    "text": "Your focus",
+    "note": "Label above the focus sentence on the Attempts tab and on the Continue card. The focus sentence comes from your last attempt.",
+    "maxChars": 24
+  },
   "exercises.summary.gap": {
     "text": "Gap to your best",
     "note": "Label of the gap to the best attempt."
@@ -2914,12 +2924,12 @@
     "maxChars": 28
   },
   "exercises.review.reference-name": {
-    "text": "{name}, {date}",
+    "text": "{name} · {date}",
     "note": "Choice of the reference selector. {name} is the reference name, {date} its day."
   },
   "exercises.review.reference-name-active": {
-    "text": "{name}, {date}, active",
-    "note": "Choice of the reference selector for the active reference. {name} is the reference name, {date} its day."
+    "text": "{name} · active",
+    "note": "Choice of the reference selector for the active reference. {name} is the reference name. Only one reference is active, so the choice has no day."
   },
   "exercises.review.corners": {
     "text": "Corners",
@@ -3291,8 +3301,9 @@
     "maxChars": 14
   },
   "drive.stage.attempt": {
-    "text": "Attempt {number} · {name}",
-    "note": "Drive stage: line at the top under the status. {number} is the attempt number, {name} the exercise name."
+    "text": "Attempt {number}",
+    "note": "Drive stage: label at the right end of the line under the status. {number} is the attempt number. It cannot wrap.",
+    "maxChars": 16
   },
   "drive.stage.stop": {
     "text": "Stop training",
@@ -3730,19 +3741,23 @@
   },
   "races.list.count_one": {
     "text": "{count} race",
-    "note": "Text next to the track filter when it shows all races. {count} is the number of races."
+    "note": "Text next to the track filter when it shows all races. {count} is the number of races.",
+    "maxChars": 24
   },
   "races.list.count_other": {
     "text": "{count} races",
-    "note": "Text next to the track filter when it shows all races. {count} is the number of races."
+    "note": "Text next to the track filter when it shows all races. {count} is the number of races.",
+    "maxChars": 24
   },
   "races.list.count-filtered_one": {
     "text": "{shown} of {count} race",
-    "note": "Text next to the track filter when one track shows. {shown} is the number of races that show. {count} is the number of all races."
+    "note": "Text next to the track filter when one track shows. {shown} is the number of races that show. {count} is the number of all races.",
+    "maxChars": 32
   },
   "races.list.count-filtered_other": {
     "text": "{shown} of {count} races",
-    "note": "Text next to the track filter when one track shows. {shown} is the number of races that show. {count} is the number of all races."
+    "note": "Text next to the track filter when one track shows. {shown} is the number of races that show. {count} is the number of all races.",
+    "maxChars": 32
   },
   "races.delete.title_one": {
     "text": "Delete {count} race?",
@@ -4810,16 +4825,20 @@
     "note": "Item of the delete list when the exercise has an active reference. {references} is the bold number of references from common.count.reference."
   },
   "exercises.review.reference-used": {
-    "text": "{name} (used for this attempt)",
-    "note": "Item of the reference list of the review: the reference that the attempt used. {name} is the reference name."
+    "text": "{name} · used",
+    "note": "Item of the reference list of the review: the reference that the attempt used. {name} is the name of the choice, for example the reference name and its state."
+  },
+  "exercises.review.gap-line": {
+    "text": "{best} to your best · {reference} to the reference",
+    "note": "Line under the review title of a complete attempt that is slower than the best attempt. {best} is the time gap to the best attempt. {reference} is the time gap to the compared reference. Each gap shows in bold."
+  },
+  "exercises.review.gap-reference": {
+    "text": "{reference} to the reference",
+    "note": "Line under the review title of the best attempt. {reference} is the time gap to the compared reference. It shows in bold."
   },
   "exercises.review.lede-complete": {
-    "text": "{date}. Times from the game.",
+    "text": "{date}.",
     "note": "Text under the review title of a complete attempt. {date} is the start date and time."
-  },
-  "exercises.review.lede-complete-gap": {
-    "text": "{date}. Times from the game. Gap to the compared reference.",
-    "note": "Text under the review title of a complete attempt with a time difference to the reference. {date} is the start date and time."
   },
   "exercises.review.lede-not-finished": {
     "text": "{date}. The attempt did not finish.",

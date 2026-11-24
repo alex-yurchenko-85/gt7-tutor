@@ -17,6 +17,8 @@ import { useSession } from '../../app/session.tsx';
 import { DriveAction } from '../drive/DriveButton.tsx';
 import { afterTargetSave } from '../exercise/target-save.ts';
 import { exerciseTitle, whereText } from '../exercise/use-exercise-where.ts';
+import { FocusLine } from '../attempts/FocusLine.tsx';
+import { latestFocus } from '../attempts/latest-focus.ts';
 import { GetReady } from '../get-ready/GetReady.tsx';
 import { CatalogueGroups } from './CatalogueGroups.tsx';
 import { DeleteExercisesDialog, historyText } from './DeleteExercisesDialog.tsx';
@@ -38,6 +40,11 @@ function continueKicker(exercise: Exercise, entry: CatalogueListEntry | null, wi
 
 function ContinueCard({ exercise, entry, wide }: { exercise: Exercise; entry: CatalogueListEntry | null; wide: boolean }) {
   const { bestMs, targetGapMs: gapMs, targetMs, activeReferenceId } = exercise;
+  const attempts = useResource(
+    () => (activeReferenceId && exercise.attemptCount > 0 ? api.attempts(exercise.id).catch(() => null) : Promise.resolve(null)),
+    [exercise.id, activeReferenceId, exercise.attemptCount]
+  );
+  const focus = latestFocus(attempts.data, activeReferenceId);
   return (
     <section className="continue">
       <div className="continue-main">
@@ -53,6 +60,7 @@ function ContinueCard({ exercise, entry, wide }: { exercise: Exercise; entry: Ca
             {gapMs !== null ? <span className="continue-gap"> · {t('exercises.home.to-target', { gap: formatSeconds(gapMs) })}</span> : null}
           </p>
         ) : null}
+        {focus ? <FocusLine focus={focus} /> : null}
       </div>
       {wide && bestMs !== null ? (
         <div className="continue-times">

@@ -1,0 +1,30 @@
+.focus-line {
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  background: var(--soft);
+  border-left: 4px solid var(--yellow);
+}
+
+.focus-line span {
+  color: var(--mute);
+  font-size: 13px;
+}
+
+.focus-line b {
+  font: 700 20px/1.15 var(--font-display);
+}
+
+.continue .focus-line {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #4a4208;
+}
+
+.continue .focus-line span {
+  color: #eef0f3;
+}
+
+.continue .focus-line b {
+  color: #ffffff;
+}

@@ -1,6 +1,7 @@
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { WIDTH, percent, rounded } from './geometry.ts';
 import { usePlotWidth } from './use-plot-width.ts';
+import { useCursorPointer } from './cursor-pointer.ts';
 import './charts.css';
 import { t } from '../app/i18n.ts';
 
@@ -76,6 +77,10 @@ export function RaceTimeChart({ id, raceMs, firstLap, lapEnds, pitStops, points,
     const nearest = active.snapMs.reduce<number | null>((best, at) => (best === null || Math.abs(at - tMs) < Math.abs(best - tMs) ? at : best), null);
     active.onCursor(nearest !== null && (Math.abs(nearest - tMs) / span) * box.width <= SNAP_PX ? nearest : tMs);
   };
+  const move = (event: PointerEvent<HTMLDivElement>) => {
+    if (cursor) fromPointer(event, cursor);
+  };
+  const pointer = useCursorPointer<HTMLDivElement>(move, move);
   const fromKey = (event: KeyboardEvent<HTMLDivElement>, active: RaceTimeCursor) => {
     const next = active.snapMs.find(at => at > active.tMs);
     const previous = active.snapMs.findLast(at => at < active.tMs);
@@ -117,10 +122,7 @@ export function RaceTimeChart({ id, raceMs, firstLap, lapEnds, pitStops, points,
                 'aria-valuemin': 0,
                 'aria-valuemax': Math.round(span),
                 'aria-valuenow': Math.round(cursor.tMs),
-                onPointerDown: (event: PointerEvent<HTMLDivElement>) => fromPointer(event, cursor),
-                onPointerMove: (event: PointerEvent<HTMLDivElement>) => {
-                  if (event.buttons > 0 || event.pointerType === 'mouse') fromPointer(event, cursor);
-                },
+                ...pointer,
                 onPointerEnter: () => cursor.onActive('pointer', true),
                 onPointerLeave: (event: PointerEvent<HTMLDivElement>) => {
                   if (event.pointerType !== 'touch') cursor.onActive('pointer', false);

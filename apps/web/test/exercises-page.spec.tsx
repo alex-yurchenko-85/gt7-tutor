@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { CatalogueListEntry, Exercise } from '@gt7/contracts';
 import { trackTargetSave } from '../src/features/exercise/target-save.ts';
 import { catalogueEntry, exercise, exerciseApi, rememberExercise, REFERENCE_ID } from './fixtures.ts';
+import { attemptSummary } from './review-fixtures.ts';
 import { ApiStub, liveState, renderApp, setViewportWidth, openLive, findSection, maybeSection, sectionOf, dialogOf, el, els, maybeEl, elWith, findEl, iconButton, USER } from './support.tsx';
 
 const ID = (n: number) => `e0000000-0000-4000-8000-0000000000${String(n).padStart(2, '0')}`;
@@ -175,6 +176,27 @@ describe('exercises page', () => {
     expect(drive.querySelector('[data-icon="drive"]')).not.toBeNull();
     expect(within(card()).getByRole('link', { name: 'Attempts' })).toHaveAttribute('href', `/exercises/${B7.id}/attempts`);
     expect(screen.queryByText(/Select a test or a sector/)).toBeNull();
+  });
+
+  it('continue_shows_your_focus_above_drive', async () => {
+    const focus = { turn: 1, part: 'approach' as const, cause: 'brake-early' as const, clip: 'focus-approach-brake-early-1' };
+    pageApi().on(`GET /api/exercises/${B7.id}/attempts`, { bestMs: 17867, days: [{ date: '2026-11-23', bestMs: 17867, attempts: [attemptSummary({ id: 'a7', exerciseId: B7.id, number: 6, referenceId: REFERENCE_ID, focus })] }] });
+    for (const width of [1440, 390]) {
+      setViewportWidth(width);
+      const view = renderApp({ path: '/exercises' });
+      const line = await findEl('section.continue .focus-line');
+      expect(line).toHaveTextContent('Your focusTurn one. Braking too early before the turn.');
+      view.unmount();
+    }
+  });
+
+  it('continue_without_a_focus_has_no_focus_line', async () => {
+    const api = pageApi();
+    renderApp({ path: '/exercises' });
+    await findEl('section.continue');
+    await waitFor(() => expect(api.called(`GET /api/exercises/${B7.id}/attempts`)).toBe(true));
+    await act(async () => undefined);
+    expect(maybeEl('.focus-line')).toBeNull();
   });
 
   it('continue_keeps_the_live_exercise_first', async () => {
@@ -570,7 +592,8 @@ describe('exercises page', () => {
     const user = userEvent.setup();
     await user.click(within(section).getByRole('button', { name: 'Select' }));
     await user.click(el('input', elWith('.page-row', 'National B, B-7', section)));
-    await user.click(screen.getByRole('button', { name: 'Delete 1 exercise' }));
+    expect(within(el('.selection-bar')).queryByRole('button', { name: 'Delete 1 exercise' })).toBeNull();
+    await user.click(within(el('.selection-bar')).getByRole('button', { name: 'Delete' }));
     const dialog = dialogOf('Delete National B, B-7?');
     expect(dialog).toHaveTextContent('6 attempts, with their cues and differences');
     expect(dialog).toHaveTextContent('your best time 0:17.867');

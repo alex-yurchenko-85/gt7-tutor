@@ -197,7 +197,12 @@ function Stage({ state, exercise, reference, finishedAttempt, clipsFailed, onDri
             <StageStatus status={telemetry} label={t('drive.stage.telemetry')} />
             <StageStatus status={voice} label={t('drive.stage.voice')} />
           </p>
-          <p className="race-status-sub">{state.attemptNumber === null ? exerciseTitle(exercise).title : t('drive.stage.attempt', { number: state.attemptNumber, name: exerciseTitle(exercise).title })}</p>
+          <p className="race-status-sub stage-sub">
+            <span className="stage-name" title={exerciseTitle(exercise).title}>
+              {exerciseTitle(exercise).title}
+            </span>
+            {state.attemptNumber === null ? null : <b className="stage-attempt">{t('drive.stage.attempt', { number: state.attemptNumber })}</b>}
+          </p>
         </div>
         <button type="button" className="stage-button" onClick={onStop}>
           {t('drive.stage.stop')}

@@ -909,6 +909,60 @@ tr.race-pit td {
   color: var(--ink);
 }
 
+@media (orientation: landscape) and (max-height: 500px) {
+  .speed-dialog .map-dialog-bar {
+    flex-wrap: nowrap;
+    gap: 16px;
+    padding: 6px var(--gutter);
+  }
+
+  .speed-dialog .map-dialog-title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .speed-dialog .map-dialog-title p {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 15px;
+  }
+
+  .speed-dialog-body {
+    padding: 8px var(--gutter);
+  }
+
+  .speed-dialog-chart {
+    position: relative;
+  }
+
+  .speed-dialog .lap-legend {
+    flex-wrap: nowrap;
+    margin: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .speed-dialog .lap-legend > * {
+    flex: none;
+  }
+
+  .speed-dialog .speed-lap-key {
+    min-height: 28px;
+    padding: 0 6px;
+    font-size: 12px;
+  }
+
+  .speed-dialog .turn-key {
+    padding: 0 6px;
+    font-size: 12px;
+  }
+}
+
 .speed-dialog .chart-field {
   margin-top: 0;
   padding: 0;

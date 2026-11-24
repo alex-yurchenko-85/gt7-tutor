@@ -1,6 +1,7 @@
 import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { WIDTH, percent, seriesSegments } from './geometry.ts';
 import { usePlotWidth } from './use-plot-width.ts';
+import { useCursorPointer } from './cursor-pointer.ts';
 import { distanceTicks } from './ticks.ts';
 import { LABEL_ROW_STEP_PX, LABEL_TOP_PX, turnLabelPlaces } from './turn-labels.ts';
 import './charts.css';
@@ -223,6 +224,10 @@ export function ChannelChart({ id, label, series, min, max, gridM, lengthM, curs
     if (box.width <= 0) return;
     report(clamp(Math.round((((event.clientX - box.left) / box.width) * lengthM) / gridM) * gridM));
   };
+  const pointer = useCursorPointer<HTMLDivElement>(
+    event => fromPointer(event, onCursor),
+    event => fromPointer(event, onScrub)
+  );
   const fromKey = (event: KeyboardEvent<HTMLDivElement>) => {
     const steps: Record<string, number> = { ArrowRight: gridM, ArrowLeft: -gridM, PageUp: gridM * 10, PageDown: -gridM * 10 };
     if (event.key === 'Home') onCursor(0);
@@ -260,10 +265,7 @@ export function ChannelChart({ id, label, series, min, max, gridM, lengthM, curs
         aria-valuemin={0}
         aria-valuemax={Math.round(lengthM)}
         aria-valuenow={Math.round(cursorSM)}
-        onPointerDown={event => fromPointer(event, onCursor)}
-        onPointerMove={event => {
-          if (event.buttons > 0 || event.pointerType === 'mouse') fromPointer(event, onScrub);
-        }}
+        {...pointer}
         onPointerEnter={() => setPointerOver(true)}
         onPointerLeave={event => {
           if (event.pointerType === 'touch') return;

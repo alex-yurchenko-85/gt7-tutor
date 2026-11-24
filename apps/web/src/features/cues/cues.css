@@ -2,6 +2,23 @@
   .cues-layout {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   }
+
+  .cues-map .track-map:not(.dark) {
+    max-height: max(200px, calc(100dvh - 360px));
+  }
+}
+
+@media (min-width: 900px) and (min-height: 640px) {
+  .cues-map {
+    position: sticky;
+    top: 80px;
+  }
+}
+
+@media (max-width: 899px) {
+  .cues-map .track-map:not(.dark) {
+    max-height: 220px;
+  }
 }
 
 .cues-intro {
@@ -75,11 +92,20 @@
 
 .note.warn {
   background: var(--soft);
+  box-shadow: inset 4px 0 0 var(--yellow);
 }
 
 .note.off {
   color: var(--mute);
-  background: repeating-linear-gradient(135deg, var(--bg) 0 10px, var(--paper) 10px 20px);
+}
+
+.note.off .phrase-text {
+  opacity: 0.55;
+}
+
+.note.off .distance b,
+.note.off .target b {
+  color: var(--mute);
 }
 
 .note .tag.ink,
@@ -147,9 +173,53 @@
   border-right: 0;
 }
 
-.note .act .pair {
+.note[data-cue] .phrase {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.note .phrase-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.note .phrase .pair {
+  flex: none;
   display: flex;
   gap: 6px;
+}
+
+.cue-name {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -7px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cue-name:hover b {
+  text-decoration: underline;
+}
+
+.note.off .cue-name:hover b {
+  text-decoration: line-through underline;
+}
+
+.offset-chip {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 1px 8px;
+  background: var(--ink);
+  color: var(--onink);
+  font: 600 12px/1.5 var(--font-body);
+  vertical-align: 3px;
+  white-space: nowrap;
 }
 
 .note.turn .n,

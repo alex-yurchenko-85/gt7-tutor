@@ -38,8 +38,10 @@
   }
 }
 
-.review-gap {
-  font-size: 0.7em;
+.review-gaps {
+  margin: 6px 0 0;
+  font-size: 17px;
+  line-height: 1.25;
 }
 
 .review-gap.slower {

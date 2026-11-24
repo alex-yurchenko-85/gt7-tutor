@@ -220,6 +220,17 @@ tr.picked td {
     row-gap: 0;
   }
 
+  .attempt-day .quick-select {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+
+  .attempt-day .quick-select .chip-button {
+    flex: none;
+  }
+
   .attempts-layout > .attempts-tools {
     display: grid;
     grid-auto-flow: column;

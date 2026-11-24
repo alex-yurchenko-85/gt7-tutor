@@ -5,6 +5,11 @@ import type { CuePreview, Exercise } from '@gt7/contracts';
 import { CORNERS, CUES, NO_DROP_PREVIEW, REFERENCE_ID, exercise, exerciseApi, EXERCISE_ID } from './fixtures.ts';
 import { el, els, findEl, findEls, findSection, mapMark, playerRig, renderApp, setViewportWidth, iconButton, findIconButton } from './support.tsx';
 
+function sliderOf(row: HTMLElement): HTMLElement {
+  if (!row.querySelector('input[type="range"]')) fireEvent.click(el('button.cue-name', row));
+  return el('input[type="range"]', row);
+}
+
 describe('cues without a reference', () => {
   it('panel_has_the_text_and_the_record_button_one_padding_apart', async () => {
     exerciseApi(exercise({ activeReferenceId: null, referenceCount: 0 })).install();
@@ -82,7 +87,7 @@ describe('cue list', () => {
     expect(row).toHaveClass('off');
     expect(within(row).queryByText('Muted')).toBeNull();
     expect(row).not.toHaveTextContent('The voice does not say this cue');
-    expect(within(row).getByRole('slider')).toBeInTheDocument();
+    expect(within(row).queryByRole('slider')).toBeNull();
     view.unmount();
 
     renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
@@ -163,7 +168,7 @@ describe('cue list', () => {
     const api = patchingApi(exercise({ cueOffsetsMs: { 'brake@332': 200 } })).install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const row = await findEl('[data-cue="1"]');
-    const slider = el('input[type="range"]', row);
+    const slider = sliderOf(row);
     expect(el('output', row)).toHaveTextContent('0.2 s earlier');
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const saveDelay = () => act(() => vi.advanceTimersByTime(500));
@@ -173,7 +178,7 @@ describe('cue list', () => {
     await waitFor(() => expect(api.calls.filter(call => call.method === 'PATCH').at(-1)?.body).toEqual({ cueOffsetsMs: { 'brake@332': 300 } }));
 
     const other = el('[data-cue="2"]');
-    const second = el('input[type="range"]', other);
+    const second = sliderOf(other);
     expect(el('output', other)).toHaveTextContent('On time');
     fireEvent.change(second, { target: { value: '100' } });
     fireEvent.change(second, { target: { value: '200' } });
@@ -185,10 +190,41 @@ describe('cue list', () => {
     expect(el('output', other)).toHaveTextContent('0.2 s later');
   });
 
+  it('only_the_open_row_shows_the_timing_slider', async () => {
+    patchingApi().install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
+    const first = await findEl('[data-cue="1"]');
+    const second = el('[data-cue="2"]');
+    expect(els('input[type="range"]')).toHaveLength(0);
+    const name = el('button.cue-name', first);
+    expect(name).toHaveTextContent('Hard brake. Eighty five');
+    expect(name).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(name);
+    expect(name).toHaveAttribute('aria-expanded', 'true');
+    expect(el('input[type="range"]', first)).toBeInTheDocument();
+    expect(first).toHaveClass('open');
+    fireEvent.click(el('button.cue-name', second));
+    expect(first.querySelector('input[type="range"]')).toBeNull();
+    expect(el('input[type="range"]', second)).toBeInTheDocument();
+    fireEvent.click(el('button.cue-name', second));
+    expect(els('input[type="range"]')).toHaveLength(0);
+  });
+
+  it('a_closed_row_shows_a_moved_timing_as_a_chip', async () => {
+    patchingApi(exercise({ cueOffsetsMs: { 'brake@332': 500 } })).install();
+    renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
+    const first = await findEl('[data-cue="1"]');
+    expect(el('.offset-chip', first)).toHaveTextContent('0.5 s earlier');
+    expect(el('[data-cue="2"]').querySelector('.offset-chip')).toBeNull();
+    fireEvent.click(el('button.cue-name', first));
+    expect(first.querySelector('.offset-chip')).toBeNull();
+    expect(el('output', first)).toHaveTextContent('0.5 s earlier');
+  });
+
   it('cue_offset_is_saved_when_leaving_the_view_at_once', async () => {
     const api = patchingApi().install();
     const view = renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
-    const slider = el('input[type="range"]', await findEl('[data-cue="1"]'));
+    const slider = sliderOf(await findEl('[data-cue="1"]'));
     fireEvent.change(slider, { target: { value: '-300' } });
     view.unmount();
     await waitFor(() => expect(api.calls.filter(call => call.method === 'PATCH').at(-1)?.body).toEqual({ cueOffsetsMs: { 'brake@332': 300 } }));
@@ -201,7 +237,7 @@ describe('cue list', () => {
       .install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const row = await findEl('[data-cue="1"]');
-    fireEvent.change(el('input[type="range"]', row), { target: { value: '-300' } });
+    fireEvent.change(sliderOf(row), { target: { value: '-300' } });
     const second = el('[data-cue="2"]');
     await userEvent.setup().click(iconButton('Mute cue 2', second));
     await findIconButton('Unmute cue 2', second);
@@ -211,7 +247,7 @@ describe('cue list', () => {
   it('cue_offset_slider_covers_one_second_earlier_to_half_a_second_later', async () => {
     patchingApi().install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
-    const slider = el('input[type="range"]', await findEl('[data-cue="1"]'));
+    const slider = sliderOf(await findEl('[data-cue="1"]'));
     expect(slider).toHaveAttribute('min', '-1000');
     expect(slider).toHaveAttribute('max', '500');
     expect(slider).toHaveAttribute('step', '100');
@@ -320,13 +356,13 @@ describe('cues map frame', () => {
     await waitFor(() => expect(api.calls.find(call => call.method === 'PATCH')?.body).toEqual({ mutedCues: [CUES[0]!.key] }));
   });
 
-  it('cues_map_stands_above_the_cue_list_on_a_phone', async () => {
+  it('cue_list_stands_above_the_map_on_a_phone', async () => {
     setViewportWidth(390);
     exerciseApi().install();
     renderApp({ path: `/exercises/${EXERCISE_ID}/cues` });
     const panel = await findSection('Reference line, 20 m');
     const firstRow = els('[data-cue]')[0]!;
-    expect(panel.compareDocumentPosition(firstRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(firstRow.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
@@ -506,7 +542,7 @@ describe('cue preview', () => {
         return current;
       });
     const { button } = await openPreview({ api });
-    const slider = el('input[type="range"]', el('[data-cue="1"]'));
+    const slider = sliderOf(el('[data-cue="1"]'));
     fireEvent.change(slider, { target: { value: '-300' } });
     fireEvent.click(button);
     await findIconButton('Stop the preview');
@@ -547,13 +583,30 @@ describe('cue preview', () => {
         return current;
       });
     const { played, view, button } = await openPreview({ api });
-    fireEvent.change(el('input[type="range"]', el('[data-cue="1"]')), { target: { value: '-300' } });
+    fireEvent.change(sliderOf(el('[data-cue="1"]')), { target: { value: '-300' } });
     fake();
     fireEvent.click(button);
     view.unmount();
     await advance(5000);
     expect(played).toEqual([]);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('phone_shows_the_cue_list_before_the_map_and_the_settings_after_it', async () => {
+    await openPreview({ width: 390 });
+    const layout = el('.cues-layout');
+    const order = [el('.roadbook', layout), el('.map-panel', layout), el('.voice-settings', layout)];
+    for (let index = 1; index < order.length; index += 1) {
+      expect(order[index - 1]!.compareDocumentPosition(order[index]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
+  it('desktop_keeps_the_settings_above_the_list_and_the_map_in_its_own_column', async () => {
+    await openPreview();
+    const layout = el('.cues-layout');
+    const settings = el('.voice-settings', layout);
+    expect(settings.compareDocumentPosition(el('.roadbook', layout)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(el('.map-panel', layout).parentElement).toHaveClass('cues-map');
   });
 
   it('phone_view_button_has_no_text', async () => {

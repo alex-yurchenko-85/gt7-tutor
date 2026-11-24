@@ -137,12 +137,23 @@ describe('attempt review', () => {
     renderApp({ path: REVIEW_PATH });
     const select = await screen.findByRole('combobox', { name: 'Compare with' });
     await screen.findByRole('option', { name: /Your attempt/ });
-    expect(within(select).getAllByRole('option').filter(option => option.textContent?.endsWith('(used for this attempt)'))).toHaveLength(1);
+    expect(within(select).getAllByRole('option').filter(option => option.textContent?.endsWith(' · used'))).toHaveLength(1);
     expect(requestedReferences).toEqual([null]);
     await userEvent.setup().selectOptions(select, 'ref-attempt');
     await waitFor(() => expect(requestedReferences).toEqual([null, 'ref-attempt']));
     expect(window.location.search).toBe('?reference=ref-attempt');
     expect(await screen.findByText(/No differences above the limits/)).toBeInTheDocument();
+  });
+
+  it('reference_choices_are_short', async () => {
+    reviewApi();
+    renderApp({ path: REVIEW_PATH });
+    const select = await screen.findByRole('combobox', { name: 'Compare with' });
+    await screen.findByRole('option', { name: /Your attempt/ });
+    const labels = within(select).getAllByRole('option').map(option => option.textContent ?? '');
+    expect(labels.every(label => label.length <= 32)).toBe(true);
+    expect(labels.some(label => label.includes('('))).toBe(false);
+    expect(labels).toContain('Demonstration · active · used');
   });
 
   it('differences_heading_explains_the_reference', async () => {
@@ -677,17 +688,42 @@ describe('attempt review', () => {
   it('review_header_shows_time_gap_and_breadcrumb', async () => {
     reviewApi(review({ referenceTimeMs: 25470 }));
     renderApp({ path: REVIEW_PATH });
-    expect(await screen.findByRole('heading', { level: 2, name: 'Attempt 1 · 0:27.100 +1.63 s' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Attempt 1 · 0:27.100' })).toBeInTheDocument();
+    expect(el('.review-gaps')).toHaveTextContent('+1.63 s to the reference');
     expect(screen.queryByRole('link', { name: 'All attempts' })).toBeNull();
     const crumbs = await findEl('nav.breadcrumb');
     expect(crumbs).toHaveTextContent('Exercises / Yangwang, EXP-1');
     expect(within(crumbs).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/exercises');
   });
 
+  it('review_header_names_the_base_of_each_gap', async () => {
+    reviewApi(review({ referenceTimeMs: 25470 }), attemptSummary({ gapToBestMs: 310 }));
+    renderApp({ path: REVIEW_PATH });
+    await screen.findByRole('heading', { level: 2, name: 'Attempt 1 · 0:27.100' });
+    const line = el('.review-gaps');
+    expect(line).toHaveTextContent('+0.31 s to your best · +1.63 s to the reference');
+    expect(line.querySelectorAll('.review-gap.slower')).toHaveLength(2);
+  });
+
+  it('review_header_of_the_best_attempt_gives_only_the_gap_to_the_reference', async () => {
+    reviewApi(review({ referenceTimeMs: 27500 }), attemptSummary({ gapToBestMs: 0 }));
+    renderApp({ path: REVIEW_PATH });
+    await screen.findByRole('heading', { level: 2, name: 'Attempt 1 · 0:27.100' });
+    expect(el('.review-gaps')).toHaveTextContent('−0.40 s to the reference');
+    expect(el('.review-gaps').querySelector('.slower')).toBeNull();
+  });
+
+  it('review_header_of_an_aborted_attempt_has_no_gap_line', async () => {
+    reviewApi(review(), attemptSummary({ completion: 'aborted', reason: 'left-track', timeMs: null, gapToBestMs: null }));
+    renderApp({ path: REVIEW_PATH });
+    await screen.findByRole('heading', { level: 2, name: 'Attempt 1 · No time' });
+    expect(maybeEl('.review-gaps')).toBeNull();
+  });
+
   it('review_lede_says_the_times_come_from_the_game', async () => {
     reviewApi(review(), attemptSummary({ startedAt: new Date(2026, 10, 16, 14, 5).toISOString() }));
     renderApp({ path: REVIEW_PATH });
-    expect(await screen.findByText('16 Nov 2026, 14:05. Times from the game. Gap to the compared reference.')).toBeInTheDocument();
+    expect(await screen.findByText('16 Nov 2026, 14:05.')).toBeInTheDocument();
   });
 
   it('review_lede_of_an_aborted_attempt_names_the_reason', async () => {
@@ -824,7 +860,7 @@ describe('attempt review', () => {
     reviewApi();
     renderApp({ path: REVIEW_PATH });
     await screen.findByRole('heading', { name: 'Differences by turn' });
-    const lede = screen.getByText(/Times from the game\./);
+    const lede = screen.getByText(/^\d+ \w+ 2026, \d\d:\d\d\.$/);
     const drive = screen.getByRole('button', { name: 'Drive' });
     expect(lede.compareDocumentPosition(drive) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(drive.compareDocumentPosition(document.querySelector('.track-map')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

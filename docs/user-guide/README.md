@@ -127,7 +127,7 @@ When your profile already has exercises, step 3 shows `Done` and the button **Op
 
 ## Find your way in the application
 
-![The Exercises page on a computer. The Continue card shows your best time 0:17.071 and 0.67 s to the target 0:16.400, with the buttons Drive and Attempts. Under it are the search field, the family buttons and All tracks. In progress has the button Select and one exercise row. Below is the Catalogue with the closed groups of the Licence family.](images/exercises-home.webp)
+![The Exercises page on a computer. The Continue card shows your best time 0:17.071 and 0.67 s to the target 0:16.400, the line Your focus with Turn one. Braking too early before the turn., and the buttons Drive and Attempts. Under it are the search field, the family buttons and All tracks. In progress has the button Select and one exercise row. Below is the Catalogue with the closed groups of the Licence family.](images/exercises-home.webp)
 
 The application has three items in the menu:
 
@@ -249,7 +249,7 @@ Your own exercise has the same needs. If the game does not time a demonstration 
 
 ### Delete an exercise
 
-On the Exercises page, select **Select** next to **In progress**. The list shows all your exercises that the filters show, also an exercise that has no reference yet. Mark one or more exercises, then select **Delete N exercises**. The quick buttons **Without history**, **All** and **None** help you mark them. They use only the exercises in the list.
+On the Exercises page, select **Select** next to **In progress**. The list shows all your exercises that the filters show, also an exercise that has no reference yet. Mark one or more exercises, then select **Delete N exercises** (on a phone: **Delete**). The quick buttons **Without history**, **All** and **None** help you mark them. They use only the exercises in the list.
 
 For one exercise, the dialog lists what goes: the attempts with their cues and differences, the references and the best time. For more exercises, it lists each exercise with its attempts and references.
 **Also clean up the raw captures that nothing uses afterwards** is on by default. Select **Delete exercise** (or **Delete N exercises**) to delete, or **Keep it** to close the dialog. You cannot undo it. The catalogue entry stays, so you can record its reference again from the catalogue.
@@ -300,27 +300,27 @@ While an attempt runs, the screen says `Attempt <n> runs. Finish it or stop the 
 **Goal:** choose what the voice says, and when.
 **Where:** the **Cues** tab of the exercise, or **Hear the cues** after you record the reference.
 
-![The Cues tab. At the top are the switch Speak target speeds and the list Side cue distance. Below them is the list of cues with distance, phrase and target speed. The turn row T1 has the line Brake to 377 m, 87 % at the turn-in. Lowest speed at the apex. At the right is the map Reference line with numbered cues.](images/cues.webp)
+![The Cues tab. At the top are the switch Speak target speeds and the list Side cue distance. Below them is the list of cues with distance, phrase, target speed and the buttons Hear and Mute. No row is open, so no Timing slider shows. The turn row T1 has the line Brake to 377 m, 87 % at the turn-in. Lowest speed at the apex. At the right is the map Reference line with numbered cues.](images/cues.webp)
 
 The list shows each cue and each turn in the order of the section. Each cue row has:
 
 - The distance from the start of the section and the phrase, for example `291 m`, `Hard brake. One fifteen`.
 - The target speed in km/h, rounded down to 5. For a brake it is the lowest speed of the reference in that place, and the row says `lowest speed`. For a throttle cue it is the speed of the reference 2 s later. `–` means that the cue has no target speed, for example a brake to a stop: GT7 Tutor gives targets only from 30 to 350 km/h.
 - **Hear** (play icon): plays the phrase on this device.
-- **Mute** (speaker icon) / **Unmute** (crossed-out speaker on a black fill): a muted cue is not spoken. The Drive screen does not show it either. A muted row has a striped grey background and the phrase struck through. Its timing stays and applies again after **Unmute**.
-- **Timing**: moves this cue up to 1 s earlier or 0.5 s later, in steps of 0.1 s.
+- **Mute** (speaker icon) / **Unmute** (crossed-out speaker on a black fill): a muted cue is not spoken. The Drive screen does not show it either. A muted row is pale and has the phrase struck through. Its timing stays and applies again after **Unmute**.
+- **Timing**: select the phrase to open the row. The open row shows the **Timing** slider. It moves this cue up to 1 s earlier or 0.5 s later, in steps of 0.1 s. Select the phrase again, or the phrase of another cue, to close the row. One row is open at a time. A closed row with a moved timing shows it in a black label, for example `0.5 s earlier`.
 - Notes from your attempts, for example `Braked early in 2 of 3 attempts, median 26 m`. A yellow row marks a place where a difference repeats.
 - The tag `NOT SPOKEN`: on the reference line, the voice does not say this cue. The line under the phrase tells why. An example is `The voice still says cue 3 here. Mute cue 3 or this cue, or move cue 3 earlier.` The voice says one cue at a time, so a cue that comes too soon after another cue stays silent. The line above the list gives the number of these cues. A muted cue does not get this tag.
 
 The turn rows (`T1`) show the turn-in, the apex, the radius and the speed of the reference at the apex. The voice does not say them.
 A turn with a brake zone has one more line: how the reference brakes for the turn. An example is `Brake to 377 m, 87 % at the turn-in. Lowest speed at the apex.` The brake to value is the end of the brake zone. The percent is the brake of the reference at the turn-in. When the lowest speed of the reference is more than 6 m from the apex, the line gives the distance, for example `Lowest speed 12 m after the apex.`
 
-Settings above the list:
+Settings above the list (on a phone, under the map):
 
 - **Speak target speeds**: on, the voice says the lowest speed of the reference after a brake phrase. Off, it says the action only.
 - **Side cue distance**: `Off`, or 0.5 m to 3 m. The voice says `More left` or `More right` when the car stays farther than this distance from the reference line. A new exercise starts with `Off`.
 
-The map is on the right, in a frame with the title `Reference line, <length> m`. The legend under the map has the words `reference line`, `turn`, `voice cue`, `muted cue`, `cue not spoken` and `Select a number to mute that cue`. **View** opens the map in full screen, with the list of the voice cues. Select a cue in the list to find it on the line. Press Esc or select **Back** to close the full-screen map. On a phone, the map is above the list of cues.
+The map is on the right, in a frame with the title `Reference line, <length> m`. On a computer, the map stays in view when you scroll the list. The legend under the map has the words `reference line`, `turn`, `voice cue`, `muted cue`, `cue not spoken` and `Select a number to mute that cue`. **View** opens the map in full screen, with the list of the voice cues. Select a cue in the list to find it on the line. Press Esc or select **Back** to close the full-screen map. On a phone, the map is under the list of cues and is lower. Select the full-screen button (the icon next to the title) to see it in full screen.
 
 On the map, a yellow band marks each turn, from the turn-in to the end of the turn, with its label `T1`. A short bar and an arrow mark the start and the direction of travel. A chequered bar marks the finish. Select a cue number to mute or unmute that cue. A muted cue has a dashed grey circle with a small crossed-out speaker. A cue with the tag `NOT SPOKEN` has a small black circle with three dots. Two cues can be so close that their numbers would cover each other. Then the numbers move to the two sides of the line, with a short line to their places.
 
@@ -375,11 +375,11 @@ Other states of the **Drive** button:
 
 ### During the attempt
 
-![The Drive screen during attempt 3 with the cue FULL THROTTLE 140. Under it are Next: Full throttle, in 2 m and Cue 2 of 6 · before T1. The values are 95 km/h, 409 m of 818 and +1.3 s to reference. The map shows turn 1 as a yellow band.](images/drive-cue.webp)
+![The Drive screen during attempt 6 with the cue HARD BRAKE 115. At the top are the exercise name and Attempt 6 on one line. Under the cue are Next: Full throttle, in 115 m and Cue 1 of 6 · before T1. The values are 188 km/h, 296 m of 818 and +0.3 s to reference. The map shows turn 1 as a yellow band.](images/drive-cue.webp)
 
 | Part | Meaning |
 | --- | --- |
-| **Telemetry**, **Voice** | The status dots in the top row. Green means ready. The line under them gives `Attempt <n> · <exercise>`. |
+| **Telemetry**, **Voice** | The status dots in the top row. Green means ready. The line under them gives the exercise name, which stays on one line and ends with `…` when it is long, and `Attempt <n>` at the right end. |
 | Large yellow words | The current cue, for example `HARD BRAKE 115` or `FULL THROTTLE 140`. The number has the size of the words. It shows for about 3 s. The cue area has one height for all cues, so the lines below it do not move. |
 | `Next: …, in … m` | The next cue and the distance to it |
 | `Cue 2 of 6 · before T1` | The number of the current cue and the next turn |
@@ -406,7 +406,7 @@ When you pause the game, the screen shows `Paused. Cues stop until you continue.
 
 ### After the finish
 
-![The summary of attempt 5: the time 0:18.824 from the game and the focus Turn one. Braking too early before the turn. Then the gap to your best +1.75 s, the largest difference and the buttons Review this attempt and Drive again.](images/drive-summary.webp)
+![The summary of attempt 4: the time 0:17.071 from the game and the focus Turn one. Off the line on exit. The gap to your best says best. Then come the largest difference and the buttons Review this attempt and Drive again.](images/drive-summary.webp)
 
 The summary shows:
 
@@ -471,11 +471,11 @@ The training stays on when you open another screen. Stop it when you do not driv
 **Goal:** see where and how your attempt is different from the reference.
 **Where:** **Review this attempt** after the finish, or a row in the **Attempts** tab.
 
-![The review of attempt 2 with Side distance × 6. The reference line is blue and your line is orange. The pointer is on the dot of turn 1, and its tip shows the true side distance and the place. At the right are the yellow Drive button and the differences by turn. The difference 23 km/h slower in the corner is selected.](images/review-side.webp)
+![The review of attempt 2 with Side distance × 6. Under the title, +1.75 s to your best · +2.74 s to the reference. The reference line is blue and your line is orange. At the right are the yellow Drive button and the differences by turn. The difference 23 km/h slower in the corner is selected.](images/review-side.webp)
 
 The review shows the header and the tabs of the exercise. Under them:
 
-- The attempt number, the time from the game and the gap to the reference, for example `Attempt 1 · 0:18.824 +2.74 s`. Select the **Attempts** tab to go back to all attempts.
+- The attempt number and the time, for example `Attempt 2 · 0:18.824`. Under it, the gap to your best attempt and the gap to the reference, for example `+1.75 s to your best · +2.74 s to the reference`. The best attempt shows only the gap to the reference. Select the **Attempts** tab to go back to all attempts.
 - The yellow **Drive** button starts the next attempt. On a computer, it is at the top of the right column. On a phone, it is under the attempt title, above **Your line**.
 
 | Part | What it shows |
@@ -486,8 +486,8 @@ The review shows the header and the tabs of the exercise. Under them:
 | **Differences by turn** | The differences, grouped by turn, with the time lost or gained in each turn. The time of a turn starts at its first brake or lift-off. It stops at the first brake or lift-off of the next turn. The first turn starts at the start of the section or the lap. The last turn stops at its end. The times of all turns add up to the change of the chart **Time lost** from its start to its end. The column headers **Turn** and **Time lost** set the order. **Turn** puts the turns in the order of the track. **Time lost** puts the turn with the largest time lost first. Select the active header again to reverse the order. An arrow shows the active order and its direction. Select a difference to put the cursor there. A section without turns shows one group, **Whole section**. `No differences above the limits in this attempt.` means that GT7 Tutor found no difference. |
 | **Corners** | Your line at each apex: on the line, or the distance inside or outside, and your speed at the apex. A section without turns has no **Corners**. |
 | **Brake reaction** | The time from the start of a spoken brake cue to your brake. A value `before the cue` means that you braked before the voice. |
-| Charts | Speed, throttle, brake, the distance from the reference line, and the time lost. On **Speed**, a ring marks the lowest speed of each line in each turn with a brake zone. Your ring shows only when your lowest speed is inside the turn and has no gap before or after it. The legend calls it `lowest speed in the turn`. When the chart has 3 turns or fewer with rings, each ring also shows its speed, for example `116 km/h`. Move the pointer or a finger across a chart. With a keyboard, move the focus to a chart and use the arrow keys. A dashed line and a dot on each line mark the cursor on all charts. The map shows the same place. On the chart under the pointer, the finger or the focus, a box gives the distance, the turn and the values, for example `Reference: 110 km/h` and `You: 108 km/h`. **Time lost** has no box. It gives its value at the top right. |
-| **Compare with** | Another reference of the exercise. The review then compares the same attempt with that reference. |
+| Charts | Speed, throttle, brake, the distance from the reference line, and the time lost. On **Speed**, a ring marks the lowest speed of each line in each turn with a brake zone. Your ring shows only when your lowest speed is inside the turn and has no gap before or after it. The legend calls it `lowest speed in the turn`. When the chart has 3 turns or fewer with rings, each ring also shows its speed, for example `116 km/h`. Move the pointer across a chart. On a phone, tap a chart or drag a finger sideways. A vertical swipe scrolls the page. With a keyboard, move the focus to a chart and use the arrow keys. A dashed line and a dot on each line mark the cursor on all charts. The map shows the same place. On the chart under the pointer, the finger or the focus, a box gives the distance, the turn and the values, for example `Reference: 110 km/h` and `You: 108 km/h`. **Time lost** has no box. It gives its value at the top right. |
+| **Compare with** | Another reference of the exercise. The review then compares the same attempt with that reference. Each choice gives the name of the reference and its day. The active reference has `active` in place of the day. `used` marks the reference that you drove this attempt against, for example `Demonstration · active · used`. |
 
 ![The lower part of the review page. The charts show speed, throttle, brake, the distance from the reference line and the time lost to the reference. A yellow zone marks turn 1. On the speed chart, a blue ring marks the lowest speed of the reference, 116 km/h. An orange ring marks your lowest speed, 93 km/h. The legend under the brake chart has the entry lowest speed in the turn. The cursor is at 680 m. The box on the speed chart gives Reference: 195 km/h and You: 171 km/h.](images/review-charts.webp)
 
@@ -506,9 +506,10 @@ Other actions under **Source**:
 
 **Where:** the **Attempts** tab of the exercise.
 
-![The Attempts tab with the attempts of one day: number, time and gap to best. Select and Hide aborted are in the row of the day heading. The yellow Drive button is above Recurring differences.](images/attempts.webp)
+![The Attempts tab with the attempts of one day: number, time and gap to best. Select and Hide aborted are in the row of the day heading. In the right column, Your focus with Turn one. Braking too early before the turn. is above the yellow Drive button and Recurring differences.](images/attempts.webp)
 
 - The yellow **Drive** button starts an attempt. See [Drive an attempt](#drive-an-attempt). On a computer, it is at the top of the right column. On a phone, it is under the tabs, with **Select** and **Hide aborted** under it.
+- `Your focus` above **Drive** gives the focus sentence of your last complete attempt. GT7 Tutor uses only attempts with the active reference. An aborted attempt does not count. An example is `Turn one. Braking too early before the turn.` It is the same sentence as on the summary after the attempt. Without such an attempt, or when that attempt has no focus sentence, the line does not show.
 - Without attempts, the tab says `No attempts yet. Select Drive, then drive the exercise in the game.`
 - GT7 Tutor groups the attempts by day. The heading of each day is the date.
 - **Time**: the time of a complete attempt from the game. `No time` and `aborted` with the reason for an attempt that did not finish. The best attempt has the tag `best`.
@@ -517,7 +518,7 @@ Other actions under **Source**:
 - Select a row to open the review of the attempt.
 - On a computer, **Select** and **Hide aborted** are at the right end of the first day heading.
 - **Hide aborted** hides the attempts that did not finish. The button then says **Show aborted** and is filled. Select **Show aborted** to show the attempts again.
-- **Select** lets you mark attempts and delete them. In this mode, a click on a row marks the attempt and does not open the review. See [Delete data](#delete-data).
+- **Select** lets you mark attempts and delete them. In this mode, a click on a row marks the attempt and does not open the review. The quick buttons of each day mark the aborted attempts or all attempts of the day. A quick button without attempts does not show. The bar at the bottom shows the number of marked attempts, **Cancel** and **Delete N attempts**. On a phone, the bar is one line, and the delete button says only **Delete**. See [Delete data](#delete-data).
 
 **Recurring differences** lists the differences at the same place in at least half of your last complete attempts. GT7 Tutor uses the last 8 complete attempts and compares them with the active reference. You need at least three complete attempts. `No difference repeats in your last attempts.` means that no difference reaches half of them.
 
@@ -525,7 +526,7 @@ Other actions under **Source**:
 
 The **Exercises** page shows:
 
-- **Continue**: the current exercise, `your best time` and the gap to the target, for example `0.67 s` with `to the target, 0:16.400`. On a phone, one line gives `best 0:17.071 · 0.67 s to the target`. The gap shows only when the exercise has a best time and a target, and the best time is more than the target. The main button is **Drive** when the exercise has an active reference. Then, on a computer, **Attempts** opens the **Attempts** tab. Without an active reference, the card shows only **Record the reference**. Select the exercise title to open the exercise. Above the title, a line gives `Continue`, the family, the name and the track, for example `Continue · Licence · Cornering Basics 3 · Tsukuba Circuit`. On a phone, it gives only `Continue`.
+- **Continue**: the current exercise, `your best time` and the gap to the target, for example `0.67 s` with `to the target, 0:16.400`. On a phone, one line gives `best 0:17.071 · 0.67 s to the target`. The gap shows only when the exercise has a best time and a target, and the best time is more than the target. The main button is **Drive** when the exercise has an active reference. Then, on a computer, **Attempts** opens the **Attempts** tab. Without an active reference, the card shows only **Record the reference**. Under the times, `Your focus` gives the focus sentence of your last attempt, as on the **Attempts** tab. Select the exercise title to open the exercise. Above the title, a line gives `Continue`, the family, the name and the track, for example `Continue · Licence · Cornering Basics 3 · Tsukuba Circuit`. On a phone, it gives only `Continue`.
 - **In progress**: your exercises that are not at the target, in the order of the catalogue, and your own exercises last. Each row gives the title, the best time and the gap to the target, for example `0.07 s to the target`. On a phone, the gap is short, for example `0.07 s`. A row without a best time gives the target. On a computer, the row also shows the track and the car. An exercise at the target is not in this list: its catalogue row has the tag `Target reached`.
 - **Catalogue**: all entries in groups, with the numbers at the target and in progress. See [Choose an exercise](#choose-an-exercise).
 
@@ -656,7 +657,7 @@ Select a lap row to compare that lap with the reference lap. See [Compare two la
 
 The **reference lap** of a race is its fastest lap that is not lap 1 and has no pit stop. Lap 1 starts on the grid, not at the lap line. Without such a lap, for example in a race of 2 laps, it is the fastest lap of the race. Usually the reference lap is the best lap. When it is another lap, the hint under the table names it, for example `Select a lap to compare it with lap 4, the best lap without a pit stop.`
 
-**Position** shows your position, lap by lap, over the race time. Grey bands mark the pit stops. The labels `P1` and `P2` under the chart name the pit stops. Move the pointer or a finger across the chart. A box and the line over the chart give the lap, the distance from the lap line and the position at that time, for example `Cursor at lap 3, 1,200 m: position 8, up from 9.`
+**Position** shows your position, lap by lap, over the race time. Grey bands mark the pit stops. The labels `P1` and `P2` under the chart name the pit stops. Move the pointer across the chart. On a phone, tap the chart or drag a finger sideways. A vertical swipe scrolls the page. A box and the line over the chart give the lap, the distance from the lap line and the position at that time, for example `Cursor at lap 3, 1,200 m: position 8, up from 9.`
 
 **Fuel** shows the fuel, lap by lap. It shows only when the fuel changes during the race.
 
@@ -664,11 +665,11 @@ The **reference lap** of a race is its fastest lap that is not lap 1 and has no 
 
 ![The chart Speed of a race of 7 laps, with View at the top right. The legend under the chart shows the laps 2, 3 and 5 in grey. The chart shows the lines of laps 1, 4, 6 and 7. The cursor is at 2,286 m in turn 6. A dot marks each line there. The box gives the speed of each lap that shows, for example Lap 4: 157 km/h.](images/race-speed.webp)
 
-Move the pointer or a finger across the chart, or move the focus to it. A dashed line and a dot on each line mark the cursor. A box at the cursor gives the distance, the turn and the speed of each lap that shows, for example `Lap 4: 157 km/h`.
+Move the pointer across the chart, or move the focus to it. On a phone, tap the chart or drag a finger sideways. A vertical swipe scrolls the page. A dashed line and a dot on each line mark the cursor. A box at the cursor gives the distance, the turn and the speed of each lap that shows, for example `Lap 4: 157 km/h`.
 
 The legend under the chart has a button for each lap, for example **Lap 4**. Select a button to hide the line of that lap. Select it again to show the line. A hidden lap has a grey name. You can hide all laps. When you open the **Laps** tab again, all laps show.
 
-Select **View** at the top right of the chart to open the chart in full screen. The full-screen chart is dark and uses all the height of the screen. Under the title, a line gives the track and the number of laps, for example `Mount Panorama Motor Racing Circuit, 7 laps`. The full-screen chart has the same legend. A lap that you hide there stays hidden on the tab. Press Esc or select **Back** to close the full-screen chart.
+Select **View** at the top right of the chart to open the chart in full screen. The full-screen chart is dark and uses all the height of the screen. Under the title, a line gives the track and the number of laps, for example `Mount Panorama Motor Racing Circuit, 7 laps`. The full-screen chart has the same legend. A lap that you hide there stays hidden on the tab. Press Esc or select **Back** to close the full-screen chart. On a phone in landscape, the title and the track share one line, and the legend is one row under the chart. Swipe the row sideways when it is wider than the screen.
 
 ![The chart Speed in full screen on a dark background. The bar at the top has Back and the title Speed. Under the title is the line Mount Panorama Motor Racing Circuit, 7 laps. Press Esc to close. The laps 2, 3 and 5 are hidden. The box at 2,286 m in turn 6 gives the speed of laps 1, 4, 6 and 7.](images/race-speed-full.webp)
 
@@ -915,11 +916,12 @@ The phone and the computer must be on the same home network.
 3. Select **Use this device for voice** if the phone must speak.
 
 On a phone, **Exercises**, **Races** and **Setup** are in the bottom bar. Setup shows all its sections on one page.
+On a tablet in portrait, between 600 and 899 px wide, the page keeps the one-column layout. The column is about 640 px wide and stands in the middle of the screen.
 On the **Laps** tab of a race, each lap row has two lines. The first line gives the time and the gap to the best lap. The second line gives the position, the top speed and the pit lane note.
 
 | Exercises on a phone | Drive on a phone | A race on a phone |
 | --- | --- | --- |
-| ![Exercises on a phone: the Continue card, the search, the family buttons and In progress, with the bottom bar Exercises, Races and Setup.](images/phone-exercises.webp) | ![The Drive screen on a phone with a cue, the next cue and the values.](images/phone-drive-cue.webp) | ![The Laps tab of a race on a phone: the band and the lap rows with two lines each.](images/phone-race-laps.webp) |
+| ![Exercises on a phone. The Continue card has Your focus and Drive. Under it are the search, the family buttons and In progress, with the bottom bar Exercises, Races and Setup.](images/phone-exercises.webp) | ![The Drive screen on a phone with a cue, the next cue and the values.](images/phone-drive-cue.webp) | ![The Laps tab of a race on a phone: the band and the lap rows with two lines each.](images/phone-race-laps.webp) |
 
 The recording screen on a phone fills the screen. Use **Start recording** and **Stop recording** at the bottom, and **Close** to go back.
 
