@@ -50,7 +50,7 @@ describe('shell', () => {
     exerciseApi().install();
     renderApp();
     const nav = await findEl('nav.nav');
-    expect(within(nav).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
+    expect(within(nav).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/exercises');
     expect(within(nav).queryByRole('link', { name: 'Drive' })).toBeNull();
     expect(within(nav).getByRole('link', { name: 'Setup' })).toHaveAttribute('href', '/setup');
     expect(screen.getByRole('link', { name: /^Console/ })).toHaveAttribute('href', '/setup#console');
@@ -67,7 +67,7 @@ describe('shell', () => {
       '/brand/logo-light-600.png',
       '/brand/logo-dark-600.png'
     ]);
-    expect(logos[0]!.closest('a')).toHaveAttribute('href', '/');
+    expect(logos[0]!.closest('a')).toHaveAttribute('href', '/exercises');
   });
 
   it('training_exercise_becomes_current_on_this_device', async () => {

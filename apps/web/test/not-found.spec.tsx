@@ -19,8 +19,8 @@ describe('not found', () => {
     renderApp({ path: '/exercises/abc/attempts' });
     expect(await screen.findByRole('heading', { level: 1, name: 'This exercise is not here' })).toBeInTheDocument();
     expect(screen.getByText('EXERCISE NOT FOUND')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open Exercises' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: 'Open Add exercise' })).toHaveAttribute('href', '/exercises/add');
+    expect(screen.getByRole('link', { name: 'Open Exercises' })).toHaveAttribute('href', '/exercises');
+    expect(screen.queryByRole('link', { name: 'Open Add exercise' })).toBeNull();
     expect(screen.getByText('/exercises/abc/attempts')).toBeInTheDocument();
     expect(api.calls.some(call => call.path.includes('/abc'))).toBe(false);
     expect(screen.queryByText(/uuid/i)).toBeNull();

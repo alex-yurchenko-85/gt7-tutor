@@ -681,7 +681,7 @@ describe('attempt review', () => {
     expect(screen.queryByRole('link', { name: 'All attempts' })).toBeNull();
     const crumbs = await findEl('nav.breadcrumb');
     expect(crumbs).toHaveTextContent('Exercises / Yangwang, EXP-1');
-    expect(within(crumbs).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
+    expect(within(crumbs).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/exercises');
   });
 
   it('review_lede_says_the_times_come_from_the_game', async () => {

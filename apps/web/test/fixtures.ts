@@ -26,6 +26,7 @@ export function exercise(overrides: Partial<Exercise> = {}): Exercise {
     bestMs: null,
     targetGapMs: null,
     createdAt: '2026-11-16T10:00:00.000Z',
+    lastAttemptAt: null,
     ...overrides
   };
 }

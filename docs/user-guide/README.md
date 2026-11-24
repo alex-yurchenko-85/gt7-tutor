@@ -15,7 +15,7 @@ The profile names `Sam` and `demo` are test names.
 3. [Create the first profile](#create-the-first-profile)
 4. [Get ready: console, voice and first exercise](#get-ready-console-voice-and-first-exercise)
 5. [Find your way in the application](#find-your-way-in-the-application)
-6. [Add an exercise](#add-an-exercise)
+6. [Choose an exercise](#choose-an-exercise)
 7. [Record the reference](#record-the-reference)
 8. [Set up the cues](#set-up-the-cues)
 9. [Drive an attempt](#drive-an-attempt)
@@ -86,7 +86,7 @@ GT7 Tutor uses plain HTTP. Do not make it reachable from the internet.
 ## Get ready: console, voice and first exercise
 
 **Goal:** prepare the three things that a training needs.
-**When:** after the first sign-in. The page shows until you save a console address and add an exercise.
+**When:** after the first sign-in. The page shows on the Exercises page until you save a console address.
 
 The page **Get ready to train** has three steps. The bar shows how many steps are ready.
 
@@ -120,13 +120,14 @@ Without a voice device, the Drive screen still shows the cues.
 
 ### Step 3: pick your first exercise
 
-![Get ready to train with steps 1 and 2 done, and step 3 with the button Add an exercise.](images/get-ready-exercise.webp)
+![Get ready to train with step 1 done, step 2 set to Later, and step 3 with the button Choose an exercise.](images/get-ready-exercise.webp)
 
-Select **Add an exercise**. The next section tells you how to find the exercise.
+Select **Choose an exercise**. The Exercises page opens. The next section tells you how to find the exercise.
+When your profile already has exercises, step 3 shows `Done` and the button **Open the exercises**.
 
 ## Find your way in the application
 
-![The Exercises home on a computer. The Continue card shows your best time 0:17.071 and 0.67 s to the target 0:16.400, with the buttons Drive and Attempts. Under it, My exercises has Select, + Add exercise and one exercise row.](images/exercises-home.webp)
+![The Exercises page on a computer. The Continue card shows your best time 0:17.071 and 0.67 s to the target 0:16.400, with the buttons Drive and Attempts. Under it are the search field, the family buttons and All tracks. In progress has the button Select and one exercise row. Below is the Catalogue with the closed groups of the Licence family.](images/exercises-home.webp)
 
 The application has three items in the menu:
 
@@ -152,12 +153,18 @@ The dots have these states:
 
 ![The profile menu with Manage profiles, Voice on this device, Theme and Sign out.](images/profile-menu.webp)
 
-The **current exercise** is the exercise that you opened last. The **Continue** card on the Exercises home shows it. The pages of an exercise and its Drive screen make it the current exercise.
+The **Continue** card on the Exercises page shows the **current exercise**. GT7 Tutor selects it in this order:
+
+1. The exercise of the training that runs.
+2. The exercise that you opened last, when it has a reference and no attempt yet.
+3. The exercise of your last attempt. This is the same on all your devices.
+4. The exercise that you opened last.
+5. The exercise that you created last.
 
 The title of an exercise is the same on all screens. A licence test shows the licence and the code, for example `National B, B-5`. A Brand Central exercise shows the brand and the code, for example `Yangwang, EXP-1`. The name of these exercises, for example `Cornering Basics 3`, is in the line under the title. A Circuit Experience sector shows its name, for example `Tsukuba Circuit · Sector 1`. An exercise that you created yourself shows its name.
 
 Each exercise has a page with a header and, after the first reference or attempt, three tabs.
-The header has the breadcrumb `Exercises / <exercise title>`. Select **Exercises** in it to go back to the Exercises home.
+The header has the breadcrumb `Exercises / <exercise title>`. Select **Exercises** in it to go back to the Exercises page.
 Under the title, one line gives the family, the name and the track, for example `Licence · Cornering Basics 3 · Tsukuba Circuit`. A Circuit Experience sector shows the family and the track, for example `Circuit Experience · Tsukuba Circuit`. An exercise that you created yourself shows its family and `Own exercises`.
 Under that line, a band shows these times:
 
@@ -180,33 +187,47 @@ The review of an attempt keeps the header and the tabs of its exercise. GT7 Tuto
 
 Each race has a page with the breadcrumb `Races / <track name>` and four tabs: **Laps**, **Compare**, **Off the track** and **Golden lap**. See [Record a race and look at it](#record-a-race-and-look-at-it).
 
-## Add an exercise
+## Choose an exercise
 
-**Goal:** put an exercise of the game into **My exercises**.
+**Goal:** find an exercise of the game and record its first reference.
 
-1. Select **Exercises**, then **+ Add exercise** (on a phone: **+ Add**).
+The Exercises page shows your exercises and the whole catalogue on one page. A catalogue entry becomes your exercise when you record its first reference. The address of the page is `/exercises`.
+
+![The Exercises page on a computer with the group National B open. The rows B-1 to B-9 show the name, the track, the car, the target and the button Record the reference.](images/exercises-catalogue.webp)
+
+1. Select **Exercises**.
 2. Find the exercise. Use one or more of these:
-   - Type in the search field: a name, track, car or code, for example `B-3` or `Interlagos`.
-   - Select a family: **All**, **Licence**, **Circuit Experience** or **Brand Central**.
-   - Select a collection in **All collections**, for example `Americas` or `National B`. The collections come in the order of the game. The licences go from National B to Super, then the Master licences in the same order.
+   - Type in the search field: a name, code, track or car, for example `B-3` or `Interlagos`.
+   - Select a family: **All**, **Licence**, **Circuit Experience**, **Brand Central** or **Own**.
    - Select a track in **All tracks**.
-3. Select **Add** in the row of the exercise.
+3. Under **Catalogue**, select the group of the exercise to open it, for example `National B`. A search or a track opens all groups that have a match.
+4. Select **Record the reference** in the row of the exercise.
 
-**Result:** GT7 Tutor opens the page of the new exercise. The band shows the target, or `–` when the exercise has no target. There are no tabs yet. The text says `The cues come from the reference. This exercise has no reference yet.` and the page shows the button **Record the reference**.
+**Result:** GT7 Tutor makes the exercise and opens **Record the reference**. See [Record the reference](#record-the-reference).
 
-![The page of the new exercise National B, B-5. The line under the title gives Licence, Cornering Basics 3 and Tsukuba Circuit. The band shows the target 0:13.100 with edit. There are no tabs. The text says that the exercise has no reference yet. Under it is the button Record the reference.](images/exercise-new.webp)
+The filters apply to the whole page: to **In progress** and to the catalogue.
+`No exercise matches.`: check the spelling, or select **Clear filters**.
 
-![The list of Add an exercise after the search Tsukuba. The rows show licence tests, for example National B, B-5 and its name. Then come the Circuit Experience tasks Sector 1, Sector 2, Sector 3 and 1 Lap Attack. Each row has the track, the car and the Add button.](images/add-exercise.webp)
+The catalogue has one group for each collection, in the family order **Licence**, **Circuit Experience** and **Brand Central**:
 
-Each row shows the exercise in bold and the track and the car:
+- **Licence**: one group for each licence, for example `National B`. The licences come in the order of the game.
+- **Circuit Experience**: one group for each track.
+- **Brand Central**: one group for each brand.
 
-- A licence test shows the licence and the code, for example `National B, B-5`, and the name under it.
-- A Circuit Experience task shows only the sector, for example `Sector 1`, or `1 Lap Attack` for the full lap. Each sector and the full lap of a track is a separate exercise.
-- A Brand Central exercise shows the brand and the code, for example `Yangwang, EXP-1`, and the name under it.
+The line of a group gives the number of entries, then the number of your exercises at the target and in progress, for example `10 tests · 6 at target · 2 in progress`. On a phone, the line gives one number, for example `6 of 10 at target`, `1 in progress` or `4 sectors`.
+When a filter is on, the numbers count only the rows that the filter shows.
+
+Each row shows the code in bold and the name under it, for example `B-5` and `Cornering Basics 3`. A Circuit Experience row shows only the sector, for example `Sector 1`, or `1 Lap Attack` for the full lap. On a computer, the row also shows the track and the car.
+The right part of a row gives the state:
+
+- No reference yet: the target, for example `target 0:20.800`, and the button **Record the reference**.
+- An exercise with a best time: the best time and the gap, for example `0.07 s to the target`, or the tag `Target reached`.
+- The current exercise has a yellow bar at the left.
+
+Select the row of one of your exercises to open the exercise.
+On a phone, select the row of an entry without a reference. The row opens in place and shows the track, the car, the target and the button **Record the reference**. One row opens at a time.
 
 A licence test has a target from the catalogue: the gold time of the test. The other exercises have no target until you set one. See [Set the target](#set-the-target).
-An exercise that you already added shows **View**.
-`No exercise matches.`: check the spelling, or select **Clear filters**.
 
 A catalogue entry does not mean that GT7 Tutor works for the exercise.
 GT7 Tutor needs two things from the game: the game times the demonstration, and the game times your run from the start.
@@ -215,20 +236,23 @@ GT7 Tutor needs two things from the game: the game times the demonstration, and 
 
 Use this for an exercise that the catalogue does not list, for example a Time Trial on one layout.
 
-1. At the bottom of **Add an exercise**, find **Your own exercise**.
+1. At the end of the catalogue, under **Own**, select **Your own exercise**. The form opens.
 2. Type the **Activity**. The default is `Time Trial`.
 3. Type a **Name**.
 4. Select the check button (**Create exercise**).
 
-**Result:** GT7 Tutor opens the page of the new exercise.
+**Result:** GT7 Tutor opens the page of the new exercise. The band shows `–` and there are no tabs yet. The page shows the button **Record the reference**.
+Your own exercise shows in the **Own** group from the start, and in **In progress** until it reaches its target.
 Your own exercise has the same needs. If the game does not time a demonstration of the activity, you cannot record a reference for it.
+
+![The page of the new exercise National B, B-5. The line under the title gives Licence, Cornering Basics 3 and Tsukuba Circuit. The band shows the target 0:13.100 with edit. There are no tabs. The text says that the exercise has no reference yet. Under it is the button Record the reference.](images/exercise-new.webp)
 
 ### Delete an exercise
 
-On the Exercises home, select **Select**, mark one or more exercises, then select **Delete N exercises**. The quick buttons **Without history**, **All** and **None** help you mark them.
+On the Exercises page, select **Select** next to **In progress**. The list shows all your exercises that the filters show, also an exercise that has no reference yet. Mark one or more exercises, then select **Delete N exercises**. The quick buttons **Without history**, **All** and **None** help you mark them. They use only the exercises in the list.
 
 For one exercise, the dialog lists what goes: the attempts with their cues and differences, the references and the best time. For more exercises, it lists each exercise with its attempts and references.
-**Also clean up the raw captures that nothing uses afterwards** is on by default. Select **Delete exercise** (or **Delete N exercises**) to delete, or **Keep it** to close the dialog. You cannot undo it. The catalogue entry stays, so you can add the exercise again.
+**Also clean up the raw captures that nothing uses afterwards** is on by default. Select **Delete exercise** (or **Delete N exercises**) to delete, or **Keep it** to close the dialog. You cannot undo it. The catalogue entry stays, so you can record its reference again from the catalogue.
 
 ## Record the reference
 
@@ -321,7 +345,7 @@ Changes apply from the next **Drive**. A training that already runs keeps the ol
 
 ### Start
 
-1. Open the **Attempts** tab of the exercise, the review of an attempt, or the **Continue** card on the Exercises home.
+1. Open the **Attempts** tab of the exercise, the review of an attempt, or the **Continue** card on the Exercises page.
 2. Select **Drive**. On the **Attempts** tab and on the review, it is the yellow button with the word **Drive**. On the **Continue** card, it is the main button **Drive**.
 
 **Result:** the dark Drive screen opens at once and shows `READY` in grey. There is no other page before it.
@@ -499,16 +523,15 @@ Other actions under **Source**:
 
 ## Track your progress
 
-The **Exercises** home shows:
+The **Exercises** page shows:
 
-- **Continue**: the current exercise, `your best time` and the gap to the target, for example `0.67 s` with `to the target, 0:16.400`. On a phone, one line gives `best 0:17.071 · 0.67 s to the target`. The gap shows only when the exercise has a best time and a target, and the best time is more than the target. The main button is **Drive** when the exercise has an active reference, and **Record the reference** when it has none. **Attempts** opens the **Attempts** tab. Select the exercise title to open the exercise. Above the title, a line gives `Continue`, the family, the name and the track, for example `Continue · Licence · Cornering Basics 3 · Tsukuba Circuit`. On a phone, it gives only `Continue`, and `Own exercises` for an exercise that you created yourself.
-- **My exercises**: each exercise in one row, with its title, its status tag and, on a computer, its best time. Under the title, a computer shows the name, the track and the car, for example `Cornering Basics 3 · Tsukuba Circuit · Autobianchi A112 Abarth '85`. A phone shows the family and the name, for example `Licence · Cornering Basics 3`. For an exercise that you created yourself, `Own exercises` replaces the name in these lines and in the line of the **Continue** card. In each family, the exercises come in the order of the catalogue, and your own exercises come last. On a computer, buttons filter the list by family, for example **All**, **Licence** and **Circuit Experience**. The filter shows only the families of your exercises, and only when you have exercises of more than one family.
+- **Continue**: the current exercise, `your best time` and the gap to the target, for example `0.67 s` with `to the target, 0:16.400`. On a phone, one line gives `best 0:17.071 · 0.67 s to the target`. The gap shows only when the exercise has a best time and a target, and the best time is more than the target. The main button is **Drive** when the exercise has an active reference. Then, on a computer, **Attempts** opens the **Attempts** tab. Without an active reference, the card shows only **Record the reference**. Select the exercise title to open the exercise. Above the title, a line gives `Continue`, the family, the name and the track, for example `Continue · Licence · Cornering Basics 3 · Tsukuba Circuit`. On a phone, it gives only `Continue`.
+- **In progress**: your exercises that are not at the target, in the order of the catalogue, and your own exercises last. Each row gives the title, the best time and the gap to the target, for example `0.07 s to the target`. On a phone, the gap is short, for example `0.07 s`. A row without a best time gives the target. On a computer, the row also shows the track and the car. An exercise at the target is not in this list: its catalogue row has the tag `Target reached`.
+- **Catalogue**: all entries in groups, with the numbers at the target and in progress. See [Choose an exercise](#choose-an-exercise).
 
-| Status tag | Meaning |
-| --- | --- |
-| New | No active reference yet |
-| No tag | An active reference, and the exercise has no target or your best time is more than the target |
-| Target reached | Your best time is equal to the target or less |
+A new profile has no **Continue** card and no **In progress** list. The page then shows a short text under the title and the closed catalogue groups.
+
+The tag `Target reached` shows when your best time is equal to the target or less.
 
 ### Set the target
 
@@ -842,7 +865,7 @@ An entry that has your exercises stays. After an update, **Restore** makes the p
 | Delete one attempt | Review → **Delete attempt** | The attempt, its cues and differences | References, other attempts. The raw capture stays until a clean-up. |
 | Delete several attempts | Attempts → **Select** → **Delete N attempts** | The selected attempts, their cues and differences. GT7 Tutor counts your best time and the recurring differences again. | References. The raw captures stay until a clean-up. |
 | Delete a reference | References → **Delete** → **Delete reference** | The reference | Only possible when the reference is not active and no attempt uses it |
-| Delete an exercise | Exercises → **Select** → **Delete N exercises** | The exercise, its attempts, references, best time and target | The catalogue entry. You can add the exercise again. |
+| Delete an exercise | Exercises → **Select** → **Delete N exercises** | The exercise, its attempts, references, best time and target | The catalogue entry. You can record its reference again. |
 | Delete races | Races → **Select** → **Delete N races** | The selected races with their laps, pit stops and places off the track | The exercises. The raw captures stay until a clean-up. |
 | Clean up captures | Setup → Data → **Clean up captures** | The parts of the raw captures that no reference, no attempt and no race uses | All references, attempts and races |
 | Delete history: **Attempts of one exercise** | Setup → Data → **Delete history** | The attempts of the selected exercise | Its references, the other exercises, the races, the settings |
@@ -892,7 +915,7 @@ On the **Laps** tab of a race, each lap row has two lines. The first line gives 
 
 | Exercises on a phone | Drive on a phone | A race on a phone |
 | --- | --- | --- |
-| ![Exercises on a phone with the bottom bar Exercises, Races and Setup.](images/phone-exercises.webp) | ![The Drive screen on a phone with a cue, the next cue and the values.](images/phone-drive-cue.webp) | ![The Laps tab of a race on a phone: the band and the lap rows with two lines each.](images/phone-race-laps.webp) |
+| ![Exercises on a phone: the Continue card, the search, the family buttons and In progress, with the bottom bar Exercises, Races and Setup.](images/phone-exercises.webp) | ![The Drive screen on a phone with a cue, the next cue and the values.](images/phone-drive-cue.webp) | ![The Laps tab of a race on a phone: the band and the lap rows with two lines each.](images/phone-race-laps.webp) |
 
 The recording screen on a phone fills the screen. Use **Start recording** and **Stop recording** at the bottom, and **Close** to go back.
 

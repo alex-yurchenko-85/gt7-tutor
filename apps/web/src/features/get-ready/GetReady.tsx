@@ -12,11 +12,10 @@ import './get-ready.css';
 
 type StepState = 'done' | 'now' | 'later';
 
-type ConsoleState = 'missing' | 'saved' | 'silent' | 'receiving';
+type ConsoleState = 'missing' | 'silent' | 'receiving';
 
 const CONSOLE_SUMMARY: Record<ConsoleState, MessageKey | null> = {
   missing: null,
-  saved: 'app.get-ready.console.saved',
   silent: 'app.get-ready.console.silent',
   receiving: 'app.get-ready.console.receiving'
 };
@@ -101,11 +100,11 @@ function VoiceTest() {
   );
 }
 
-export function GetReady({ ps5Ip, exerciseCount }: { ps5Ip: string | null; exerciseCount: number }) {
+export function GetReady({ exerciseCount, onOpenExercises }: { exerciseCount: number; onOpenExercises(): void }) {
   const { user } = useSession();
   const { deviceId } = useLiveConnection();
   const { state } = useLiveState(snapshot => snapshot);
-  const [consoleState, setConsoleState] = useState<ConsoleState>(ps5Ip === null ? 'missing' : 'saved');
+  const [consoleState, setConsoleState] = useState<ConsoleState>('missing');
   const [voiceLater, setVoiceLater] = useState(() => storedVoiceLater(user.id));
 
   const holder = state?.voiceDeviceId ?? null;
@@ -157,10 +156,22 @@ export function GetReady({ ps5Ip, exerciseCount }: { ps5Ip: string | null; exerc
         >
           <VoiceStep onLater={later} />
         </Step>
-        <Step number={3} title={t('app.get-ready.exercise.title')} state={stateOf(3, exerciseDone)} summary={exerciseDone ? t('app.get-ready.exercise.done') : null}>
+        <Step
+          number={3}
+          title={t('app.get-ready.exercise.title')}
+          state={stateOf(3, exerciseDone)}
+          summary={exerciseDone ? t('app.get-ready.exercise.done') : null}
+          action={
+            exerciseDone ? (
+              <Link to={paths.exercises()} className="btn inline ready-step-open" onNavigate={onOpenExercises}>
+                {t('app.get-ready.exercise.open')}
+              </Link>
+            ) : null
+          }
+        >
           <p>{t('app.get-ready.exercise.text')}</p>
           <div className="ready-actions">
-            <Link to={paths.addExercise()} className="btn yellow">
+            <Link to={paths.exercises()} className="btn yellow" onNavigate={onOpenExercises}>
               {t('app.get-ready.exercise.add')}
             </Link>
           </div>

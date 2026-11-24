@@ -23,13 +23,6 @@ function SecondAction({ kind, exerciseId }: { kind: NotFoundKind; exerciseId: st
       </Link>
     );
   }
-  if (kind === 'exercise') {
-    return (
-      <Link to={paths.addExercise()} className="btn inline ghost">
-        {t('app.not-found.open-add-exercise')}
-      </Link>
-    );
-  }
   if (kind === 'attempt' && exerciseId) {
     return (
       <Link to={paths.attempts(exerciseId)} className="btn inline ghost">

@@ -3,20 +3,24 @@ import { parseRoute, paths } from '../src/app/router.tsx';
 import { EXERCISE_ID } from './fixtures.ts';
 
 describe('router', () => {
-  it('parse_add_before_exercise_id', () => {
-    expect(parseRoute('/exercises/add')).toEqual({ name: 'add-exercise' });
-    expect(paths.addExercise()).toBe('/exercises/add');
+  it('parses_exercises_as_the_exercises_page', () => {
+    expect(parseRoute('/exercises')).toEqual({ name: 'exercises' });
+    expect(parseRoute('/exercises/')).toEqual({ name: 'exercises' });
+    expect(paths.exercises()).toBe('/exercises');
+  });
+
+  it('the_root_and_the_old_add_page_are_redirects', () => {
+    expect(parseRoute('/')).toEqual({ name: 'exercises-redirect' });
+    expect(parseRoute('/exercises/add')).toEqual({ name: 'exercises-redirect' });
   });
 
   it('parse_exercise_page', () => {
     expect(parseRoute(`/exercises/${EXERCISE_ID}`)).toEqual({ name: 'cues', exerciseId: EXERCISE_ID });
     expect(parseRoute(`/exercises/${EXERCISE_ID}/`)).toEqual({ name: 'cues', exerciseId: EXERCISE_ID });
     expect(parseRoute(`/exercises/${EXERCISE_ID}/attempts`)).toEqual({ name: 'attempts', exerciseId: EXERCISE_ID });
-    expect(parseRoute('/')).toEqual({ name: 'exercises' });
     expect(parseRoute('/setup/delete-history')).toEqual({ name: 'delete-history' });
     expect(parseRoute('/nowhere')).toEqual({ name: 'not-found' });
     expect(paths.exercise('ex 1')).toBe('/exercises/ex%201');
-    expect(paths.exercises()).toBe('/');
     expect(paths.deleteHistory()).toBe('/setup/delete-history');
   });
 

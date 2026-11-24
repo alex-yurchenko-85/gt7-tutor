@@ -56,10 +56,10 @@ GT7 Tutor shows English only. All text on the screens and all spoken text come f
 
    The command shows each problem in the pack. A problem is a missing text, a missing plural form or a wrong placeholder. A text that is too long and a key that the English pack does not have are problems too. The last line must be `0 problems`.
 
-4. Start the demo with `./start.sh --demo`. Open the address with `?lang=<language code>`, for example `http://localhost:3001/?lang=de`. Add `?lang=<language code>` to each address that you open: the language stays only for that page.
+4. Start the demo with `./start.sh --demo`. Open the address with `?lang=<language code>`, for example `http://localhost:3001/exercises?lang=de`. Add `?lang=<language code>` to each address that you open: the language stays only for that page.
 5. Look at each screen on a computer and on a phone, in the light theme and in the dark theme. A text must not overlap, must not be cut off and must not move the page to the side. The screens are:
    - the sign-in and Get ready,
-   - Exercises, an exercise with its tabs, Attempts, Review and Add exercise,
+   - Exercises with an open catalogue group, an exercise with its tabs, Attempts and Review,
    - the Drive stage of a demo attempt and the attempt summary,
    - the Record screen,
    - Setup with each part,

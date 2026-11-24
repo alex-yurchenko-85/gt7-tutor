@@ -1,9 +1,8 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { AttemptsView } from '../features/attempts/AttemptsView.tsx';
-import { AddExerciseView } from '../features/catalogue/AddExerciseView.tsx';
 import { CuesView } from '../features/cues/CuesView.tsx';
 import { DriveView } from '../features/drive/DriveView.tsx';
-import { ExercisesHome } from '../features/exercises/ExercisesHome.tsx';
+import { ExercisesView } from '../features/exercises/ExercisesView.tsx';
 import { RaceRecordView } from '../features/races/RaceRecordView.tsx';
 import { RacesView } from '../features/races/RacesView.tsx';
 import { RaceView } from '../features/races/RaceView.tsx';
@@ -13,7 +12,7 @@ import { ReviewView } from '../features/review/ReviewView.tsx';
 import { SetupView } from '../features/setup/SetupView.tsx';
 import { isUuid } from './ids.ts';
 import { NotFound } from './NotFound.tsx';
-import { useRouter, type Route } from './router.tsx';
+import { paths, useRouter, type Route } from './router.tsx';
 
 function badId(route: Route): 'exercise' | 'attempt' | 'page' | null {
   if ('exerciseId' in route && !isUuid(route.exerciseId)) return 'exercise';
@@ -22,8 +21,14 @@ function badId(route: Route): 'exercise' | 'attempt' | 'page' | null {
   return null;
 }
 
+function Redirect({ to }: { to: string }) {
+  const { navigate } = useRouter();
+  useEffect(() => navigate(to, { replace: true }), [navigate, to]);
+  return null;
+}
+
 export const Views = memo(function Views() {
-  const { route } = useRouter();
+  const { route, search, hash } = useRouter();
   const bad = badId(route);
   if (bad) return <NotFound kind={bad} />;
   switch (route.name) {
@@ -31,9 +36,9 @@ export const Views = memo(function Views() {
     case 'delete-history':
       return <SetupView />;
     case 'exercises':
-      return <ExercisesHome />;
-    case 'add-exercise':
-      return <AddExerciseView />;
+      return <ExercisesView />;
+    case 'exercises-redirect':
+      return <Redirect to={`${paths.exercises()}${search.size > 0 ? `?${search.toString()}` : ''}${hash ? `#${hash}` : ''}`} />;
     case 'cues':
       return <CuesView key={route.exerciseId} exerciseId={route.exerciseId} />;
     case 'references':

@@ -22,7 +22,7 @@ import { t } from './i18n.ts';
 
 type NavItem = { label: MessageKey; to: string; icon: IconName; matches(route: Route): boolean };
 
-const EXERCISE_ROUTES: Route['name'][] = ['exercises', 'add-exercise', 'cues', 'references', 'record', 'attempts', 'drive', 'review'];
+const EXERCISE_ROUTES: Route['name'][] = ['exercises', 'exercises-redirect', 'cues', 'references', 'record', 'attempts', 'drive', 'review'];
 
 const EXERCISES: NavItem = { label: 'app.nav.exercises', to: paths.exercises(), icon: 'list', matches: route => EXERCISE_ROUTES.includes(route.name) };
 const RACE_ROUTES: Route['name'][] = ['races', 'race-record', 'race'];

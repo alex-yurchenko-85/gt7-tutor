@@ -90,6 +90,7 @@ export type Exercise = {
   bestMs: number | null;
   targetGapMs: number | null;
   createdAt: string;
+  lastAttemptAt: string | null;
 };
 
 export const connectionSettingsSchema = z.object({ ps5Ip: z.ipv4() }).strict();

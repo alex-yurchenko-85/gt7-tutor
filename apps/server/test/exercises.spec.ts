@@ -359,6 +359,20 @@ describe('exercises, captures and references', () => {
     expect(listed.body[0]).toMatchObject({ attemptCount: 2, completeAttempts: 1, referenceCount: 2 });
   });
 
+  it('lists_the_time_of_the_newest_attempt', async () => {
+    const exerciseId = await exercise();
+    const none = await http().get(`/api/exercises/${exerciseId}`).set('Cookie', cookie).expect(200);
+    expect(none.body.lastAttemptAt).toBeNull();
+    const captureId = await capture(exerciseId, 'demo-a');
+    const referenceId = await reference(exerciseId, captureId);
+    const older = await storedAttempt(exerciseId, captureId, referenceId);
+    const newer = await storedAttempt(exerciseId, captureId, referenceId, 'aborted');
+    await db('attempts').where({ id: older }).update({ created_at: new Date('2026-11-20T10:00:00.000Z') });
+    await db('attempts').where({ id: newer }).update({ created_at: new Date('2026-11-21T11:30:00.000Z') });
+    const listed = await http().get('/api/exercises').set('Cookie', cookie).expect(200);
+    expect(listed.body[0].lastAttemptAt).toBe('2026-11-21T11:30:00.000Z');
+  });
+
   it('best_time_is_the_lowest_game_time', async () => {
     const exerciseId = await exercise();
     const captureId = await capture(exerciseId, 'demo-a');

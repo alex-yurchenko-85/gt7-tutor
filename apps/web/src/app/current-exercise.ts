@@ -32,6 +32,12 @@ export function currentExercise(exercises: Exercise[], userId: string, liveId: s
   const live = exercises.find(exercise => exercise.id === liveId);
   if (live) return live;
   const remembered = rememberedExerciseId(userId);
+  const fresh = exercises.find(exercise => exercise.id === remembered && exercise.activeReferenceId !== null && exercise.lastAttemptAt === null);
+  if (fresh) return fresh;
+  const attempted = exercises
+    .filter(exercise => exercise.lastAttemptAt !== null)
+    .sort((a, b) => b.lastAttemptAt!.localeCompare(a.lastAttemptAt!))[0];
+  if (attempted) return attempted;
   const found = exercises.find(exercise => exercise.id === remembered);
   if (found) return found;
   return [...exercises].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null;

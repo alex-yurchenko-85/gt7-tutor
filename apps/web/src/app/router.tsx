@@ -6,7 +6,7 @@ export type RaceTab = 'laps' | 'compare' | 'off-track' | 'golden';
 
 export type Route =
   | { name: 'exercises' }
-  | { name: 'add-exercise' }
+  | { name: 'exercises-redirect' }
   | { name: 'drive'; exerciseId: string }
   | { name: 'setup' }
   | { name: 'delete-history' }
@@ -21,8 +21,9 @@ export type Route =
   | { name: 'not-found' };
 
 const SIMPLE: Record<string, Route> = {
-  '/': { name: 'exercises' },
-  '/exercises/add': { name: 'add-exercise' },
+  '/': { name: 'exercises-redirect' },
+  '/exercises': { name: 'exercises' },
+  '/exercises/add': { name: 'exercises-redirect' },
   '/setup': { name: 'setup' },
   '/setup/delete-history': { name: 'delete-history' },
   '/races': { name: 'races' },
@@ -56,9 +57,8 @@ export function parseRoute(path: string): Route {
 }
 
 export const paths = {
-  exercises: () => '/',
+  exercises: () => '/exercises',
   exercise: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}`,
-  addExercise: () => '/exercises/add',
   drive: (exerciseId: string) => `/exercises/${encodeURIComponent(exerciseId)}/drive`,
   setup: (section?: SetupSection) => (section ? `/setup#${section}` : '/setup'),
   deleteHistory: () => '/setup/delete-history',

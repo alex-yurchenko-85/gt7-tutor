@@ -112,6 +112,10 @@
   margin-top: 0;
 }
 
+.ready-step-head .ready-step-open {
+  margin-top: 0;
+}
+
 .ready-step-head .icon-button-wrap {
   margin-left: 4px;
 }

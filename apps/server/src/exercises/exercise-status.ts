@@ -11,6 +11,7 @@ export type ExerciseStatusSummary = {
   completeAttempts: number;
   bestMs: number | null;
   createdAt: Date;
+  lastAttemptAt: Date | null;
   activeReferenceId: string | null;
 };
 
@@ -24,6 +25,7 @@ type StatusRow = {
   reference_count: number;
   complete_attempts: number;
   best_ms: number | null;
+  last_attempt_at: Date | null;
 };
 
 export async function exerciseStatuses(db: Knex, userId: string, exerciseId?: string): Promise<ExerciseStatusSummary[]> {
@@ -44,7 +46,8 @@ export async function exerciseStatuses(db: Knex, userId: string, exerciseId?: st
       db.raw('count(a.id)::int as attempt_count'),
       db.raw('(select count(*) from "references" r where r.exercise_id = e.id)::int as reference_count'),
       db.raw("(count(a.id) filter (where a.completion = 'complete'))::int as complete_attempts"),
-      db.raw("min(a.game_ms) filter (where a.completion = 'complete') as best_ms")
+      db.raw("min(a.game_ms) filter (where a.completion = 'complete') as best_ms"),
+      db.raw('max(a.created_at) as last_attempt_at')
     );
   return rows.map(row => ({
     exerciseId: row.id,
@@ -54,6 +57,7 @@ export async function exerciseStatuses(db: Knex, userId: string, exerciseId?: st
     completeAttempts: row.complete_attempts,
     bestMs: row.best_ms,
     createdAt: row.created_at,
+    lastAttemptAt: row.last_attempt_at,
     activeReferenceId: row.active_reference_id,
     status: exerciseStatus({
       hasActiveReference: row.active_reference_id !== null,

@@ -4,9 +4,9 @@ export type Landing = 'get-ready' | 'drive' | 'exercises';
 
 const DRIVING_MODES: LiveMode[] = ['armed', 'driving', 'paused'];
 
-export function landing(input: { ps5Ip: string | null; liveMode: LiveMode | null; exerciseCount: number; demo: boolean }): Landing {
+export function landing(input: { ps5Ip: string | null; liveMode: LiveMode | null; demo: boolean }): Landing {
   if (input.liveMode !== null && DRIVING_MODES.includes(input.liveMode)) return 'drive';
   if (input.demo) return 'exercises';
-  if (input.ps5Ip === null || input.exerciseCount === 0) return 'get-ready';
+  if (input.ps5Ip === null) return 'get-ready';
   return 'exercises';
 }

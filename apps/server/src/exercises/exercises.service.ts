@@ -41,7 +41,8 @@ function exerciseView(row: ExerciseRow, summary: ExerciseStatusSummary, entry: C
     completeAttempts: summary.completeAttempts,
     bestMs: summary.bestMs,
     targetGapMs: targetGap(summary.bestMs, row.target_ms),
-    createdAt: row.created_at.toISOString()
+    createdAt: row.created_at.toISOString(),
+    lastAttemptAt: summary.lastAttemptAt?.toISOString() ?? null
   };
 }
 

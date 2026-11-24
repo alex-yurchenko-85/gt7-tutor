@@ -140,7 +140,7 @@ describe('exercise page', () => {
     exerciseApi(exercise({ attemptCount: 6, completeAttempts: 4 })).install();
     renderApp({ path: `/exercises/${EXERCISE_ID}` });
     const breadcrumb = await findEl('nav.breadcrumb');
-    expect(within(breadcrumb).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/');
+    expect(within(breadcrumb).getByRole('link', { name: 'Exercises' })).toHaveAttribute('href', '/exercises');
     expect(breadcrumb).toHaveTextContent('Exercises / Yangwang, EXP-1');
     expect(within(breadcrumb).getAllByRole('link')).toHaveLength(1);
   });

@@ -25,6 +25,12 @@ function step(name: RegExp): HTMLElement {
   return elWith('li.ready-step', name);
 }
 
+async function connectConsole(): Promise<void> {
+  await userEvent.setup().type(await screen.findByLabelText('PS5 address'), '192.168.1.40');
+  await userEvent.setup().click(iconButton('Save and check'));
+  await within(step(/Connect the console/)).findByText('Receiving telemetry');
+}
+
 describe('get ready', () => {
   it('steps_follow_order_console_first', async () => {
     getReadyApi(null);
@@ -98,9 +104,10 @@ describe('get ready', () => {
 
   it('voice_later_moves_to_exercise_step', async () => {
     setViewportWidth(390);
-    getReadyApi('192.168.1.40');
+    getReadyApi(null);
     renderApp();
     const user = userEvent.setup();
+    await connectConsole();
     const later = await screen.findByRole('button', { name: 'Set up the voice later' });
     expect(later).toHaveClass('btn');
     await user.click(later);
@@ -112,9 +119,10 @@ describe('get ready', () => {
 
   it('claim_sends_claim_voice', async () => {
     setViewportWidth(390);
-    getReadyApi('192.168.1.40');
+    getReadyApi(null);
     const rig = playerRig();
     const { sockets } = renderApp({ player: rig.player });
+    await connectConsole();
     const button = await screen.findByRole('button', { name: 'Use this device for voice' });
     expect(within(step(/Choose the device/)).queryByRole('button', { name: /Test/ })).toBeNull();
     const socket = await openLive(sockets);
@@ -131,9 +139,10 @@ describe('get ready', () => {
   });
 
   it('claim_preloads_the_voice_check_clip', async () => {
-    getReadyApi('192.168.1.40');
+    getReadyApi(null);
     const rig = playerRig();
     const { sockets } = renderApp({ player: rig.player });
+    await connectConsole();
     const button = await screen.findByRole('button', { name: 'Use this device for voice' });
     const socket = await openLive(sockets);
     await userEvent.setup().click(button);
@@ -142,19 +151,35 @@ describe('get ready', () => {
   });
 
   it('voice_step_texts_name_no_device_type', async () => {
-    getReadyApi('192.168.1.40');
+    getReadyApi(null);
     renderApp();
+    await connectConsole();
     const voiceStep = await findElWith('li.ready-step', /Choose the device/);
     expect(within(voiceStep).getByText('One device plays the cues: this device, or another one with GT7 Tutor open. A phone must stay unlocked during an attempt.')).toBeInTheDocument();
     expect(within(voiceStep).getAllByRole('button').map(button => button.textContent)).toEqual(['Use this device for voice', 'Set up the voice later']);
   });
 
-  it('exercise_step_links_add_exercise', async () => {
+  it('the_exercise_step_opens_the_exercises_page', async () => {
     window.localStorage.setItem(`gt7.getReady.voiceLater.${USER.id}`, '1');
-    getReadyApi('192.168.1.40');
+    getReadyApi(null);
     renderApp();
-    const link = await within(await findElWith('li.ready-step', /Pick your first/)).findByRole('link', { name: 'Add an exercise' });
-    expect(link).toHaveAttribute('href', '/exercises/add');
+    await connectConsole();
+    const link = await within(await findElWith('li.ready-step', /Pick your first/)).findByRole('link', { name: 'Choose an exercise' });
+    expect(link).toHaveAttribute('href', '/exercises');
+    await userEvent.setup().click(link);
+    expect(await screen.findByRole('heading', { level: 2, name: 'Catalogue 0' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1, name: 'Get ready to train' })).toBeNull();
+  });
+
+  it('a_done_exercise_step_still_opens_the_exercises_page', async () => {
+    window.localStorage.setItem(`gt7.getReady.voiceLater.${USER.id}`, '1');
+    getReadyApi(null, [exercise()]);
+    renderApp();
+    await connectConsole();
+    const link = within(step(/Pick your first/)).getByRole('link', { name: 'Open the exercises' });
+    expect(link).toHaveAttribute('href', '/exercises');
+    await userEvent.setup().click(link);
+    expect(await screen.findByRole('heading', { level: 2, name: /^Catalogue/ })).toBeInTheDocument();
   });
 
   it('exercise_step_done_when_exercises_exist', async () => {

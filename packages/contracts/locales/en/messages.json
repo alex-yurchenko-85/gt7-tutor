@@ -413,11 +413,6 @@
     "note": "Button on a not-found screen that opens the Races screen.",
     "maxChars": 24
   },
-  "app.not-found.open-add-exercise": {
-    "text": "Open Add exercise",
-    "note": "Button on a not-found screen that opens Add exercise.",
-    "maxChars": 24
-  },
   "app.not-found.all-attempts": {
     "text": "All attempts",
     "note": "Button on a not-found screen that opens the attempts of the exercise.",
@@ -893,11 +888,6 @@
     "text": "Next profiles",
     "note": "Button that scrolls the row of profiles forward."
   },
-  "app.get-ready.console.saved": {
-    "text": "Address saved",
-    "note": "Summary of the console step after the player saves the address.",
-    "maxChars": 32
-  },
   "app.get-ready.console.silent": {
     "text": "Address saved, no telemetry yet",
     "note": "Summary of the console step after the player saves the address and before a packet arrives.",
@@ -987,12 +977,17 @@
     "note": "Text of the exercise step. Circuit Experience and Brand Central are game names."
   },
   "app.get-ready.exercise.add": {
-    "text": "Add an exercise",
-    "note": "Button that opens Add exercise.",
+    "text": "Choose an exercise",
+    "note": "Button of the exercise step. It opens the Exercises page.",
+    "maxChars": 24
+  },
+  "app.get-ready.exercise.open": {
+    "text": "Open the exercises",
+    "note": "Button of the done exercise step. It opens the Exercises page.",
     "maxChars": 24
   },
   "app.get-ready.footer": {
-    "text": "You can change all of this later in Setup. This page goes away when the three steps are done.",
+    "text": "You can change all of this later in Setup. This page shows until you save a console address.",
     "note": "Text at the end of Get ready."
   },
   "common.count.attempt_one": {
@@ -1875,11 +1870,11 @@
     "note": "Last sentence of the dialog that deletes exercises."
   },
   "exercises.delete.entry-stays": {
-    "text": "The catalogue entry stays. You can add the exercise again from Add exercise. You cannot undo it.",
+    "text": "The catalogue entry stays. You can record its reference again from the catalogue. You cannot undo it.",
     "note": "Last sentences of the dialog that deletes one exercise from the catalogue."
   },
   "exercises.delete.entries-stay": {
-    "text": "The catalogue entries stay. You can add the exercises again from Add exercise. You cannot undo it.",
+    "text": "The catalogue entries stay. You can record their references again from the catalogue. You cannot undo it.",
     "note": "Last sentences of the dialog that deletes several exercises from the catalogue."
   },
   "exercises.delete.nothing": {
@@ -1957,7 +1952,7 @@
   },
   "exercises.home.all": {
     "text": "All",
-    "note": "Family filter choice that shows all exercises.",
+    "note": "Family filter choice that shows all exercises and all catalogue entries.",
     "maxChars": 20
   },
   "exercises.own-collection": {
@@ -1980,7 +1975,7 @@
   },
   "exercises.home.to-target": {
     "text": "{gap} to the target",
-    "note": "Time to the target on the Continue card on a phone. {gap} is the time."
+    "note": "Time to the target on the Continue card on a phone and in an exercise row on a wide screen. {gap} is the time."
   },
   "exercises.home.to-target-time": {
     "text": "to the target, {time}",
@@ -1993,7 +1988,7 @@
   },
   "exercises.home.record": {
     "text": "Record the reference",
-    "note": "Button on the Continue card when the exercise has no reference.",
+    "note": "Button that opens the reference recording of an exercise without a reference. It shows on the Continue card and in a catalogue row.",
     "maxChars": 28
   },
   "exercises.home.attempts": {
@@ -2026,24 +2021,6 @@
     "note": "Button that starts the selection mode.",
     "maxChars": 12
   },
-  "exercises.home.add-wide": {
-    "text": "+ Add exercise",
-    "note": "Add button on a wide screen. The plus sign is part of the label.",
-    "maxChars": 18
-  },
-  "exercises.home.add-phone": {
-    "text": "+ Add",
-    "note": "Add button on a phone. The plus sign is part of the label.",
-    "maxChars": 8
-  },
-  "exercises.home.mine": {
-    "text": "My exercises",
-    "note": "Title of the list of exercises."
-  },
-  "exercises.home.empty": {
-    "text": "No exercise yet. Add one from the catalogue.",
-    "note": "Text of the list when the profile has no exercise."
-  },
   "exercises.home.delete-selected_one": {
     "text": "Delete {count} exercise",
     "note": "Selection bar button that deletes the selected exercises. {count} is their number.",
@@ -2060,7 +2037,102 @@
   },
   "exercises.home.title": {
     "text": "Exercises",
-    "note": "Title of the Exercises screen. Only a wide screen shows it."
+    "note": "Title of the Exercises page. A phone shows it when the page has no Continue card or when the player has no exercise."
+  },
+  "exercises.home.lede": {
+    "text": "Select a test or a sector of the game. Record the demonstration of the game as the reference, then drive.",
+    "note": "Text under the title of the Exercises page when the player has no exercise."
+  },
+  "exercises.home.search-hint-phone": {
+    "text": "Search",
+    "note": "Placeholder of the search field on a phone.",
+    "maxChars": 20
+  },
+  "exercises.home.in-progress": {
+    "text": "In progress",
+    "note": "Title of the list of the player's exercises that are not at the target. A number follows the title.",
+    "maxChars": 20
+  },
+  "exercises.home.in-progress-empty": {
+    "text": "No exercise in progress.",
+    "note": "Text of the In progress list when no exercise of the player is in progress."
+  },
+  "exercises.home.catalogue": {
+    "text": "Catalogue",
+    "note": "Title of the catalogue list. A number follows the title.",
+    "maxChars": 20
+  },
+  "exercises.home.group-tests_one": {
+    "text": "{count} test",
+    "note": "Number of licence tests in a catalogue group. {count} is the number.",
+    "maxChars": 20
+  },
+  "exercises.home.group-tests_other": {
+    "text": "{count} tests",
+    "note": "Number of licence tests in a catalogue group. {count} is the number.",
+    "maxChars": 20
+  },
+  "exercises.home.group-sectors_one": {
+    "text": "{count} sector",
+    "note": "Number of Circuit Experience sectors in a catalogue group. {count} is the number.",
+    "maxChars": 20
+  },
+  "exercises.home.group-sectors_other": {
+    "text": "{count} sectors",
+    "note": "Number of Circuit Experience sectors in a catalogue group. {count} is the number.",
+    "maxChars": 20
+  },
+  "exercises.home.group-exercises_one": {
+    "text": "{count} exercise",
+    "note": "Number of exercises in a catalogue group. {count} is the number.",
+    "maxChars": 20
+  },
+  "exercises.home.group-exercises_other": {
+    "text": "{count} exercises",
+    "note": "Number of exercises in a catalogue group. {count} is the number.",
+    "maxChars": 20
+  },
+  "exercises.home.group-at-target": {
+    "text": "{count} at target",
+    "note": "Number of exercises in a catalogue group with the best time at the target. {count} is the number.",
+    "maxChars": 18
+  },
+  "exercises.home.group-in-progress": {
+    "text": "{count} in progress",
+    "note": "Number of the player's exercises in a catalogue group that are not at the target. {count} is the number.",
+    "maxChars": 20
+  },
+  "exercises.home.group-at-target-phone": {
+    "text": "{at} of {total} at target",
+    "note": "Text of a catalogue group on a phone. {at} is the number of exercises at the target. {total} is the number of entries in the group.",
+    "maxChars": 28
+  },
+  "exercises.home.target-time": {
+    "text": "target {time}",
+    "note": "Target time in an exercise row. {time} is the time. Lower case.",
+    "maxChars": 18
+  },
+  "exercises.home.own-family": {
+    "text": "Own",
+    "note": "Family name of the exercises that the player made. It shows on a filter button and above the group of these exercises.",
+    "maxChars": 20
+  },
+  "exercises.home.own-open": {
+    "text": "Your own exercise",
+    "note": "Title of the row that opens the own exercise form.",
+    "maxChars": 24
+  },
+  "exercises.home.own-open-text": {
+    "text": "For an activity that the catalogue does not list",
+    "note": "Help in the row that opens the own exercise form. Only a wide screen shows it."
+  },
+  "exercises.home.open-group": {
+    "text": "Show the entries of this group",
+    "note": "Tip of a closed catalogue group."
+  },
+  "exercises.home.close-group": {
+    "text": "Hide the entries of this group",
+    "note": "Tip of an open catalogue group."
   },
   "exercises.tab.cues": {
     "text": "Cues",
@@ -2473,119 +2545,60 @@
     "note": "Button that starts the next attempt.",
     "maxChars": 26
   },
-  "exercises.add.sources": {
+  "exercises.home.sources": {
     "text": "Sources: {sources}.",
-    "note": "List of catalogue sources at the end of Add exercise. {sources} is the list."
+    "note": "List of the catalogue sources at the end of the Exercises page. {sources} is the list."
   },
-  "exercises.add.added": {
-    "text": "View",
-    "note": "Link of an entry that the player already added.",
-    "maxChars": 16
-  },
-  "exercises.add.add": {
-    "text": "Add",
-    "note": "Button that adds a catalogue entry to the exercises.",
-    "maxChars": 10
-  },
-  "exercises.add.no-track": {
+  "exercises.home.no-track": {
     "text": "Track not tagged",
-    "note": "Track cell of a catalogue entry without a track."
+    "note": "Track part of a catalogue row without a track."
   },
-  "exercises.add.own-empty": {
+  "exercises.home.own-empty": {
     "text": "Enter an activity and a name.",
     "note": "Error when a field of the own exercise form is empty."
   },
-  "exercises.add.own-label": {
-    "text": "Your own exercise",
-    "note": "Title of the own exercise form."
-  },
-  "exercises.add.own-text": {
+  "exercises.home.own-text": {
     "text": "For an exercise that the catalogue does not list, such as a Time Trial on one layout.",
     "note": "Help of the own exercise form. Time Trial is a game activity name."
   },
-  "exercises.add.activity": {
+  "exercises.home.activity": {
     "text": "Activity",
     "note": "Label of the activity field of the own exercise form.",
     "maxChars": 16
   },
-  "exercises.add.name": {
+  "exercises.home.name": {
     "text": "Name",
     "note": "Label of the name field of the own exercise form.",
     "maxChars": 16
   },
-  "exercises.add.create": {
+  "exercises.home.create": {
     "text": "Create exercise",
     "note": "Tooltip of the icon button that makes the own exercise."
   },
-  "exercises.add.breadcrumb": {
-    "text": "Add",
-    "note": "Last part of the path at the top of Add exercise.",
-    "maxChars": 10
+  "exercises.home.search-hint": {
+    "text": "Search by name, code, track or car",
+    "note": "Placeholder of the search field on a wide screen."
   },
-  "exercises.add.title": {
-    "text": "Add an exercise",
-    "note": "Title of Add exercise."
-  },
-  "exercises.add.lede_one": {
-    "text": "{count} exercise from the catalogue. Find the one that the game shows, then add it to your exercises.",
-    "note": "Text under the title of Add exercise. {count} is the number of catalogue entries."
-  },
-  "exercises.add.lede_other": {
-    "text": "{count} exercises from the catalogue. Find the one that the game shows, then add it to your exercises.",
-    "note": "Text under the title of Add exercise. {count} is the number of catalogue entries."
-  },
-  "exercises.add.search-hint": {
-    "text": "Name, track, car or code, for example B-3",
-    "note": "Placeholder of the search field."
-  },
-  "exercises.add.all-collections": {
-    "text": "All collections",
-    "note": "First choice of the collection filter."
-  },
-  "exercises.add.all-tracks": {
+  "exercises.home.all-tracks": {
     "text": "All tracks",
     "note": "First choice of the track filter."
   },
-  "exercises.add.reading": {
-    "text": "Reading the catalogue…",
-    "note": "Text while the catalogue loads."
-  },
-  "exercises.add.shown": {
-    "text": "{count} shown",
-    "note": "Number of catalogue entries that the filters show.",
-    "maxChars": 14
-  },
-  "exercises.add.all": {
-    "text": "All",
-    "note": "Family filter choice that shows all entries.",
-    "maxChars": 20
-  },
-  "exercises.add.exercise": {
-    "text": "Exercise",
-    "note": "Column heading of the catalogue table.",
-    "maxChars": 20
-  },
-  "exercises.add.track-and-car": {
-    "text": "Track and car",
-    "note": "Column heading of the catalogue table.",
-    "maxChars": 20
-  },
-  "exercises.add.no-match": {
+  "exercises.home.no-match": {
     "text": "No exercise matches.",
     "note": "Text when the filters show no entry."
   },
-  "exercises.add.no-match-hint": {
+  "exercises.home.no-match-hint": {
     "text": "Check the spelling, or clear the filters.",
     "note": "Help when the filters show no entry."
   },
-  "exercises.add.clear": {
+  "exercises.home.clear": {
     "text": "Clear filters",
     "note": "Button that clears the filters.",
     "maxChars": 20
   },
-  "exercises.add.no-support": {
+  "exercises.home.no-support": {
     "text": "A catalogue entry does not mean that GT7 Tutor supports the exercise.",
-    "note": "Last sentence of Add exercise."
+    "note": "Last sentence of the Exercises page."
   },
   "app.unit.kph": {
     "text": "{value} km/h",
@@ -4753,7 +4766,7 @@
     "note": "Name of the lap axis under the position and fuel charts. Lower case.",
     "maxChars": 8
   },
-  "exercises.add.source": {
+  "exercises.home.source": {
     "text": "{name} ({licence})",
     "note": "One catalogue source in the list of sources. {name} is the source name, {licence} its licence."
   },
