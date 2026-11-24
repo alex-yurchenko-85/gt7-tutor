@@ -65,7 +65,7 @@ GT7 Tutor finds the demonstration and the start and finish of each attempt from 
 - The game times the demonstration of the exercise. GT7 Tutor needs this to find the reference.
 - The game times your run from the start.
 
-The catalogue lists 100 licence tests, 58 Circuit Experience sections and 20 Brand Central exercises from public sources. A catalogue entry does not mean that the exercise works.
+The catalogue lists 100 licence tests, the Circuit Experience of 58 tracks and 20 Brand Central exercises from public sources. A catalogue entry does not mean that the exercise works.
 For developers, [docs/protocol.md](docs/protocol.md#game-timer) gives the details.
 
 ## What you need
