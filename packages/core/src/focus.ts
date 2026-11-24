@@ -2,7 +2,6 @@ import { FOCUS_PARTS, focusPhrase, type FindingKindName, type FocusPart, type Sa
 import { DEFAULT_CONFIG, type CoreConfig } from './config.ts';
 import { focusClipKey } from './cue-text.ts';
 import type { Finding } from './findings.ts';
-import { median } from './statistics.ts';
 import type { TurnLoss } from './turns.ts';
 
 export type Focus = { turn: number; part: FocusPart; cause: FindingKindName | null; clip: string | null };
@@ -21,29 +20,16 @@ export const PART_KINDS: Record<FocusPart, readonly FindingKindName[]> = {
   exit: ['brake-late', 'throttle-late']
 };
 
-type TurnMedian = { turn: number; medianMs: number };
-
-function medianOf(values: (number | null | undefined)[]): number | null {
-  const known = values.filter((value): value is number => value !== null && value !== undefined);
-  return known.length === 0 ? null : median(known);
+function turnOrder(attempt: FocusAttempt): TurnLoss[] {
+  return attempt.losses.filter(loss => loss.lostMs !== null).sort((a, b) => b.lostMs! - a.lostMs! || a.turn - b.turn);
 }
 
-function turnMedians(window: FocusAttempt[]): TurnMedian[] {
-  const turns = [...new Set(window.flatMap(attempt => attempt.losses.map(loss => loss.turn)))];
-  return turns
-    .flatMap(turn => {
-      const medianMs = medianOf(window.map(attempt => attempt.losses.find(loss => loss.turn === turn)?.lostMs));
-      return medianMs === null ? [] : [{ turn, medianMs }];
-    })
-    .sort((a, b) => b.medianMs - a.medianMs || a.turn - b.turn);
-}
-
-function partOf(window: FocusAttempt[], { turn, medianMs }: TurnMedian, config: CoreConfig): FocusPart | null {
+function partOf(loss: TurnLoss, config: CoreConfig): FocusPart | null {
   const parts = FOCUS_PARTS.flatMap(part => {
-    const partMs = medianOf(window.map(attempt => attempt.losses.find(loss => loss.turn === turn)?.parts[part]));
-    return partMs === null ? [] : [{ part, partMs }];
+    const partMs = loss.parts[part];
+    return partMs === null || partMs === undefined ? [] : [{ part, partMs }];
   });
-  const passing = parts.find(({ partMs }) => partMs > config.focus.partMinMs && partMs > config.focus.partMinShare * medianMs);
+  const passing = parts.find(({ partMs }) => partMs > config.focus.partMinMs && partMs > config.focus.partMinShare * loss.lostMs!);
   const [largest] = parts.filter(({ partMs }) => partMs > 0).sort((a, b) => b.partMs - a.partMs);
   return (passing ?? largest)?.part ?? null;
 }
@@ -57,29 +43,24 @@ function partAt(loss: TurnLoss, sM: number): FocusPart {
   return sM < loss.exitSM ? 'entry' : 'exit';
 }
 
-function countsFor(attempt: FocusAttempt, turn: number, part: FocusPart, finding: Finding): boolean {
-  if (rangeTurnOf(attempt.losses, finding.sM) !== turn) return false;
-  if (finding.kind !== 'off-line') return true;
-  const loss = attempt.losses.find(item => item.turn === turn)!;
-  return partAt(loss, finding.sM) === part;
+function countsFor(attempt: FocusAttempt, loss: TurnLoss, part: FocusPart, finding: Finding): boolean {
+  if (rangeTurnOf(attempt.losses, finding.sM) !== loss.turn) return false;
+  return finding.kind !== 'off-line' || partAt(loss, finding.sM) === part;
 }
 
-function causeOf(window: FocusAttempt[], turn: number, part: FocusPart): FindingKindName | null {
-  const perAttempt = window.map(attempt => new Set(attempt.findings.filter(finding => countsFor(attempt, turn, part, finding)).map(finding => finding.kind)));
-  const attempts = (kind: FindingKindName) => perAttempt.filter(kinds => kinds.has(kind)).length;
-  const inHalf = (kind: FindingKindName) => attempts(kind) * 2 >= window.length;
-  const [best] = FOCUS_KIND_ORDER.filter(kind => PART_KINDS[part].includes(kind) && inHalf(kind)).sort((a, b) => attempts(b) - attempts(a));
-  return best ?? (inHalf('off-line') ? 'off-line' : null);
+function causeOf(attempt: FocusAttempt, loss: TurnLoss, part: FocusPart): FindingKindName | null {
+  const kinds = new Set(attempt.findings.filter(finding => countsFor(attempt, loss, part, finding)).map(finding => finding.kind));
+  const cause = FOCUS_KIND_ORDER.find(kind => PART_KINDS[part].includes(kind) && kinds.has(kind));
+  return cause ?? (kinds.has('off-line') ? 'off-line' : null);
 }
 
-export function focusFor(latestFirst: FocusAttempt[], config: CoreConfig = DEFAULT_CONFIG): Focus | null {
-  const window = latestFirst.slice(0, config.focus.attempts);
-  for (const turnMedian of turnMedians(window)) {
-    if (turnMedian.medianMs < config.focus.turnMinMs) continue;
-    const part = partOf(window, turnMedian, config);
+export function focusFor(attempt: FocusAttempt, config: CoreConfig = DEFAULT_CONFIG): Focus | null {
+  for (const loss of turnOrder(attempt)) {
+    if (loss.lostMs! < config.focus.turnMinMs) continue;
+    const part = partOf(loss, config);
     if (part === null) continue;
-    const cause = causeOf(window, turnMedian.turn, part);
-    return { turn: turnMedian.turn, part, cause, clip: focusClipKey(focusPhrase(part, cause), turnMedian.turn) };
+    const cause = causeOf(attempt, loss, part);
+    return { turn: loss.turn, part, cause, clip: focusClipKey(focusPhrase(part, cause), loss.turn) };
   }
   return null;
 }

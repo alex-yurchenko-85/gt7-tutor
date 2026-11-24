@@ -1,8 +1,7 @@
 import { api } from '../../api/client.ts';
-import { abortReasonText, formatGap, formatTime, metres } from '../../app/format.ts';
+import { abortReasonText, formatGap, formatTime } from '../../app/format.ts';
 import { errorText, useResource } from '../../app/resource.ts';
 import { Link, paths } from '../../app/router.tsx';
-import { differenceText } from '../cues/cue-format.ts';
 import './summary.css';
 import { focusText, t } from '../../app/i18n.ts';
 
@@ -35,10 +34,6 @@ export function AttemptSummary({ attemptId, onDriveAgain }: { attemptId: string;
           <b>{data.gapToBestMs === null ? t('exercises.summary.first-time') : formatGap(data.gapToBestMs)}</b>
         </div>
       ) : null}
-      <div className="kv">
-        <span>{t('exercises.summary.largest')}</span>
-        <b>{data.largestDifference ? t('exercises.attempts.largest', { place: metres(data.largestDifference.sM), difference: differenceText(data.largestDifference) }) : t('exercises.summary.none-found')}</b>
-      </div>
       <div className="summary-actions">
         <Link to={paths.review(data.id)} className="btn inline">
           {t('exercises.summary.review')}

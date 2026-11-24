@@ -75,7 +75,7 @@ export type CoreConfig = {
     cornerExtensionM: number;
   };
   recurring: { minAttempts: number; minShare: number; placeWithinM: number };
-  focus: { attempts: number; turnMinMs: number; partMinMs: number; partMinShare: number };
+  focus: { turnMinMs: number; partMinMs: number; partMinShare: number };
   reviewGridM: number;
   reviewMaxBridgeM: number;
   gameTimer: { startMaxMs: number; stillPackets: number };
@@ -199,7 +199,7 @@ export const DEFAULT_CONFIG: CoreConfig = {
     cornerExtensionM: 40
   },
   recurring: { minAttempts: RECURRING_MIN_ATTEMPTS, minShare: 0.5, placeWithinM: 20 },
-  focus: { attempts: 5, turnMinMs: 100, partMinMs: 100, partMinShare: 0.2 },
+  focus: { turnMinMs: 100, partMinMs: 100, partMinShare: 0.2 },
   reviewGridM: 2,
   reviewMaxBridgeM: 10,
   gameTimer: { startMaxMs: 50, stillPackets: 3 },

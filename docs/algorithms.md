@@ -369,7 +369,7 @@ With `a` = 0: `t = d / v`. `a` = the speed change over the last 300 ms, never ne
 
 ## 7. Attempt against the reference
 
-**Task.** After an attempt, show where it differs from the reference and how much time each turn lost. Show the differences that come again and one focus for the next attempt.
+**Task.** After an attempt, show where it differs from the reference and how much time each turn lost. Show the differences that come again and the turn of this attempt with the most time lost.
 
 **Input.** The samples of the attempt, `ReferenceAnalysis` (section 2), the earlier attempts of the exercise.
 
@@ -403,17 +403,14 @@ The other calculations use the turn zones of section 4, not the loss ranges.
 
 **Method: recurring differences.** `recurring(perAttempt, config)`: empty with fewer than 3 attempts. A difference recurs in at least half of the attempts. Group by kind and event key, `off-line` by place within 20 m. Size and place: the median. Sort by count, then place.
 
-**Method: focus.** `focusFor(latestFirst, config)`. Each attempt gives its differences and its time lost per turn and per part.
+**Method: focus.** `focusFor(attempt, config)`. The focus uses only this attempt: its differences and its time lost per turn and per part. An attempt that is not complete has no focus.
 
-1. Window: the last `focus.attempts` complete attempts of the exercise with the same reference. One attempt is enough.
-2. For each turn, take the median of its time lost. Use only the attempts of the window that have a value for the turn.
-3. Put the turns in order of this median, the largest first. Equal medians: the lower turn number first.
-4. The focus turn is the first turn with a median of `focus.turnMinMs` or more. The turn does not need a difference.
-5. For each part of the focus turn, take the median of its time lost over the window. Use only the attempts with a value.
-6. The focus part is the first part, in the order `approach`, `entry`, `exit`, with a median above `focus.partMinMs` and above `focus.partMinShare` × the median of the turn.
-7. Sometimes no part passes step 6. Then the focus part is the part with the largest median above 0 ms. Equal medians: the first part in the order of step 6. A turn without such a part goes to the next turn.
-8. A difference belongs to the loss range that holds its place. The range starts at its `fromSM`. A place at the shared boundary belongs to the next range.
-9. Each difference kind belongs to parts by its kind, not by its place. `brake-late` belongs to all parts. An `off-line` difference belongs to the part that holds its place: before `entrySM` the `approach`, before `exitSM` the `entry`, else the `exit`.
+1. Put the turns with a value in order of their time lost, the largest first. Equal values: the lower turn number first.
+2. The focus turn is the first turn with a time lost of `focus.turnMinMs` or more. The turn does not need a difference.
+3. The focus part is the first part, in the order `approach`, `entry`, `exit`, with a time lost above `focus.partMinMs` and above `focus.partMinShare` × the time lost of the turn.
+4. Sometimes no part passes step 3. Then the focus part is the largest part above 0 ms. Equal values: the first part in the order of step 3. A turn without such a part goes to the next turn.
+5. A difference belongs to the loss range that holds its place. The range starts at its `fromSM`. A place at the shared boundary belongs to the next range.
+6. Each difference kind belongs to parts by its kind, not by its place. `brake-late` belongs to all parts. An `off-line` difference belongs to the part that holds its place: before `entrySM` the `approach`, before `exitSM` the `entry`, else the `exit`.
 
 | Part | Kinds |
 | --- | --- |
@@ -421,10 +418,9 @@ The other calculations use the turn zones of section 4, not the loss ranges.
 | `entry` | `brake-late`, `low-point-early`, `low-point-late`, `slow-corner`, `wide-apex` |
 | `exit` | `brake-late`, `throttle-late` |
 
-10. For each kind of the focus part, count the attempts of the window that have it in the loss range of the focus turn.
-11. The cause is the kind of the focus part in the most attempts. It must be in half or more of the attempts of the window. Equal counts: the first kind of `FOCUS_KIND_ORDER`: `brake-early`, `brake-late`, `low-point-early`, `low-point-late`, `slow-corner`, `wide-apex`, `throttle-late`, `off-line`.
-12. Sometimes no kind of the focus part is in half or more of the attempts. Then the cause is `off-line` if an `off-line` difference in the focus part is in half or more of the attempts. Else the focus has no cause.
-13. No turn with a median of `focus.turnMinMs` or more, or a path without a turn: no focus.
+7. The cause is the first kind of `FOCUS_KIND_ORDER` that belongs to the focus part. It must be in the loss range of the focus turn. `FOCUS_KIND_ORDER`: `brake-early`, `brake-late`, `low-point-early`, `low-point-late`, `slow-corner`, `wide-apex`, `throttle-late`, `off-line`.
+8. Sometimes no kind of the focus part is in the loss range. Then the cause is `off-line` if an `off-line` difference is in the focus part. Else the focus has no cause.
+9. No turn with a time lost of `focus.turnMinMs` or more, or a path without a turn: no focus.
 
 Text: the turn name and the problem of the part and the cause. A turn above 10 has a shown text and no voice clip.
 
@@ -450,7 +446,7 @@ Text: the turn name and the problem of the part and the cause. A turn above 10 h
 
 **Output.** The grid series and the differences with their turns. For each corner with a brake zone, the lowest speed of the attempt and its place. They come from the search of `low-point-*`, without the apex limit. The time lost per turn with its loss range. The time lost per part is only for the focus. The recurring differences, the focus sentence, the brake reactions and the review gap.
 
-**Parameters.** `reviewGridM` 2, `reviewMaxBridgeM` 10. `findings`: `eventWindowM` 60, `brakeM` 8, `slowCornerMps` 8 km/h, `throttleLateM` 10, `lowPointM` 20, `offLineM` 1.5, `offLineMs` 500, `cornerExtensionM` 40. `corners.wideApexM` 2. `cues.apexNearM` 6. `recurring`: `minAttempts` 3, `minShare` 0.5, `placeWithinM` 20. `focus`: `attempts` 5, `turnMinMs` 100, `partMinMs` 100, `partMinShare` 0.2. `brakeReaction`: `onThreshold` 0.1, `windowMs` 3000.
+**Parameters.** `reviewGridM` 2, `reviewMaxBridgeM` 10. `findings`: `eventWindowM` 60, `brakeM` 8, `slowCornerMps` 8 km/h, `throttleLateM` 10, `lowPointM` 20, `offLineM` 1.5, `offLineMs` 500, `cornerExtensionM` 40. `corners.wideApexM` 2. `cues.apexNearM` 6. `recurring`: `minAttempts` 3, `minShare` 0.5, `placeWithinM` 20. `focus`: `turnMinMs` 100, `partMinMs` 100, `partMinShare` 0.2. `brakeReaction`: `onThreshold` 0.1, `windowMs` 3000.
 
 ## 8. Race
 

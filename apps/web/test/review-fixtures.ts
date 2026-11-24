@@ -19,7 +19,6 @@ export function attemptSummary(overrides: AttemptOverrides = {}): AttemptSummary
     reason: null,
     timeMs: 27100,
     gapToBestMs: 0,
-    largestDifference: null,
     focus: null,
     startedAt: '2026-11-16T11:23:30.000Z',
     ...overrides
@@ -44,8 +43,7 @@ export const ATTEMPT_LIST: AttemptList = {
         attemptSummary({
           id: ATTEMPT_ID,
           number: 1,
-          gapToBestMs: 300,
-          largestDifference: { kind: 'brake-early', eventKey: 'brake@332', sM: 332, size: 14, unit: 'm', turn: 1 }
+          gapToBestMs: 300
         })
       ]
     }

@@ -7,14 +7,12 @@ import {
   type Sample,
   type AttemptReview,
   type AttemptSummary,
-  type Difference,
   type StoredCueEvent
 } from '@gt7/contracts';
 import {
   COMPARISON_VERSION,
   DEFAULT_CONFIG,
   brakeReactions,
-  comparableSize,
   findDifferences,
   buildReview,
   focusFor,
@@ -27,22 +25,18 @@ import {
   type Review,
   type TurnLoss
 } from '@gt7/core';
-import { focusSummary, type FocusScope } from './attempt-focus.js';
+import { focusSummary } from './attempt-focus.js';
 import type { Knex } from 'knex';
 import { ownedAttempt, ownedExercise, type AttemptRow, type CaptureRow, type ReferenceRow } from '../ownership/owned.js';
 import { ReferencesService } from '../references/references.service.js';
 import { KNEX } from '../storage/knex.provider.js';
 import { FINDING_COLUMNS, saveComparison, toFinding, type FindingRow } from './finding-rows.js';
 import { localDate } from './local-date.js';
-import { reviewBody, turnLossInfos, withTurn } from './review-shapes.js';
+import { reviewBody, turnLossInfos } from './review-shapes.js';
 import { httpError } from '../http-errors.js';
 
 export function attemptTimeMs(row: Pick<AttemptRow, 'completion' | 'game_ms'>): number | null {
   return row.completion === 'complete' ? row.game_ms : null;
-}
-
-function largest(findings: Difference[]): Difference | null {
-  return findings.reduce<Difference | null>((best, finding) => (best === null || comparableSize(finding.size, finding.unit) > comparableSize(best.size, best.unit) ? finding : best), null);
 }
 
 export const REACTION_ATTEMPTS = 8;
@@ -57,16 +51,6 @@ function playedBrakeCues(rows: CueRow[]): PlayedBrakeCue[] {
 
 function isVoicedBrake(row: Pick<CueRow, 'event_kind' | 'outcome'>): boolean {
   return row.event_kind === 'brake' && VOICED_OUTCOMES.includes(row.outcome);
-}
-
-function focusWindowOf(rows: AttemptRow[], only: string): Set<string> {
-  const index = rows.findIndex(row => row.id === only);
-  const target = rows[index]!;
-  const window = rows
-    .slice(0, index + 1)
-    .filter(row => row.reference_id === target.reference_id && row.completion === 'complete')
-    .slice(-DEFAULT_CONFIG.focus.attempts);
-  return new Set([only, ...window.map(row => row.id)]);
 }
 
 function bestOf(times: (number | null)[]): number | null {
@@ -152,20 +136,6 @@ export class AttemptsService {
     return (await this.references.analysisOf(reference)).corners;
   }
 
-  async recentComparisons(scope: FocusScope, limit: number): Promise<FocusAttempt[]> {
-    if (limit <= 0) return [];
-    const attempts = await this.db('attempts')
-      .where({ exercise_id: scope.exerciseId, reference_id: scope.referenceId, completion: 'complete' })
-      .orderBy([{ column: 'started_at', order: 'desc' }, { column: 'id', order: 'desc' }])
-      .limit(limit)
-      .select<{ id: string }[]>('id');
-    const found = await this.comparisonsFor(attempts.map(attempt => attempt.id), scope.referenceId);
-    return attempts.flatMap(attempt => {
-      const comparison = found.get(attempt.id);
-      return comparison ? [comparison] : [];
-    });
-  }
-
   async comparisonsFor(attemptIds: string[], referenceId: string, recalculate: string[] = attemptIds): Promise<Map<string, FocusAttempt>> {
     const [rows, compared] = await Promise.all([
       this.db('attempt_findings')
@@ -222,27 +192,23 @@ export class AttemptsService {
   }
 
   private async summaries(exerciseId: string, only?: string): Promise<AttemptSummary[]> {
-    const rows = await this.db<AttemptRow>('attempts').where({ exercise_id: exerciseId }).orderBy([{ column: 'started_at' }, { column: 'id' }]);
+    const [rows, exercise] = await Promise.all([
+      this.db<AttemptRow>('attempts').where({ exercise_id: exerciseId }).orderBy([{ column: 'started_at' }, { column: 'id' }]),
+      this.db('exercises').where({ id: exerciseId }).first<{ active_reference_id: string | null } | undefined>('active_reference_id')
+    ]);
     const comparisons = new Map<string, FocusAttempt>();
-    const needed = only === undefined ? new Set<string>() : focusWindowOf(rows, only);
+    const newest = rows.findLast(row => row.reference_id === exercise?.active_reference_id && row.completion === 'complete');
+    const needed = new Set(only !== undefined ? [only] : newest ? [newest.id] : []);
     for (const referenceId of new Set(rows.map(row => row.reference_id))) {
       const ids = rows.filter(row => row.reference_id === referenceId).map(row => row.id);
       for (const [id, found] of await this.comparisonsFor(ids, referenceId, ids.filter(id => needed.has(id)))) comparisons.set(id, found);
     }
     const bestMs = bestOf(rows.map(attemptTimeMs));
-    const corners = await this.cornersOf(rows);
-    const history = new Map<string, FocusAttempt[]>();
     const summaries: AttemptSummary[] = [];
     rows.forEach((row, index) => {
-      const comparison = comparisons.get(row.id) ?? { findings: [], losses: [] };
-      const own = comparison.findings;
-      let focus: AttemptSummary['focus'] = null;
-      if (row.completion === 'complete') {
-        const recent = [...(history.get(row.reference_id) ?? []), comparison];
-        history.set(row.reference_id, recent);
-        if (only === undefined || row.id === only) focus = focusSummary(focusFor(recent.slice(-DEFAULT_CONFIG.focus.attempts).reverse(), DEFAULT_CONFIG));
-      }
       if (only !== undefined && row.id !== only) return;
+      const comparison = comparisons.get(row.id) ?? { findings: [], losses: [] };
+      const focus = row.completion === 'complete' ? focusSummary(focusFor(comparison, DEFAULT_CONFIG)) : null;
       const timeMs = attemptTimeMs(row);
       const summary = {
         id: row.id,
@@ -254,19 +220,11 @@ export class AttemptsService {
         last: row.last_raw_index,
         reason: row.reason,
         gapToBestMs: timeMs === null || bestMs === null ? null : timeMs - bestMs,
-        largestDifference: largest(own.map(finding => withTurn(finding, corners.get(row.reference_id)!))),
         focus,
         startedAt: row.started_at.toISOString()
       };
       summaries.push(timeMs === null ? { ...summary, completion: 'aborted', timeMs: null } : { ...summary, completion: 'complete', timeMs });
     });
     return summaries;
-  }
-
-  private async cornersOf(rows: AttemptRow[]): Promise<Map<string, Corner[]>> {
-    const corners = new Map<string, Corner[]>();
-    const references = await this.db<ReferenceRow>('references').whereIn('id', [...new Set(rows.map(row => row.reference_id))]);
-    for (const reference of references) corners.set(reference.id, await this.cornersOfReference(reference));
-    return corners;
   }
 }

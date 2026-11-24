@@ -271,7 +271,6 @@ const ATTEMPT: AttemptSummary = {
   reason: null,
   timeMs: 27100,
   gapToBestMs: 350,
-  largestDifference: { kind: 'brake-early', eventKey: 'brake@332', sM: 332, size: 14.2, unit: 'm', turn: 1 },
   focus: null,
   startedAt: '2026-11-16T11:23:30.000Z'
 };
@@ -308,14 +307,14 @@ describe('attempt summary', () => {
     return driveApi().on(`GET /api/attempts/${ATTEMPT_ID}`, ATTEMPT).install();
   }
 
-  it('summary_appears_on_finished_with_time_gap_and_largest_difference', async () => {
+  it('summary_appears_on_finished_with_time_and_gap_and_no_largest_difference', async () => {
     setViewportWidth(390);
     summaryApi();
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
     const summary = await findSummary(2);
     expect(summary).toHaveTextContent('0:27.100');
     expect(summary).toHaveTextContent('+0.35 s');
-    expect(summary).toHaveTextContent('332 m. Braked 14 m earlier');
+    expect(summary).not.toHaveTextContent('Largest difference');
     expect(screen.getByRole('link', { name: 'Review this attempt' })).toHaveAttribute('href', `/attempts/${ATTEMPT_ID}/review`);
   });
 
@@ -327,7 +326,8 @@ describe('attempt summary', () => {
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
     const summary = await findSummary(2);
     expect(within(summary).getByText('Turn one. Braking too early before the turn.')).toBeInTheDocument();
-    expect(summary).toHaveTextContent('Focus for the next attempt');
+    expect(summary).toHaveTextContent('Most time lost in this attempt');
+    expect(summary).not.toHaveTextContent('Focus for the next attempt');
     expect(within(summary).queryByText('A difference from the reference.')).toBeNull();
     expect(within(summary).queryByText(/mistake/i)).toBeNull();
   });
@@ -365,7 +365,7 @@ describe('attempt summary', () => {
     summaryApi();
     await openDrive(DRIVE_PATH, driving({ mode: 'finished', lastAttemptId: ATTEMPT_ID }));
     const summary = await findSummary(2);
-    expect(summary).not.toHaveTextContent('Focus for the next attempt');
+    expect(summary).not.toHaveTextContent('Most time lost in this attempt');
   });
 
   it('summary_labels_the_time_from_the_game', async () => {

@@ -2521,8 +2521,9 @@
     "note": "Line under the time of a complete attempt."
   },
   "exercises.summary.focus": {
-    "text": "Focus for the next attempt",
-    "note": "Label above the focus sentence."
+    "text": "Most time lost in this attempt",
+    "note": "Label above the focus sentence on the summary after an attempt. The sentence names the turn of this attempt with the most time lost.",
+    "maxChars": 40
   },
   "exercises.focus.label": {
     "text": "Your focus",
@@ -2536,14 +2537,6 @@
   "exercises.summary.first-time": {
     "text": "first time",
     "note": "Gap of the first complete attempt. Lower case."
-  },
-  "exercises.summary.largest": {
-    "text": "Largest difference",
-    "note": "Label of the largest difference of the attempt."
-  },
-  "exercises.summary.none-found": {
-    "text": "none found",
-    "note": "Largest difference when the attempt has none. Lower case."
   },
   "exercises.summary.review": {
     "text": "Review this attempt",

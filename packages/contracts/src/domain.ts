@@ -245,7 +245,6 @@ type AttemptSummaryBase = {
   last: number;
   reason: string | null;
   gapToBestMs: number | null;
-  largestDifference: Difference | null;
   focus: FocusSummary | null;
   startedAt: string;
 };
