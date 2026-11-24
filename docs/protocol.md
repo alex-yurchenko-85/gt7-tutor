@@ -348,3 +348,16 @@ A range read starts the clock 600 packets (`CLOCK_WARMUP_PACKETS`) before the fi
 - Size: about 680 bytes per row, about 150 MB per hour.
 
 Code: `packages/capture/src/raw-file.ts`, `read-samples.ts`, `sample-stream.ts`.
+
+### End of a race recording
+
+The race recorder of the server feeds a `RaceWatch` (`docs/algorithms.md`, 8.1) while a race recording runs:
+
+- After `finish`, the recorder keeps the capture open for 2000 ms.
+- After `ended`, the recorder ends the race at once.
+- In `grid` or `running`, the recorder ends the race after 10 000 ms without a packet.
+- In `waiting`, the recorder does not end the recording without packets.
+- A grid that ends before `start`, or a join that ends before its first lap line, does not end the recording. The recorder starts a new watch.
+- At the end, the recorder stops the capture. It runs `analyseRace` on all its samples. When the result is `null`, it removes the capture and its raw file.
+- When the server stops on a signal, the recorder stores the complete laps as a race that is not finished. A stop in the 2000 ms after `finish` stores the whole race. In `waiting`, it stores no race and removes the capture. The recorder waits for the save for at most 10 000 ms (`SHUTDOWN_SAVE_WAIT_MS`). After that time, or after a failed save, it marks the capture `interrupted`.
+- The start time of a stored race is the time of the first sample of the race range.

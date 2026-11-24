@@ -12,7 +12,7 @@ The input of every calculation is a list of samples. `docs/protocol.md` gives th
 
 ## Common rules
 
-- The calculations are in `packages/core`: pure TypeScript, no clock read. Time is an argument (`receivedMonoMs`, `clockMs`, `nowMonoMs`). The same samples and configuration give the same result. `replayCoach` and the golden traces (`docs/fixtures.md`) use this.
+- The calculations are in `packages/core`: pure TypeScript, no clock read. Time is an argument (`receivedMonoMs`, `clockMs`, `nowMonoMs`). The same samples and configuration give the same result.
 - Units: m, m/s, ms, pedals 0 to 1. km/h only for spoken and shown values: `targetSpeedKph`, `target.roundDownKph` and `comparableSize`. `kph(n)` gives `n` km/h in m/s.
 - Right of a direction of travel `t`: `(−t.z, 0, t.x)`. A positive lateral distance is to the right.
 - `clockOf(sample)` = `clockMs`, or `receivedMonoMs` when `clockMs` is absent.
@@ -94,9 +94,8 @@ While `driving` or `paused`, the first true row applies:
 4. The value increases, and the previous value is above 0.
 5. The value is not the run of the last attempt. After an attempt ends, this stays false until the value is 0.
 
-Condition 3 excludes the background scene. Condition 4 excludes a fixed value after the finish, a false jump from 0 and a pause. Condition 5 excludes the count after a −1.
 
-**Output.** Attempt events with times and generations. The attempt time is the final value of the game timer. `startMissed` for the prompt on the Drive stage.
+**Output.** Attempt events with times and generations. The attempt time is the final value of the game timer. The flag `startMissed`.
 
 **Parameters.** `gameTimer.startMaxMs` 50, `gameTimer.stillPackets` 3, `silenceGapMs` 1000.
 
@@ -136,7 +135,7 @@ Condition 3 excludes the background scene. Condition 4 excludes a fixed value af
 6. `timerMs`: the interpolated `gameTimerMs`, not relative to the first point.
 7. Tangent of a point: the direction from the previous point to the next point.
 
-`pointAt(path, sM)` interpolates between two points. A reference never changes after `buildReference`. `nearestSM(path, position)` gives the `sM` of the nearest path point. It scans all points and keeps no state. Use it for one place, not for a driven line.
+`pointAt(path, sM)` interpolates between two points. A reference never changes after `buildReference`. `nearestSM(path, position)` gives the `sM` of the nearest path point.
 
 **Method: check that a capture follows a path.** `matchesReference(capture, path)` gives the raw range of the first run that follows the path, or `null`. A sample follows the path when all are true:
 
@@ -153,9 +152,9 @@ A sample that does not follow ends the run. A run passes when:
 
 **Output.** `ReferenceAnalysis`: the path, the events and the corners (section 4) and the reference time. The reference time is the final timer value of the cut range. The first point has `timerMs` 0. A range without a timer run has no reference time.
 
-`analyseReference(samples, config)` builds the path and returns `analysisOf(path, timeMs, config)`. `timeMs` is the timer value of the last sample of the range. `analysisOf` adds the events (`buildCueEvents`) and the corners (`findCorners`) to a path. `compareLaps` (section 8) also calls `analysisOf`. No other code calls `buildCueEvents` or `findCorners` for a reference.
+`analyseReference(samples, config)` builds the path and returns `analysisOf(path, timeMs, config)`. `timeMs` is the timer value of the last sample of the range. `analysisOf` adds the events (`buildCueEvents`) and the corners (`findCorners`) to a path.
 
-**Parameters.** `demoRange`: `positionToleranceM` 0.05, `speedToleranceMps` 0.1, `pedalTolerance` 0.02, `minPieceSamples` 10, `maxGapSamples` 2, `minRunSamples` 60, `minMovementM` 10, `confirmMaxLateralM` 0.5, `followSpeedRatio` 0.05, `followSpeedBaseMps` 0.5, `confirmMaxSpeedRatio` 0.01, `confirmMaxLateralP95M` 0.2, `confirmMaxMedianPedal` 0.05. `discontinuityMarginM` 20.
+**Parameters.** `demoRange`: `positionToleranceM` 0.05, `speedToleranceMps` 0.1, `pedalTolerance` 0.02, `minPieceSamples` 10, `maxGapSamples` 2, `minRunSamples` 60, `minMovementM` 10, `confirmMaxLateralM` 0.5, `followSpeedRatio` 0.05, `followSpeedBaseMps` 0.5, `confirmMaxSpeedRatio` 0.01, `confirmMaxLateralP95M` 0.2, `confirmMaxMedianPedal` 0.05.
 
 ## 3. The car on the reference line
 
@@ -207,7 +206,7 @@ Guidance uses only trusted matches.
 
 | Value | Rule |
 | --- | --- |
-| Lowest speed, brake | Lowest reference speed from the brake point to 40 m after the end of the zone. It stops at the next brake zone. The difference `slow-corner` uses the same range. |
+| Lowest speed, brake | Lowest reference speed from the brake point to 40 m after the end of the zone. It stops at the next brake zone. |
 | Target speed, brake | The lowest speed |
 | Target speed, throttle | Reference speed 2 s later |
 | Target rounding | Down to 5 km/h. Outside 30 to 350 km/h: no target. |
@@ -280,7 +279,7 @@ With `a` = 0: `t = d / v`. `a` = the speed change over the last 300 ms, never ne
 | Cue due | `t` ≤ device delay + 500 ms + cue offset + sample period |
 | `Big brake ahead` due | `t` ≤ device delay + 2000 ms + offset of its brake + sample period |
 | Sample period | Time since the last coach step, ≤ 100 ms. First step: 1000 / 60 ms. |
-| Cue offset | −500 to +1000 ms, step 100 ms. Positive is earlier. |
+| Cue offset | Positive is earlier. |
 | Too late | `t` < device delay |
 
 `Big brake ahead` is also too late in two cases. Its phrase cannot end before the lead of its brake. Or a brake or ease-off between the car and its brake becomes due before the phrase ends. It gets `cooldown` for 1500 ms after a last cue with priority ≥ 90.
@@ -330,28 +329,26 @@ With `a` = 0: `t = d / v`. `a` = the speed change over the last 300 ms, never ne
 - `Guidance paused` speaks after 2000 ms of suspension. `Guidance resumed` speaks only after `Guidance paused`. Neither speaks when a brake or ease-off cue would fall inside it.
 - A cue that became due during suspension never replays.
 
-**Method: closer to apex.** More than 2 m outside for ≥ 300 ms between turn-in and apex. Once per corner.
+**Method: closer to apex.** More than `corners.wideApexM` outside for ≥ 300 ms between turn-in and apex. Once per corner.
 
-**Method: side cues.** The distance comes from `CoachSettings`: off, or 0.5 to 3 m. Default `DEFAULT_SIDE_CUE_DISTANCE_M`: off.
+**Method: side cues.** The distance comes from `CoachSettings`: off, or a distance. Default `DEFAULT_SIDE_CUE_DISTANCE_M`: off.
 
 - `|lateralM|` above the distance for 300 ms: `More left` for positive, `More right` for negative.
 - Once per excursion. The car must return within the distance first. A side cue that loses to another cue or to cooldown does not repeat in that excursion.
 - No side cue between turn-in and apex. The hold time continues, so the cue can speak after the apex.
 
-**Method: texts and clips.** `cue-text.ts` makes the clip keys. The texts come from the voice pack, `packages/contracts/locales/<lang>/voice.json`. Core, the server and the API carry clip keys, not text.
+**Method: texts and clips.** `cue-text.ts` makes the clip keys. The texts come from the voice pack, `packages/contracts/locales/<lang>/voice.json`.
 
 - Clip = phrase key, for example `hard-brake`. The voice pack key is `voice.<clip>`, for example `voice.hard-brake`. The keys keep the kind names: `ease-off` says `Lift off`, `big-stop` says `Big brake ahead`, `tighter` says `Closer to apex`, `keep-left` and `keep-right` say `More left` and `More right`.
 - The follow clip of a brake with a target is `speed-<km/h>`. It plays only with `Speak target speeds`. The voice pack gives the words of each speed: `voice.speed-30` to `voice.speed-350`.
-- A focus clip is `focus-<phrase>-<turn>`, up to turn 10. The phrase comes from the part and the cause (section 7), for example `entry-slow` or `exit`. Its text is `voice.focus` with the turn (`voice.turn-1` to `voice.turn-10`) and the problem (`voice.focus-problem.<phrase>`). Above turn 10, the focus has no clip, and the screen shows the turn with `voice.turn` and digits.
-- `eventClips(event, speakTargets)` gives the clips of a cue row: the clip, then the follow clip if targets are on. The next cue of the live state has its clip. The focus of an attempt has its turn, its part, its cause and its clip.
-- The web makes the shown text from the voice pack. A brake with a target shows `voice.brake-with-target`, with the speed words after the action.
-- The Drive stage shows the words of `drive.cue.<kind>` from the message pack.
+- A focus clip is `focus-<phrase>-<turn>`, up to turn 10. The phrase comes from the part and the cause (section 7), for example `entry-slow` or `exit`. Its text is `voice.focus` with the turn (`voice.turn-1` to `voice.turn-10`) and the problem (`voice.focus-problem.<phrase>`).
+- `eventClips(event, speakTargets)` gives the clips of a cue row: the clip, then the follow clip if targets are on.
 - `clipText(pack, clip)` gives the spoken text of a clip. `estimatedPhraseMs(pack, clip)` gives the phrase time when the voice manifest has no duration for the clip.
 - `clipsOf(events, corners)` lists every clip of a reference:
   - the event clips and the follow clips.
   - `Big brake ahead` if any, `Closer to apex` if a corner exists.
   - the side cues, the guidance cues and `Voice check`.
-  - the focus sentences up to turn 10.
+  - the focus phrases up to turn 10.
 
 **Output.** At most one cue per sample, with its generation, priority and time to live. A suppressed candidate has its reason: `muted`, `lower-priority`, `cooldown` or too late.
 
@@ -383,7 +380,7 @@ With `a` = 0: `t = d / v`. `a` = the speed change over the last 300 ms, never ne
 | `slow-corner` | Lowest speed more than 8 km/h below the reference, from the brake point to 40 m after the zone or the next brake | m/s |
 | `throttle-late` | Attempt throttle more than 10 m after the reference throttle, within 60 m | m |
 | `off-line` | More than 1.5 m to one side for more than 500 ms | largest distance, m |
-| `wide-apex` | More than 2 m outside at an apex | m |
+| `wide-apex` | More than `corners.wideApexM` outside at an apex | m |
 | `low-point-early`, `low-point-late` | The lowest speed of the attempt is more than 20 m before or after `lowSpeedSM` of the reference. The search goes from `zoneStartSM` to the end of the turn range (section 4), and stops before `zoneStartSM` of the next corner. The corner must have a brake zone, and its `lowSpeedSM` must be 6 m or less from its apex. No difference when the lowest speed is on the first or the last cell of the search. No difference when a cell of the search has no attempt speed. Place: the lowest speed of the attempt. | m from the apex of the reference |
 
 An attempt brake more than 60 m from the reference brake is not matched. The finder then uses the nearest brake inside 60 m.
@@ -401,7 +398,7 @@ An attempt brake more than 60 m from the reference brake is not matched. The fin
 
 The other calculations use the turn zones of section 4, not the loss ranges.
 
-**Method: recurring differences.** `recurring(perAttempt, config)`: empty with fewer than 3 attempts. A difference recurs in at least half of the attempts. Group by kind and event key, `off-line` by place within 20 m. Size and place: the median. Sort by count, then place.
+**Method: recurring differences.** `recurring(perAttempt, config)`: empty with fewer than `recurring.minAttempts` attempts. A difference recurs in at least half of the attempts. Group by kind and event key, `off-line` by place within 20 m. Size and place: the median. Sort by count, then place.
 
 **Method: focus.** `focusFor(attempt, config)`. The focus uses only this attempt: its differences and its time lost per turn and per part. An attempt that is not complete has no focus.
 
@@ -422,31 +419,28 @@ The other calculations use the turn zones of section 4, not the loss ranges.
 8. Sometimes no kind of the focus part is in the loss range. Then the cause is `off-line` if an `off-line` difference is in the focus part. Else the focus has no cause.
 9. No turn with a time lost of `focus.turnMinMs` or more, or a path without a turn: no focus.
 
-Text: the turn name and the problem of the part and the cause. A turn above 10 has a shown text and no voice clip.
+The phrase of the focus comes from the part and the cause. The texts are in the voice pack (`voice.focus-problem.<phrase>`, section 5).
 
-| Part | Cause | Problem |
+| Part | Cause | Phrase |
 | --- | --- | --- |
-| `approach` | `brake-early` | `Braking too early before the turn.` |
-| `approach` | `brake-late` | `Braking too late before the turn.` |
-| `approach` | `off-line` | `Off the line before the turn.` |
-| `approach` | none | `Time lost before the turn.` |
-| `entry` | `low-point-early`, `slow-corner` | `Too slow on entry.` |
-| `entry` | `low-point-late` | `Too fast on entry.` |
-| `entry` | `wide-apex` | `Far from the apex on entry.` |
-| `entry` | `off-line` | `Off the line on entry.` |
-| `entry` | none | `Time lost on entry.` |
-| `entry`, `exit` | `brake-late` | `Braking too late before the turn.` |
-| `exit` | `throttle-late` | `Late on the throttle on exit.` |
-| `exit` | `off-line` | `Off the line on exit.` |
-| `exit` | none | `Time lost on exit.` |
+| `approach` | `brake-early` | `approach-brake-early` |
+| `approach`, `entry`, `exit` | `brake-late` | `approach-brake-late` |
+| `approach` | `off-line` | `approach-off-line` |
+| `entry` | `low-point-early`, `slow-corner` | `entry-slow` |
+| `entry` | `low-point-late` | `entry-fast` |
+| `entry` | `wide-apex` | `entry-wide-apex` |
+| `entry` | `off-line` | `entry-off-line` |
+| `exit` | `throttle-late` | `exit-throttle-late` |
+| `exit` | `off-line` | `exit-off-line` |
+| any | none, or a cause that is not in this table | The part: `approach`, `entry` or `exit` |
 
 **Method: brake reaction.** `brakeReactions(samples, cues)`: the time from the clip start to the brake rise above 0.10. Brake above 0.10 at the clip start: the last rise before the clip. Else: the first rise after it. More than 3000 ms away: no value. Negative: braked before the cue.
 
 **Method: review gap.** Game time of the attempt − reference time.
 
-**Output.** The grid series and the differences with their turns. For each corner with a brake zone, the lowest speed of the attempt and its place. They come from the search of `low-point-*`, without the apex limit. The time lost per turn with its loss range. The time lost per part is only for the focus. The recurring differences, the focus sentence, the brake reactions and the review gap.
+**Output.** The grid series and the differences with their turns. For each corner with a brake zone, the lowest speed of the attempt and its place. They come from the search of `low-point-*`, without the apex limit. The time lost per turn with its loss range. The time lost per part is only for the focus. The recurring differences, the focus phrase, the brake reactions and the review gap.
 
-**Parameters.** `reviewGridM` 2, `reviewMaxBridgeM` 10. `findings`: `eventWindowM` 60, `brakeM` 8, `slowCornerMps` 8 km/h, `throttleLateM` 10, `lowPointM` 20, `offLineM` 1.5, `offLineMs` 500, `cornerExtensionM` 40. `corners.wideApexM` 2. `cues.apexNearM` 6. `recurring`: `minAttempts` 3, `minShare` 0.5, `placeWithinM` 20. `focus`: `turnMinMs` 100, `partMinMs` 100, `partMinShare` 0.2. `brakeReaction`: `onThreshold` 0.1, `windowMs` 3000.
+**Parameters.** `reviewGridM` 2, `reviewMaxBridgeM` 10. `findings`: `eventWindowM` 60, `brakeM` 8, `slowCornerMps` 8 km/h, `throttleLateM` 10, `lowPointM` 20, `offLineM` 1.5, `offLineMs` 500, `cornerExtensionM` 40. `cues.apexNearM` 6. `recurring`: `minAttempts` 3, `minShare` 0.5, `placeWithinM` 20. `focus`: `turnMinMs` 100, `partMinMs` 100, `partMinShare` 0.2. `brakeReaction`: `onThreshold` 0.1, `windowMs` 3000.
 
 ## 8. Race
 
@@ -479,25 +473,16 @@ Text: the turn name and the problem of the part and the cause. A turn above 10 h
 
 ### 8.2 End of a recording
 
-The race recorder of the server feeds a `RaceWatch` while a race recording runs:
-
-- After `finish`, the recorder keeps the capture open for 2000 ms.
-- After `ended`, the recorder ends the race at once.
-- In `grid` or `running`, the recorder ends the race after 10 000 ms without a packet.
-- In `waiting`, the recorder does not end the recording without packets.
-- A grid that ends before `start`, or a join that ends before its first lap line, does not end the recording. The recorder starts a new watch.
-- At the end, the recorder stops the capture and runs `analyseRace` on all its samples. When the result is `null`, it removes the capture and its raw file.
-- When the server stops on a signal, the recorder stores the complete laps as a race that is not finished. A stop in the 2000 ms after `finish` stores the whole race. In `waiting`, it stores no race and removes the capture. The recorder waits for the save for at most 10 000 ms (`SHUTDOWN_SAVE_WAIT_MS`). After that time, or after a failed save, it marks the capture `interrupted`.
-- The start time of a stored race is the time of the first sample of the race range.
+The range of a race is `raceRange` (8.4). The rules that end a recording are in `docs/protocol.md`, Reception in GT7 Tutor, End of a race recording.
 
 ### 8.3 Fuel estimate
 
-The live state shows the number of laps that the fuel is sufficient for:
+Calculate the laps of fuel left as follows:
 
 1. The fuel use of a lap = the fuel at its first sample − the fuel at its last sample.
 2. Only recorded laps count. An in-lap and an out-lap do not count.
 3. Estimate = fuel / mean fuel use of these laps.
-4. `null` before the first of these laps, or when the mean fuel use is below 0.5 per lap. The value is not stored.
+4. `null` before the first of these laps, or when the mean fuel use is below 0.5 per lap.
 
 ### 8.4 Race range and laps
 
@@ -550,7 +535,7 @@ A **closed lap** (`isClosedLap`) starts and ends at the lap line: it is not lap 
 
 **Distance on the race time.** `raceDistances(samples, analysis)` gives the distance that the car drove from the lap line of its lap. The distance is 0 at the first sample of each recorded lap. Each next sample of the lap adds the horizontal distance (`x`, `z`) from the sample before it. On an out-lap, the pit lane counts. There is one point per 250 ms, one at the start of each lap and one at its end. The finish sample after the last lap gives no point.
 
-**Values at a race time `t`** (the cursor of the position chart):
+**Values at a race time `t`:**
 
 - Lap: the lap whose time range holds `t`. The end of the race belongs to the last lap.
 - Distance: linear interpolation of the distance points of that lap.
@@ -593,7 +578,7 @@ A **closed lap** (`isClosedLap`) starts and ends at the lap line: it is not lap 
 - The move does not change the time lost per turn.
 - The time lost of turn 1 of an out-lap starts at the first matched cell (section 7, carried gap). The time in the pit lane is in no turn.
 
-Two laps of a race use larger limits (`raceCompareConfig(config)`). The race functions `compareLaps`, `goldenLap`, `lapsSpeed` and `offTrackView` use them. No other code reads them.
+Two laps of a race use larger limits (`raceCompareConfig(config)`).
 
 | Value | Exercise | Race |
 | --- | --- | --- |
