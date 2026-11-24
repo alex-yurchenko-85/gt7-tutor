@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.18.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.17.0...v1.18.0) (2026-11-24)
+
+### Features
+
+* take the focus from the last attempt only ([851fe4a](https://github.com/alex-yurchenko-85/gt7-tutor/commit/851fe4a26f5677fd72e470632bdf7f10cdc2737b))
+
 # [1.17.0](https://github.com/alex-yurchenko-85/gt7-tutor/compare/v1.16.0...v1.17.0) (2026-11-24)
 
 ### Features
