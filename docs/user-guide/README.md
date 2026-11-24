@@ -565,7 +565,7 @@ GT7 Tutor can record a race by laps in the game. After the race, you look at you
 
 **Result:** the dark recording screen opens. It starts and stops with the race. You do not need to touch GT7 Tutor during the race.
 
-![Races with My races 2, the buttons Select and Record a race, and two races of one day. Each row gives the track, the car, the laps, the position and the best lap.](images/races-list.webp)
+![Races with My races 2, the buttons Select and Record a race, and the Track field with All tracks. Two races of one day follow. Each row gives the track, the car, the laps, the position and the best lap.](images/races-list.webp)
 
 The recording screen has these states:
 
@@ -747,6 +747,10 @@ When the race has no golden lap, the tab shows `No golden lap for this race` and
 - **Too few clean laps**: a golden lap needs 3 clean laps. The text names the clean laps and tells why each other lap does not count. The reasons are the first lap, the first recorded lap, a pit stop and a lap without a time for each part. An example: `Laps 2, 3, 5 and 6 have a pit stop and do not count.`
 - **A turn without a clean lap**: `Each clean lap left the track in turn 5, so no clean lap gives a time for that turn.`
 - **Parts that do not fit**: `Each clean lap left the track in one turn or more, and the other parts do not fit together at the joins.`
+
+### Show the races of one track
+
+When your races are on 2 or more tracks, the list has a **Track** field under **My races**. Each choice gives the track and the number of races on it. Choose a track to show only its races. Choose **All tracks** to show all of them. The text next to the field gives the number of races that show, for example `2 of 9 races`. **Select** works on the races that show. A new choice of track clears your marks.
 
 ### Delete a race
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RaceSummary } from '@gt7/contracts';
 import { api, ApiError } from '../../api/client.ts';
 import { useLiveState } from '../../api/live.tsx';
@@ -30,6 +30,14 @@ function factsText(race: RaceSummary, wide: boolean): string {
 
 function positionText(race: RaceSummary): string {
   return `${race.startPosition} → ${race.finishPosition}`;
+}
+
+type TrackCount = { name: string; count: number };
+
+function trackCounts(races: RaceSummary[]): TrackCount[] {
+  const counts = new Map<string, number>();
+  for (const race of races) counts.set(raceName(race), (counts.get(raceName(race)) ?? 0) + 1);
+  return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function byDay(races: RaceSummary[]): RaceDay[] {
@@ -117,11 +125,21 @@ export function RacesView() {
     seenRaceId.current = lastRaceId;
     races.reload();
   }, [lastRaceId, races.reload]);
+  const [track, setTrack] = useState('');
   const list = races.data;
+  const tracks = useMemo(() => trackCounts(list ?? []), [list]);
+  const filtering = tracks.length > 1;
+  const activeTrack = filtering && tracks.some(item => item.name === track) ? track : '';
+  const shown = useMemo(() => (activeTrack ? (list ?? []).filter(race => raceName(race) === activeTrack) : (list ?? [])), [list, activeTrack]);
+  const shownPicked = shown.filter(race => picked.has(race.id));
   const toggle = (id: string) => {
     const next = new Set(picked);
     if (!next.delete(id)) next.add(id);
     setPicked(next);
+  };
+  const chooseTrack = (name: string) => {
+    setTrack(name);
+    setPicked(new Set());
   };
   const stopSelecting = () => {
     setSelecting(false);
@@ -182,7 +200,21 @@ export function RacesView() {
             <p>{wide ? t('races.empty.text-wide') : t('races.empty.text')}</p>
           </div>
         ) : null}
-        {byDay(list ?? []).map(day => (
+        {list && filtering ? (
+          <div className="races-filter">
+            <label htmlFor="races-track">{t('races.list.track-label')}</label>
+            <select id="races-track" className="input track-filter" value={activeTrack} onChange={event => chooseTrack(event.target.value)}>
+              <option value="">{t('races.list.all-tracks', { count: list.length })}</option>
+              {tracks.map(item => (
+                <option key={item.name} value={item.name}>
+                  {t('races.list.track-option', { track: item.name, count: item.count })}
+                </option>
+              ))}
+            </select>
+            <span className="sub">{activeTrack ? t('races.list.count-filtered', { shown: shown.length, count: list.length }) : t('races.list.count', { count: list.length })}</span>
+          </div>
+        ) : null}
+        {byDay(shown).map(day => (
           <div key={day.key} className="race-day">
             <h3>{formatDay(day.key)}</h3>
             <div className="race-list">
@@ -202,8 +234,8 @@ export function RacesView() {
             </div>
           </div>
         ))}
-        {selecting ? <SelectionBar count={picked.size} action={t('races.delete-selected', { count: picked.size })} onCancel={stopSelecting} onAction={() => setConfirming(true)} /> : null}
-        {confirming ? <DeleteRacesDialog ids={(list ?? []).filter(race => picked.has(race.id)).map(race => race.id)} onKeep={() => setConfirming(false)} onDeleted={deleted} /> : null}
+        {selecting ? <SelectionBar count={shownPicked.length} action={t('races.delete-selected', { count: shownPicked.length })} onCancel={stopSelecting} onAction={() => setConfirming(true)} /> : null}
+        {confirming ? <DeleteRacesDialog ids={shownPicked.map(race => race.id)} onKeep={() => setConfirming(false)} onDeleted={deleted} /> : null}
       </section>
     </div>
   );

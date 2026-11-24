@@ -3713,6 +3713,37 @@
     "note": "Caption under the best lap time in the race list on a phone. {position} is the start and the finish position. Lower case.",
     "maxChars": 24
   },
+  "races.list.track-label": {
+    "text": "Track",
+    "note": "Label of the track filter above the race list.",
+    "maxChars": 16
+  },
+  "races.list.all-tracks": {
+    "text": "All tracks ({count})",
+    "note": "First choice of the track filter in the race list. {count} is the number of all races.",
+    "maxChars": 24
+  },
+  "races.list.track-option": {
+    "text": "{track} ({count})",
+    "note": "Choice of the track filter in the race list. {track} is the name of a track. {count} is the number of races on it.",
+    "maxChars": 60
+  },
+  "races.list.count_one": {
+    "text": "{count} race",
+    "note": "Text next to the track filter when it shows all races. {count} is the number of races."
+  },
+  "races.list.count_other": {
+    "text": "{count} races",
+    "note": "Text next to the track filter when it shows all races. {count} is the number of races."
+  },
+  "races.list.count-filtered_one": {
+    "text": "{shown} of {count} race",
+    "note": "Text next to the track filter when one track shows. {shown} is the number of races that show. {count} is the number of all races."
+  },
+  "races.list.count-filtered_other": {
+    "text": "{shown} of {count} races",
+    "note": "Text next to the track filter when one track shows. {shown} is the number of races that show. {count} is the number of all races."
+  },
   "races.delete.title_one": {
     "text": "Delete {count} race?",
     "note": "Title of the dialog that deletes races. {count} is the number of races."

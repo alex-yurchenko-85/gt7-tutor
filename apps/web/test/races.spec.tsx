@@ -239,6 +239,80 @@ describe('races list', () => {
     expect(el('input', elWith('.race-row', 'Mount Panorama'))).not.toBeChecked();
   });
 
+  it('track_filter_is_hidden_when_all_races_are_on_one_track', async () => {
+    racesApi([PANORAMA, race({ id: OLDER_ID, startedAt: localIso(18, 9, 5) })]);
+    renderApp({ path: '/races' });
+    expect(await screen.findByRole('heading', { level: 2, name: 'My races 2' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Track')).not.toBeInTheDocument();
+    expect(screen.queryByText('2 races')).not.toBeInTheDocument();
+  });
+
+  it('track_filter_lists_the_tracks_sorted_with_their_race_counts', async () => {
+    racesApi([PANORAMA, RING, OLDER, race({ id: 'a0000000-0000-4000-8000-000000000004', startedAt: localIso(17, 8, 0) })]);
+    renderApp({ path: '/races' });
+    const select = await screen.findByLabelText('Track');
+    expect(within(select).getAllByRole('option').map(option => option.textContent)).toEqual([
+      'All tracks (4)',
+      'High Speed Ring (1)',
+      'Mount Panorama (2)',
+      'Tsukuba Circuit (1)'
+    ]);
+    expect(screen.getByText('4 races')).toBeInTheDocument();
+  });
+
+  it('choosing_a_track_shows_only_its_races_and_drops_empty_days', async () => {
+    const second = race({ id: 'a0000000-0000-4000-8000-000000000004', startedAt: localIso(17, 8, 0) });
+    racesApi([PANORAMA, RING, OLDER, second]);
+    renderApp({ path: '/races' });
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText('Track'), 'Mount Panorama');
+    expect(screen.getByText('2 of 4 races')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^High Speed Ring/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Tsukuba Circuit/ })).not.toBeInTheDocument();
+    expect(els('.race-day').map(day => within(day).getByRole('heading').textContent)).toEqual(['20 November', '17 November']);
+    expect(screen.getByRole('heading', { level: 2, name: 'My races 4' })).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('Track'), 'All tracks (4)');
+    expect(screen.getByText('4 races')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Tsukuba Circuit/ })).toBeInTheDocument();
+  });
+
+  it('track_filter_uses_the_track_name_the_list_shows', async () => {
+    racesApi([PANORAMA, race({ id: RING_ID, trackName: null, trackCandidates: [], startedAt: localIso(19, 10, 0) })]);
+    renderApp({ path: '/races' });
+    const select = await screen.findByLabelText('Track');
+    expect(within(select).getAllByRole('option').map(option => option.textContent)).toContain('Race without a track name (1)');
+  });
+
+  it('selection_and_delete_work_on_the_filtered_list_only', async () => {
+    const api = racesApi().on('POST /api/races/delete', { deleted: 1 });
+    renderApp({ path: '/races' });
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText('Track'), 'High Speed Ring (1)');
+    await user.click(screen.getByRole('button', { name: 'Select' }));
+    expect(els('.race-row')).toHaveLength(1);
+    await user.click(el('input', elWith('.race-row', 'High Speed Ring')));
+    const bar = el('.selection-bar');
+    expect(bar).toHaveTextContent('1 selected');
+    await user.click(within(bar).getByRole('button', { name: 'Delete 1 race' }));
+    await user.click(within(dialogOf('Delete 1 race?')).getByRole('button', { name: 'Delete race' }));
+    await waitFor(() => expect(api.called('POST /api/races/delete')).toBe(true));
+    expect(api.calls.find(call => call.path === '/api/races/delete')!.body).toEqual({ ids: [RING_ID] });
+  });
+
+  it('changing_the_track_clears_the_picked_races', async () => {
+    racesApi();
+    renderApp({ path: '/races' });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Select' }));
+    await user.click(el('input', elWith('.race-row', 'High Speed Ring')));
+    expect(el('.selection-bar')).toHaveTextContent('1 selected');
+    await user.selectOptions(screen.getByLabelText('Track'), 'Mount Panorama (1)');
+    expect(el('.selection-bar')).toHaveTextContent('0 selected');
+    expect(within(el('.selection-bar')).getByRole('button', { name: 'Delete 0 races' })).toBeDisabled();
+    await user.selectOptions(screen.getByLabelText('Track'), 'All tracks (3)');
+    expect(el('input', elWith('.race-row', 'High Speed Ring'))).not.toBeChecked();
+  });
+
   it('race_page_route_shows_not_found_for_a_bad_id', async () => {
     racesApi();
     renderApp({ path: '/races/not-a-uuid' });
